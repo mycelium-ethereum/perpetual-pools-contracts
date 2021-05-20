@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 @title The pool token
 */
 contract PoolToken is ERC20, Ownable {
-    constructor(string name, string symbol) ERC721(name, symbol) public {
+    constructor(string name, string symbol) ERC20(name, symbol) public {
     }
 
     function mint(uint amount, address account) external onlyOwner {

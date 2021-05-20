@@ -1,6 +1,6 @@
 pragma solidity ^0.7.6;
 
-import "../abstract/AbstractLeveragedPool.sol"
+import "../abstract/AbstractLeveragedPool.sol";
 
 /*
 @title The pool controller contract
