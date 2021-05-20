@@ -1,4 +1,4 @@
-import { ethers} from "hardhat";
+import { ethers } from "hardhat";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 import { Counter__factory, Counter } from "../typechain";
@@ -39,7 +39,10 @@ describe("Counter", () => {
   describe("count down", async () => {
     // 5
     it("should fail due to underflow exception", () => {
-      return expect(counter.countDown()).to.eventually.be.rejectedWith(Error, 'Uint256 underflow');
+      return expect(counter.countDown()).to.eventually.be.rejectedWith(
+        Error,
+        "Uint256 underflow"
+      );
     });
 
     it("should count down", async () => {

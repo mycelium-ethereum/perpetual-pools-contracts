@@ -42,26 +42,32 @@ contract LeveragedPool is AbstractLeveragedPool, AccessControl {
     uint16 _leverageAmount,
     address _feeAddress,
     address _quoteToken
-  ) {
-    quoteToken = _quoteToken;
-    lastPrice = _firstPrice;
-    updateInterval = _updateInterval;
-    frontRunningInterval = _frontRunningInterval;
-    fee = _fee;
-    leverageAmount = _leverageAmount;
-    feeAddress = _feeAddress;
+  )
+    AbstractLeveragedPool(
+      _poolCode,
+      _firstPrice,
+      _updateInterval,
+      _frontRunningInterval,
+      _fee,
+      _leverageAmount,
+      _feeAddress,
+      _quoteToken
+    )
+  {}
 
-    tokens[0] = new PoolToken(
-      abi.encodePacked(_poolCode, "-LONG"),
-      abi.encodePacked("L-", _poolCode)
-    );
-    tokens[1] = new PoolToken(
-      abi.encodePacked(_poolCode, "-SHORT"),
-      abi.encodePacked("S-", _poolCode)
-    );
+  function commit(
+    bytes2 commitType,
+    uint256 maxImbalance,
+    uint256 amount
+  ) external override {}
 
-    emit TokensCreated(tokens[0], tokens[1], _firstPrice, _quoteToken);
-  }
+  function uncommit(uint256 commitID) external override {}
+
+  function executeCommitment(uint256[] memory commitID) external override {}
+
+  function executePriceChange(uint256 endPrice) external override {}
+
+  function updateFeeAddress(address account) external override {}
 
   // #### Modifiers
   /**
