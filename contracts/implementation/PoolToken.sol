@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.7.6;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -7,13 +8,13 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 @title The pool token
 */
 contract PoolToken is ERC20, Ownable {
-    constructor(string name, string symbol) ERC20(name, symbol) public {
-    }
+  constructor(string memory name, string memory symbol) ERC20(name, symbol) {}
 
-    function mint(uint amount, address account) external onlyOwner {
-        _mint(amount, account);
-    }
-    function burn(uint amount, address account) external onlyOwner {
-        _burn(amount, account);
-    }
+  function mint(uint256 amount, address account) external onlyOwner {
+    _mint(account, amount);
+  }
+
+  function burn(uint256 amount, address account) external onlyOwner {
+    _burn(account, amount);
+  }
 }

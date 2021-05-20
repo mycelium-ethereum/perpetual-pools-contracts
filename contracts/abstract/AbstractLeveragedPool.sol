@@ -1,11 +1,10 @@
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.7.6;
-
-import "@openzeppelin/contracts/access/AccessControl.sol";
 
 /*
 @title The pool controller contract
 */
-contract AbstractLeveragedPool is AccessControl {
+abstract contract AbstractLeveragedPool {
   // #### Struct definitions
   struct Commit {
     uint256 created;
@@ -17,29 +16,26 @@ contract AbstractLeveragedPool is AccessControl {
 
   // #### Globals
   // TODO: Rearrange to tight pack these for gas savings
-  address[2] tokens;
-  uint256 shortBalance;
-  uint256 longBalance;
+  address[2] public tokens;
+  uint256 public shortBalance;
+  uint256 public longBalance;
 
-  uint256 lastPrice;
-  uint256 lastPriceTimestamp;
+  uint256 public lastPrice;
+  uint256 public lastPriceTimestamp;
 
-  address immutable quoteToken;
-  uint32 updateInterval;
-  uint32 frontRunningInterval;
+  address public immutable quoteToken;
+  uint32 public updateInterval;
+  uint32 public frontRunningInterval;
 
-  uint16 fee;
-  uint16 leverageAmount;
-  address feeAddress;
+  uint16 public fee;
+  uint16 public leverageAmount;
+  address public feeAddress;
 
-  uint256 commitIDCounter;
-  mapping(uint256 => Commit) commits;
+  uint256 private commitIDCounter;
+  mapping(uint256 => Commit) public commits;
 
-  uint256 shadowLongBalance;
-  uint256 shadowShortBalance;
-  // Roles
-  bytes32 public constant UPDATER = keccak256("UPDATER");
-  bytes32 public constant FEE_HOLDER = keccak256("FEE_HOLDER");
+  uint256 public shadowLongBalance;
+  uint256 public shadowShortBalance;
 
   // #### Functions
   /**
@@ -52,42 +48,32 @@ contract AbstractLeveragedPool is AccessControl {
     bytes2 commitType,
     uint256 maxImbalance,
     uint256 amount
-  ) external;
+  ) external virtual;
 
   /**
     @notice Withdraws a user's existing commit. This cannot be used to remove another user's commits. The sender must own the commits they are withdrawing
     @param commitID the ID of the commit to be withdrawn
      */
-  function uncommit(uint256 commitID) external;
+  function uncommit(uint256 commitID) external virtual;
 
   /**
     @notice Executes one or more commitments and effects the changes on the live and shadow pools respectively. This can be used to execute on any valid commits in the commit pool
     @param commitID an array of commits to execute. These do not have to all belong to the sender, nor do they need to be in a specific order.
      */
-  function executeCommitment(uint256[] memory commitID) external;
+  function executeCommitment(uint256[] memory commitID) external virtual;
 
   /**
     @notice Processes the effect of a price change. The effect of a price change on a pool is left to the implementer. The pool stores the last price, and is given the latest price on update. 
     @dev This function should be called by the Pool Keeper.
-    @param endPrice The latest price from the oracle. This 
+    @dev This function should be secured with some form of access control
+    @param endPrice The latest price from the oracle. 
     */
-  function executePriceChange(uint256 endPrice) external onlyUpdater;
-
-  /** */
-  function updateFeeAddress(address account) external onlyFeeHolder;
-
-  // #### Modifiers
-  /**
-    @notice Requires caller to have been granted the UPDATER role. Use this for functions that should be restricted to the PoolKeeper
-     */
-  modifier onlyUpdater {
-    require(hasRole(UPDATER, msg.sender));
-  }
+  function executePriceChange(uint256 endPrice) external virtual;
 
   /** 
-  @notice Requires caller to have been granted the FEE_HOLDER role.
+    @notice Updates the fee address
+    @dev This should be secured with some form of access control
+    @param account The new account to send fees to
   */
-  modifier onlyFeeHolder {
-    require(hasRole(FEE_HOLDER, msg.sender));
-  }
+  function updateFeeAddress(address account) external virtual;
 }
