@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.7.6;
+pragma abicoder v2;
 
 /*
 @title The manager contract for multiple markets and the pools in them
@@ -18,9 +19,10 @@ abstract contract PoolKeeper {
     @dev This should remain open. It should only cause a change in the pools if the price has actually changed. 
     @param marketCode The market to get a quote for. Should be in the format BASE/QUOTE-DIGITAL_ASSET, eg TSLA/USD+aDAI
    */
-  function triggerPriceUpdate(string marketCode, string[] memory poolCodes)
-    external
-    virtual;
+  function triggerPriceUpdate(
+    string memory marketCode,
+    string[] memory poolCodes
+  ) external virtual;
 
   /**
     @notice Updates the address of the oracle wrapper.

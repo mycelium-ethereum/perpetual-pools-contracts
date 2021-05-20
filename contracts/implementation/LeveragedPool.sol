@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.7.6;
+pragma abicoder v2;
 
 import "../abstract/AbstractLeveragedPool.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
