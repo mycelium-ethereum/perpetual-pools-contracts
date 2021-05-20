@@ -19,19 +19,12 @@ import { Listener, Provider } from "@ethersproject/providers";
 import { FunctionFragment, EventFragment, Result } from "@ethersproject/abi";
 import { TypedEventFilter, TypedEvent, TypedListener } from "./commons";
 
-interface OracleWrapperInterface extends ethers.utils.Interface {
+interface IOracleWrapperInterface extends ethers.utils.Interface {
   functions: {
-    "OPERATOR()": FunctionFragment;
-    "assetOracles(string)": FunctionFragment;
     "getPrice(string,address)": FunctionFragment;
     "setOracle(string,address)": FunctionFragment;
   };
 
-  encodeFunctionData(functionFragment: "OPERATOR", values?: undefined): string;
-  encodeFunctionData(
-    functionFragment: "assetOracles",
-    values: [string]
-  ): string;
   encodeFunctionData(
     functionFragment: "getPrice",
     values: [string, string]
@@ -41,18 +34,13 @@ interface OracleWrapperInterface extends ethers.utils.Interface {
     values: [string, string]
   ): string;
 
-  decodeFunctionResult(functionFragment: "OPERATOR", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "assetOracles",
-    data: BytesLike
-  ): Result;
   decodeFunctionResult(functionFragment: "getPrice", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "setOracle", data: BytesLike): Result;
 
   events: {};
 }
 
-export class OracleWrapper extends BaseContract {
+export class IOracleWrapper extends BaseContract {
   connect(signerOrProvider: Signer | Provider | string): this;
   attach(addressOrName: string): this;
   deployed(): Promise<this>;
@@ -93,13 +81,9 @@ export class OracleWrapper extends BaseContract {
     toBlock?: string | number | undefined
   ): Promise<Array<TypedEvent<EventArgsArray & EventArgsObject>>>;
 
-  interface: OracleWrapperInterface;
+  interface: IOracleWrapperInterface;
 
   functions: {
-    OPERATOR(overrides?: CallOverrides): Promise<[string]>;
-
-    assetOracles(arg0: string, overrides?: CallOverrides): Promise<[string]>;
-
     getPrice(
       marketCode: string,
       oracle: string,
@@ -112,10 +96,6 @@ export class OracleWrapper extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
   };
-
-  OPERATOR(overrides?: CallOverrides): Promise<string>;
-
-  assetOracles(arg0: string, overrides?: CallOverrides): Promise<string>;
 
   getPrice(
     marketCode: string,
@@ -130,10 +110,6 @@ export class OracleWrapper extends BaseContract {
   ): Promise<ContractTransaction>;
 
   callStatic: {
-    OPERATOR(overrides?: CallOverrides): Promise<string>;
-
-    assetOracles(arg0: string, overrides?: CallOverrides): Promise<string>;
-
     getPrice(
       marketCode: string,
       oracle: string,
@@ -150,10 +126,6 @@ export class OracleWrapper extends BaseContract {
   filters: {};
 
   estimateGas: {
-    OPERATOR(overrides?: CallOverrides): Promise<BigNumber>;
-
-    assetOracles(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
-
     getPrice(
       marketCode: string,
       oracle: string,
@@ -168,13 +140,6 @@ export class OracleWrapper extends BaseContract {
   };
 
   populateTransaction: {
-    OPERATOR(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    assetOracles(
-      arg0: string,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
     getPrice(
       marketCode: string,
       oracle: string,

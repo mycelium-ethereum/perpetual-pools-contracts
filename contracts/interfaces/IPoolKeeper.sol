@@ -1,18 +1,10 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.7.6;
-pragma abicoder v2;
+pragma solidity ^0.8.0;
 
 /*
-@title The manager contract for multiple markets and the pools in them
+@title The manager contract interface for multiple markets and the pools in them
 */
-abstract contract AbstractPoolKeeper {
-  // #### Globals
-  /**
-    @notice Format: Pool code => pool address, where pool code looks like TSLA/USD^5+aDAI
-   */
-  mapping(string => address) public pools;
-  address public oracleWrapper;
-
+interface IPoolKeeper {
   // #### Functions
   /**
     @notice Checks for a price update for the pools specified. Several pools can be updated with a single call to the oracle. For instance, a market code of TSLA/USD+aDAI can be used to update TSLA/USD^2+aDAI, TSLA/USD^5+aDAI, and TSLA/USD^10+aDAI
@@ -22,22 +14,20 @@ abstract contract AbstractPoolKeeper {
   function triggerPriceUpdate(
     string memory marketCode,
     string[] memory poolCodes
-  ) external virtual;
+  ) external;
 
   /**
     @notice Updates the address of the oracle wrapper.
     @dev Should be restricted to authorised users with access controls
     @param oracle The new OracleWrapper to use
     */
-  function updateOracleWrapper(address oracle) external virtual;
+  function updateOracleWrapper(address oracle) external;
 
   /**
     @notice Creates a new market and sets the oracle to use for it.
     @param marketCode The market code to identify this market
  */
-  function createMarket(string memory marketCode, address oracle)
-    external
-    virtual;
+  function createMarket(string memory marketCode, address oracle) external;
 
   /**
     @notice Creates a new pool in a given market
@@ -60,5 +50,5 @@ abstract contract AbstractPoolKeeper {
     uint16 leverageAmount,
     address feeAddress,
     address quoteToken
-  ) external virtual;
+  ) external;
 }

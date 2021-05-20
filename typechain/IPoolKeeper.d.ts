@@ -19,18 +19,14 @@ import { Listener, Provider } from "@ethersproject/providers";
 import { FunctionFragment, EventFragment, Result } from "@ethersproject/abi";
 import { TypedEventFilter, TypedEvent, TypedListener } from "./commons";
 
-interface PoolKeeperInterface extends ethers.utils.Interface {
+interface IPoolKeeperInterface extends ethers.utils.Interface {
   functions: {
-    "OPERATOR()": FunctionFragment;
     "createMarket(string,address)": FunctionFragment;
     "createPool(string,string,uint32,uint32,uint16,uint16,address,address)": FunctionFragment;
-    "oracleWrapper()": FunctionFragment;
-    "pools(string)": FunctionFragment;
     "triggerPriceUpdate(string,string[])": FunctionFragment;
     "updateOracleWrapper(address)": FunctionFragment;
   };
 
-  encodeFunctionData(functionFragment: "OPERATOR", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "createMarket",
     values: [string, string]
@@ -49,11 +45,6 @@ interface PoolKeeperInterface extends ethers.utils.Interface {
     ]
   ): string;
   encodeFunctionData(
-    functionFragment: "oracleWrapper",
-    values?: undefined
-  ): string;
-  encodeFunctionData(functionFragment: "pools", values: [string]): string;
-  encodeFunctionData(
     functionFragment: "triggerPriceUpdate",
     values: [string, string[]]
   ): string;
@@ -62,17 +53,11 @@ interface PoolKeeperInterface extends ethers.utils.Interface {
     values: [string]
   ): string;
 
-  decodeFunctionResult(functionFragment: "OPERATOR", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "createMarket",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "createPool", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "oracleWrapper",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(functionFragment: "pools", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "triggerPriceUpdate",
     data: BytesLike
@@ -85,7 +70,7 @@ interface PoolKeeperInterface extends ethers.utils.Interface {
   events: {};
 }
 
-export class PoolKeeper extends BaseContract {
+export class IPoolKeeper extends BaseContract {
   connect(signerOrProvider: Signer | Provider | string): this;
   attach(addressOrName: string): this;
   deployed(): Promise<this>;
@@ -126,11 +111,9 @@ export class PoolKeeper extends BaseContract {
     toBlock?: string | number | undefined
   ): Promise<Array<TypedEvent<EventArgsArray & EventArgsObject>>>;
 
-  interface: PoolKeeperInterface;
+  interface: IPoolKeeperInterface;
 
   functions: {
-    OPERATOR(overrides?: CallOverrides): Promise<[string]>;
-
     createMarket(
       marketCode: string,
       oracle: string,
@@ -149,10 +132,6 @@ export class PoolKeeper extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    oracleWrapper(overrides?: CallOverrides): Promise<[string]>;
-
-    pools(arg0: string, overrides?: CallOverrides): Promise<[string]>;
-
     triggerPriceUpdate(
       marketCode: string,
       poolCodes: string[],
@@ -164,8 +143,6 @@ export class PoolKeeper extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
   };
-
-  OPERATOR(overrides?: CallOverrides): Promise<string>;
 
   createMarket(
     marketCode: string,
@@ -185,10 +162,6 @@ export class PoolKeeper extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  oracleWrapper(overrides?: CallOverrides): Promise<string>;
-
-  pools(arg0: string, overrides?: CallOverrides): Promise<string>;
-
   triggerPriceUpdate(
     marketCode: string,
     poolCodes: string[],
@@ -201,8 +174,6 @@ export class PoolKeeper extends BaseContract {
   ): Promise<ContractTransaction>;
 
   callStatic: {
-    OPERATOR(overrides?: CallOverrides): Promise<string>;
-
     createMarket(
       marketCode: string,
       oracle: string,
@@ -220,10 +191,6 @@ export class PoolKeeper extends BaseContract {
       quoteToken: string,
       overrides?: CallOverrides
     ): Promise<void>;
-
-    oracleWrapper(overrides?: CallOverrides): Promise<string>;
-
-    pools(arg0: string, overrides?: CallOverrides): Promise<string>;
 
     triggerPriceUpdate(
       marketCode: string,
@@ -240,8 +207,6 @@ export class PoolKeeper extends BaseContract {
   filters: {};
 
   estimateGas: {
-    OPERATOR(overrides?: CallOverrides): Promise<BigNumber>;
-
     createMarket(
       marketCode: string,
       oracle: string,
@@ -259,10 +224,6 @@ export class PoolKeeper extends BaseContract {
       quoteToken: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
-
-    oracleWrapper(overrides?: CallOverrides): Promise<BigNumber>;
-
-    pools(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
 
     triggerPriceUpdate(
       marketCode: string,
@@ -277,8 +238,6 @@ export class PoolKeeper extends BaseContract {
   };
 
   populateTransaction: {
-    OPERATOR(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
     createMarket(
       marketCode: string,
       oracle: string,
@@ -295,13 +254,6 @@ export class PoolKeeper extends BaseContract {
       feeAddress: string,
       quoteToken: string,
       overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<PopulatedTransaction>;
-
-    oracleWrapper(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    pools(
-      arg0: string,
-      overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
     triggerPriceUpdate(

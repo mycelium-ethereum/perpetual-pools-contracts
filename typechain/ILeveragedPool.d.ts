@@ -19,70 +19,59 @@ import { Listener, Provider } from "@ethersproject/providers";
 import { FunctionFragment, EventFragment, Result } from "@ethersproject/abi";
 import { TypedEventFilter, TypedEvent, TypedListener } from "./commons";
 
-interface AbstractPoolKeeperInterface extends ethers.utils.Interface {
+interface ILeveragedPoolInterface extends ethers.utils.Interface {
   functions: {
-    "createMarket(string,address)": FunctionFragment;
-    "createPool(string,string,uint32,uint32,uint16,uint16,address,address)": FunctionFragment;
-    "oracleWrapper()": FunctionFragment;
-    "pools(string)": FunctionFragment;
-    "triggerPriceUpdate(string,string[])": FunctionFragment;
-    "updateOracleWrapper(address)": FunctionFragment;
+    "commit(bytes2,uint256,uint256)": FunctionFragment;
+    "executeCommitment(uint256[])": FunctionFragment;
+    "executePriceChange(uint256)": FunctionFragment;
+    "uncommit(uint256)": FunctionFragment;
+    "updateFeeAddress(address)": FunctionFragment;
   };
 
   encodeFunctionData(
-    functionFragment: "createMarket",
-    values: [string, string]
+    functionFragment: "commit",
+    values: [BytesLike, BigNumberish, BigNumberish]
   ): string;
   encodeFunctionData(
-    functionFragment: "createPool",
-    values: [
-      string,
-      string,
-      BigNumberish,
-      BigNumberish,
-      BigNumberish,
-      BigNumberish,
-      string,
-      string
-    ]
+    functionFragment: "executeCommitment",
+    values: [BigNumberish[]]
   ): string;
   encodeFunctionData(
-    functionFragment: "oracleWrapper",
-    values?: undefined
-  ): string;
-  encodeFunctionData(functionFragment: "pools", values: [string]): string;
-  encodeFunctionData(
-    functionFragment: "triggerPriceUpdate",
-    values: [string, string[]]
+    functionFragment: "executePriceChange",
+    values: [BigNumberish]
   ): string;
   encodeFunctionData(
-    functionFragment: "updateOracleWrapper",
+    functionFragment: "uncommit",
+    values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "updateFeeAddress",
     values: [string]
   ): string;
 
+  decodeFunctionResult(functionFragment: "commit", data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "createMarket",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(functionFragment: "createPool", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "oracleWrapper",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(functionFragment: "pools", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "triggerPriceUpdate",
+    functionFragment: "executeCommitment",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "updateOracleWrapper",
+    functionFragment: "executePriceChange",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(functionFragment: "uncommit", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "updateFeeAddress",
     data: BytesLike
   ): Result;
 
-  events: {};
+  events: {
+    "TokensCreated(address,address,uint256,address)": EventFragment;
+  };
+
+  getEvent(nameOrSignatureOrTopic: "TokensCreated"): EventFragment;
 }
 
-export class AbstractPoolKeeper extends BaseContract {
+export class ILeveragedPool extends BaseContract {
   connect(signerOrProvider: Signer | Provider | string): this;
   attach(addressOrName: string): this;
   deployed(): Promise<this>;
@@ -123,182 +112,158 @@ export class AbstractPoolKeeper extends BaseContract {
     toBlock?: string | number | undefined
   ): Promise<Array<TypedEvent<EventArgsArray & EventArgsObject>>>;
 
-  interface: AbstractPoolKeeperInterface;
+  interface: ILeveragedPoolInterface;
 
   functions: {
-    createMarket(
-      marketCode: string,
-      oracle: string,
+    commit(
+      commitType: BytesLike,
+      maxImbalance: BigNumberish,
+      amount: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    createPool(
-      marketCode: string,
-      poolCode: string,
-      updateInterval: BigNumberish,
-      frontRunningInterval: BigNumberish,
-      fee: BigNumberish,
-      leverageAmount: BigNumberish,
-      feeAddress: string,
-      quoteToken: string,
+    executeCommitment(
+      commitID: BigNumberish[],
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    oracleWrapper(overrides?: CallOverrides): Promise<[string]>;
-
-    pools(arg0: string, overrides?: CallOverrides): Promise<[string]>;
-
-    triggerPriceUpdate(
-      marketCode: string,
-      poolCodes: string[],
+    executePriceChange(
+      endPrice: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    updateOracleWrapper(
-      oracle: string,
+    uncommit(
+      commitID: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    updateFeeAddress(
+      account: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
   };
 
-  createMarket(
-    marketCode: string,
-    oracle: string,
+  commit(
+    commitType: BytesLike,
+    maxImbalance: BigNumberish,
+    amount: BigNumberish,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  createPool(
-    marketCode: string,
-    poolCode: string,
-    updateInterval: BigNumberish,
-    frontRunningInterval: BigNumberish,
-    fee: BigNumberish,
-    leverageAmount: BigNumberish,
-    feeAddress: string,
-    quoteToken: string,
+  executeCommitment(
+    commitID: BigNumberish[],
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  oracleWrapper(overrides?: CallOverrides): Promise<string>;
-
-  pools(arg0: string, overrides?: CallOverrides): Promise<string>;
-
-  triggerPriceUpdate(
-    marketCode: string,
-    poolCodes: string[],
+  executePriceChange(
+    endPrice: BigNumberish,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  updateOracleWrapper(
-    oracle: string,
+  uncommit(
+    commitID: BigNumberish,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  updateFeeAddress(
+    account: string,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
   callStatic: {
-    createMarket(
-      marketCode: string,
-      oracle: string,
+    commit(
+      commitType: BytesLike,
+      maxImbalance: BigNumberish,
+      amount: BigNumberish,
       overrides?: CallOverrides
     ): Promise<void>;
 
-    createPool(
-      marketCode: string,
-      poolCode: string,
-      updateInterval: BigNumberish,
-      frontRunningInterval: BigNumberish,
-      fee: BigNumberish,
-      leverageAmount: BigNumberish,
-      feeAddress: string,
-      quoteToken: string,
+    executeCommitment(
+      commitID: BigNumberish[],
       overrides?: CallOverrides
     ): Promise<void>;
 
-    oracleWrapper(overrides?: CallOverrides): Promise<string>;
-
-    pools(arg0: string, overrides?: CallOverrides): Promise<string>;
-
-    triggerPriceUpdate(
-      marketCode: string,
-      poolCodes: string[],
+    executePriceChange(
+      endPrice: BigNumberish,
       overrides?: CallOverrides
     ): Promise<void>;
 
-    updateOracleWrapper(
-      oracle: string,
-      overrides?: CallOverrides
-    ): Promise<void>;
+    uncommit(commitID: BigNumberish, overrides?: CallOverrides): Promise<void>;
+
+    updateFeeAddress(account: string, overrides?: CallOverrides): Promise<void>;
   };
 
-  filters: {};
+  filters: {
+    TokensCreated(
+      longToken?: string | null,
+      shortToken?: string | null,
+      firstPrice?: null,
+      quoteToken?: null
+    ): TypedEventFilter<
+      [string, string, BigNumber, string],
+      {
+        longToken: string;
+        shortToken: string;
+        firstPrice: BigNumber;
+        quoteToken: string;
+      }
+    >;
+  };
 
   estimateGas: {
-    createMarket(
-      marketCode: string,
-      oracle: string,
+    commit(
+      commitType: BytesLike,
+      maxImbalance: BigNumberish,
+      amount: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    createPool(
-      marketCode: string,
-      poolCode: string,
-      updateInterval: BigNumberish,
-      frontRunningInterval: BigNumberish,
-      fee: BigNumberish,
-      leverageAmount: BigNumberish,
-      feeAddress: string,
-      quoteToken: string,
+    executeCommitment(
+      commitID: BigNumberish[],
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    oracleWrapper(overrides?: CallOverrides): Promise<BigNumber>;
-
-    pools(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
-
-    triggerPriceUpdate(
-      marketCode: string,
-      poolCodes: string[],
+    executePriceChange(
+      endPrice: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    updateOracleWrapper(
-      oracle: string,
+    uncommit(
+      commitID: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    updateFeeAddress(
+      account: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
   };
 
   populateTransaction: {
-    createMarket(
-      marketCode: string,
-      oracle: string,
+    commit(
+      commitType: BytesLike,
+      maxImbalance: BigNumberish,
+      amount: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    createPool(
-      marketCode: string,
-      poolCode: string,
-      updateInterval: BigNumberish,
-      frontRunningInterval: BigNumberish,
-      fee: BigNumberish,
-      leverageAmount: BigNumberish,
-      feeAddress: string,
-      quoteToken: string,
+    executeCommitment(
+      commitID: BigNumberish[],
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    oracleWrapper(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    pools(
-      arg0: string,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
-    triggerPriceUpdate(
-      marketCode: string,
-      poolCodes: string[],
+    executePriceChange(
+      endPrice: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    updateOracleWrapper(
-      oracle: string,
+    uncommit(
+      commitID: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    updateFeeAddress(
+      account: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
   };

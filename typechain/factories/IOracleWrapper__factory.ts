@@ -5,36 +5,22 @@
 import { Contract, Signer, utils } from "ethers";
 import { Provider } from "@ethersproject/providers";
 import type {
-  AbstractOracleWrapper,
-  AbstractOracleWrapperInterface,
-} from "../AbstractOracleWrapper";
+  IOracleWrapper,
+  IOracleWrapperInterface,
+} from "../IOracleWrapper";
 
 const _abi = [
   {
     inputs: [
       {
         internalType: "string",
-        name: "",
+        name: "marketCode",
         type: "string",
       },
-    ],
-    name: "assetOracles",
-    outputs: [
       {
         internalType: "address",
-        name: "",
+        name: "oracle",
         type: "address",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "string",
-        name: "MarketCode",
-        type: "string",
       },
     ],
     name: "getPrice",
@@ -62,19 +48,15 @@ const _abi = [
   },
 ];
 
-export class AbstractOracleWrapper__factory {
+export class IOracleWrapper__factory {
   static readonly abi = _abi;
-  static createInterface(): AbstractOracleWrapperInterface {
-    return new utils.Interface(_abi) as AbstractOracleWrapperInterface;
+  static createInterface(): IOracleWrapperInterface {
+    return new utils.Interface(_abi) as IOracleWrapperInterface;
   }
   static connect(
     address: string,
     signerOrProvider: Signer | Provider
-  ): AbstractOracleWrapper {
-    return new Contract(
-      address,
-      _abi,
-      signerOrProvider
-    ) as AbstractOracleWrapper;
+  ): IOracleWrapper {
+    return new Contract(address, _abi, signerOrProvider) as IOracleWrapper;
   }
 }

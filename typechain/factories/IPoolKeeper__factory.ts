@@ -4,10 +4,7 @@
 
 import { Contract, Signer, utils } from "ethers";
 import { Provider } from "@ethersproject/providers";
-import type {
-  AbstractPoolKeeper,
-  AbstractPoolKeeperInterface,
-} from "../AbstractPoolKeeper";
+import type { IPoolKeeper, IPoolKeeperInterface } from "../IPoolKeeper";
 
 const _abi = [
   {
@@ -77,38 +74,6 @@ const _abi = [
     type: "function",
   },
   {
-    inputs: [],
-    name: "oracleWrapper",
-    outputs: [
-      {
-        internalType: "address",
-        name: "",
-        type: "address",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "string",
-        name: "",
-        type: "string",
-      },
-    ],
-    name: "pools",
-    outputs: [
-      {
-        internalType: "address",
-        name: "",
-        type: "address",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
     inputs: [
       {
         internalType: "string",
@@ -141,15 +106,15 @@ const _abi = [
   },
 ];
 
-export class AbstractPoolKeeper__factory {
+export class IPoolKeeper__factory {
   static readonly abi = _abi;
-  static createInterface(): AbstractPoolKeeperInterface {
-    return new utils.Interface(_abi) as AbstractPoolKeeperInterface;
+  static createInterface(): IPoolKeeperInterface {
+    return new utils.Interface(_abi) as IPoolKeeperInterface;
   }
   static connect(
     address: string,
     signerOrProvider: Signer | Provider
-  ): AbstractPoolKeeper {
-    return new Contract(address, _abi, signerOrProvider) as AbstractPoolKeeper;
+  ): IPoolKeeper {
+    return new Contract(address, _abi, signerOrProvider) as IPoolKeeper;
   }
 }

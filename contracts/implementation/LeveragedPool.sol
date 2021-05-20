@@ -1,15 +1,37 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.7.6;
-pragma abicoder v2;
+pragma solidity ^0.8.0;
 
-import "../abstract/AbstractLeveragedPool.sol";
-import "@openzeppelin/contracts-upgradeable/access/AccessControl.sol";
+import "../interfaces/ILeveragedPool.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 import "./PoolToken.sol";
 
 /*
 @title The pool controller contract
 */
-contract LeveragedPool is AbstractLeveragedPool, AccessControl {
+contract LeveragedPool is ILeveragedPool, AccessControl {
+  // #### Globals
+  // TODO: Rearrange to tight pack these for gas savings
+  address[2] public tokens;
+  uint256 public shortBalance;
+  uint256 public longBalance;
+
+  uint256 public lastPrice;
+  uint256 public lastPriceTimestamp;
+
+  address public immutable quoteToken;
+  uint32 public updateInterval;
+  uint32 public frontRunningInterval;
+
+  uint16 public fee;
+  uint16 public immutable leverageAmount;
+  address public feeAddress;
+
+  uint256 private commitIDCounter;
+  mapping(uint256 => Commit) public commits;
+
+  uint256 public shadowLongBalance;
+  uint256 public shadowShortBalance;
+
   // #### Roles
   /**
   @notice The Updater role is for addresses that can update a pool's price
@@ -22,6 +44,7 @@ contract LeveragedPool is AbstractLeveragedPool, AccessControl {
   bytes32 public constant FEE_HOLDER = keccak256("FEE_HOLDER");
 
   // #### Functions
+
   constructor(
     string memory _poolCode,
     uint256 _firstPrice,
@@ -31,18 +54,24 @@ contract LeveragedPool is AbstractLeveragedPool, AccessControl {
     uint16 _leverageAmount,
     address _feeAddress,
     address _quoteToken
-  )
-    AbstractLeveragedPool(
-      _poolCode,
-      _firstPrice,
-      _updateInterval,
-      _frontRunningInterval,
-      _fee,
-      _leverageAmount,
-      _feeAddress,
-      _quoteToken
-    )
-  {}
+  ) {
+    quoteToken = _quoteToken;
+    lastPrice = _firstPrice;
+    updateInterval = _updateInterval;
+    frontRunningInterval = _frontRunningInterval;
+    fee = _fee;
+    leverageAmount = _leverageAmount;
+    feeAddress = _feeAddress;
+    // tokens[0] = new PoolToken(
+    //   abi.encodePacked(_poolCode, "-LONG"),
+    //   abi.encodePacked("L-", _poolCode)
+    // );
+    // tokens[1] = new PoolToken(
+    //   abi.encodePacked(_poolCode, "-SHORT"),
+    //   string(abi.encodePacked("S-", _poolCode))
+    // );
+    // emit TokensCreated(tokens[0], tokens[1], _firstPrice, _quoteToken);
+  }
 
   function commit(
     bytes2 commitType,

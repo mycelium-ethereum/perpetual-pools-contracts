@@ -11,7 +11,6 @@ import {
   PopulatedTransaction,
   BaseContract,
   ContractTransaction,
-  Overrides,
   CallOverrides,
 } from "ethers";
 import { BytesLike } from "@ethersproject/bytes";
@@ -19,34 +18,25 @@ import { Listener, Provider } from "@ethersproject/providers";
 import { FunctionFragment, EventFragment, Result } from "@ethersproject/abi";
 import { TypedEventFilter, TypedEvent, TypedListener } from "./commons";
 
-interface AbstractOracleWrapperInterface extends ethers.utils.Interface {
+interface ERC165Interface extends ethers.utils.Interface {
   functions: {
-    "assetOracles(string)": FunctionFragment;
-    "getPrice(string)": FunctionFragment;
-    "setOracle(string,address)": FunctionFragment;
+    "supportsInterface(bytes4)": FunctionFragment;
   };
 
   encodeFunctionData(
-    functionFragment: "assetOracles",
-    values: [string]
-  ): string;
-  encodeFunctionData(functionFragment: "getPrice", values: [string]): string;
-  encodeFunctionData(
-    functionFragment: "setOracle",
-    values: [string, string]
+    functionFragment: "supportsInterface",
+    values: [BytesLike]
   ): string;
 
   decodeFunctionResult(
-    functionFragment: "assetOracles",
+    functionFragment: "supportsInterface",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "getPrice", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "setOracle", data: BytesLike): Result;
 
   events: {};
 }
 
-export class AbstractOracleWrapper extends BaseContract {
+export class ERC165 extends BaseContract {
   connect(signerOrProvider: Signer | Provider | string): this;
   attach(addressOrName: string): this;
   deployed(): Promise<this>;
@@ -87,80 +77,40 @@ export class AbstractOracleWrapper extends BaseContract {
     toBlock?: string | number | undefined
   ): Promise<Array<TypedEvent<EventArgsArray & EventArgsObject>>>;
 
-  interface: AbstractOracleWrapperInterface;
+  interface: ERC165Interface;
 
   functions: {
-    assetOracles(arg0: string, overrides?: CallOverrides): Promise<[string]>;
-
-    getPrice(
-      MarketCode: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<ContractTransaction>;
-
-    setOracle(
-      marketCode: string,
-      oracle: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<ContractTransaction>;
+    supportsInterface(
+      interfaceId: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<[boolean]>;
   };
 
-  assetOracles(arg0: string, overrides?: CallOverrides): Promise<string>;
-
-  getPrice(
-    MarketCode: string,
-    overrides?: Overrides & { from?: string | Promise<string> }
-  ): Promise<ContractTransaction>;
-
-  setOracle(
-    marketCode: string,
-    oracle: string,
-    overrides?: Overrides & { from?: string | Promise<string> }
-  ): Promise<ContractTransaction>;
+  supportsInterface(
+    interfaceId: BytesLike,
+    overrides?: CallOverrides
+  ): Promise<boolean>;
 
   callStatic: {
-    assetOracles(arg0: string, overrides?: CallOverrides): Promise<string>;
-
-    getPrice(MarketCode: string, overrides?: CallOverrides): Promise<void>;
-
-    setOracle(
-      marketCode: string,
-      oracle: string,
+    supportsInterface(
+      interfaceId: BytesLike,
       overrides?: CallOverrides
-    ): Promise<void>;
+    ): Promise<boolean>;
   };
 
   filters: {};
 
   estimateGas: {
-    assetOracles(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
-
-    getPrice(
-      MarketCode: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<BigNumber>;
-
-    setOracle(
-      marketCode: string,
-      oracle: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
+    supportsInterface(
+      interfaceId: BytesLike,
+      overrides?: CallOverrides
     ): Promise<BigNumber>;
   };
 
   populateTransaction: {
-    assetOracles(
-      arg0: string,
+    supportsInterface(
+      interfaceId: BytesLike,
       overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
-    getPrice(
-      MarketCode: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<PopulatedTransaction>;
-
-    setOracle(
-      marketCode: string,
-      oracle: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
   };
 }

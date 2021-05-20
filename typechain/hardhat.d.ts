@@ -17,6 +17,10 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.AccessControl__factory>;
     getContractFactory(
+      name: "IAccessControl",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IAccessControl__factory>;
+    getContractFactory(
       name: "Ownable",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.Ownable__factory>;
@@ -25,21 +29,21 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.ERC20__factory>;
     getContractFactory(
+      name: "IERC20Metadata",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IERC20Metadata__factory>;
+    getContractFactory(
       name: "IERC20",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.IERC20__factory>;
     getContractFactory(
-      name: "AbstractLeveragedPool",
+      name: "ERC165",
       signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.AbstractLeveragedPool__factory>;
+    ): Promise<Contracts.ERC165__factory>;
     getContractFactory(
-      name: "AbstractOracleWrapper",
+      name: "IERC165",
       signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.AbstractOracleWrapper__factory>;
-    getContractFactory(
-      name: "AbstractPoolKeeper",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.AbstractPoolKeeper__factory>;
+    ): Promise<Contracts.IERC165__factory>;
     getContractFactory(
       name: "LeveragedPool",
       signerOrOptions?: ethers.Signer | FactoryOptions
@@ -56,6 +60,18 @@ declare module "hardhat/types/runtime" {
       name: "PoolToken",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.PoolToken__factory>;
+    getContractFactory(
+      name: "ILeveragedPool",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.ILeveragedPool__factory>;
+    getContractFactory(
+      name: "IOracleWrapper",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IOracleWrapper__factory>;
+    getContractFactory(
+      name: "IPoolKeeper",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IPoolKeeper__factory>;
 
     // default types
     getContractFactory(
