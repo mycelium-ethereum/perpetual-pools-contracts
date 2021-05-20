@@ -22,8 +22,6 @@ contract LeveragedPool is AccessControl {
 
   // #### Functions
 
-  constructor() {}
-
   // #### Modifiers
   /**
     @notice Requires caller to have been granted the UPDATER role. Use this for functions that should be restricted to the PoolKeeper
