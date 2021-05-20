@@ -47,6 +47,34 @@ abstract contract AbstractLeveragedPool {
   );
 
   // #### Functions
+  constructor(
+    string memory _poolCode,
+    uint256 _firstPrice,
+    uint32 _updateInterval,
+    uint32 _frontRunningInterval,
+    uint16 _fee,
+    uint16 _leverageAmount,
+    address _feeAddress,
+    address _quoteToken
+  ) {
+    quoteToken = _quoteToken;
+    lastPrice = _firstPrice;
+    updateInterval = _updateInterval;
+    frontRunningInterval = _frontRunningInterval;
+    fee = _fee;
+    leverageAmount = _leverageAmount;
+    feeAddress = _feeAddress;
+    // tokens[0] = new PoolToken(
+    //   abi.encodePacked(_poolCode, "-LONG"),
+    //   abi.encodePacked("L-", _poolCode)
+    // );
+    // tokens[1] = new PoolToken(
+    //   abi.encodePacked(_poolCode, "-SHORT"),
+    //   string(abi.encodePacked("S-", _poolCode))
+    // );
+    // emit TokensCreated(tokens[0], tokens[1], _firstPrice, _quoteToken);
+  }
+
   /**
     @notice Creates a commitment to mint or burn
     @param commitType Valid types are SB,SM, LB, LM. Each type contains position (Short, Long) and action (Mint, Burn).
