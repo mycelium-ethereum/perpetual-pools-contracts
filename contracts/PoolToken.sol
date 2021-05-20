@@ -10,6 +10,10 @@ contract PoolToken is ERC20, Ownable {
     constructor(string name, string symbol) ERC721(name, symbol) public {
     }
 
-    function mint(uint amount, address to) external onlyOwner {}
-    function burn(uint amount, address from) external onlyOwner {}
+    function mint(uint amount, address account) external onlyOwner {
+        _mint(amount, account);
+    }
+    function burn(uint amount, address account) external onlyOwner {
+        _burn(amount, account);
+    }
 }
