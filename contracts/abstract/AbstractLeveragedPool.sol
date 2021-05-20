@@ -29,7 +29,7 @@ abstract contract AbstractLeveragedPool {
   uint32 public frontRunningInterval;
 
   uint16 public fee;
-  uint16 public leverageAmount;
+  uint16 public immutable leverageAmount;
   address public feeAddress;
 
   uint256 private commitIDCounter;
