@@ -39,7 +39,7 @@ contract LeveragedPool is AbstractLeveragedPool, AccessControl {
     fee = _fee;
     leverageAmount = _leverageAmount;
     feeAddress = _feeAddress;
-  `}
+  }
 
   // #### Modifiers
   /**
