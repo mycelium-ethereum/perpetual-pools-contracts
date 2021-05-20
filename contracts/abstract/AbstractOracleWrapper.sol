@@ -12,12 +12,6 @@ abstract contract AbstractOracleWrapper {
    */
   mapping(string => address) public assetOracles;
 
-  // #### Roles
-  /**
-  @notice Use the Operator role to restrict access to the setOracle function
-   */
-  bytes32 public constant OPERATOR = keccak256("OPERATOR");
-
   // #### Functions
   /**
     @notice Sets the oracle for a given market

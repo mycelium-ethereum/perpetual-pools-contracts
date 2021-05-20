@@ -13,12 +13,6 @@ abstract contract AbstractPoolKeeper {
   mapping(string => address) public pools;
   address public oracleWrapper;
 
-  // #### Roles
-  /**
-  @notice Use the Operator role to restrict access to the updateOracleWrapper function
-   */
-  bytes32 public constant OPERATOR = keccak256("OPERATOR");
-
   // #### Functions
   /**
     @notice Checks for a price update for the pools specified. Several pools can be updated with a single call to the oracle. For instance, a market code of TSLA/USD+aDAI can be used to update TSLA/USD^2+aDAI, TSLA/USD^5+aDAI, and TSLA/USD^10+aDAI

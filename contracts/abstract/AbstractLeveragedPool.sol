@@ -38,16 +38,6 @@ abstract contract AbstractLeveragedPool {
   uint256 public shadowLongBalance;
   uint256 public shadowShortBalance;
 
-  // #### Roles
-  /**
-  @notice The Updater role is for addresses that can update a pool's price
-   */
-  bytes32 public constant UPDATER = keccak256("UPDATER");
-  /**
-  @notice The Fee holder role is for addresses that can change the address that fees go to.
-   */
-  bytes32 public constant FEE_HOLDER = keccak256("FEE_HOLDER");
-
   // #### Functions
   /**
     @notice Creates a commitment to mint or burn
