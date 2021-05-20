@@ -2,6 +2,8 @@
 pragma solidity ^0.7.6;
 pragma abicoder v2;
 
+import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
+
 /*
 @title The pool controller contract
 */
@@ -47,7 +49,7 @@ abstract contract AbstractLeveragedPool {
   );
 
   // #### Functions
-  constructor(
+  function initialise(
     string memory _poolCode,
     uint256 _firstPrice,
     uint32 _updateInterval,
@@ -56,7 +58,7 @@ abstract contract AbstractLeveragedPool {
     uint16 _leverageAmount,
     address _feeAddress,
     address _quoteToken
-  ) {
+  ) public initialiser {
     quoteToken = _quoteToken;
     lastPrice = _firstPrice;
     updateInterval = _updateInterval;
