@@ -13,10 +13,6 @@ contract LeveragedPool is AbstractLeveragedPool, AccessControl {
     quoteToken = _quoteToken;
   }
 
-  // #### Roles
-  bytes32 public constant UPDATER = keccak256("UPDATER");
-  bytes32 public constant FEE_HOLDER = keccak256("FEE_HOLDER");
-
   // #### Modifiers
   /**
     @notice Requires caller to have been granted the UPDATER role. Use this for functions that should be restricted to the PoolKeeper
