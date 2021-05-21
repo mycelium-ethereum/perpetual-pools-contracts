@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.7.6;
+pragma abicoder v2;
 
 import "../interfaces/IOracleWrapper.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@chainlink/contracts/src/v0.7/interfaces/AggregatorV2V3Interface.sol";
 
 /*
 @title The oracle management contract
@@ -18,22 +20,30 @@ contract OracleWrapper is IOracleWrapper, AccessControl {
   @notice Use the Operator role to restrict access to the setOracle function
    */
   bytes32 public constant OPERATOR = keccak256("OPERATOR");
+  bytes32 public constant ADMIN = keccak256("ADMIN");
 
   // #### Functions
   constructor() {
-    grantRole(OPERATOR, msg.sender);
+    _setupRole(ADMIN, msg.sender);
+    _setRoleAdmin(OPERATOR, ADMIN);
   }
 
   function setOracle(string memory marketCode, address oracle)
     external
     override
     onlyOperator
-  {}
+  {
+    assetOracles[marketCode] = oracle;
+  }
 
   function getPrice(string memory marketCode, address oracle)
     external
     override
-  {}
+    returns (int256 price, uint256 timestamp)
+  {
+    (, price, , timestamp, ) = AggregatorV2V3Interface(assetOracles[marketCode])
+      .latestRoundData();
+  }
 
   // #### Modifiers
   modifier onlyOperator {

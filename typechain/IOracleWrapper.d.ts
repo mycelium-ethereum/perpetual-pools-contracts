@@ -114,7 +114,9 @@ export class IOracleWrapper extends BaseContract {
       marketCode: string,
       oracle: string,
       overrides?: CallOverrides
-    ): Promise<void>;
+    ): Promise<
+      [BigNumber, BigNumber] & { price: BigNumber; timestamp: BigNumber }
+    >;
 
     setOracle(
       marketCode: string,

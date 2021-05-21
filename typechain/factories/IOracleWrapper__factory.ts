@@ -24,7 +24,18 @@ const _abi = [
       },
     ],
     name: "getPrice",
-    outputs: [],
+    outputs: [
+      {
+        internalType: "int256",
+        name: "price",
+        type: "int256",
+      },
+      {
+        internalType: "uint256",
+        name: "timestamp",
+        type: "uint256",
+      },
+    ],
     stateMutability: "nonpayable",
     type: "function",
   },

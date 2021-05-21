@@ -11,23 +11,28 @@ import "@openzeppelin/hardhat-upgrades";
 // TODO: reenable solidity-coverage when it works
 // import "solidity-coverage";
 
-const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY || "";
-const GOERLI_PRIVATE_KEY =
-  process.env.GOERLI_PRIVATE_KEY! ||
+const ALCHEMY_API_TESTNET_URL = process.env.ALCHEMY_API_TESTNET_URL || "";
+const ALCHEMY_API_MAINNET_URL = process.env.ALCHEMY_API_MAINNET_URL || "";
+const TESTNET_PRIVATE_KEY =
+  process.env.TESTNET_PRIVATE_KEY! ||
   "0xc87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3"; // well known private key
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY;
 
 const config: HardhatUserConfig = {
   defaultNetwork: "hardhat",
   solidity: {
-    compilers: [{ version: "0.8.0", settings: {} }],
+    compilers: [{ version: "0.7.6", settings: {} }],
   },
   networks: {
-    hardhat: {},
+    hardhat: {
+      forking: {
+        url: ALCHEMY_API_MAINNET_URL,
+      },
+    },
     localhost: {},
     goerli: {
-      url: `https://eth-goerli.alchemyapi.io/v2/${ALCHEMY_API_KEY}`,
-      accounts: [GOERLI_PRIVATE_KEY],
+      url: ALCHEMY_API_TESTNET_URL,
+      accounts: [TESTNET_PRIVATE_KEY],
     },
     coverage: {
       url: "http://127.0.0.1:8555", // Coverage launches its own ganache-cli client
