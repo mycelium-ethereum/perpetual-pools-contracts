@@ -21,4 +21,9 @@ interface IOracleWrapper {
     @return The latest price
      */
   function getPrice(string memory marketCode) external view returns (int256);
+
+  function assetOracles(string memory marketCode)
+    external
+    view
+    returns (address);
 }

@@ -3,6 +3,7 @@ pragma solidity ^0.7.6;
 pragma abicoder v2;
 
 import "../interfaces/IPoolKeeper.sol";
+import "../interfaces/IOracleWrapper.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 
 /*
@@ -24,7 +25,8 @@ contract PoolKeeper is IPoolKeeper, AccessControl {
   bytes32 public constant ADMIN = keccak256("ADMIN");
 
   // #### Functions
-  constructor() {
+  constructor(address _oracleWrapper) {
+    oracleWrapper = _oracleWrapper;
     _setRoleAdmin(ADMIN, OPERATOR);
     _setupRole(ADMIN, msg.sender);
     _setupRole(OPERATOR, msg.sender);
@@ -40,7 +42,14 @@ contract PoolKeeper is IPoolKeeper, AccessControl {
   function createMarket(string memory marketCode, address oracle)
     external
     override
-  {}
+  {
+    IOracleWrapper wrapper = IOracleWrapper(oracleWrapper);
+    require(
+      wrapper.assetOracles(marketCode) == address(0),
+      "Unable to update a market's oracle"
+    );
+    wrapper.setOracle(marketCode, oracle);
+  }
 
   function createPool(
     string memory marketCode,

@@ -39,7 +39,7 @@ describe("PoolKeeper - createMarket", () => {
       "PoolKeeper",
       signers[0]
     )) as PoolKeeper__factory;
-    poolKeeper = await poolKeeperFactory.deploy();
+    poolKeeper = await poolKeeperFactory.deploy(oracleWrapper.address);
     await poolKeeper.deployed();
 
     await oracleWrapper.grantRole(
@@ -82,9 +82,9 @@ describe("PoolKeeper - createMarket", () => {
     );
     await poolKeeper.createMarket(MARKET, ORACLE);
     expect(await oracleWrapper.assetOracles(MARKET)).to.eq(ORACLE);
-    await expect(
-      await poolKeeper.createMarket(MARKET, ORACLE_2)
-    ).to.be.rejectedWith(Error);
+    await expect(poolKeeper.createMarket(MARKET, ORACLE_2)).to.be.rejectedWith(
+      Error
+    );
   });
   it("should allow multiple markets to exist", async () => {
     expect(await oracleWrapper.assetOracles(MARKET)).to.eq(

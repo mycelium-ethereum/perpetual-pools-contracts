@@ -26,7 +26,7 @@ interface IPoolKeeper {
 
   /**
     @notice Creates a new market and sets the oracle to use for it.
-    @dev This cannot be used to update a market's oracle, and will revert if attempted
+    @dev This cannot be used to update a market's oracle, and will revert if attempted.
     @param marketCode The market code to identify this market
  */
   function createMarket(string memory marketCode, address oracle) external;
