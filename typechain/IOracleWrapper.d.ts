@@ -21,14 +21,11 @@ import { TypedEventFilter, TypedEvent, TypedListener } from "./commons";
 
 interface IOracleWrapperInterface extends ethers.utils.Interface {
   functions: {
-    "getPrice(string,address)": FunctionFragment;
+    "getPrice(string)": FunctionFragment;
     "setOracle(string,address)": FunctionFragment;
   };
 
-  encodeFunctionData(
-    functionFragment: "getPrice",
-    values: [string, string]
-  ): string;
+  encodeFunctionData(functionFragment: "getPrice", values: [string]): string;
   encodeFunctionData(
     functionFragment: "setOracle",
     values: [string, string]
@@ -86,9 +83,8 @@ export class IOracleWrapper extends BaseContract {
   functions: {
     getPrice(
       marketCode: string,
-      oracle: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<ContractTransaction>;
+      overrides?: CallOverrides
+    ): Promise<[BigNumber]>;
 
     setOracle(
       marketCode: string,
@@ -97,11 +93,7 @@ export class IOracleWrapper extends BaseContract {
     ): Promise<ContractTransaction>;
   };
 
-  getPrice(
-    marketCode: string,
-    oracle: string,
-    overrides?: Overrides & { from?: string | Promise<string> }
-  ): Promise<ContractTransaction>;
+  getPrice(marketCode: string, overrides?: CallOverrides): Promise<BigNumber>;
 
   setOracle(
     marketCode: string,
@@ -110,13 +102,7 @@ export class IOracleWrapper extends BaseContract {
   ): Promise<ContractTransaction>;
 
   callStatic: {
-    getPrice(
-      marketCode: string,
-      oracle: string,
-      overrides?: CallOverrides
-    ): Promise<
-      [BigNumber, BigNumber] & { price: BigNumber; timestamp: BigNumber }
-    >;
+    getPrice(marketCode: string, overrides?: CallOverrides): Promise<BigNumber>;
 
     setOracle(
       marketCode: string,
@@ -128,11 +114,7 @@ export class IOracleWrapper extends BaseContract {
   filters: {};
 
   estimateGas: {
-    getPrice(
-      marketCode: string,
-      oracle: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<BigNumber>;
+    getPrice(marketCode: string, overrides?: CallOverrides): Promise<BigNumber>;
 
     setOracle(
       marketCode: string,
@@ -144,8 +126,7 @@ export class IOracleWrapper extends BaseContract {
   populateTransaction: {
     getPrice(
       marketCode: string,
-      oracle: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
     setOracle(

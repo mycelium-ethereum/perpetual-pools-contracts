@@ -17,26 +17,16 @@ const _abi = [
         name: "marketCode",
         type: "string",
       },
-      {
-        internalType: "address",
-        name: "oracle",
-        type: "address",
-      },
     ],
     name: "getPrice",
     outputs: [
       {
         internalType: "int256",
-        name: "price",
+        name: "",
         type: "int256",
       },
-      {
-        internalType: "uint256",
-        name: "timestamp",
-        type: "uint256",
-      },
     ],
-    stateMutability: "nonpayable",
+    stateMutability: "view",
     type: "function",
   },
   {

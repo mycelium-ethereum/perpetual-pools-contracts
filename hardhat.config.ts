@@ -27,9 +27,10 @@ const config: HardhatUserConfig = {
     hardhat: {
       forking: {
         url: ALCHEMY_API_MAINNET_URL,
+        blockNumber: 12474747,
       },
     },
-    localhost: {},
+
     goerli: {
       url: ALCHEMY_API_TESTNET_URL,
       accounts: [TESTNET_PRIVATE_KEY],

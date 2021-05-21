@@ -25,7 +25,7 @@ interface OracleWrapperInterface extends ethers.utils.Interface {
     "DEFAULT_ADMIN_ROLE()": FunctionFragment;
     "OPERATOR()": FunctionFragment;
     "assetOracles(string)": FunctionFragment;
-    "getPrice(string,address)": FunctionFragment;
+    "getPrice(string)": FunctionFragment;
     "getRoleAdmin(bytes32)": FunctionFragment;
     "getRoleMember(bytes32,uint256)": FunctionFragment;
     "getRoleMemberCount(bytes32)": FunctionFragment;
@@ -46,10 +46,7 @@ interface OracleWrapperInterface extends ethers.utils.Interface {
     functionFragment: "assetOracles",
     values: [string]
   ): string;
-  encodeFunctionData(
-    functionFragment: "getPrice",
-    values: [string, string]
-  ): string;
+  encodeFunctionData(functionFragment: "getPrice", values: [string]): string;
   encodeFunctionData(
     functionFragment: "getRoleAdmin",
     values: [BytesLike]
@@ -180,9 +177,8 @@ export class OracleWrapper extends BaseContract {
 
     getPrice(
       marketCode: string,
-      oracle: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<ContractTransaction>;
+      overrides?: CallOverrides
+    ): Promise<[BigNumber]>;
 
     getRoleAdmin(role: BytesLike, overrides?: CallOverrides): Promise<[string]>;
 
@@ -236,11 +232,7 @@ export class OracleWrapper extends BaseContract {
 
   assetOracles(arg0: string, overrides?: CallOverrides): Promise<string>;
 
-  getPrice(
-    marketCode: string,
-    oracle: string,
-    overrides?: Overrides & { from?: string | Promise<string> }
-  ): Promise<ContractTransaction>;
+  getPrice(marketCode: string, overrides?: CallOverrides): Promise<BigNumber>;
 
   getRoleAdmin(role: BytesLike, overrides?: CallOverrides): Promise<string>;
 
@@ -294,13 +286,7 @@ export class OracleWrapper extends BaseContract {
 
     assetOracles(arg0: string, overrides?: CallOverrides): Promise<string>;
 
-    getPrice(
-      marketCode: string,
-      oracle: string,
-      overrides?: CallOverrides
-    ): Promise<
-      [BigNumber, BigNumber] & { price: BigNumber; timestamp: BigNumber }
-    >;
+    getPrice(marketCode: string, overrides?: CallOverrides): Promise<BigNumber>;
 
     getRoleAdmin(role: BytesLike, overrides?: CallOverrides): Promise<string>;
 
@@ -384,11 +370,7 @@ export class OracleWrapper extends BaseContract {
 
     assetOracles(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
 
-    getPrice(
-      marketCode: string,
-      oracle: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<BigNumber>;
+    getPrice(marketCode: string, overrides?: CallOverrides): Promise<BigNumber>;
 
     getRoleAdmin(
       role: BytesLike,
@@ -453,8 +435,7 @@ export class OracleWrapper extends BaseContract {
 
     getPrice(
       marketCode: string,
-      oracle: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
     getRoleAdmin(
