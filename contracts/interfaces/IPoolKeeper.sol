@@ -33,7 +33,7 @@ interface IPoolKeeper {
 
   /**
     @notice Creates a new pool in a given market
-    @dev Should throw an error if the market code is invalid/doesn't exist. 
+    @dev Should throw an error if the market code is invalid/doesn't exist or if the pool code is already in use.
     @param marketCode The market to create the pool in. The current price will be read and used to set the pool's lastPrice field.
     @param poolCode The pool's identifier
     @param updateInterval The minimum amount of time that must elapse before a price update can occur. If the interval is 5 minutes, then the price cannot be updated until 5 minutes after the last update has elapsed.
