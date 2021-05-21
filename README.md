@@ -1,14 +1,14 @@
-# Typescript Solidity Dev Starter Kit
+# Tracer Pool Swaps
 
-_Updated to use Hardhat!_
+Project base generated with the Typescript Solidity Dev Starter Kit. See [Blog Post](https://medium.com/@rahulsethuram/the-new-solidity-dev-stack-buidler-ethers-waffle-typescript-tutorial-f07917de48ae) for more details
 
-This is a starter kit for developing, testing, and deploying smart contracts with a full Typescript environment. This stack uses [Hardhat](https://hardhat.org) as the platform layer to orchestrate all the tasks. [Ethers](https://docs.ethers.io/v5/) is used for all Ethereum interactions and testing.
-
-[Blog Post](https://medium.com/@rahulsethuram/the-new-solidity-dev-stack-buidler-ethers-waffle-typescript-tutorial-f07917de48ae)
+## Environment variables
+The environment variables used in this project are documented in the `example.env` file at the root of the project. To configure, create a copy of `example.env`, rename to `.env`, and replace the placeholders with the correct values. 
 
 ## Using this Project
 
-Clone this repository, then install the dependencies with `npm install`. Build everything with `npm run build`. https://hardhat.org has excellent docs, and can be used as reference for extending this project.
+Install the dependencies with `npm install`. 
+Build everything with `npm run build`. 
 
 ## Available Functionality
 
@@ -20,11 +20,10 @@ Clone this repository, then install the dependencies with `npm install`. Build e
 
 In one terminal run `npx hardhat node`
 
-Then in another run `npm run test`
+Then in another run `npm run test`. 
 
 Notes:
-
-- As is, the tests fail on purpose. This is to show the Solidity stack traces that Buidler enables!
+- You will need a valid api key for Alchemy api for the tests to succeed. This is due to the integration with chainlink - the test environment forks mainnet at block `12474747`.
 - The gas usage table may be incomplete (the gas report currently needs to run with the `--network localhost` flag; see below).
 
 ### Run Contract Tests and Generate Gas Usage Report
