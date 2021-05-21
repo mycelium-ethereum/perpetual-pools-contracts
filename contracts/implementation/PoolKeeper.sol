@@ -37,7 +37,7 @@ contract PoolKeeper is IPoolKeeper, AccessControl {
     string[] memory poolCodes
   ) external override {}
 
-  function updateOracleWrapper(address oracle) external override {}
+  function updateOracleWrapper(address oracle) external override onlyAdmin {}
 
   function createMarket(string memory marketCode, address oracle)
     external
@@ -61,4 +61,10 @@ contract PoolKeeper is IPoolKeeper, AccessControl {
     address feeAddress,
     address quoteToken
   ) external override {}
+
+  // #### Modifiers
+  modifier onlyAdmin {
+    require(hasRole(ADMIN, msg.sender));
+    _;
+  }
 }
