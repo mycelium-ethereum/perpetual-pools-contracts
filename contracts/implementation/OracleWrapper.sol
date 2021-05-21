@@ -6,9 +6,6 @@ import "../interfaces/IOracleWrapper.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@chainlink/contracts/src/v0.7/interfaces/AggregatorV3Interface.sol";
 
-// TODO: ### REMOVE FOR PRODUCTION
-import "hardhat/console.sol";
-
 /*
 @title The oracle management contract
 */
