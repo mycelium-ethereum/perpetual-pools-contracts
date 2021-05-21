@@ -13,8 +13,10 @@ contract OracleWrapper is IOracleWrapper, AccessControl {
   // #### Globals
   /**
   @notice Format: Market code => oracle address. Market code looks like TSLA/USD+aDAI
+  @dev override in place for the getter function definition from the interface
    */
   mapping(string => address) public override assetOracles;
+
   // #### Roles
   /**
   @notice Use the Operator role to restrict access to the setOracle function
