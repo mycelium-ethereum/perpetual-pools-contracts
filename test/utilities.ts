@@ -4,5 +4,7 @@ import { ethers } from "hardhat";
  * @returns A valid ethereum address, generated randomly
  */
 export const generateRandomAddress = () => {
-  return ethers.utils.hexlify(ethers.utils.randomBytes(20));
+  return ethers.utils.getAddress(
+    ethers.utils.hexlify(ethers.utils.randomBytes(20))
+  );
 };
