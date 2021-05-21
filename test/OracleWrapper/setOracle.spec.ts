@@ -6,7 +6,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import {
   MARKET,
   ORACLE,
-  ORACLE_OPERATOR_ROLE,
+  OPERATOR_ROLE,
   MARKET_2,
   ORACLE_2,
 } from "../constants";
@@ -37,14 +37,14 @@ describe("OracleWrapper - setOracle", () => {
   });
   it("should allow an authorized operator to set an oracle", async () => {
     await oracleWrapper.grantRole(
-      ethers.utils.keccak256(ethers.utils.toUtf8Bytes(ORACLE_OPERATOR_ROLE)),
+      ethers.utils.keccak256(ethers.utils.toUtf8Bytes(OPERATOR_ROLE)),
       signers[1].address
     );
     await oracleWrapper.connect(signers[1]).setOracle(MARKET, ORACLE);
 
     expect(
       await oracleWrapper.hasRole(
-        ethers.utils.keccak256(ethers.utils.toUtf8Bytes(ORACLE_OPERATOR_ROLE)),
+        ethers.utils.keccak256(ethers.utils.toUtf8Bytes(OPERATOR_ROLE)),
         signers[1].address
       )
     ).to.eq(true);
@@ -57,11 +57,11 @@ describe("OracleWrapper - setOracle", () => {
   });
   it("should allow multiple operators to set oracles", async () => {
     await oracleWrapper.grantRole(
-      ethers.utils.keccak256(ethers.utils.toUtf8Bytes(ORACLE_OPERATOR_ROLE)),
+      ethers.utils.keccak256(ethers.utils.toUtf8Bytes(OPERATOR_ROLE)),
       signers[1].address
     );
     await oracleWrapper.grantRole(
-      ethers.utils.keccak256(ethers.utils.toUtf8Bytes(ORACLE_OPERATOR_ROLE)),
+      ethers.utils.keccak256(ethers.utils.toUtf8Bytes(OPERATOR_ROLE)),
       signers[2].address
     );
     await oracleWrapper.connect(signers[1]).setOracle(MARKET, ORACLE);

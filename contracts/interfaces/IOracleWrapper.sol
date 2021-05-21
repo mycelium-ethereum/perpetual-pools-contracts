@@ -19,7 +19,5 @@ interface IOracleWrapper {
     @notice Returns the current price for the asset in question
     @param marketCode The market code for the asset to quote for.
      */
-  function getPrice(string memory marketCode, address oracle)
-    external
-    returns (int256 price, uint256 timestamp);
+  function getPrice(string memory marketCode) external returns (int256 price);
 }

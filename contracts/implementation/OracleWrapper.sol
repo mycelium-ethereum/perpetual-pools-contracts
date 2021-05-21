@@ -36,12 +36,12 @@ contract OracleWrapper is IOracleWrapper, AccessControl {
     assetOracles[marketCode] = oracle;
   }
 
-  function getPrice(string memory marketCode, address oracle)
+  function getPrice(string memory marketCode)
     external
     override
-    returns (int256 price, uint256 timestamp)
+    returns (int256 price)
   {
-    (, price, , timestamp, ) = AggregatorV2V3Interface(assetOracles[marketCode])
+    (, price, , , ) = AggregatorV2V3Interface(assetOracles[marketCode])
       .latestRoundData();
   }
 
