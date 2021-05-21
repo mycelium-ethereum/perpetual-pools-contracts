@@ -4,7 +4,7 @@ pragma abicoder v2;
 
 import "../interfaces/IOracleWrapper.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@chainlink/contracts/src/v0.7/interfaces/AggregatorV3Interface.sol";
+import "@chainlink/contracts/src/v0.7/interfaces/AggregatorV2V3Interface.sol";
 
 /*
 @title The oracle management contract
@@ -43,7 +43,7 @@ contract OracleWrapper is IOracleWrapper, AccessControl {
     returns (int256)
   {
     (, int256 price, , uint256 timeStamp, ) =
-      AggregatorV3Interface(assetOracles[marketCode]).latestRoundData();
+      AggregatorV2V3Interface(assetOracles[marketCode]).latestRoundData();
     require(timeStamp > 0, "Round not complete");
     return price;
   }

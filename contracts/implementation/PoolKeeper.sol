@@ -3,11 +3,12 @@ pragma solidity ^0.7.6;
 pragma abicoder v2;
 
 import "../interfaces/IPoolKeeper.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 
 /*
 @title The manager contract for multiple markets and the pools in them
 */
-contract PoolKeeper is IPoolKeeper {
+contract PoolKeeper is IPoolKeeper, AccessControl {
   // #### Globals
   /**
     @notice Format: Pool code => pool address, where pool code looks like TSLA/USD^5+aDAI
@@ -20,8 +21,15 @@ contract PoolKeeper is IPoolKeeper {
   @notice Use the Operator role to restrict access to the updateOracleWrapper function
    */
   bytes32 public constant OPERATOR = keccak256("OPERATOR");
+  bytes32 public constant ADMIN = keccak256("ADMIN");
 
   // #### Functions
+  constructor() {
+    _setRoleAdmin(ADMIN, OPERATOR);
+    _setupRole(ADMIN, msg.sender);
+    _setupRole(OPERATOR, msg.sender);
+  }
+
   function triggerPriceUpdate(
     string memory marketCode,
     string[] memory poolCodes

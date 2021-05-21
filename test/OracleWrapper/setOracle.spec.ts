@@ -9,6 +9,7 @@ import {
   OPERATOR_ROLE,
   MARKET_2,
   ORACLE_2,
+  ADMIN_ROLE,
 } from "../constants";
 
 chai.use(chaiAsPromised);
@@ -30,7 +31,7 @@ describe("OracleWrapper - setOracle", () => {
     // Sanity check the deployment
     expect(
       await oracleWrapper.hasRole(
-        ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN")),
+        ethers.utils.keccak256(ethers.utils.toUtf8Bytes(ADMIN_ROLE)),
         signers[0].address
       )
     ).to.eq(true);
