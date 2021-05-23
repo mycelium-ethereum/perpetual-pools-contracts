@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.7.6;
+pragma abicoder v2;
 
 import "../interfaces/ILeveragedPool.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
@@ -15,7 +16,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl {
   uint256 public shortBalance;
   uint256 public longBalance;
 
-  uint256 public lastPrice;
+  int256 public lastPrice;
   uint256 public lastPriceTimestamp;
 
   address public immutable quoteToken;
@@ -47,7 +48,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl {
 
   constructor(
     string memory _poolCode,
-    uint256 _firstPrice,
+    int256 _firstPrice,
     uint32 _updateInterval,
     uint32 _frontRunningInterval,
     uint16 _fee,

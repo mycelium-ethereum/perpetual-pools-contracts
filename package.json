@@ -28,6 +28,7 @@
     "@typechain/ethers-v5": "^7.0.0",
     "@typechain/hardhat": "^2.0.0",
     "@types/chai": "^4.2.18",
+    "@types/chai-as-promised": "^7.1.4",
     "@types/mocha": "^8.2.2",
     "@types/node": "^15.0.3",
     "chai": "^4.3.4",
@@ -45,6 +46,6 @@
   },
   "dependencies": {
     "@chainlink/contracts": "^0.1.7",
-    "@openzeppelin/contracts": "^4.1.0"
+    "@openzeppelin/contracts": "^3.4.1-solc-0.7-2"
   }
 }

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.7.6;
+pragma abicoder v2;
 
 /**
 @title The oracle management contract interface
@@ -17,6 +18,7 @@ interface IOracleWrapper {
   /**
     @notice Returns the current price for the asset in question
     @param marketCode The market code for the asset to quote for.
+    @return The latest price
      */
-  function getPrice(string memory marketCode, address oracle) external;
+  function getPrice(string memory marketCode) external view returns (int256);
 }
