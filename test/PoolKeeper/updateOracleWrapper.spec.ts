@@ -16,10 +16,10 @@ import { generateRandomAddress } from "../utilities";
 chai.use(chaiAsPromised);
 const { expect } = chai;
 
-describe("PoolKeeper - createMarket", () => {
+describe("PoolKeeper - updateOracleWrapper", () => {
   let poolKeeper: PoolKeeper;
-
   let signers: SignerWithAddress[];
+  const oracleWrapper = generateRandomAddress();
   beforeEach(async () => {
     // Deploy the contracts
     signers = await ethers.getSigners();
@@ -28,7 +28,7 @@ describe("PoolKeeper - createMarket", () => {
       "PoolKeeper",
       signers[0]
     )) as PoolKeeper__factory;
-    poolKeeper = await poolKeeperFactory.deploy(ethers.constants.AddressZero);
+    poolKeeper = await poolKeeperFactory.deploy(oracleWrapper);
     await poolKeeper.deployed();
 
     // Sanity check the deployment
@@ -47,17 +47,13 @@ describe("PoolKeeper - createMarket", () => {
   });
 
   it("should allow an authorized user to update the oracle wrapper", async () => {
-    expect(await poolKeeper.oracleWrapper()).to.eq(
-      ethers.constants.AddressZero
-    );
+    expect(await poolKeeper.oracleWrapper()).to.eq(oracleWrapper);
     const address = generateRandomAddress();
     await poolKeeper.updateOracleWrapper(address);
     expect(await poolKeeper.oracleWrapper()).to.eq(address);
   });
   it("should prevent an unauthorized user from updating the oracle wrapper", async () => {
-    expect(await poolKeeper.oracleWrapper()).to.eq(
-      ethers.constants.AddressZero
-    );
+    expect(await poolKeeper.oracleWrapper()).to.eq(oracleWrapper);
     const address = generateRandomAddress();
     await expect(
       poolKeeper.connect(signers[1]).updateOracleWrapper(address)
