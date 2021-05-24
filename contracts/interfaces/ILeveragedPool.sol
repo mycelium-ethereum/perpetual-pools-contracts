@@ -6,13 +6,19 @@ pragma abicoder v2;
 @title The pool controller contract interface
 */
 interface ILeveragedPool {
-  // #### Struct definitions
+  // #### Struct & Enum definitions
+  enum CommitType {
+    ShortMint;
+    ShortBurn;
+    LongMint;
+    LongBurn;  
+    }
   struct Commit {
     uint256 created;
     uint256 amount;
     uint256 maxImbalance;
     address owner;
-    bytes2 commitType; // Valid values are: SB, SM, LB, LM. Contains position (Short, Long) and action (Mint, Burn)
+    CommitType commitType; // Valid values are: SB, SM, LB, LM. Contains position (Short, Long) and action (Mint, Burn)
   }
 
   // #### Events
