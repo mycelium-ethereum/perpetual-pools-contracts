@@ -71,4 +71,16 @@ describe("OracleWrapper - setOracle", () => {
     expect(await oracleWrapper.assetOracles(MARKET)).to.eq(ORACLE);
     expect(await oracleWrapper.assetOracles(MARKET_2)).to.eq(ORACLE_2);
   });
+  it("should prevent setting an oracle to the null address", async () => {
+    await oracleWrapper.grantRole(
+      ethers.utils.keccak256(ethers.utils.toUtf8Bytes(OPERATOR_ROLE)),
+      signers[1].address
+    );
+
+    await expect(
+      oracleWrapper
+        .connect(signers[1])
+        .setOracle(MARKET, ethers.constants.AddressZero)
+    ).to.be.rejectedWith(Error);
+  });
 });

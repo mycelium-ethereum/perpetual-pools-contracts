@@ -60,11 +60,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     uint16 _leverageAmount,
     address _feeAddress,
     address _quoteToken
-<<<<<<< HEAD:contracts/implementation/LeveragedPool.sol
   ) public initializer {
-=======
-  ) {
->>>>>>> 0e62f7b72fa62024bb10000897989aedb4e951cd:contracts/implementation/LeveragedPoolBase.sol
     // Setup roles
     _setupRole(UPDATER, msg.sender);
     _setupRole(ADMIN, msg.sender);
