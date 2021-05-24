@@ -97,6 +97,12 @@ describe("PoolKeeper - createMarket", () => {
     expect(await oracleWrapper.assetOracles(MARKET_2)).to.eq(ORACLE_2);
   });
   it("should emit an event containing the details of the new market", async () => {
-    throw new Error();
+    const receipt = await (
+      await poolKeeper.createMarket(MARKET, ORACLE)
+    ).wait();
+    const event = receipt?.events?.find((el) => el.event === "CreateMarket");
+    expect(!!event).to.eq(true);
+    expect(event?.args?.marketCode).to.eq(MARKET);
+    expect(event?.args?.oracle).to.eq(ORACLE);
   });
 });

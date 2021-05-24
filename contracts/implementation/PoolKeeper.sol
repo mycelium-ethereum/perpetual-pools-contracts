@@ -73,6 +73,7 @@ contract PoolKeeper is IPoolKeeper, AccessControl {
       "Pre-existing market code"
     );
     wrapper.setOracle(marketCode, oracle);
+    emit CreateMarket(marketCode, oracle);
   }
 
   function createPool(

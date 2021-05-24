@@ -8,6 +8,7 @@ pragma abicoder v2;
 interface IPoolKeeper {
   // #### Events
   event CreatePool(address indexed poolAddress, int256 indexed firstPrice);
+  event CreateMarket(string marketCode, address oracle);
 
   // #### Functions
   /**
