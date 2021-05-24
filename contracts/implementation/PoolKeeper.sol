@@ -87,7 +87,7 @@ contract PoolKeeper is IPoolKeeper, AccessControl {
     IOracleWrapper oracle = IOracleWrapper(oracleWrapper);
     require(
       oracle.assetOracles(_marketCode) != address(0),
-      "Market must exist"
+      "Market must exist first"
     );
 
     LeveragedPool pool =
