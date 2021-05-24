@@ -17,7 +17,7 @@ contract PoolKeeper is IPoolKeeper, AccessControl {
   /**
     @notice Format: Pool code => pool address, where pool code looks like TSLA/USD^5+aDAI
    */
-  mapping(bytes32 => LeveragedPool) public pools;
+  mapping(string => LeveragedPool) public pools;
 
   address public oracleWrapper;
   LeveragedPool immutable poolBase;
@@ -45,7 +45,7 @@ contract PoolKeeper is IPoolKeeper, AccessControl {
 
   function triggerPriceUpdate(
     string memory marketCode,
-    bytes32[] memory poolCodes
+    string[] memory poolCodes
   ) external override {}
 
   function updateOracleWrapper(address oracle) external override onlyAdmin {
@@ -56,8 +56,6 @@ contract PoolKeeper is IPoolKeeper, AccessControl {
     external
     override
   {
-    require(oracle != address(0), "Oracle cannot be 0 address");
-
     IOracleWrapper wrapper = IOracleWrapper(oracleWrapper);
     require(
       wrapper.assetOracles(marketCode) == address(0),
@@ -68,7 +66,7 @@ contract PoolKeeper is IPoolKeeper, AccessControl {
 
   function createPool(
     string memory _marketCode,
-    bytes32 _poolCode,
+    string memory _poolCode,
     uint32 _updateInterval,
     uint32 _frontRunningInterval,
     uint16 _fee,
@@ -76,9 +74,9 @@ contract PoolKeeper is IPoolKeeper, AccessControl {
     address _feeAddress,
     address _quoteToken
   ) external override {
-    require(pools[_poolCode] == address(0), "Pre-existing pool code");
-    require(feeAddress != address(0), "Fee address cannot be 0 address");
-    require(quoteToken != address(0), "Quote token cannot be 0 address");
+    require(address(pools[_poolCode]) == address(0), "Pre-existing pool code");
+    require(_feeAddress != address(0), "Fee address cannot be 0 address");
+    require(_quoteToken != address(0), "Quote token cannot be 0 address");
     require(
       _updateInterval > _frontRunningInterval,
       "Update interval < FR interval"
@@ -89,10 +87,15 @@ contract PoolKeeper is IPoolKeeper, AccessControl {
       "Market must exist"
     );
 
-    int256 firstPrice = oracle.getPrice(marketCode);
+    int256 firstPrice = oracle.getPrice(_marketCode);
 
     LeveragedPool pool =
-      Clones.cloneDeterministic(address(poolBase), _poolCode);
+      LeveragedPool(
+        Clones.cloneDeterministic(
+          address(poolBase),
+          keccak256(abi.encode(_poolCode))
+        )
+      );
 
     pool.initialize(
       _poolCode,

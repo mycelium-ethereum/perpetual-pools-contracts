@@ -8,7 +8,13 @@ import {
   OracleWrapper,
 } from "../../typechain";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { MARKET, ORACLE, OPERATOR_ROLE, ADMIN_ROLE } from "../constants";
+import {
+  MARKET,
+  ORACLE,
+  OPERATOR_ROLE,
+  ADMIN_ROLE,
+  POOL_CODE,
+} from "../constants";
 import { generateRandomAddress } from "../utilities";
 
 chai.use(chaiAsPromised);
@@ -41,6 +47,9 @@ describe("PoolKeeper - createPool", () => {
       poolKeeper.address
     );
 
+    // Create a market for the tests
+    await poolKeeper.createMarket("TEST/MARKET", ORACLE);
+
     // Sanity check the deployment
     expect(
       await poolKeeper.hasRole(
@@ -63,7 +72,7 @@ describe("PoolKeeper - createPool", () => {
   });
 
   it("should create a new pool in the given market", async () => {
-    await poolKeeper.createPool(
+    const txResponse = await poolKeeper.createPool(
       "TEST/MARKET",
       "TEST/MARKET+POOL",
       5,
@@ -72,6 +81,15 @@ describe("PoolKeeper - createPool", () => {
       5,
       generateRandomAddress(),
       generateRandomAddress()
+    );
+    const receipt = await txResponse.wait();
+    const event = receipt?.events?.find((el) => el.event === "CreatePool");
+
+    expect(event?.args?.poolAddress).to.eq(
+      ethers.utils.getCreate2Address(await poolKeeper.poolBase(), POOL_CODE)
+    ); // calculate the address
+    expect(event?.args?.firstPrice.toString()).to.eq(
+      (await oracleWrapper.getPrice("TEST/MARKET")).toString()
     );
   });
 

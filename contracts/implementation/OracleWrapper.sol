@@ -35,6 +35,7 @@ contract OracleWrapper is IOracleWrapper, AccessControl {
     override
     onlyOperator
   {
+    require(oracle != address(0), "Oracle cannot be 0 address");
     assetOracles[marketCode] = oracle;
   }
 

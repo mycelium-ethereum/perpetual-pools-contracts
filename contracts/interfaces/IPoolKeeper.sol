@@ -17,7 +17,7 @@ interface IPoolKeeper {
    */
   function triggerPriceUpdate(
     string memory marketCode,
-    bytes32[] memory poolCodes
+    string[] memory poolCodes
   ) external;
 
   /**
@@ -48,7 +48,7 @@ interface IPoolKeeper {
    */
   function createPool(
     string memory marketCode,
-    bytes32 poolCode,
+    string memory poolCode,
     uint32 updateInterval,
     uint32 frontRunningInterval,
     uint16 fee,
