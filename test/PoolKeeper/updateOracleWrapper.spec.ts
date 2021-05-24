@@ -63,4 +63,9 @@ describe("PoolKeeper - createMarket", () => {
       poolKeeper.connect(signers[1]).updateOracleWrapper(address)
     ).to.be.rejectedWith(Error);
   });
+  it("should prevent setting an oracle to the null address", async () => {
+    await expect(
+      poolKeeper.updateOracleWrapper(ethers.constants.AddressZero)
+    ).to.be.rejectedWith(Error);
+  });
 });
