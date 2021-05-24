@@ -7,6 +7,7 @@ import {
   OracleWrapper__factory,
   OracleWrapper,
 } from "../../typechain";
+import { bytecode as LeveragedPoolInitCode } from "../../artifacts/contracts/implementation/LeveragedPool.sol/LeveragedPool.json";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import {
   MARKET,
@@ -47,9 +48,6 @@ describe("PoolKeeper - createPool", () => {
       poolKeeper.address
     );
 
-    // Create a market for the tests
-    await poolKeeper.createMarket("TEST/MARKET", ORACLE);
-
     // Sanity check the deployment
     expect(
       await poolKeeper.hasRole(
@@ -72,6 +70,7 @@ describe("PoolKeeper - createPool", () => {
   });
 
   it("should create a new pool in the given market", async () => {
+    await poolKeeper.createMarket("TEST/MARKET", ORACLE);
     const txResponse = await poolKeeper.createPool(
       "TEST/MARKET",
       "TEST/MARKET+POOL",
@@ -85,8 +84,13 @@ describe("PoolKeeper - createPool", () => {
     const receipt = await txResponse.wait();
     const event = receipt?.events?.find((el) => el.event === "CreatePool");
 
+    const coder = new ethers.utils.AbiCoder();
     expect(event?.args?.poolAddress).to.eq(
-      ethers.utils.getCreate2Address(await poolKeeper.poolBase(), POOL_CODE)
+      ethers.utils.getCreate2Address(
+        await poolKeeper.poolBase(),
+        ethers.utils.keccak256(coder.encode(["string"], [POOL_CODE])),
+        ethers.utils.keccak256(LeveragedPoolInitCode)
+      )
     ); // calculate the address
     expect(event?.args?.firstPrice.toString()).to.eq(
       (await oracleWrapper.getPrice("TEST/MARKET")).toString()

@@ -20,7 +20,7 @@ contract PoolKeeper is IPoolKeeper, AccessControl {
   mapping(string => LeveragedPool) public pools;
 
   address public oracleWrapper;
-  LeveragedPool immutable poolBase;
+  address public immutable override poolBase;
 
   // #### Roles
   /**
@@ -38,9 +38,18 @@ contract PoolKeeper is IPoolKeeper, AccessControl {
 
     // Deploy pool base to share logic among pools
     LeveragedPool _poolBase = new LeveragedPool();
+    poolBase = address(_poolBase);
     // Initialise the base contract so no one else abuses it.
-    _poolBase.initialize("BASE_POOL", 1, 5, 2, 0, 0, address(0), address(0));
-    poolBase = _poolBase;
+    _poolBase.initialize(
+      "BASE_POOL",
+      1,
+      5,
+      2,
+      0,
+      0,
+      address(this),
+      address(this)
+    );
   }
 
   function triggerPriceUpdate(
@@ -81,8 +90,6 @@ contract PoolKeeper is IPoolKeeper, AccessControl {
       "Market must exist"
     );
 
-    int256 firstPrice = oracle.getPrice(_marketCode);
-
     LeveragedPool pool =
       LeveragedPool(
         Clones.cloneDeterministic(
@@ -90,6 +97,10 @@ contract PoolKeeper is IPoolKeeper, AccessControl {
           keccak256(abi.encode(_poolCode))
         )
       );
+
+    pools[_poolCode] = pool;
+
+    int256 firstPrice = oracle.getPrice(_marketCode);
 
     pool.initialize(
       _poolCode,
@@ -101,8 +112,6 @@ contract PoolKeeper is IPoolKeeper, AccessControl {
       _feeAddress,
       _quoteToken
     );
-
-    pools[_poolCode] = pool;
 
     emit CreatePool(address(pool), firstPrice);
   }
