@@ -31,6 +31,7 @@ contract PoolKeeper is IPoolKeeper, AccessControl {
 
   // #### Functions
   constructor(address _oracleWrapper) {
+    require(_oracleWrapper != address(0), "Oracle cannot be 0 address");
     oracleWrapper = _oracleWrapper;
     _setRoleAdmin(ADMIN, OPERATOR);
     _setupRole(ADMIN, msg.sender);
@@ -58,6 +59,7 @@ contract PoolKeeper is IPoolKeeper, AccessControl {
   ) external override {}
 
   function updateOracleWrapper(address oracle) external override onlyAdmin {
+    require(oracle != address(0), "Oracle cannot be 0 address");
     oracleWrapper = oracle;
   }
 
