@@ -7,14 +7,14 @@ import {
   OracleWrapper__factory,
   OracleWrapper,
 } from "../../typechain";
-import { bytecode as LeveragedPoolInitCode } from "../../artifacts/contracts/implementation/LeveragedPool.sol/LeveragedPool.json";
+
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import {
-  MARKET,
   ORACLE,
   OPERATOR_ROLE,
   ADMIN_ROLE,
   POOL_CODE,
+  MARKET_CODE,
 } from "../constants";
 import { generateRandomAddress } from "../utilities";
 
@@ -70,42 +70,90 @@ describe("PoolKeeper - createPool", () => {
   });
 
   it("should create a new pool in the given market", async () => {
-    await poolKeeper.createMarket("TEST/MARKET", ORACLE);
-    const txResponse = await poolKeeper.createPool(
-      "TEST/MARKET",
-      "TEST/MARKET+POOL",
-      5,
-      2,
-      1,
-      5,
-      generateRandomAddress(),
-      generateRandomAddress()
-    );
-    const receipt = await txResponse.wait();
+    await poolKeeper.createMarket(MARKET_CODE, ORACLE);
+    const receipt = await (
+      await poolKeeper.createPool(
+        MARKET_CODE,
+        POOL_CODE,
+        5,
+        2,
+        1,
+        5,
+        generateRandomAddress(),
+        generateRandomAddress()
+      )
+    ).wait();
     const event = receipt?.events?.find((el) => el.event === "CreatePool");
 
-    const coder = new ethers.utils.AbiCoder();
-    expect(event?.args?.poolAddress).to.eq(
-      ethers.utils.getCreate2Address(
-        await poolKeeper.poolBase(),
-        ethers.utils.keccak256(coder.encode(["string"], [POOL_CODE])),
-        ethers.utils.keccak256(LeveragedPoolInitCode)
+    expect(
+      !!(await signers[0].provider?.getCode(event?.args?.poolAddress))
+    ).to.eq(true);
+  });
+
+  it("should emit an event containing the details of the new pool", async () => {
+    await poolKeeper.createMarket(MARKET_CODE, ORACLE);
+    const receipt = await (
+      await poolKeeper.createPool(
+        MARKET_CODE,
+        POOL_CODE,
+        5,
+        2,
+        1,
+        5,
+        generateRandomAddress(),
+        generateRandomAddress()
       )
-    ); // calculate the address
-    expect(event?.args?.firstPrice.toString()).to.eq(
-      (await oracleWrapper.getPrice("TEST/MARKET")).toString()
+    ).wait();
+    const event = receipt?.events?.find((el) => el.event === "CreatePool");
+    expect(!!event).to.eq(true);
+    expect(!!event?.args?.poolAddress).to.eq(true);
+    expect(!!event?.args?.firstPrice).to.eq(true);
+  });
+
+  it("should add the pool to the list of pools", async () => {
+    await poolKeeper.createMarket(MARKET_CODE, ORACLE);
+    const receipt = await (
+      await poolKeeper.createPool(
+        MARKET_CODE,
+        POOL_CODE,
+        5,
+        2,
+        1,
+        5,
+        generateRandomAddress(),
+        generateRandomAddress()
+      )
+    ).wait();
+    expect(await poolKeeper.pools(POOL_CODE)).to.eq(
+      receipt.events?.find((el) => el.event === "CreatePool")?.args?.poolAddress
     );
   });
 
-  it("should emit an event containing the details of the new pool", async () => {});
-
-  it("should add the pool to the list of pools", async () => {});
-
-  it("should revert if the pool already exists", async () => {});
-
-  it("should revert if quoteToken parameter is the zero address", async () => {});
-
-  it("should revert if the fee address is the zero address", async () => {});
-
-  it("should revert if the front running interval is larger than the update interval", async () => {});
+  it("should revert if the pool already exists", async () => {
+    await poolKeeper.createMarket(MARKET_CODE, ORACLE);
+    await (
+      await poolKeeper.createPool(
+        MARKET_CODE,
+        POOL_CODE,
+        5,
+        2,
+        1,
+        5,
+        generateRandomAddress(),
+        generateRandomAddress()
+      )
+    ).wait();
+    await expect(
+      poolKeeper.createPool(
+        MARKET_CODE,
+        POOL_CODE,
+        5,
+        2,
+        1,
+        5,
+        generateRandomAddress(),
+        generateRandomAddress()
+      )
+    ).to.be.rejectedWith(Error);
+  });
 });

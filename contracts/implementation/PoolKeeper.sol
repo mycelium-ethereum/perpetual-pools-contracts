@@ -17,7 +17,7 @@ contract PoolKeeper is IPoolKeeper, AccessControl {
   /**
     @notice Format: Pool code => pool address, where pool code looks like TSLA/USD^5+aDAI
    */
-  mapping(string => LeveragedPool) public pools;
+  mapping(string => address) public override pools;
 
   address public oracleWrapper;
   address public immutable override poolBase;
@@ -98,7 +98,7 @@ contract PoolKeeper is IPoolKeeper, AccessControl {
         )
       );
 
-    pools[_poolCode] = pool;
+    pools[_poolCode] = address(pool);
 
     int256 firstPrice = oracle.getPrice(_marketCode);
 
