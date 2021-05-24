@@ -75,12 +75,6 @@ contract PoolKeeper is IPoolKeeper, AccessControl {
     address _quoteToken
   ) external override {
     require(address(pools[_poolCode]) == address(0), "Pre-existing pool code");
-    require(_feeAddress != address(0), "Fee address cannot be 0 address");
-    require(_quoteToken != address(0), "Quote token cannot be 0 address");
-    require(
-      _updateInterval > _frontRunningInterval,
-      "Update interval < FR interval"
-    );
     IOracleWrapper oracle = IOracleWrapper(oracleWrapper);
     require(
       oracle.assetOracles(_marketCode) != address(0),
