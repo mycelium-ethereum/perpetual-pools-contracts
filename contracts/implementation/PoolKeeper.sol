@@ -99,10 +99,10 @@ contract PoolKeeper is IPoolKeeper, AccessControl {
           keccak256(abi.encode(_poolCode))
         )
       );
+    int256 firstPrice = oracle.getPrice(_marketCode);
+    emit CreatePool(address(pool), firstPrice);
 
     pools[_poolCode] = address(pool);
-
-    int256 firstPrice = oracle.getPrice(_marketCode);
 
     pool.initialize(
       _poolCode,
@@ -114,8 +114,6 @@ contract PoolKeeper is IPoolKeeper, AccessControl {
       _feeAddress,
       _quoteToken
     );
-
-    emit CreatePool(address(pool), firstPrice);
   }
 
   // #### Modifiers
