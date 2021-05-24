@@ -9,7 +9,7 @@ import { generateRandomAddress } from "../utilities";
 chai.use(chaiAsPromised);
 const { expect } = chai;
 
-describe("PoolKeeper - createMarket", () => {
+describe("PoolKeeper - updateOracleWrapper", () => {
   let poolKeeper: PoolKeeper;
 
   let signers: SignerWithAddress[];

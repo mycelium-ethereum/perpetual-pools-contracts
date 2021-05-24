@@ -6,6 +6,9 @@ pragma abicoder v2;
 @title The manager contract interface for multiple markets and the pools in them
 */
 interface IPoolKeeper {
+  // #### Events
+  event CreatePool(address indexed poolAddress, int256 indexed firstPrice);
+
   // #### Functions
   /**
     @notice Checks for a price update for the pools specified. Several pools can be updated with a single call to the oracle. For instance, a market code of TSLA/USD+aDAI can be used to update TSLA/USD^2+aDAI, TSLA/USD^5+aDAI, and TSLA/USD^10+aDAI
@@ -14,7 +17,7 @@ interface IPoolKeeper {
    */
   function triggerPriceUpdate(
     string memory marketCode,
-    string[] memory poolCodes
+    bytes32[] memory poolCodes
   ) external;
 
   /**
@@ -45,7 +48,7 @@ interface IPoolKeeper {
    */
   function createPool(
     string memory marketCode,
-    string memory poolCode,
+    bytes32 poolCode,
     uint32 updateInterval,
     uint32 frontRunningInterval,
     uint16 fee,

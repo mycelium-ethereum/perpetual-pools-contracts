@@ -9,11 +9,12 @@ import {
 } from "../../typechain";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { MARKET, ORACLE, OPERATOR_ROLE, ADMIN_ROLE } from "../constants";
+import { generateRandomAddress } from "../utilities";
 
 chai.use(chaiAsPromised);
 const { expect } = chai;
 
-describe("PoolKeeper - createMarket", () => {
+describe("PoolKeeper - createPool", () => {
   let poolKeeper: PoolKeeper;
   let oracleWrapper: OracleWrapper;
   let signers: SignerWithAddress[];
@@ -61,13 +62,22 @@ describe("PoolKeeper - createMarket", () => {
     ).to.eq(true);
   });
 
-  it("should create a pool in the given market", async () => {});
+  it("should create a new pool in the given market", async () => {
+    await poolKeeper.createPool(
+      "TEST/MARKET",
+      "TEST/MARKET+POOL",
+      5,
+      2,
+      1,
+      5,
+      generateRandomAddress(),
+      generateRandomAddress()
+    );
+  });
 
   it("should emit an event containing the details of the new pool", async () => {});
 
   it("should add the pool to the list of pools", async () => {});
-
-  it("should revert if the market doesn't exist", async () => {});
 
   it("should revert if the pool already exists", async () => {});
 
