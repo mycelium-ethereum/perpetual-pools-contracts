@@ -9,6 +9,7 @@ import {
   OPERATOR_ROLE,
   MARKET_2,
   ORACLE_2,
+  ADMIN_ROLE,
 } from "../constants";
 
 chai.use(chaiAsPromised);
@@ -30,7 +31,7 @@ describe("OracleWrapper - setOracle", () => {
     // Sanity check the deployment
     expect(
       await oracleWrapper.hasRole(
-        ethers.utils.keccak256(ethers.utils.toUtf8Bytes("ADMIN")),
+        ethers.utils.keccak256(ethers.utils.toUtf8Bytes(ADMIN_ROLE)),
         signers[0].address
       )
     ).to.eq(true);
@@ -69,5 +70,17 @@ describe("OracleWrapper - setOracle", () => {
 
     expect(await oracleWrapper.assetOracles(MARKET)).to.eq(ORACLE);
     expect(await oracleWrapper.assetOracles(MARKET_2)).to.eq(ORACLE_2);
+  });
+  it("should prevent setting an oracle to the null address", async () => {
+    await oracleWrapper.grantRole(
+      ethers.utils.keccak256(ethers.utils.toUtf8Bytes(OPERATOR_ROLE)),
+      signers[1].address
+    );
+
+    await expect(
+      oracleWrapper
+        .connect(signers[1])
+        .setOracle(MARKET, ethers.constants.AddressZero)
+    ).to.be.rejectedWith(Error);
   });
 });

@@ -21,4 +21,15 @@ interface IOracleWrapper {
     @return The latest price
      */
   function getPrice(string memory marketCode) external view returns (int256);
+
+  /**
+    @notice Returns the oracle for a given market code
+    @dev This is a convenience definition for the auto generated getter so you don't need to import the full contract to use it.
+    @param marketCode The market code to look up
+    @return The oracle address
+ */
+  function assetOracles(string memory marketCode)
+    external
+    view
+    returns (address);
 }
