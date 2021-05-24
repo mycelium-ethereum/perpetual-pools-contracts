@@ -38,6 +38,10 @@ contract LeveragedPool is ILeveragedPool, AccessControl {
   @notice The Updater role is for addresses that can update a pool's price
    */
   bytes32 public constant UPDATER = keccak256("UPDATER");
+  /**
+  @notice The admin role for the fee holder and updater roles
+   */
+  bytes32 public constant ADMIN = keccak256("ADMIN");
 
   /**
   @notice The Fee holder role is for addresses that can change the address that fees go to.
@@ -46,7 +50,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl {
 
   // #### Functions
 
-  constructor(
+  function initialise(
     string memory _poolCode,
     int256 _firstPrice,
     uint32 _updateInterval,
@@ -56,6 +60,13 @@ contract LeveragedPool is ILeveragedPool, AccessControl {
     address _feeAddress,
     address _quoteToken
   ) {
+    // Setup roles
+    _setupRole(UPDATER, msg.sender);
+    _setupRole(ADMIN, msg.sender);
+    _setRoleAdmin(UPDATER, ADMIN);
+    _setRoleAdmin(FEE_HOLDER, ADMIN);
+
+    // Setup variables
     quoteToken = _quoteToken;
     lastPrice = _firstPrice;
     updateInterval = _updateInterval;
@@ -63,6 +74,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl {
     fee = _fee;
     leverageAmount = _leverageAmount;
     feeAddress = _feeAddress;
+
     // tokens[0] = new PoolToken(
     //   abi.encodePacked(_poolCode, "-LONG"),
     //   abi.encodePacked("L-", _poolCode)
