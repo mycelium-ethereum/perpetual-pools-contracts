@@ -13,20 +13,21 @@ import "@openzeppelin/contracts/proxy/Initializable.sol";
 contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
   // #### Globals
   // TODO: Rearrange to tight pack these for gas savings
-  address[2] public tokens;
+  string public override poolCode;
+  address[2] public override tokens;
   uint256 public shortBalance;
   uint256 public longBalance;
 
-  int256 public lastPrice;
-  uint256 public lastPriceTimestamp;
+  int256 public override lastPrice;
+  uint256 public override lastPriceTimestamp;
 
-  address public quoteToken;
-  uint32 public updateInterval;
-  uint32 public frontRunningInterval;
+  address public override quoteToken;
+  uint32 public override updateInterval;
+  uint32 public override frontRunningInterval;
 
-  uint16 public fee;
-  uint16 public leverageAmount;
-  address public feeAddress;
+  uint16 public override fee;
+  uint16 public override leverageAmount;
+  address public override feeAddress;
 
   uint256 internal commitIDCounter;
   mapping(uint256 => Commit) public commits;
@@ -60,7 +61,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     uint16 _leverageAmount,
     address _feeAddress,
     address _quoteToken
-  ) external override initializer {
+  ) external override initializer() {
     require(_feeAddress != address(0), "Fee address cannot be 0 address");
     require(_quoteToken != address(0), "Quote token cannot be 0 address");
     require(
@@ -68,10 +69,12 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
       "Update interval < FR interval"
     );
     // Setup roles
-    _setupRole(UPDATER, msg.sender);
-    _setupRole(ADMIN, msg.sender);
     _setRoleAdmin(UPDATER, ADMIN);
     _setRoleAdmin(FEE_HOLDER, ADMIN);
+    _setupRole(UPDATER, msg.sender);
+    _setupRole(ADMIN, msg.sender);
+
+    _setupRole(FEE_HOLDER, _feeAddress);
 
     // Setup variables
     quoteToken = _quoteToken;
@@ -81,16 +84,23 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     fee = _fee;
     leverageAmount = _leverageAmount;
     feeAddress = _feeAddress;
+    lastPriceTimestamp = block.timestamp;
+    poolCode = _poolCode;
 
-    // tokens[0] = new PoolToken(
-    //   abi.encodePacked(_poolCode, "-LONG"),
-    //   abi.encodePacked("L-", _poolCode)
-    // );
-    // tokens[1] = new PoolToken(
-    //   abi.encodePacked(_poolCode, "-SHORT"),
-    //   string(abi.encodePacked("S-", _poolCode))
-    // );
-    // emit TokensCreated(tokens[0], tokens[1], _firstPrice, _quoteToken);
+    // Create pair tokens
+    tokens[0] = address(
+      new PoolToken(
+        string(abi.encodePacked(_poolCode, "-LONG")),
+        string(abi.encodePacked("L-", _poolCode))
+      )
+    );
+    tokens[1] = address(
+      new PoolToken(
+        string(abi.encodePacked(_poolCode, "-SHORT")),
+        string(abi.encodePacked("S-", _poolCode))
+      )
+    );
+    emit PoolInitialized(tokens[0], tokens[1], _quoteToken, _poolCode);
   }
 
   function commit(
