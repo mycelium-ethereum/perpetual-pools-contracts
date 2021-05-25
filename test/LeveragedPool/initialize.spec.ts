@@ -10,6 +10,9 @@ import {
   UPDATER_ROLE,
 } from "../constants";
 import { generateRandomAddress } from "../utilities";
+import { Event } from "@ethersproject/contracts";
+
+import { abi as Token } from "../../artifacts/contracts/implementation/PoolToken.sol/PoolToken.json";
 
 chai.use(chaiAsPromised);
 const { expect } = chai;
@@ -49,294 +52,145 @@ const initialisePool = (
 };
 
 describe("LeveragedPool - initialize", () => {
-  let leveragedPool: LeveragedPool;
   let signers: SignerWithAddress[];
-  beforeEach(async () => {
-    // Deploy the contracts
+  before(async () => {
     signers = await ethers.getSigners();
+  });
+  describe("Initializes the contract", () => {
+    let leveragedPool: LeveragedPool;
+    let receipt: any;
+    before(async () => {
+      // Deploy the contracts
 
-    const leveragedPoolFactory = (await ethers.getContractFactory(
-      "LeveragedPool",
-      signers[0]
-    )) as LeveragedPool__factory;
-    leveragedPool = await leveragedPoolFactory.deploy();
-    await leveragedPool.deployed();
-  });
+      const leveragedPoolFactory = (await ethers.getContractFactory(
+        "LeveragedPool",
+        signers[0]
+      )) as LeveragedPool__factory;
+      leveragedPool = await leveragedPoolFactory.deploy();
+      await leveragedPool.deployed();
+      receipt = await (
+        await initialisePool(
+          leveragedPool,
+          POOL_CODE,
+          lastPrice,
+          updateInterval,
+          frontRunningInterval,
+          fee,
+          leverage,
+          feeAddress,
+          quoteToken
+        )
+      ).wait();
+    });
 
-  it("should set the quote token", async () => {
-    await initialisePool(
-      leveragedPool,
-      POOL_CODE,
-      lastPrice,
-      updateInterval,
-      frontRunningInterval,
-      fee,
-      leverage,
-      feeAddress,
-      quoteToken
-    );
-    expect(await leveragedPool.quoteToken()).to.eq(quoteToken);
-  });
+    it("should set the quote token", async () => {
+      expect(await leveragedPool.quoteToken()).to.eq(quoteToken);
+    });
 
-  it("should set the last price", async () => {
-    await initialisePool(
-      leveragedPool,
-      POOL_CODE,
-      lastPrice,
-      updateInterval,
-      frontRunningInterval,
-      fee,
-      leverage,
-      feeAddress,
-      quoteToken
-    );
-    expect(await leveragedPool.lastPrice()).to.eq(lastPrice);
-  });
+    it("should set the last price", async () => {
+      expect(await leveragedPool.lastPrice()).to.eq(lastPrice);
+    });
 
-  it("should set the last price timestamp", async () => {
-    await initialisePool(
-      leveragedPool,
-      POOL_CODE,
-      lastPrice,
-      updateInterval,
-      frontRunningInterval,
-      fee,
-      leverage,
-      feeAddress,
-      quoteToken
-    );
-    expect(await leveragedPool.lastPriceTimestamp()).to.not.eq(0);
-  });
+    it("should set the last price timestamp", async () => {
+      expect(await leveragedPool.lastPriceTimestamp()).to.not.eq(0);
+    });
 
-  it("should set the fee address", async () => {
-    await initialisePool(
-      leveragedPool,
-      POOL_CODE,
-      lastPrice,
-      updateInterval,
-      frontRunningInterval,
-      fee,
-      leverage,
-      feeAddress,
-      quoteToken
-    );
-    expect(await leveragedPool.feeAddress()).to.eq(feeAddress);
-  });
+    it("should set the fee address", async () => {
+      expect(await leveragedPool.feeAddress()).to.eq(feeAddress);
+    });
 
-  it("should set the update interval", async () => {
-    await initialisePool(
-      leveragedPool,
-      POOL_CODE,
-      lastPrice,
-      updateInterval,
-      frontRunningInterval,
-      fee,
-      leverage,
-      feeAddress,
-      quoteToken
-    );
-    expect(await leveragedPool.updateInterval()).to.eq(updateInterval);
-  });
+    it("should set the update interval", async () => {
+      expect(await leveragedPool.updateInterval()).to.eq(updateInterval);
+    });
 
-  it("should set the front running interval", async () => {
-    await initialisePool(
-      leveragedPool,
-      POOL_CODE,
-      lastPrice,
-      updateInterval,
-      frontRunningInterval,
-      fee,
-      leverage,
-      feeAddress,
-      quoteToken
-    );
-    expect(await leveragedPool.frontRunningInterval()).to.eq(
-      frontRunningInterval
-    );
-  });
+    it("should set the front running interval", async () => {
+      expect(await leveragedPool.frontRunningInterval()).to.eq(
+        frontRunningInterval
+      );
+    });
 
-  it("should set the leverage amount", async () => {
-    await initialisePool(
-      leveragedPool,
-      POOL_CODE,
-      lastPrice,
-      updateInterval,
-      frontRunningInterval,
-      fee,
-      leverage,
-      feeAddress,
-      quoteToken
-    );
-    expect(await leveragedPool.leverageAmount()).to.eq(leverage);
-  });
+    it("should set the leverage amount", async () => {
+      expect(await leveragedPool.leverageAmount()).to.eq(leverage);
+    });
 
-  it("should set the fee", async () => {
-    await initialisePool(
-      leveragedPool,
-      POOL_CODE,
-      lastPrice,
-      updateInterval,
-      frontRunningInterval,
-      fee,
-      leverage,
-      feeAddress,
-      quoteToken
-    );
-    expect(await leveragedPool.fee()).to.eq(fee);
-  });
+    it("should set the fee", async () => {
+      expect(await leveragedPool.fee()).to.eq(fee);
+    });
 
-  it("should set the pool code", async () => {
-    await initialisePool(
-      leveragedPool,
-      POOL_CODE,
-      lastPrice,
-      updateInterval,
-      frontRunningInterval,
-      fee,
-      leverage,
-      feeAddress,
-      quoteToken
-    );
-    expect(await leveragedPool.poolCode()).to.eq(POOL_CODE);
-  });
-  it("should deploy two ERC20 tokens for the long/short pairs", async () => {
-    // Check tokens array. Index 0 must be the LONG token, and index 1 the SHORT token.
-    throw new Error("Not Implemented");
-  });
-  it("should revert if an attempt is made to run it a second time", async () => {
-    await initialisePool(
-      leveragedPool,
-      POOL_CODE,
-      lastPrice,
-      updateInterval,
-      frontRunningInterval,
-      fee,
-      leverage,
-      feeAddress,
-      quoteToken
-    );
-    await expect(
-      initialisePool(
-        leveragedPool,
-        POOL_CODE,
-        lastPrice,
-        updateInterval,
-        frontRunningInterval,
-        fee,
-        leverage,
-        feeAddress,
-        quoteToken
-      )
-    ).to.rejectedWith(Error);
-  });
+    it("should set the pool code", async () => {
+      expect(await leveragedPool.poolCode()).to.eq(POOL_CODE);
+    });
 
-  it("should revert if quoteToken address is the zero address", async () => {
-    await expect(
-      initialisePool(
-        leveragedPool,
-        POOL_CODE,
-        lastPrice,
-        updateInterval,
-        frontRunningInterval,
-        fee,
-        leverage,
-        feeAddress,
-        ethers.constants.AddressZero
-      )
-    ).to.rejectedWith(Error);
-  });
+    it("should deploy two ERC20 tokens for the long/short pairs", async () => {
+      // Check tokens array. Index 0 must be the LONG token, and index 1 the SHORT token.
+      const longAddress = await leveragedPool.tokens(0);
+      const shortAddress = await leveragedPool.tokens(1);
 
-  it("should revert if the fee address is the zero address", async () => {
-    await expect(
-      initialisePool(
-        leveragedPool,
-        POOL_CODE,
-        lastPrice,
-        updateInterval,
-        frontRunningInterval,
-        fee,
-        leverage,
-        ethers.constants.AddressZero,
-        quoteToken
-      )
-    ).to.rejectedWith(Error);
-  });
+      const longToken = new ethers.Contract(longAddress, Token, signers[0]);
+      const shortToken = new ethers.Contract(shortAddress, Token, signers[0]);
 
-  it("should revert if the front running interval is larger than the update interval", async () => {
-    await expect(
-      initialisePool(
-        leveragedPool,
-        POOL_CODE,
-        lastPrice,
-        1,
-        2,
-        fee,
-        leverage,
-        feeAddress,
-        quoteToken
-      )
-    ).to.rejectedWith(Error);
-  });
-  it("should grant the FEE_HOLDER role to the fee address", async () => {
-    await initialisePool(
-      leveragedPool,
-      POOL_CODE,
-      lastPrice,
-      updateInterval,
-      frontRunningInterval,
-      fee,
-      leverage,
-      feeAddress,
-      quoteToken
-    );
-    expect(
-      await leveragedPool.hasRole(
-        ethers.utils.keccak256(FEE_HOLDER_ROLE),
-        feeAddress
-      )
-    ).to.eq(true);
-  });
-  it("should grant the UPDATER role to the deployer", async () => {
-    await initialisePool(
-      leveragedPool,
-      POOL_CODE,
-      lastPrice,
-      updateInterval,
-      frontRunningInterval,
-      fee,
-      leverage,
-      feeAddress,
-      quoteToken
-    );
-    expect(
-      await leveragedPool.hasRole(
-        ethers.utils.keccak256(UPDATER_ROLE),
-        signers[0].address
-      )
-    ).to.eq(true);
-  });
-  it("should grant the ADMIN role to the deployer", async () => {
-    await initialisePool(
-      leveragedPool,
-      POOL_CODE,
-      lastPrice,
-      updateInterval,
-      frontRunningInterval,
-      fee,
-      leverage,
-      feeAddress,
-      quoteToken
-    );
-    expect(
-      await leveragedPool.hasRole(
-        ethers.utils.keccak256(ADMIN_ROLE),
-        signers[0].address
-      )
-    ).to.eq(true);
-  });
+      expect(longAddress).to.not.eq(ethers.constants.AddressZero);
+      expect(shortAddress).to.not.eq(ethers.constants.AddressZero);
+      expect(await longToken.symbol()).to.eq("L-".concat(POOL_CODE));
+      expect(await shortToken.symbol()).to.eq("S-".concat(POOL_CODE));
+      expect(await longToken.name()).to.eq(POOL_CODE.concat("-LONG"));
+      expect(await shortToken.name()).to.eq(POOL_CODE.concat("-SHORT"));
+    });
 
-  it("should emit an event containing the details of the new pool", async () => {
-    const receipt = await (
+    it("should emit an event containing the details of the new pool", async () => {
+      const event: Event = receipt?.events?.find(
+        (el: any) => el.event === "PoolInitialized"
+      );
+      expect(!!event).to.eq(true);
+      expect(!!event?.args?.longToken).to.eq(true);
+      expect(!!event?.args?.shortToken).to.eq(true);
+      expect(event?.args?.quoteToken).to.eq(quoteToken);
+      expect(event?.args?.poolCode).to.eq(POOL_CODE);
+    });
+
+    it("should grant the FEE_HOLDER role to the fee address", async () => {
+      expect(
+        await leveragedPool.hasRole(
+          ethers.utils.keccak256(ethers.utils.toUtf8Bytes(FEE_HOLDER_ROLE)),
+          feeAddress
+        )
+      ).to.eq(true);
+    });
+
+    it("should grant the UPDATER role to the deployer", async () => {
+      expect(
+        await leveragedPool.hasRole(
+          ethers.utils.keccak256(ethers.utils.toUtf8Bytes(UPDATER_ROLE)),
+          signers[0].address
+        )
+      ).to.eq(true);
+    });
+
+    it("should grant the ADMIN role to the deployer", async () => {
+      expect(
+        await leveragedPool.hasRole(
+          ethers.utils.keccak256(ethers.utils.toUtf8Bytes(ADMIN_ROLE)),
+          signers[0].address
+        )
+      ).to.eq(true);
+    });
+  });
+  describe("Performs safety checks on inputs", () => {
+    let leveragedPool: LeveragedPool;
+    let signers: SignerWithAddress[];
+    beforeEach(async () => {
+      // Deploy the contracts
+      signers = await ethers.getSigners();
+
+      const leveragedPoolFactory = (await ethers.getContractFactory(
+        "LeveragedPool",
+        signers[0]
+      )) as LeveragedPool__factory;
+      leveragedPool = await leveragedPoolFactory.deploy();
+      await leveragedPool.deployed();
+    });
+
+    it("should revert if an attempt is made to run it a second time", async () => {
       await initialisePool(
         leveragedPool,
         POOL_CODE,
@@ -347,14 +201,65 @@ describe("LeveragedPool - initialize", () => {
         leverage,
         feeAddress,
         quoteToken
-      )
-    ).wait();
-    const event = receipt?.events?.find((el) => el.event === "PoolInitialised");
-    expect(!!event).to.eq(true);
-
-    expect(!!event?.args?.longToken).to.eq(true);
-    expect(!!event?.args?.shortToken).to.eq(true);
-    expect(event?.args?.quoteToken).to.eq(quoteToken);
-    expect(event?.args?.poolCode).to.eq(POOL_CODE);
+      );
+      await expect(
+        initialisePool(
+          leveragedPool,
+          POOL_CODE,
+          lastPrice,
+          updateInterval,
+          frontRunningInterval,
+          fee,
+          leverage,
+          feeAddress,
+          quoteToken
+        )
+      ).to.rejectedWith(Error);
+    });
+    it("should revert if quoteToken address is the zero address", async () => {
+      await expect(
+        initialisePool(
+          leveragedPool,
+          POOL_CODE,
+          lastPrice,
+          updateInterval,
+          frontRunningInterval,
+          fee,
+          leverage,
+          feeAddress,
+          ethers.constants.AddressZero
+        )
+      ).to.rejectedWith(Error);
+    });
+    it("should revert if the fee address is the zero address", async () => {
+      await expect(
+        initialisePool(
+          leveragedPool,
+          POOL_CODE,
+          lastPrice,
+          updateInterval,
+          frontRunningInterval,
+          fee,
+          leverage,
+          ethers.constants.AddressZero,
+          quoteToken
+        )
+      ).to.rejectedWith(Error);
+    });
+    it("should revert if the front running interval is larger than the update interval", async () => {
+      await expect(
+        initialisePool(
+          leveragedPool,
+          POOL_CODE,
+          lastPrice,
+          1,
+          2,
+          fee,
+          leverage,
+          feeAddress,
+          quoteToken
+        )
+      ).to.rejectedWith(Error);
+    });
   });
 });

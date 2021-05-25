@@ -69,11 +69,12 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
       "Update interval < FR interval"
     );
     // Setup roles
-    _setupRole(UPDATER, msg.sender);
-    _setupRole(ADMIN, msg.sender);
-    _setupRole(FEE_HOLDER, _feeAddress);
     _setRoleAdmin(UPDATER, ADMIN);
     _setRoleAdmin(FEE_HOLDER, ADMIN);
+    _setupRole(UPDATER, msg.sender);
+    _setupRole(ADMIN, msg.sender);
+
+    _setupRole(FEE_HOLDER, _feeAddress);
 
     // Setup variables
     quoteToken = _quoteToken;
@@ -86,15 +87,19 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     lastPriceTimestamp = block.timestamp;
     poolCode = _poolCode;
 
-    // tokens[0] = new PoolToken(
-    //   abi.encodePacked(_poolCode, "-LONG"),
-    //   abi.encodePacked("L-", _poolCode)
-    // );
-    // tokens[1] = new PoolToken(
-    //   abi.encodePacked(_poolCode, "-SHORT"),
-    //   string(abi.encodePacked("S-", _poolCode))
-    // );
-    // emit TokensCreated(tokens[0], tokens[1], _firstPrice, _quoteToken);
+    tokens[0] = address(
+      new PoolToken(
+        string(abi.encodePacked(_poolCode, "-LONG")),
+        string(abi.encodePacked("L-", _poolCode))
+      )
+    );
+    tokens[1] = address(
+      new PoolToken(
+        string(abi.encodePacked(_poolCode, "-SHORT")),
+        string(abi.encodePacked("S-", _poolCode))
+      )
+    );
+    emit PoolInitialized(tokens[0], tokens[1], _quoteToken, _poolCode);
   }
 
   function commit(
