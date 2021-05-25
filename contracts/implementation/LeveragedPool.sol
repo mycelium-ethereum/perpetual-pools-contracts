@@ -87,6 +87,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     lastPriceTimestamp = block.timestamp;
     poolCode = _poolCode;
 
+    // Create pair tokens
     tokens[0] = address(
       new PoolToken(
         string(abi.encodePacked(_poolCode, "-LONG")),
