@@ -8,7 +8,8 @@
     "clean": "npx hardhat clean",
     "compile": "npx hardhat compile",
     "test": "npx hardhat test",
-    "coverage": "npm run build && npx hardhat coverage --temp artifacts --network coverage"
+    "coverage": "npm run build && npx hardhat coverage --temp artifacts --network coverage",
+    "slither": "npm run build && slither . --filter-path node_modules --exclude-dependencies --exclude-optimization --exclude-informational"
   },
   "repository": {
     "type": "git",

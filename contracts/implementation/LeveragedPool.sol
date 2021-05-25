@@ -3,13 +3,14 @@ pragma solidity ^0.7.6;
 pragma abicoder v2;
 
 import "../interfaces/ILeveragedPool.sol";
-import "@openzeppelin/contracts/access/AccessControl.sol";
 import "./PoolToken.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/proxy/Initializable.sol";
 
 /*
 @title The pool controller contract
 */
-contract LeveragedPool is ILeveragedPool, AccessControl {
+contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
   // #### Globals
   // TODO: Rearrange to tight pack these for gas savings
   address[2] public tokens;
@@ -19,15 +20,15 @@ contract LeveragedPool is ILeveragedPool, AccessControl {
   int256 public lastPrice;
   uint256 public lastPriceTimestamp;
 
-  address public immutable quoteToken;
+  address public quoteToken;
   uint32 public updateInterval;
   uint32 public frontRunningInterval;
 
   uint16 public fee;
-  uint16 public immutable leverageAmount;
+  uint16 public leverageAmount;
   address public feeAddress;
 
-  uint256 private commitIDCounter;
+  uint256 internal commitIDCounter;
   mapping(uint256 => Commit) public commits;
 
   uint256 public shadowLongBalance;
@@ -38,6 +39,10 @@ contract LeveragedPool is ILeveragedPool, AccessControl {
   @notice The Updater role is for addresses that can update a pool's price
    */
   bytes32 public constant UPDATER = keccak256("UPDATER");
+  /**
+  @notice The admin role for the fee holder and updater roles
+   */
+  bytes32 public constant ADMIN = keccak256("ADMIN");
 
   /**
   @notice The Fee holder role is for addresses that can change the address that fees go to.
@@ -46,7 +51,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl {
 
   // #### Functions
 
-  constructor(
+  function initialize(
     string memory _poolCode,
     int256 _firstPrice,
     uint32 _updateInterval,
@@ -55,7 +60,20 @@ contract LeveragedPool is ILeveragedPool, AccessControl {
     uint16 _leverageAmount,
     address _feeAddress,
     address _quoteToken
-  ) {
+  ) external override initializer {
+    require(_feeAddress != address(0), "Fee address cannot be 0 address");
+    require(_quoteToken != address(0), "Quote token cannot be 0 address");
+    require(
+      _updateInterval > _frontRunningInterval,
+      "Update interval < FR interval"
+    );
+    // Setup roles
+    _setupRole(UPDATER, msg.sender);
+    _setupRole(ADMIN, msg.sender);
+    _setRoleAdmin(UPDATER, ADMIN);
+    _setRoleAdmin(FEE_HOLDER, ADMIN);
+
+    // Setup variables
     quoteToken = _quoteToken;
     lastPrice = _firstPrice;
     updateInterval = _updateInterval;
@@ -63,6 +81,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl {
     fee = _fee;
     leverageAmount = _leverageAmount;
     feeAddress = _feeAddress;
+
     // tokens[0] = new PoolToken(
     //   abi.encodePacked(_poolCode, "-LONG"),
     //   abi.encodePacked("L-", _poolCode)

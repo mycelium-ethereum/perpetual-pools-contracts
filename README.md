@@ -37,6 +37,9 @@ Notes:
 - When running with this `localhost` option, you get a gas report but may not get good callstacks
 - See [here](https://github.com/cgewecke/eth-gas-reporter#installation-and-config) for how to configure the gas usage report.
 
+### Run Slither for static analysis report
+If you have `slither` installed and on your PATH, you can run `npm run slither` to get a report on the current codebase.
+
 ### Run Coverage Report for Tests
 
 `npm run coverage`

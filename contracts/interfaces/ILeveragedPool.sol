@@ -24,6 +24,30 @@ interface ILeveragedPool {
     address quoteToken
   );
 
+  // #### Functions
+  /**
+  @notice Configures the pool on deployment. The pools are EIP 1167 clones.
+  @dev This should only be able to be run once to prevent abuse of the pool. Use of Openzeppelin Initializable or similar is recommended.
+  @param _poolCode The pool identification code. This is unique per pool per pool keeper
+  @param _firstPrice The initial price of the asset that the pool tracks
+  @param _updateInterval The frequency at which the pool will be updated
+  @param _frontRunningInterval The minimum amount of time that must elapse before a commit can be executed. Must be smaller than the update interval to prevent deadlock
+  @param _fee The fund movement fee. This amount is extracted from the deposited asset with every update and sent to the fee address.
+  @param _leverageAmount The amount of exposure to price movements for the pool
+  @param _feeAddress The address that the fund movement fee is sent to
+  @param _quoteToken The digital asset that the pool accepts
+ */
+  function initialize(
+    string memory _poolCode,
+    int256 _firstPrice,
+    uint32 _updateInterval,
+    uint32 _frontRunningInterval,
+    uint16 _fee,
+    uint16 _leverageAmount,
+    address _feeAddress,
+    address _quoteToken
+  ) external;
+
   /**
     @notice Creates a commitment to mint or burn
     @param commitType Valid types are SB,SM, LB, LM. Each type contains position (Short, Long) and action (Mint, Burn).

@@ -3,14 +3,7 @@ import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 import { PoolKeeper__factory, PoolKeeper } from "../../typechain";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import {
-  MARKET,
-  ORACLE,
-  MARKET_2,
-  ORACLE_2,
-  OPERATOR_ROLE,
-  ADMIN_ROLE,
-} from "../constants";
+import { OPERATOR_ROLE, ADMIN_ROLE } from "../constants";
 import { generateRandomAddress } from "../utilities";
 
 chai.use(chaiAsPromised);
