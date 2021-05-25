@@ -50,18 +50,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
   bytes32 public constant FEE_HOLDER = keccak256("FEE_HOLDER");
 
   // #### Functions
-  /**
-  @notice Configures the pool on deployment. The pools are EIP 1167 clones.
-  @dev This can only be run once, and should only be run by the PoolKeeper that deployed it. 
-  @param _poolCode The pool identification code. This is unique per pool per pool keeper
-  @param _firstPrice The initial price of the asset that the pool tracks
-  @param _updateInterval The frequency at which the pool will be updated
-  @param _frontRunningInterval The minimum amount of time that must elapse before a commit can be executed. Must be smaller than the update interval to prevent deadlock
-  @param _fee The fund movement fee. This amount is extracted from the deposited asset with every update and sent to the fee address.
-  @param _leverageAmount The amount of exposure to price movements for the pool
-  @param _feeAddress The address that the fund movement fee is sent to
-  @param _quoteToken The digital asset that the pool accepts
- */
+
   function initialize(
     string memory _poolCode,
     int256 _firstPrice,
@@ -71,7 +60,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     uint16 _leverageAmount,
     address _feeAddress,
     address _quoteToken
-  ) public initializer {
+  ) external override initializer {
     require(_feeAddress != address(0), "Fee address cannot be 0 address");
     require(_quoteToken != address(0), "Quote token cannot be 0 address");
     require(
