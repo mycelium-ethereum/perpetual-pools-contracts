@@ -34,29 +34,6 @@ const frontRunningInterval = getRandomInt(updateInterval - 1, 1);
 const fee = getRandomInt(256, 1);
 const leverage = getRandomInt(256, 1);
 
-const initialisePool = (
-  pool: LeveragedPool,
-  poolCode: string,
-  lastPrice: number,
-  updateInterval: number,
-  frontRunningInterval: number,
-  fee: number,
-  leverageAmount: number,
-  feeAddress: string,
-  quoteToken: string
-) => {
-  return pool.initialize(
-    poolCode,
-    lastPrice,
-    updateInterval,
-    frontRunningInterval,
-    fee,
-    leverageAmount,
-    feeAddress,
-    quoteToken
-  );
-};
-
 describe("LeveragedPool - initialize", () => {
   let signers: SignerWithAddress[];
   before(async () => {
@@ -87,8 +64,7 @@ describe("LeveragedPool - initialize", () => {
       ) as LeveragedPool;
 
       receipt = await (
-        await initialisePool(
-          leveragedPool,
+        await leveragedPool.initialize(
           POOL_CODE,
           lastPrice,
           updateInterval,
@@ -220,8 +196,7 @@ describe("LeveragedPool - initialize", () => {
     });
 
     it("should revert if an attempt is made to run it a second time", async () => {
-      await initialisePool(
-        leveragedPool,
+      await leveragedPool.initialize(
         POOL_CODE,
         lastPrice,
         updateInterval,
@@ -232,8 +207,7 @@ describe("LeveragedPool - initialize", () => {
         quoteToken
       );
       await expect(
-        initialisePool(
-          leveragedPool,
+        leveragedPool.initialize(
           POOL_CODE,
           lastPrice,
           updateInterval,
@@ -247,8 +221,7 @@ describe("LeveragedPool - initialize", () => {
     });
     it("should revert if quoteToken address is the zero address", async () => {
       await expect(
-        initialisePool(
-          leveragedPool,
+        leveragedPool.initialize(
           POOL_CODE,
           lastPrice,
           updateInterval,
@@ -262,8 +235,7 @@ describe("LeveragedPool - initialize", () => {
     });
     it("should revert if the fee address is the zero address", async () => {
       await expect(
-        initialisePool(
-          leveragedPool,
+        leveragedPool.initialize(
           POOL_CODE,
           lastPrice,
           updateInterval,
@@ -277,8 +249,7 @@ describe("LeveragedPool - initialize", () => {
     });
     it("should revert if the front running interval is larger than the update interval", async () => {
       await expect(
-        initialisePool(
-          leveragedPool,
+        leveragedPool.initialize(
           POOL_CODE,
           lastPrice,
           1,
@@ -301,8 +272,7 @@ describe("LeveragedPool - initialize", () => {
         Pool,
         signers[0]
       ) as LeveragedPool;
-      await initialisePool(
-        secondPool,
+      await secondPool.initialize(
         POOL_CODE_2,
         lastPrice,
         updateInterval,
@@ -312,8 +282,7 @@ describe("LeveragedPool - initialize", () => {
         feeAddress,
         quoteToken
       );
-      await initialisePool(
-        leveragedPool,
+      await leveragedPool.initialize(
         POOL_CODE,
         lastPrice,
         updateInterval,
