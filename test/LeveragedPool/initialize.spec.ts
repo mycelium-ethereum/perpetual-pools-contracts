@@ -1,18 +1,24 @@
 import { ethers } from "hardhat";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
-import { LeveragedPool__factory, LeveragedPool } from "../../typechain";
+import {
+  TestPoolFactory__factory,
+  LeveragedPool,
+  TestPoolFactory,
+} from "../../typechain";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import {
   ADMIN_ROLE,
   FEE_HOLDER_ROLE,
   POOL_CODE,
+  POOL_CODE_2,
   UPDATER_ROLE,
 } from "../constants";
 import { generateRandomAddress } from "../utilities";
 import { Event } from "@ethersproject/contracts";
 
 import { abi as Token } from "../../artifacts/contracts/implementation/PoolToken.sol/PoolToken.json";
+import { abi as Pool } from "../../artifacts/contracts/implementation/LeveragedPool.sol/LeveragedPool.json";
 
 chai.use(chaiAsPromised);
 const { expect } = chai;
@@ -56,18 +62,30 @@ describe("LeveragedPool - initialize", () => {
   before(async () => {
     signers = await ethers.getSigners();
   });
-  describe("Initializes the contract", () => {
+  describe("Initializes contract state and roles", () => {
     let leveragedPool: LeveragedPool;
     let receipt: any;
     before(async () => {
       // Deploy the contracts
 
-      const leveragedPoolFactory = (await ethers.getContractFactory(
-        "LeveragedPool",
+      const testFactory = (await ethers.getContractFactory(
+        "TestPoolFactory",
         signers[0]
-      )) as LeveragedPool__factory;
-      leveragedPool = await leveragedPoolFactory.deploy();
-      await leveragedPool.deployed();
+      )) as TestPoolFactory__factory;
+      const testFactoryActual = await testFactory.deploy();
+      await testFactoryActual.deployed();
+      const factoryReceipt = await (
+        await testFactoryActual.createPool(POOL_CODE)
+      ).wait();
+
+      leveragedPool = new ethers.Contract(
+        factoryReceipt?.events?.find(
+          (el: any) => el.event === "CreatePool"
+        )?.args?.pool,
+        Pool,
+        signers[0]
+      ) as LeveragedPool;
+
       receipt = await (
         await initialisePool(
           leveragedPool,
@@ -175,18 +193,29 @@ describe("LeveragedPool - initialize", () => {
       ).to.eq(true);
     });
   });
-  describe("Performs safety checks on inputs", () => {
+  describe("Performs safety checks", () => {
     let leveragedPool: LeveragedPool;
-    let signers: SignerWithAddress[];
+    let testFactoryActual: TestPoolFactory;
     beforeEach(async () => {
       // Deploy the contracts
-      signers = await ethers.getSigners();
-
-      const leveragedPoolFactory = (await ethers.getContractFactory(
-        "LeveragedPool",
+      const testFactory = (await ethers.getContractFactory(
+        "TestPoolFactory",
         signers[0]
-      )) as LeveragedPool__factory;
-      leveragedPool = await leveragedPoolFactory.deploy();
+      )) as TestPoolFactory__factory;
+      testFactoryActual = await testFactory.deploy();
+      await testFactoryActual.deployed();
+      const factoryReceipt = await (
+        await testFactoryActual.createPool(POOL_CODE)
+      ).wait();
+
+      leveragedPool = new ethers.Contract(
+        factoryReceipt?.events?.find(
+          (el: any) => el.event === "CreatePool"
+        )?.args?.pool,
+        Pool,
+        signers[0]
+      ) as LeveragedPool;
+
       await leveragedPool.deployed();
     });
 
@@ -260,6 +289,43 @@ describe("LeveragedPool - initialize", () => {
           quoteToken
         )
       ).to.rejectedWith(Error);
+    });
+    it("should be able to coexist with other clones", async () => {
+      const secondPoolReceipt = await (
+        await testFactoryActual.createPool(POOL_CODE_2)
+      ).wait();
+      const secondPool = new ethers.Contract(
+        secondPoolReceipt?.events?.find(
+          (el: any) => el.event === "CreatePool"
+        )?.args?.pool,
+        Pool,
+        signers[0]
+      ) as LeveragedPool;
+      await initialisePool(
+        secondPool,
+        POOL_CODE_2,
+        lastPrice,
+        updateInterval,
+        frontRunningInterval,
+        fee,
+        leverage,
+        feeAddress,
+        quoteToken
+      );
+      await initialisePool(
+        leveragedPool,
+        POOL_CODE,
+        lastPrice,
+        updateInterval,
+        frontRunningInterval,
+        fee,
+        leverage,
+        feeAddress,
+        quoteToken
+      );
+
+      expect(await secondPool.poolCode()).to.eq(POOL_CODE_2);
+      expect(await leveragedPool.poolCode()).to.eq(POOL_CODE);
     });
   });
 });

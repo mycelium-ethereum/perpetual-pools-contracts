@@ -9,3 +9,4 @@ export const FEE_HOLDER_ROLE = "FEE_HOLDER";
 
 export const MARKET_CODE = "TEST/MARKET";
 export const POOL_CODE = "TEST/MARKET+POOL";
+export const POOL_CODE_2 = "SECOND/MARKET+POOL";
