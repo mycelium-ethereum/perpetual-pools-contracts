@@ -14,7 +14,7 @@ import {
   POOL_CODE_2,
   UPDATER_ROLE,
 } from "../constants";
-import { generateRandomAddress } from "../utilities";
+import { generateRandomAddress, getRandomInt } from "../utilities";
 import { Event } from "@ethersproject/contracts";
 
 import { abi as Token } from "../../artifacts/contracts/implementation/PoolToken.sol/PoolToken.json";
@@ -22,9 +22,6 @@ import { abi as Pool } from "../../artifacts/contracts/implementation/LeveragedP
 
 chai.use(chaiAsPromised);
 const { expect } = chai;
-
-const getRandomInt = (min: number, max: number) =>
-  Math.floor(Math.random() * (max - min) + min);
 
 const quoteToken = generateRandomAddress();
 const feeAddress = generateRandomAddress();
