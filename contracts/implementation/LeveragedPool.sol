@@ -13,6 +13,7 @@ import "@openzeppelin/contracts/proxy/Initializable.sol";
 contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
   // #### Globals
   // TODO: Rearrange to tight pack these for gas savings
+  string public poolCode;
   address[2] public tokens;
   uint256 public shortBalance;
   uint256 public longBalance;
