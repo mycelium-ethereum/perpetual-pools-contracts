@@ -7,7 +7,18 @@ pragma abicoder v2;
 */
 interface IPoolKeeper {
   // #### Events
+  /**
+  @notice Creates a notification when a pool is created
+  @param poolAddress The pool address of the newly created pool. This is deterministic and utilizes create2 and the pool code as the salt.
+  @param firstPrice The price of the market oracle when the pool was created. This is the initial value of the lastPrice param in the pool.
+   */
   event CreatePool(address indexed poolAddress, int256 indexed firstPrice);
+
+  /**
+  @notice Creates a notification when a market is created
+  @param marketCode The market identifier for the new market
+  @param oracle The oracle that will be used for price updates
+   */
   event CreateMarket(string marketCode, address oracle);
 
   // #### Functions

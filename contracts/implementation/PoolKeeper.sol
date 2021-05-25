@@ -56,7 +56,9 @@ contract PoolKeeper is IPoolKeeper, AccessControl {
   function triggerPriceUpdate(
     string memory marketCode,
     string[] memory poolCodes
-  ) external override {}
+  ) external override {
+    emit CreateMarket(marketCode, oracle);
+  }
 
   function updateOracleWrapper(address oracle) external override onlyAdmin {
     require(oracle != address(0), "Oracle cannot be 0 address");
