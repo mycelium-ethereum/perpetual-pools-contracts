@@ -30,7 +30,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
   address public override feeAddress;
 
   uint256 internal commitIDCounter;
-  mapping(uint256 => Commit) public commits;
+  mapping(uint256 => Commit) public override commits;
 
   uint256 public shadowLongBalance;
   uint256 public shadowShortBalance;
