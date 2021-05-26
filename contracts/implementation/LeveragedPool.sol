@@ -6,6 +6,7 @@ import "../interfaces/ILeveragedPool.sol";
 import "./PoolToken.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/proxy/Initializable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /*
 @title The pool controller contract
@@ -32,8 +33,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
   uint256 internal commitIDCounter;
   mapping(uint256 => Commit) public override commits;
 
-  uint256 public shadowLongBalance;
-  uint256 public shadowShortBalance;
+  mapping(CommitType => uint256) public override shadowPools;
 
   // #### Roles
   /**
@@ -104,10 +104,28 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
   }
 
   function commit(
-    bytes2 commitType,
+    CommitType commitType,
     uint256 maxImbalance,
     uint256 amount
-  ) external override {}
+  ) external override {
+    require(amount > 0, "Amount must not be zero");
+    commitIDCounter += 1;
+    commits[commitIDCounter] = Commit({
+      commitType: commitType,
+      maxImbalance: maxImbalance,
+      amount: amount,
+      owner: msg.sender,
+      created: block.timestamp
+    });
+
+    shadowPools[commitType] += amount;
+
+    emit CreateCommit(commitIDCounter, amount, maxImbalance, commitType);
+    require(
+      IERC20(quoteToken).transferFrom(msg.sender, address(this), amount),
+      "Transfer of collateral failed"
+    );
+  }
 
   function uncommit(uint256 commitID) external override {}
 

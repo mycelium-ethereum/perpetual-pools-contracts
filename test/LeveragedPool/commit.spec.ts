@@ -17,13 +17,16 @@ import { Event, Transaction } from "ethers";
 chai.use(chaiAsPromised);
 const { expect } = chai;
 
-let quoteToken;
+const amountCommitted = 1000;
+const amountMinted = 2000;
 const feeAddress = generateRandomAddress();
 const lastPrice = getRandomInt(9999999999, 1);
 const updateInterval = getRandomInt(99999, 10);
 const frontRunningInterval = getRandomInt(updateInterval - 1, 1);
 const fee = getRandomInt(256, 1);
 const leverage = getRandomInt(256, 1);
+const imbalance = getRandomInt(999999999999, 1);
+const commitType = [getRandomInt(3, 0)];
 
 const createContracts = async () => {
   const signers = await ethers.getSigners();
@@ -34,7 +37,7 @@ const createContracts = async () => {
   )) as TestToken__factory;
   const token = await testToken.deploy("TEST TOKEN", "TST1");
   await token.deployed();
-  await token.mint(10000, signers[0].address);
+  await token.mint(amountMinted, signers[0].address);
 
   // Deploy and initialise pool
 
@@ -77,69 +80,75 @@ describe("LeveragedPool - commit", () => {
   let pool: LeveragedPool;
   let signers: SignerWithAddress[];
   let token: TestToken;
-  describe("Commit creation - all 4 types", () => {
-    let commitReceipts: any[] = [];
+  describe("Create commit", () => {
+    let receipt: any;
     before(async () => {
       const result = await createContracts();
       signers = result.signers;
       pool = result.pool;
       token = result.token;
 
-      await token.approve(pool.address, 9004); // Pool will pull the funds
-      // Testing all 4 commit types: ShortMint, ShortBurn, LongMint, LongBurn
-      commitReceipts.push(
-        await (
-          await pool.commit(ethers.utils.toUtf8Bytes("0"), 10, 2251)
-        ).wait()
-      );
-      commitReceipts.push(
-        await (
-          await pool.commit(ethers.utils.toUtf8Bytes("1"), 10, 2251)
-        ).wait()
-      );
-      commitReceipts.push(
-        await (
-          await pool.commit(ethers.utils.toUtf8Bytes("2"), 10, 2251)
-        ).wait()
-      );
-      commitReceipts.push(
-        await (
-          await pool.commit(ethers.utils.toUtf8Bytes("3"), 10, 2251)
-        ).wait()
-      );
+      await token.approve(pool.address, amountCommitted);
+      receipt = await (
+        await pool.commit(commitType, imbalance, amountCommitted)
+      ).wait();
     });
     it("should create a commit entry", async () => {
       expect(
-        (await pool.commits(getCommitEventArgs(commitReceipts[0]).commitID))
-          .created
+        (await pool.commits(getCommitEventArgs(receipt).commitID)).created
       ).to.not.eq(0);
+    });
+    it("should set the amount committed", async () => {
       expect(
-        (await pool.commits(getCommitEventArgs(commitReceipts[1]).commitID))
-          .created
-      ).to.not.eq(0);
+        (await pool.commits(getCommitEventArgs(receipt).commitID)).amount
+      ).to.eq(amountCommitted);
+      expect(await token.balanceOf(signers[0].address)).to.eq(
+        amountMinted - amountCommitted
+      );
+      expect(await token.balanceOf(pool.address)).to.eq(amountCommitted);
+    });
+    it("should allocate a unique ID for each request", async () => {
+      await token.approve(pool.address, amountCommitted);
+      const secondCommit = await (
+        await pool.commit(commitType, imbalance, amountCommitted)
+      ).wait();
+      expect(getCommitEventArgs(receipt).commitID).to.not.eq(
+        getCommitEventArgs(secondCommit).commitID
+      );
+    });
+
+    it("should set a timestamp for each commit", async () => {
       expect(
-        (await pool.commits(getCommitEventArgs(commitReceipts[2]).commitID))
-          .created
-      ).to.not.eq(0);
-      expect(
-        (await pool.commits(getCommitEventArgs(commitReceipts[3]).commitID))
-          .created
+        (await pool.commits(getCommitEventArgs(receipt).commitID)).created
       ).to.not.eq(0);
     });
 
-    it("should allocate a unique ID for each request", async () => {});
+    it("should set the user's maximum imbalance tolerance", async () => {
+      expect(
+        (await pool.commits(getCommitEventArgs(receipt).commitID)).maxImbalance
+      ).to.eq(imbalance);
+    });
 
-    it("should set a timestamp for each commit", async () => {});
+    it("should set the commit's owner", async () => {
+      expect(
+        (await pool.commits(getCommitEventArgs(receipt).commitID)).owner
+      ).to.eq(signers[0].address);
+    });
 
-    it("should set the amount committed", async () => {});
+    it("should set the commit type", async () => {
+      expect(
+        (await pool.commits(getCommitEventArgs(receipt).commitID)).commitType
+      ).to.eq(commitType[0]);
+    });
 
-    it("should set the user's maximum imbalance tolerance", async () => {});
-
-    it("should set the commit's owner", async () => {});
-
-    it("should set the commit type", async () => {});
-
-    it("should emit an event with details of the commit", async () => {});
+    it("should emit an event with details of the commit", async () => {
+      expect(getCommitEventArgs(receipt).commitType).to.eq(commitType[0]);
+      expect(getCommitEventArgs(receipt).amount).to.eq(amountCommitted);
+      expect(
+        getCommitEventArgs(receipt).commitID.gt(ethers.BigNumber.from(0))
+      ).to.eq(true);
+      expect(getCommitEventArgs(receipt).maxImbalance).to.eq(imbalance);
+    });
   });
 
   describe("Shadow balance updating", () => {
@@ -148,14 +157,34 @@ describe("LeveragedPool - commit", () => {
       signers = result.signers;
       pool = result.pool;
       token = result.token;
+
+      await token.approve(pool.address, amountCommitted);
+    });
+    it("should update the shadow short mint balance for short mint commits", async () => {
+      expect(await pool.shadowPools([0])).to.eq(0);
+      await pool.commit([0], imbalance, amountCommitted);
+
+      expect(await pool.shadowPools([0])).to.eq(amountCommitted);
     });
 
-    it("should update the shadow long mint balance for long mint commits", async () => {});
+    it("should update the shadow short burn balance for short burn commits", async () => {
+      expect(await pool.shadowPools([1])).to.eq(0);
+      await pool.commit([1], imbalance, amountCommitted);
 
-    it("should update the shadow long burn balance for long burn commits", async () => {});
+      expect(await pool.shadowPools([1])).to.eq(amountCommitted);
+    });
+    it("should update the shadow long mint balance for long mint commits", async () => {
+      expect(await pool.shadowPools([2])).to.eq(0);
+      await pool.commit([2], imbalance, amountCommitted);
 
-    it("should update the shadow short mint balance for short mint commits", async () => {});
+      expect(await pool.shadowPools([2])).to.eq(amountCommitted);
+    });
 
-    it("should update the shadow short burn balance for short burn commits", async () => {});
+    it("should update the shadow long burn balance for long burn commits", async () => {
+      expect(await pool.shadowPools([3])).to.eq(0);
+      await pool.commit([3], imbalance, amountCommitted);
+
+      expect(await pool.shadowPools([3])).to.eq(amountCommitted);
+    });
   });
 });
