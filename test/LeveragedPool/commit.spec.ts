@@ -98,6 +98,11 @@ describe("LeveragedPool - commit", () => {
         (await pool.commits(getCommitEventArgs(receipt).commitID)).created
       ).to.not.eq(0);
     });
+    it("should increment the id counter", async () => {
+      expect((await pool.commitIDCounter()).eq(ethers.BigNumber.from(1))).to.eq(
+        true
+      );
+    });
     it("should set the amount committed", async () => {
       expect(
         (await pool.commits(getCommitEventArgs(receipt).commitID)).amount

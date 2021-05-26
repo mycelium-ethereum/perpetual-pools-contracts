@@ -30,7 +30,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
   uint16 public override leverageAmount;
   address public override feeAddress;
 
-  uint256 internal commitIDCounter;
+  uint256 public override commitIDCounter;
   mapping(uint256 => Commit) public override commits;
 
   mapping(CommitType => uint256) public override shadowPools;
@@ -121,6 +121,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     shadowPools[commitType] += amount;
 
     emit CreateCommit(commitIDCounter, amount, maxImbalance, commitType);
+
     require(
       IERC20(quoteToken).transferFrom(msg.sender, address(this), amount),
       "Transfer of collateral failed"
