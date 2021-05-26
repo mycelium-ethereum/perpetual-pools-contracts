@@ -12,7 +12,7 @@ import { POOL_CODE } from "../constants";
 import { generateRandomAddress, getRandomInt } from "../utilities";
 
 import { abi as Pool } from "../../artifacts/contracts/implementation/LeveragedPool.sol/LeveragedPool.json";
-import { Event } from "ethers";
+import { ContractReceipt, Event } from "ethers";
 
 chai.use(chaiAsPromised);
 const { expect } = chai;
@@ -71,9 +71,9 @@ const createContracts = async () => {
   );
   return { signers, pool, token };
 };
-const getCommitEventArgs = (txReceipt: any) => {
-  return txReceipt?.events.find((el: Event) => el.event === "CreateCommit")
-    .args;
+const getCommitEventArgs = (txReceipt: ContractReceipt | undefined) => {
+  return txReceipt?.events?.find((el: Event) => el.event === "CreateCommit")
+    ?.args;
 };
 
 describe("LeveragedPool - commit", () => {
@@ -81,7 +81,7 @@ describe("LeveragedPool - commit", () => {
   let signers: SignerWithAddress[];
   let token: TestToken;
   describe("Create commit", () => {
-    let receipt: any;
+    let receipt: ContractReceipt;
     before(async () => {
       const result = await createContracts();
       signers = result.signers;
@@ -95,7 +95,7 @@ describe("LeveragedPool - commit", () => {
     });
     it("should create a commit entry", async () => {
       expect(
-        (await pool.commits(getCommitEventArgs(receipt).commitID)).created
+        (await pool.commits(getCommitEventArgs(receipt)?.commitID)).created
       ).to.not.eq(0);
     });
     it("should increment the id counter", async () => {
@@ -105,7 +105,7 @@ describe("LeveragedPool - commit", () => {
     });
     it("should set the amount committed", async () => {
       expect(
-        (await pool.commits(getCommitEventArgs(receipt).commitID)).amount
+        (await pool.commits(getCommitEventArgs(receipt)?.commitID)).amount
       ).to.eq(amountCommitted);
       expect(await token.balanceOf(signers[0].address)).to.eq(
         amountMinted - amountCommitted
@@ -117,42 +117,42 @@ describe("LeveragedPool - commit", () => {
       const secondCommit = await (
         await pool.commit(commitType, imbalance, amountCommitted)
       ).wait();
-      expect(getCommitEventArgs(receipt).commitID).to.not.eq(
-        getCommitEventArgs(secondCommit).commitID
+      expect(getCommitEventArgs(receipt)?.commitID).to.not.eq(
+        getCommitEventArgs(secondCommit)?.commitID
       );
     });
 
     it("should set a timestamp for each commit", async () => {
       expect(
-        (await pool.commits(getCommitEventArgs(receipt).commitID)).created
+        (await pool.commits(getCommitEventArgs(receipt)?.commitID)).created
       ).to.not.eq(0);
     });
 
     it("should set the user's maximum imbalance tolerance", async () => {
       expect(
-        (await pool.commits(getCommitEventArgs(receipt).commitID)).maxImbalance
+        (await pool.commits(getCommitEventArgs(receipt)?.commitID)).maxImbalance
       ).to.eq(imbalance);
     });
 
     it("should set the commit's owner", async () => {
       expect(
-        (await pool.commits(getCommitEventArgs(receipt).commitID)).owner
+        (await pool.commits(getCommitEventArgs(receipt)?.commitID)).owner
       ).to.eq(signers[0].address);
     });
 
     it("should set the commit type", async () => {
       expect(
-        (await pool.commits(getCommitEventArgs(receipt).commitID)).commitType
+        (await pool.commits(getCommitEventArgs(receipt)?.commitID)).commitType
       ).to.eq(commitType[0]);
     });
 
     it("should emit an event with details of the commit", async () => {
-      expect(getCommitEventArgs(receipt).commitType).to.eq(commitType[0]);
-      expect(getCommitEventArgs(receipt).amount).to.eq(amountCommitted);
+      expect(getCommitEventArgs(receipt)?.commitType).to.eq(commitType[0]);
+      expect(getCommitEventArgs(receipt)?.amount).to.eq(amountCommitted);
       expect(
-        getCommitEventArgs(receipt).commitID.gt(ethers.BigNumber.from(0))
+        getCommitEventArgs(receipt)?.commitID.gt(ethers.BigNumber.from(0))
       ).to.eq(true);
-      expect(getCommitEventArgs(receipt).maxImbalance).to.eq(imbalance);
+      expect(getCommitEventArgs(receipt)?.maxImbalance).to.eq(imbalance);
     });
   });
 

@@ -19,6 +19,7 @@ import { Event } from "@ethersproject/contracts";
 
 import { abi as Token } from "../../artifacts/contracts/implementation/PoolToken.sol/PoolToken.json";
 import { abi as Pool } from "../../artifacts/contracts/implementation/LeveragedPool.sol/LeveragedPool.json";
+import { ContractReceipt } from "ethers";
 
 chai.use(chaiAsPromised);
 const { expect } = chai;
@@ -38,7 +39,7 @@ describe("LeveragedPool - initialize", () => {
   });
   describe("Initializes contract state and roles", () => {
     let leveragedPool: LeveragedPool;
-    let receipt: any;
+    let receipt: ContractReceipt;
     before(async () => {
       // Deploy the contracts
 
@@ -129,7 +130,7 @@ describe("LeveragedPool - initialize", () => {
     });
 
     it("should emit an event containing the details of the new pool", async () => {
-      const event: Event = receipt?.events?.find(
+      const event: Event | undefined = receipt?.events?.find(
         (el: Event) => el.event === "PoolInitialized"
       );
       expect(!!event).to.eq(true);
