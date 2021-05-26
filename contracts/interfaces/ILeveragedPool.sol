@@ -32,6 +32,13 @@ interface ILeveragedPool {
     string poolCode
   );
 
+  /**
+    @notice Creates a notification when a commit is created in the pool
+    @param commitID The id of the new commit
+    @param amount The amount of tokens committed
+    @param maxImbalance The max imbalance between the pairs that the commit will tolerate
+    @param commitType The commitment type
+   */
   event CreateCommit(
     uint256 indexed commitID,
     uint256 indexed amount,
