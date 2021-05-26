@@ -27,18 +27,6 @@ const fee = getRandomInt(256, 1);
 const leverage = getRandomInt(256, 1);
 const imbalance = getRandomInt(99999999, 1);
 const commitType = [getRandomInt(3, 0)];
-console.log(
-  amountCommitted,
-  amountMinted,
-  feeAddress,
-  lastPrice,
-  updateInterval,
-  frontRunningInterval,
-  fee,
-  leverage,
-  imbalance,
-  commitType
-);
 
 const createContracts = async () => {
   const signers = await ethers.getSigners();
