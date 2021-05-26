@@ -5,4 +5,5 @@ describe("LeveragedPool - uncommit", () => {
   it("should refund the user's committed tokens", async () => {});
   it("should revert if the commit doesn't exist", async () => {});
   it("should revert if an account other than the owner tries to uncommit a commitment", async () => {});
+  it("should update the shadow pool balance for the commit type", async () => {});
 });
