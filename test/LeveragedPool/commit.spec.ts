@@ -8,25 +8,37 @@ import {
   TestToken,
 } from "../../typechain";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { MARKET, ORACLE, POOL_CODE } from "../constants";
+import { POOL_CODE } from "../constants";
 import { generateRandomAddress, getRandomInt } from "../utilities";
 
 import { abi as Pool } from "../../artifacts/contracts/implementation/LeveragedPool.sol/LeveragedPool.json";
-import { Event, Transaction } from "ethers";
+import { Event } from "ethers";
 
 chai.use(chaiAsPromised);
 const { expect } = chai;
 
-const amountCommitted = 1000;
-const amountMinted = 2000;
+const amountCommitted = getRandomInt(2000, 1);
+const amountMinted = getRandomInt(50000, 10000);
 const feeAddress = generateRandomAddress();
-const lastPrice = getRandomInt(9999999999, 1);
+const lastPrice = getRandomInt(99999999, 1);
 const updateInterval = getRandomInt(99999, 10);
 const frontRunningInterval = getRandomInt(updateInterval - 1, 1);
 const fee = getRandomInt(256, 1);
 const leverage = getRandomInt(256, 1);
-const imbalance = getRandomInt(999999999999, 1);
+const imbalance = getRandomInt(99999999, 1);
 const commitType = [getRandomInt(3, 0)];
+console.log(
+  amountCommitted,
+  amountMinted,
+  feeAddress,
+  lastPrice,
+  updateInterval,
+  frontRunningInterval,
+  fee,
+  leverage,
+  imbalance,
+  commitType
+);
 
 const createContracts = async () => {
   const signers = await ethers.getSigners();
@@ -53,7 +65,7 @@ const createContracts = async () => {
 
   const pool = new ethers.Contract(
     factoryReceipt?.events?.find(
-      (el: any) => el.event === "CreatePool"
+      (el: Event) => el.event === "CreatePool"
     )?.args?.pool,
     Pool,
     signers[0]

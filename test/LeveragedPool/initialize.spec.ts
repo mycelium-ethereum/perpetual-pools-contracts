@@ -54,7 +54,7 @@ describe("LeveragedPool - initialize", () => {
 
       leveragedPool = new ethers.Contract(
         factoryReceipt?.events?.find(
-          (el: any) => el.event === "CreatePool"
+          (el: Event) => el.event === "CreatePool"
         )?.args?.pool,
         Pool,
         signers[0]
@@ -130,7 +130,7 @@ describe("LeveragedPool - initialize", () => {
 
     it("should emit an event containing the details of the new pool", async () => {
       const event: Event = receipt?.events?.find(
-        (el: any) => el.event === "PoolInitialized"
+        (el: Event) => el.event === "PoolInitialized"
       );
       expect(!!event).to.eq(true);
       expect(!!event?.args?.longToken).to.eq(true);
@@ -183,7 +183,7 @@ describe("LeveragedPool - initialize", () => {
 
       leveragedPool = new ethers.Contract(
         factoryReceipt?.events?.find(
-          (el: any) => el.event === "CreatePool"
+          (el: Event) => el.event === "CreatePool"
         )?.args?.pool,
         Pool,
         signers[0]
@@ -264,7 +264,7 @@ describe("LeveragedPool - initialize", () => {
       ).wait();
       const secondPool = new ethers.Contract(
         secondPoolReceipt?.events?.find(
-          (el: any) => el.event === "CreatePool"
+          (el: Event) => el.event === "CreatePool"
         )?.args?.pool,
         Pool,
         signers[0]
