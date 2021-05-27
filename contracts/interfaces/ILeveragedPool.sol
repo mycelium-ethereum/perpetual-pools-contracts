@@ -47,8 +47,8 @@ interface ILeveragedPool {
   );
 
   /**
-    @notice Removes a previous commit if it hasn't been executed yet
-    @param commitID The commit to remove
+    @notice Creates a notification for the removal of a commit that hasn't yet been executed
+    @param commitID The commit that was removed
     @param amount The amount that was removed from the shadow ool
     @param commitType The type of commit that was removed
    */
