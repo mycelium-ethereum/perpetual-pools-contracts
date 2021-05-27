@@ -67,7 +67,9 @@ describe("LeveragedPool - uncommit", () => {
     });
     it("should remove the commit from storage", async () => {
       await pool.uncommit(commitID);
-      expect((await pool.commits(commitID)).owner).to.eq(0);
+      expect((await pool.commits(commitID)).owner).to.eq(
+        ethers.constants.AddressZero
+      );
       expect((await pool.commits(commitID)).created).to.eq(0);
       expect((await pool.commits(commitID)).amount).to.eq(0);
       expect((await pool.commits(commitID)).maxImbalance).to.eq(0);
@@ -89,12 +91,12 @@ describe("LeveragedPool - uncommit", () => {
       expect(await token.balanceOf(signers[0].address)).to.eq(
         amountMinted - amountCommitted
       );
-      expect(await token.balanceOf(token.address)).to.eq(amountCommitted);
+      expect(await token.balanceOf(pool.address)).to.eq(amountCommitted);
 
       await pool.uncommit(commitID);
 
       expect(await token.balanceOf(signers[0].address)).to.eq(amountMinted);
-      expect(await token.balanceOf(token.address)).to.eq(0);
+      expect(await token.balanceOf(pool.address)).to.eq(0);
     });
     it("should revert if the commit doesn't exist", async () => {
       await expect(pool.uncommit(getRandomInt(10, 100))).to.be.rejectedWith(
@@ -128,10 +130,11 @@ describe("LeveragedPool - uncommit", () => {
       const receipt = await (
         await pool.commit([0], imbalance, amountCommitted)
       ).wait();
+
       expect(
         (await pool.shadowPools(0)).eq(ethers.BigNumber.from(amountCommitted))
       ).to.eq(true);
-      await pool.uncommit(getEventArgs(receipt, "CreatePool")?.commitID);
+      await pool.uncommit(getEventArgs(receipt, "CreateCommit")?.commitID);
       expect((await pool.shadowPools(0)).eq(ethers.BigNumber.from(0))).to.eq(
         true
       );
@@ -140,10 +143,11 @@ describe("LeveragedPool - uncommit", () => {
       const receipt = await (
         await pool.commit([1], imbalance, amountCommitted)
       ).wait();
+
       expect(
         (await pool.shadowPools(1)).eq(ethers.BigNumber.from(amountCommitted))
       ).to.eq(true);
-      await pool.uncommit(getEventArgs(receipt, "CreatePool")?.commitID);
+      await pool.uncommit(getEventArgs(receipt, "CreateCommit")?.commitID);
       expect((await pool.shadowPools(1)).eq(ethers.BigNumber.from(0))).to.eq(
         true
       );
@@ -155,7 +159,7 @@ describe("LeveragedPool - uncommit", () => {
       expect(
         (await pool.shadowPools(2)).eq(ethers.BigNumber.from(amountCommitted))
       ).to.eq(true);
-      await pool.uncommit(getEventArgs(receipt, "CreatePool")?.commitID);
+      await pool.uncommit(getEventArgs(receipt, "CreateCommit")?.commitID);
       expect((await pool.shadowPools(2)).eq(ethers.BigNumber.from(0))).to.eq(
         true
       );
@@ -167,7 +171,7 @@ describe("LeveragedPool - uncommit", () => {
       expect(
         (await pool.shadowPools(3)).eq(ethers.BigNumber.from(amountCommitted))
       ).to.eq(true);
-      await pool.uncommit(getEventArgs(receipt, "CreatePool")?.commitID);
+      await pool.uncommit(getEventArgs(receipt, "CreateCommit")?.commitID);
       expect((await pool.shadowPools(3)).eq(ethers.BigNumber.from(0))).to.eq(
         true
       );

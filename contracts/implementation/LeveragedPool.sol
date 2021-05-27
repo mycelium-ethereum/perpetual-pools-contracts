@@ -128,7 +128,18 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     );
   }
 
-  function uncommit(uint256 commitID) external override {}
+  function uncommit(uint256 _commitID) external override {
+    require(commits[_commitID].amount > 0, "Invalid commit");
+    require(msg.sender == commits[_commitID].owner, "Unauthorized");
+
+    uint256 amount = commits[_commitID].amount;
+    shadowPools[commits[_commitID].commitType] -= amount;
+
+    emit RemoveCommit(_commitID, amount, commits[_commitID].commitType);
+    delete commits[_commitID];
+
+    require(IERC20(quoteToken).transfer(msg.sender, amount), "Transfer failed");
+  }
 
   function executeCommitment(uint256[] memory commitID) external override {}
 
