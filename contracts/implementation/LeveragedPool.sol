@@ -132,6 +132,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
         "Transfer of collateral failed"
       );
     }
+    // TODO: finish implementation in TPS-9: executeCommitment
     // else if (commitType == CommitType.LongBurn) {
     //   require(
     //     IERC20(tokens[0]).transferFrom(msg.sender, address(this), amount),
@@ -166,6 +167,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
         "Transfer failed"
       );
     }
+    // TODO: finish implementation in TPS-9: executeCommitment
     // else if (commitType == CommitType.LongBurn) {
     //   require(
     //     IERC20(tokens[0]).transfer(msg.sender, amount),
