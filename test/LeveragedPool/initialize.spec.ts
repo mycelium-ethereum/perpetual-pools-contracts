@@ -14,17 +14,15 @@ import {
   POOL_CODE_2,
   UPDATER_ROLE,
 } from "../constants";
-import { generateRandomAddress } from "../utilities";
+import { generateRandomAddress, getRandomInt } from "../utilities";
 import { Event } from "@ethersproject/contracts";
 
 import { abi as Token } from "../../artifacts/contracts/implementation/PoolToken.sol/PoolToken.json";
 import { abi as Pool } from "../../artifacts/contracts/implementation/LeveragedPool.sol/LeveragedPool.json";
+import { ContractReceipt } from "ethers";
 
 chai.use(chaiAsPromised);
 const { expect } = chai;
-
-const getRandomInt = (min: number, max: number) =>
-  Math.floor(Math.random() * (max - min) + min);
 
 const quoteToken = generateRandomAddress();
 const feeAddress = generateRandomAddress();
@@ -41,7 +39,7 @@ describe("LeveragedPool - initialize", () => {
   });
   describe("Initializes contract state and roles", () => {
     let leveragedPool: LeveragedPool;
-    let receipt: any;
+    let receipt: ContractReceipt;
     before(async () => {
       // Deploy the contracts
 
@@ -57,7 +55,7 @@ describe("LeveragedPool - initialize", () => {
 
       leveragedPool = new ethers.Contract(
         factoryReceipt?.events?.find(
-          (el: any) => el.event === "CreatePool"
+          (el: Event) => el.event === "CreatePool"
         )?.args?.pool,
         Pool,
         signers[0]
@@ -132,8 +130,8 @@ describe("LeveragedPool - initialize", () => {
     });
 
     it("should emit an event containing the details of the new pool", async () => {
-      const event: Event = receipt?.events?.find(
-        (el: any) => el.event === "PoolInitialized"
+      const event: Event | undefined = receipt?.events?.find(
+        (el: Event) => el.event === "PoolInitialized"
       );
       expect(!!event).to.eq(true);
       expect(!!event?.args?.longToken).to.eq(true);
@@ -186,7 +184,7 @@ describe("LeveragedPool - initialize", () => {
 
       leveragedPool = new ethers.Contract(
         factoryReceipt?.events?.find(
-          (el: any) => el.event === "CreatePool"
+          (el: Event) => el.event === "CreatePool"
         )?.args?.pool,
         Pool,
         signers[0]
@@ -267,7 +265,7 @@ describe("LeveragedPool - initialize", () => {
       ).wait();
       const secondPool = new ethers.Contract(
         secondPoolReceipt?.events?.find(
-          (el: any) => el.event === "CreatePool"
+          (el: Event) => el.event === "CreatePool"
         )?.args?.pool,
         Pool,
         signers[0]
