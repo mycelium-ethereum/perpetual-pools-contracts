@@ -43,9 +43,21 @@ export const getEventArgs = (
   return txReceipt?.events?.find((el: Event) => el.event === eventType)?.args;
 };
 
+/**
+ * Deploys a new instance of a pool, as well as an ERC20 token to use as a quote token.
+ * @param POOL_CODE The pool identifier
+ * @param firstPrice The initial value to set the lastPrice variable to in the contract
+ * @param updateInterval The update interval value
+ * @param frontRunningInterval The front running interval value. Must be less than the update interval
+ * @param fee The fund movement fee.
+ * @param leverage The amount of leverage the pool will apply
+ * @param feeAddress The address to transfer fees to on a fund movement
+ * @param amountMinted The amount of test quote tokens to mint
+ * @returns {signers, token, pool} An object containing an array of ethers signers, a Contract instance for the token, and a Contract instance for the pool.
+ */
 export const deployPoolAndTokenContracts = async (
   POOL_CODE: string,
-  lastPrice: number,
+  firstPrice: number,
   updateInterval: number,
   frontRunningInterval: number,
   fee: number,
@@ -87,7 +99,7 @@ export const deployPoolAndTokenContracts = async (
 
   await pool.initialize(
     POOL_CODE,
-    lastPrice,
+    firstPrice,
     updateInterval,
     frontRunningInterval,
     fee,
