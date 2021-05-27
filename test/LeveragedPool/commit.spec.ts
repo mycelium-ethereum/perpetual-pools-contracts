@@ -41,7 +41,8 @@ describe("LeveragedPool - commit", () => {
         frontRunningInterval,
         fee,
         leverage,
-        feeAddress
+        feeAddress,
+        amountMinted
       );
       signers = result.signers;
       pool = result.pool;
@@ -138,7 +139,8 @@ describe("LeveragedPool - commit", () => {
         frontRunningInterval,
         fee,
         leverage,
-        feeAddress
+        feeAddress,
+        amountMinted
       );
       signers = result.signers;
       pool = result.pool;

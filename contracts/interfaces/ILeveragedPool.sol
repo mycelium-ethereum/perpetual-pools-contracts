@@ -39,6 +39,19 @@ interface ILeveragedPool {
     CommitType commitType
   );
 
+  /**
+    @notice Removes a previous commit if it hasn't been executed yet
+    @dev This can only be used by the owner of the commit in question
+    @param commitID The commit to remove
+    @param amount The amount that was removed from the shadow ool
+    @param commitType The type of commit that was removed
+   */
+  event RemoveCommit(
+    uint256 indexed commitID,
+    uint256 indexed amount,
+    CommitType indexed commitType
+  );
+
   // #### Functions
   /**
   @notice Configures the pool on deployment. The pools are EIP 1167 clones.

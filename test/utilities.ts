@@ -50,7 +50,8 @@ export const deployPoolAndTokenContracts = async (
   frontRunningInterval: number,
   fee: number,
   leverage: number,
-  feeAddress: string
+  feeAddress: string,
+  amountMinted: number
 ): Promise<{
   signers: SignerWithAddress[];
   pool: LeveragedPool;
