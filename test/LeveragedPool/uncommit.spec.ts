@@ -25,7 +25,7 @@ const frontRunningInterval = getRandomInt(updateInterval - 1, 1);
 const fee = getRandomInt(256, 1);
 const leverage = getRandomInt(256, 1);
 const imbalance = getRandomInt(99999999, 1);
-const commitType = [getRandomInt(3, 0)];
+const commitType = [2]; // Long mint;
 
 describe("LeveragedPool - uncommit", () => {
   let signers: SignerWithAddress[];
@@ -86,17 +86,6 @@ describe("LeveragedPool - uncommit", () => {
       expect(getEventArgs(uncommitReceipt, "RemoveCommit")?.commitType).to.eq(
         getEventArgs(receipt, "CreateCommit")?.commitType
       );
-    });
-    it("should refund the user's committed tokens", async () => {
-      expect(await token.balanceOf(signers[0].address)).to.eq(
-        amountMinted - amountCommitted
-      );
-      expect(await token.balanceOf(pool.address)).to.eq(amountCommitted);
-
-      await pool.uncommit(commitID);
-
-      expect(await token.balanceOf(signers[0].address)).to.eq(amountMinted);
-      expect(await token.balanceOf(pool.address)).to.eq(0);
     });
     it("should revert if the commit doesn't exist", async () => {
       await expect(pool.uncommit(getRandomInt(10, 100))).to.be.rejectedWith(
@@ -176,5 +165,77 @@ describe("LeveragedPool - uncommit", () => {
         true
       );
     });
+  });
+  describe("Token transfers", () => {
+    beforeEach(async () => {
+      const elements = await deployPoolAndTokenContracts(
+        POOL_CODE,
+        lastPrice,
+        updateInterval,
+        frontRunningInterval,
+        fee,
+        leverage,
+        feeAddress,
+        amountMinted
+      );
+      signers = elements.signers;
+      pool = elements.pool;
+      token = elements.token;
+      await token.approve(pool.address, amountCommitted);
+    });
+    it("should refund the user's quote tokens for long mint commits", async () => {
+      const receipt = await (
+        await pool.commit([0], imbalance, amountCommitted)
+      ).wait();
+      expect(await token.balanceOf(signers[0].address)).to.eq(
+        amountMinted - amountCommitted
+      );
+      expect(await token.balanceOf(pool.address)).to.eq(amountCommitted);
+
+      await pool.uncommit(getEventArgs(receipt, "CreateCommit")?.commitID);
+
+      expect(await token.balanceOf(signers[0].address)).to.eq(amountMinted);
+      expect(await token.balanceOf(pool.address)).to.eq(0);
+    });
+    it("should refund the user's quote tokens for short mint commits", async () => {
+      const receipt = await (
+        await pool.commit([2], imbalance, amountCommitted)
+      ).wait();
+      expect(await token.balanceOf(signers[0].address)).to.eq(
+        amountMinted - amountCommitted
+      );
+      expect(await token.balanceOf(pool.address)).to.eq(amountCommitted);
+
+      await pool.uncommit(getEventArgs(receipt, "CreateCommit")?.commitID);
+
+      expect(await token.balanceOf(signers[0].address)).to.eq(amountMinted);
+      expect(await token.balanceOf(pool.address)).to.eq(0);
+    });
+    it("should not transfer quote tokens for short burn commits", async () => {
+      const receipt = await (
+        await pool.commit([1], imbalance, amountCommitted)
+      ).wait();
+      expect(await token.balanceOf(signers[0].address)).to.eq(amountMinted);
+      expect(await token.balanceOf(pool.address)).to.eq(0);
+
+      await pool.uncommit(getEventArgs(receipt, "CreateCommit")?.commitID);
+
+      expect(await token.balanceOf(signers[0].address)).to.eq(amountMinted);
+      expect(await token.balanceOf(pool.address)).to.eq(0);
+    });
+    it("should not transfer quote tokens for long burn commits", async () => {
+      const receipt = await (
+        await pool.commit([3], imbalance, amountCommitted)
+      ).wait();
+      expect(await token.balanceOf(signers[0].address)).to.eq(amountMinted);
+      expect(await token.balanceOf(pool.address)).to.eq(0);
+
+      await pool.uncommit(getEventArgs(receipt, "CreateCommit")?.commitID);
+
+      expect(await token.balanceOf(signers[0].address)).to.eq(amountMinted);
+      expect(await token.balanceOf(pool.address)).to.eq(0);
+    });
+    // it("should refund short pair tokens to the user for short burn commits", async () => {});
+    // it("should refund long pair tokens to the user for long burn commits", async () => {});
   });
 });

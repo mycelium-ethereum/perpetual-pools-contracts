@@ -15,6 +15,8 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
   // #### Globals
   // TODO: Rearrange to tight pack these for gas savings
   string public override poolCode;
+
+  // Index 0 is the LONG token, index 1 is the SHORT token
   address[2] public override tokens;
   uint256 public shortBalance;
   uint256 public longBalance;
@@ -130,6 +132,17 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
         "Transfer of collateral failed"
       );
     }
+    // else if (commitType == CommitType.LongBurn) {
+    //   require(
+    //     IERC20(tokens[0]).transferFrom(msg.sender, address(this), amount),
+    //     "Transfer of collateral failed"
+    //   );
+    // } else if (commitType == CommitType.ShortBurn) {
+    //   require(
+    //     IERC20(tokens[1]).transferFrom(msg.sender, address(this), amount),
+    //     "Transfer of collateral failed"
+    //   );
+    // }
   }
 
   function uncommit(uint256 _commitID) external override {
@@ -137,12 +150,33 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     require(commits[_commitID].amount > 0, "Invalid commit");
 
     uint256 amount = commits[_commitID].amount;
+    CommitType commitType = commits[_commitID].commitType;
+
     shadowPools[commits[_commitID].commitType] -= amount;
 
-    emit RemoveCommit(_commitID, amount, commits[_commitID].commitType);
+    emit RemoveCommit(_commitID, amount, commitType);
+
     delete commits[_commitID];
 
-    require(IERC20(quoteToken).transfer(msg.sender, amount), "Transfer failed");
+    if (
+      commitType == CommitType.LongMint || commitType == CommitType.ShortMint
+    ) {
+      require(
+        IERC20(quoteToken).transfer(msg.sender, amount),
+        "Transfer failed"
+      );
+    }
+    // else if (commitType == CommitType.LongBurn) {
+    //   require(
+    //     IERC20(tokens[0]).transfer(msg.sender, amount),
+    //     "Transfer failed"
+    //   );
+    // } else if (commitType == CommitType.ShortBurn) {
+    //   require(
+    //     IERC20(tokens[1]).transfer(msg.sender, amount),
+    //     "Transfer failed"
+    //   );
+    // }
   }
 
   function executeCommitment(uint256[] memory commitID) external override {}
