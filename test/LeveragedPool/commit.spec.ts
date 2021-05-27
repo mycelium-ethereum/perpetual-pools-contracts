@@ -25,7 +25,7 @@ const frontRunningInterval = getRandomInt(updateInterval - 1, 1);
 const fee = getRandomInt(256, 1);
 const leverage = getRandomInt(256, 1);
 const imbalance = getRandomInt(99999999, 1);
-const commitType = [getRandomInt(3, 0)];
+const commitType = [0]; // Short mint
 
 describe("LeveragedPool - commit", () => {
   let pool: LeveragedPool;
@@ -69,10 +69,6 @@ describe("LeveragedPool - commit", () => {
         (await pool.commits(getEventArgs(receipt, "CreateCommit")?.commitID))
           .amount
       ).to.eq(amountCommitted);
-      expect(await token.balanceOf(signers[0].address)).to.eq(
-        amountMinted - amountCommitted
-      );
-      expect(await token.balanceOf(pool.address)).to.eq(amountCommitted);
     });
     it("should allocate a unique ID for each request", async () => {
       await token.approve(pool.address, amountCommitted);
@@ -130,7 +126,7 @@ describe("LeveragedPool - commit", () => {
     });
   });
 
-  describe("Shadow balance updating", () => {
+  describe("Token transfers and Shadow balances", () => {
     beforeEach(async () => {
       const result = await deployPoolAndTokenContracts(
         POOL_CODE,
@@ -154,6 +150,11 @@ describe("LeveragedPool - commit", () => {
 
       expect(await pool.shadowPools([0])).to.eq(amountCommitted);
     });
+    it("should transfer the user's tokens into the pool for short mint commits", async () => {
+      expect(await token.balanceOf(pool.address)).to.eq(0);
+      await pool.commit([0], imbalance, amountCommitted);
+      expect(await token.balanceOf(pool.address)).to.eq(amountCommitted);
+    });
 
     it("should update the shadow short burn balance for short burn commits", async () => {
       expect(await pool.shadowPools([1])).to.eq(0);
@@ -161,11 +162,21 @@ describe("LeveragedPool - commit", () => {
 
       expect(await pool.shadowPools([1])).to.eq(amountCommitted);
     });
+    it("should not require a token transfer for short burn commits", async () => {
+      expect(await token.balanceOf(pool.address)).to.eq(0);
+      await pool.commit([1], imbalance, amountCommitted);
+      expect(await token.balanceOf(pool.address)).to.eq(0);
+    });
     it("should update the shadow long mint balance for long mint commits", async () => {
       expect(await pool.shadowPools([2])).to.eq(0);
       await pool.commit([2], imbalance, amountCommitted);
 
       expect(await pool.shadowPools([2])).to.eq(amountCommitted);
+    });
+    it("should transfer the user's tokens into the pool for long mint commits", async () => {
+      expect(await token.balanceOf(pool.address)).to.eq(0);
+      await pool.commit([2], imbalance, amountCommitted);
+      expect(await token.balanceOf(pool.address)).to.eq(amountCommitted);
     });
 
     it("should update the shadow long burn balance for long burn commits", async () => {
@@ -173,6 +184,11 @@ describe("LeveragedPool - commit", () => {
       await pool.commit([3], imbalance, amountCommitted);
 
       expect(await pool.shadowPools([3])).to.eq(amountCommitted);
+    });
+    it("should not require a token transfer for long burn commits", async () => {
+      expect(await token.balanceOf(pool.address)).to.eq(0);
+      await pool.commit([3], imbalance, amountCommitted);
+      expect(await token.balanceOf(pool.address)).to.eq(0);
     });
   });
 });

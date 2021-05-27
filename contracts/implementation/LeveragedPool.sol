@@ -122,10 +122,14 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
 
     emit CreateCommit(commitIDCounter, amount, maxImbalance, commitType);
 
-    require(
-      IERC20(quoteToken).transferFrom(msg.sender, address(this), amount),
-      "Transfer of collateral failed"
-    );
+    if (
+      commitType == CommitType.LongMint || commitType == CommitType.ShortMint
+    ) {
+      require(
+        IERC20(quoteToken).transferFrom(msg.sender, address(this), amount),
+        "Transfer of collateral failed"
+      );
+    }
   }
 
   function uncommit(uint256 _commitID) external override {
