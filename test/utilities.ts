@@ -1,7 +1,8 @@
 import { ethers } from "hardhat";
-import { ContractReceipt, Event } from "ethers";
+import { Contract, ContractReceipt, Event } from "ethers";
 import { Result } from "ethers/lib/utils";
 import {
+  ERC20,
   LeveragedPool,
   TestPoolFactory__factory,
   TestToken,
@@ -9,6 +10,7 @@ import {
 } from "../typechain";
 
 import { abi as Pool } from "../artifacts/contracts/implementation/LeveragedPool.sol/LeveragedPool.json";
+import { abi as ERC20Abi } from "../artifacts/@openzeppelin/contracts/token/ERC20/ERC20.sol/ERC20.json";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
 /**
@@ -68,6 +70,8 @@ export const deployPoolAndTokenContracts = async (
   signers: SignerWithAddress[];
   pool: LeveragedPool;
   token: TestToken;
+  shortToken: ERC20;
+  longToken: ERC20;
 }> => {
   const signers = await ethers.getSigners();
   // Deploy test ERC20 token
@@ -97,15 +101,32 @@ export const deployPoolAndTokenContracts = async (
     signers[0]
   ) as LeveragedPool;
 
-  await pool.initialize(
-    POOL_CODE,
-    firstPrice,
-    updateInterval,
-    frontRunningInterval,
-    fee,
-    leverage,
-    feeAddress,
-    token.address
-  );
-  return { signers, pool, token };
+  const poolReceipt = await (
+    await pool.initialize(
+      POOL_CODE,
+      firstPrice,
+      updateInterval,
+      frontRunningInterval,
+      fee,
+      leverage,
+      feeAddress,
+      token.address
+    )
+  ).wait();
+
+  return {
+    signers,
+    pool,
+    token,
+    shortToken: new ethers.Contract(
+      getEventArgs(poolReceipt, "PoolInitialized")?.shortToken,
+      ERC20Abi,
+      signers[0]
+    ) as ERC20,
+    longToken: new ethers.Contract(
+      getEventArgs(poolReceipt, "PoolInitialized")?.longToken,
+      ERC20Abi,
+      signers[0]
+    ) as ERC20,
+  };
 };
