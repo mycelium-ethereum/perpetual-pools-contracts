@@ -176,8 +176,9 @@ describe("LeveragedPool - executeCommitment", () => {
     });
   });
   describe("Commitment types", () => {
+    let commit: CommitEventArgs;
     describe("Short Mint", () => {
-      before(async () => {
+      beforeEach(async () => {
         const result = await deployPoolAndTokenContracts(
           POOL_CODE,
           lastPrice,
@@ -193,19 +194,32 @@ describe("LeveragedPool - executeCommitment", () => {
         token = result.token;
         shortToken = result.shortToken;
         longToken = result.longToken;
+
+        await token.approve(pool.address, amountCommitted);
+        commit = await createCommit(pool, [0], 50, amountCommitted);
       });
       it("should adjust the live short pool balance", async () => {
-        throw new Error();
+        expect(await pool.shortBalance()).to.eq(0);
+        await pool.executeCommitment([commit.commitID]);
+        expect(await pool.shortBalance()).to.eq(amountCommitted);
       });
       it("should reduce the shadow short mint pool balance", async () => {
-        throw new Error();
+        expect(await pool.shadowPools(commit.commitType)).to.eq(
+          amountCommitted
+        );
+        await pool.executeCommitment([commit.commitID]);
+        expect(await pool.shadowPools(commit.commitType)).to.eq(0);
       });
       it("should mint short pair tokens", async () => {
-        throw new Error();
+        expect(await shortToken.balanceOf(signers[0].address)).to.eq(0);
+        await pool.executeCommitment([commit.commitID]);
+        expect(await shortToken.balanceOf(signers[0].address)).to.eq(
+          amountCommitted
+        );
       });
     });
     describe("Short Burn", () => {
-      before(async () => {
+      beforeEach(async () => {
         const result = await deployPoolAndTokenContracts(
           POOL_CODE,
           lastPrice,
@@ -221,22 +235,50 @@ describe("LeveragedPool - executeCommitment", () => {
         token = result.token;
         shortToken = result.shortToken;
         longToken = result.longToken;
+
+        await token.approve(pool.address, amountCommitted);
+        commit = await createCommit(pool, [0], 50, amountCommitted);
+        await pool.executeCommitment([commit.commitID]);
+
+        await shortToken.approve(pool.address, Math.floor(amountCommitted / 2));
+        commit = await createCommit(
+          pool,
+          [1],
+          50,
+          Math.floor(amountCommitted / 2)
+        );
       });
-      it("should adjust the live short pool balance", async () => {
-        throw new Error();
+      it("should reduce the live short pool balance", async () => {
+        expect(await pool.shortBalance()).to.eq(amountCommitted);
+        await pool.executeCommitment([commit.commitID]);
+        expect(await pool.shortBalance()).to.eq(
+          Math.floor(amountCommitted / 2)
+        );
       });
       it("should reduce the shadow short burn pool balance", async () => {
-        throw new Error();
+        expect(await pool.shadowPools(commit.commitType)).to.eq(
+          Math.floor(amountCommitted / 2)
+        );
+        await pool.executeCommitment([commit.commitID]);
+        expect(await pool.shadowPools(commit.commitType)).to.eq(0);
       });
       it("should burn short pair tokens", async () => {
-        throw new Error();
+        expect(await shortToken.balanceOf(pool.address)).to.eq(
+          Math.floor(amountCommitted / 2)
+        );
+        await pool.executeCommitment([commit.commitID]);
+        expect(await shortToken.balanceOf(pool.address)).to.eq(0);
       });
       it("should transfer quote tokens to the commit owner", async () => {
-        throw new Error();
+        expect(await token.balanceOf(signers[0].address)).to.eq(0);
+        await pool.executeCommitment([commit.commitID]);
+        expect(await token.balanceOf(signers[0].address)).to.eq(
+          Math.floor(amountCommitted / 2)
+        );
       });
     });
     describe("Long Mint", () => {
-      before(async () => {
+      beforeEach(async () => {
         const result = await deployPoolAndTokenContracts(
           POOL_CODE,
           lastPrice,
@@ -252,19 +294,31 @@ describe("LeveragedPool - executeCommitment", () => {
         token = result.token;
         shortToken = result.shortToken;
         longToken = result.longToken;
+        await token.approve(pool.address, amountCommitted);
+        commit = await createCommit(pool, [2], 50, amountCommitted);
       });
       it("should adjust the live long pool balance", async () => {
-        throw new Error();
+        expect(await pool.longBalance()).to.eq(0);
+        await pool.executeCommitment([commit.commitID]);
+        expect(await pool.longBalance()).to.eq(amountCommitted);
       });
       it("should reduce the shadow long mint pool balance", async () => {
-        throw new Error();
+        expect(await pool.shadowPools(commit.commitType)).to.eq(
+          amountCommitted
+        );
+        await pool.executeCommitment([commit.commitID]);
+        expect(await pool.shadowPools(commit.commitType)).to.eq(0);
       });
       it("should mint long pair tokens", async () => {
-        throw new Error();
+        expect(await longToken.balanceOf(signers[0].address)).to.eq(0);
+        await pool.executeCommitment([commit.commitID]);
+        expect(await longToken.balanceOf(signers[0].address)).to.eq(
+          amountCommitted
+        );
       });
     });
     describe("Long Burn", () => {
-      before(async () => {
+      beforeEach(async () => {
         const result = await deployPoolAndTokenContracts(
           POOL_CODE,
           lastPrice,
@@ -280,18 +334,44 @@ describe("LeveragedPool - executeCommitment", () => {
         token = result.token;
         shortToken = result.shortToken;
         longToken = result.longToken;
+
+        await token.approve(pool.address, amountCommitted);
+        commit = await createCommit(pool, [2], 50, amountCommitted);
+        await pool.executeCommitment([commit.commitID]);
+
+        await longToken.approve(pool.address, Math.floor(amountCommitted / 2));
+        commit = await createCommit(
+          pool,
+          [3],
+          50,
+          Math.floor(amountCommitted / 2)
+        );
       });
       it("should adjust the live long pool balance", async () => {
-        throw new Error();
+        expect(await pool.longBalance()).to.eq(amountCommitted);
+        await pool.executeCommitment([commit.commitID]);
+        expect(await pool.longBalance()).to.eq(Math.floor(amountCommitted / 2));
       });
       it("should reduce the shadow long burn pool balance", async () => {
-        throw new Error();
+        expect(await pool.shadowPools(commit.commitType)).to.eq(
+          Math.floor(amountCommitted / 2)
+        );
+        await pool.executeCommitment([commit.commitID]);
+        expect(await pool.shadowPools(commit.commitType)).to.eq(0);
       });
       it("should burn long pair tokens", async () => {
-        throw new Error();
+        expect(await longToken.balanceOf(pool.address)).to.eq(
+          Math.floor(amountCommitted / 2)
+        );
+        await pool.executeCommitment([commit.commitID]);
+        expect(await longToken.balanceOf(pool.address)).to.eq(0);
       });
       it("should transfer quote tokens to the commit owner", async () => {
-        throw new Error();
+        expect(await token.balanceOf(signers[0].address)).to.eq(0);
+        await pool.executeCommitment([commit.commitID]);
+        expect(await token.balanceOf(signers[0].address)).to.eq(
+          Math.floor(amountCommitted / 2)
+        );
       });
     });
   });
