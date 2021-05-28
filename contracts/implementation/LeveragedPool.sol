@@ -7,11 +7,14 @@ import "./PoolToken.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/proxy/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 
 /*
 @title The pool controller contract
 */
 contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
+  using SafeMath for uint256;
+
   // #### Globals
   // TODO: Rearrange to tight pack these for gas savings
   string public override poolCode;
@@ -181,9 +184,27 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     // }
   }
 
-  function executeCommitment(uint256[] memory commitID) external override {}
+  function executeCommitment(uint256[] memory _commitIDs) external override {
+    Commit memory _commit;
+    for (uint256 i = 0; i < _commitIDs.length; i++) {
+      _commit = commits[_commitIDs[i]];
+      require(_commit.amount > 0, "Invalid commit");
+      // TODO: Double check this
+      require(
+        _commit.created + frontRunningInterval < lastPriceTimestamp,
+        "Commit too new"
+      );
+      // Check Imbalance = long quote / short quote
+      emit ExecuteCommit(_commitIDs[i]);
 
-  function executePriceChange(uint256 endPrice) external override {}
+      // Update shadow pools
+      shadowPools[_commit.commitType] -= _commit.amount;
+    }
+  }
+
+  function executePriceChange(uint256 endPrice) external override {
+    lastPriceTimestamp = block.timestamp;
+  }
 
   function updateFeeAddress(address account) external override {}
 

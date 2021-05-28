@@ -64,13 +64,6 @@ interface ILeveragedPool {
  */
   event ExecuteCommit(uint256 commitID);
 
-  /**
-  @notice Creates a notification for the net effects a series of executed commits had on the pair balances
-  @param shortBalanceChange The change to the short pair balance
-  @param longBalanceChange The change to the long pair balance
- */
-  event ExecutionResults(int256 shortBalanceChange, int256 longBalanceChange);
-
   // #### Functions
   /**
   @notice Configures the pool on deployment. The pools are EIP 1167 clones.
@@ -115,9 +108,9 @@ interface ILeveragedPool {
 
   /**
     @notice Executes one or more commitments and effects the changes on the live and shadow pools respectively. This can be used to execute on any valid commits in the commit pool
-    @param commitID an array of commits to execute. These do not have to all belong to the sender, nor do they need to be in a specific order.
+    @param _commitIDs an array of commits to execute. These do not have to all belong to the sender, nor do they need to be in a specific order.
      */
-  function executeCommitment(uint256[] memory commitID) external;
+  function executeCommitment(uint256[] memory _commitIDs) external;
 
   /**
     @notice Processes the effect of a price change. The effect of a price change on a pool is left to the implementer. The pool stores the last price, and is given the latest price on update. 
