@@ -58,6 +58,19 @@ interface ILeveragedPool {
     CommitType indexed commitType
   );
 
+  /**
+  @notice Creates a notification that a commit has been executed
+  @param commitID The commit that was executed
+ */
+  event ExecuteCommit(uint256 commitID);
+
+  /**
+  @notice Creates a notification for the net effects a series of executed commits had on the pair balances
+  @param shortBalanceChange The change to the short pair balance
+  @param longBalanceChange The change to the long pair balance
+ */
+  event ExecutionResults(int256 shortBalanceChange, int256 longBalanceChange);
+
   // #### Functions
   /**
   @notice Configures the pool on deployment. The pools are EIP 1167 clones.

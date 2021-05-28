@@ -1,5 +1,5 @@
 import { ethers } from "hardhat";
-import { Contract, ContractReceipt, Event } from "ethers";
+import { BigNumberish, Contract, ContractReceipt, Event } from "ethers";
 import { Result } from "ethers/lib/utils";
 import {
   ERC20,
@@ -129,4 +129,42 @@ export const deployPoolAndTokenContracts = async (
       signers[0]
     ) as ERC20,
   };
+};
+
+export interface CommitEventArgs {
+  commitID: BigNumberish;
+  amount: BigNumberish;
+  maxImbalance: BigNumberish;
+  commitType: BigNumberish;
+}
+/**
+ * Creates a commit and returns the event arguments for it
+ * @param commitType The type of commit
+ * @param imbalance The max imbalance for the commit
+ * @param amount The amount to commit to
+ */
+export const createCommit = async (
+  pool: LeveragedPool,
+  commitType: BigNumberish,
+  imbalance: BigNumberish,
+  amount: number
+): Promise<CommitEventArgs> => {
+  const receipt = await (
+    await pool.commit(commitType, imbalance, amount)
+  ).wait();
+  return {
+    commitID: getEventArgs(receipt, "CreateCommit")?.commitID,
+    amount: getEventArgs(receipt, "CreateCommit")?.amount,
+    maxImbalance: getEventArgs(receipt, "CreateCommit")?.maxImbalance,
+    commitType: getEventArgs(receipt, "CreateCommit")?.commitType,
+  };
+};
+
+/**
+ * Delays execution of a function by the amount specified
+ * @param milliseconds the number of milliseconds to wait
+ * @returns nothing
+ */
+export const timeout = async (milliseconds: number): Promise<void> => {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
 };
