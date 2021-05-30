@@ -195,10 +195,12 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
         "Commit too new"
       );
       // Check Imbalance = long quote / short quote
+
       emit ExecuteCommit(_commitIDs[i]);
 
       // Update shadow pools
       shadowPools[_commit.commitType] -= _commit.amount;
+      delete commits[_commitIDs[i]];
     }
   }
 

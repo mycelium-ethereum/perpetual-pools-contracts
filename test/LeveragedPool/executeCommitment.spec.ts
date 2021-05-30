@@ -245,6 +245,8 @@ describe("LeveragedPool - executeCommitment", () => {
 
         await token.approve(pool.address, amountCommitted);
         commit = await createCommit(pool, [0], 50, amountCommitted);
+        await timeout(2000);
+        await pool.executePriceChange(9);
         await pool.executeCommitment([commit.commitID]);
 
         await shortToken.approve(pool.address, Math.floor(amountCommitted / 2));
@@ -358,6 +360,8 @@ describe("LeveragedPool - executeCommitment", () => {
 
         await token.approve(pool.address, amountCommitted);
         commit = await createCommit(pool, [2], 50, amountCommitted);
+        await timeout(2000);
+        await pool.executePriceChange(9);
         await pool.executeCommitment([commit.commitID]);
 
         await longToken.approve(pool.address, Math.floor(amountCommitted / 2));
