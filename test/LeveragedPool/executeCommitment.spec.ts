@@ -63,12 +63,12 @@ describe("LeveragedPool - executeCommitment", () => {
       ).to.be.rejectedWith(Error);
     });
     it("should revert if the max imbalance is less than the current imbalance of the pairs", async () => {
-      await token.approve(pool.address, amountCommitted);
+      await token.approve(pool.address, amountCommitted * 2);
       const commit = await createCommit(pool, [0], imbalance, amountCommitted);
       await timeout(6000); // wait six seconds
       await pool.executePriceChange(5);
       await pool.executeCommitment([commit.commitID]);
-      const commit2 = await createCommit(pool, [0], 1, amountCommitted);
+      const commit2 = await createCommit(pool, [0], 5, amountCommitted);
       await expect(
         pool.executeCommitment([commit2.commitID])
       ).to.be.rejectedWith(Error);

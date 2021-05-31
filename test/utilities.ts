@@ -139,6 +139,7 @@ export interface CommitEventArgs {
 }
 /**
  * Creates a commit and returns the event arguments for it
+ * @param pool The pool contract instance
  * @param commitType The type of commit
  * @param imbalance The max imbalance for the commit
  * @param amount The amount to commit to

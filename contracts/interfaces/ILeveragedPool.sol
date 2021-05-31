@@ -12,7 +12,7 @@ interface ILeveragedPool {
   struct Commit {
     uint256 created;
     uint256 amount;
-    uint256 maxImbalance;
+    int128 maxImbalance;
     address owner;
     CommitType commitType;
   }
@@ -42,7 +42,7 @@ interface ILeveragedPool {
   event CreateCommit(
     uint256 indexed commitID,
     uint256 indexed amount,
-    uint256 indexed maxImbalance,
+    int128 indexed maxImbalance,
     CommitType commitType
   );
 
@@ -96,7 +96,7 @@ interface ILeveragedPool {
      */
   function commit(
     CommitType commitType,
-    uint256 maxImbalance,
+    int128 maxImbalance,
     uint256 amount
   ) external;
 
@@ -127,6 +127,14 @@ interface ILeveragedPool {
   */
 
   function updateFeeAddress(address account) external;
+
+  /**
+@notice Calculates the ratio between two numbers, given by a / b
+@param a The left hand side of the equation
+@param b The right hand side of the equation
+@return the ratio, as a 64.64 fixed point decimal. See ABDKMath64x64 library for more information
+ */
+  function getRatio(uint256 a, uint256 b) external pure returns (int128);
 
   // #### Getter Definitions
   /**
@@ -199,7 +207,7 @@ interface ILeveragedPool {
     returns (
       uint256 created,
       uint256 amount,
-      uint256 maxImbalance,
+      int128 maxImbalance,
       address owner,
       CommitType commitType
     );
