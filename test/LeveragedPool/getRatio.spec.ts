@@ -79,8 +79,6 @@ describe("LeveragedPool - getRatio", () => {
       ethers.utils.parseEther("2"),
       ethers.utils.parseEther("2000000000000000000") //2*10^18
     );
-    console.log(result.toString());
-
     expect(result.toString()).to.eq("1");
   });
 });

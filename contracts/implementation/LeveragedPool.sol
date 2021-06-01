@@ -249,6 +249,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     }
   }
 
+  // TODO: Check return size. I'm fairly certain it will reduce to 0 before overflowing a uint128, but it needs more testing.
   function getRatio(uint128 _numerator, uint128 _denominator)
     public
     pure
@@ -262,12 +263,14 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     return (uint256(_numerator) * 10**(18)).div(uint256(_denominator));
   }
 
+  // TODO: Need to stress test this as well as the getRatio improvements.
   function getAmountOut(uint256 ratio, uint128 amountIn)
     public
     pure
     override
     returns (uint256)
   {
+    require(amountIn > 0, "Invalid amount");
     if (ratio == 0) {
       return amountIn;
     }
