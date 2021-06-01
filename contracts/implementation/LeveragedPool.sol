@@ -190,6 +190,13 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
   }
 
   function executeCommitment(uint256[] memory _commitIDs) external override {
+    // console.log("0.5% Ratio: ");
+    // console.logInt(getRatio(11 ether, 2 ether));
+    // console.log(
+    //   // Pool ratio * amount user wants
+    //   "Entitlement: ",
+    //   ABDKMath64x64.mulu(getRatio(5 ether, 10 ether), uint256(5 ether))
+    // );
     Commit memory _commit;
     for (uint256 i = 0; i < _commitIDs.length; i++) {
       _commit = commits[_commitIDs[i]];
@@ -199,10 +206,9 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
         _commit.created + frontRunningInterval < lastPriceTimestamp,
         "Commit too new"
       );
-      // Imbalance check
-      console.logInt(_getRatio(longBalance, shortBalance));
+      // Imbalance check.
       require(
-        _getRatio(longBalance, shortBalance) <= _commit.maxImbalance,
+        getRatio(longBalance, shortBalance) <= _commit.maxImbalance,
         "Imbalance tolerance exceeded"
       );
       emit ExecuteCommit(_commitIDs[i]);
@@ -211,27 +217,41 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
       shadowPools[_commit.commitType] -= _commit.amount;
       delete commits[_commitIDs[i]];
 
-      // Update live pool balances
-      // Remit quote tokens for burns
-      // Mint pool tokens for mints
-      // if (_commit.commitType == CommitType.LongMint) {
-      //   // Update pool balance
-      //   longBalance += _commit.amount;
-      //   // Issue pool tokens
-      // PoolToken(tokens[0]).mint(, _commit.owner);
-      //   PoolToken(token[0]).mint(amount, _commit.owner);
-      // } else if (_commit.commitType == CommitType.ShortMint) {
-      //   // Update pool balance
-      //   shortBalance += _commit.amount;
-      //   // Issue pool tokens
-      // PoolToken(tokens[1]).mint(, _commit.owner);
-      // } else if (_commit.commitType == CommitType.LongBurn) {
-      //   // Update pool balance
-      //   // remit quote tokens
-      // } else if (_commit.commitType == CommitType.ShortBurn) {
-      //   // Update pool balance
-      //   // remit quote tokens
-      // }
+      if (_commit.commitType == CommitType.LongMint) {
+        // Update pool balance
+        longBalance += _commit.amount;
+        // Issue pool tokens
+        PoolToken(tokens[0]).mint(
+          getAmountOut(
+            getRatio(
+              IERC20(tokens[0]).totalSupply(),
+              longBalance.sub(_commit.amount)
+            ),
+            _commit.amount
+          ),
+          _commit.owner
+        );
+      } else if (_commit.commitType == CommitType.ShortMint) {
+        // Update pool balance
+        shortBalance += _commit.amount;
+        // Issue pool tokens
+        PoolToken(tokens[1]).mint(
+          getAmountOut(
+            getRatio(
+              IERC20(tokens[1]).totalSupply(),
+              shortBalance.sub(_commit.amount)
+            ),
+            _commit.amount
+          ),
+          _commit.owner
+        );
+      } else if (_commit.commitType == CommitType.LongBurn) {
+        // Update pool balance
+        // remit quote tokens
+      } else if (_commit.commitType == CommitType.ShortBurn) {
+        // Update pool balance
+        // remit quote tokens
+      }
     }
   }
 
@@ -241,13 +261,16 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     override
     returns (int128)
   {
-    if (a == 0 && b == 0) {
-      return ABDKMath64x64.fromUInt(1);
-    }
-    return
-      ABDKMath64x64.toUInt(
-        ABDKMath64x64.divu((a == 0 ? 1 : a), (b == 0 ? 1 : b))
-      );
+    return ABDKMath64x64.divu((a == 0 ? 1 : a), (b == 0 ? 1 : b));
+  }
+
+  function getAmountOut(int128 ratio, uint256 amountIn)
+    public
+    pure
+    override
+    returns (uint256)
+  {
+    return ABDKMath64x64.mulu(ratio, amountIn);
   }
 
   /**

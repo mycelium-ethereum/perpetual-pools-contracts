@@ -65,7 +65,7 @@ export const deployPoolAndTokenContracts = async (
   fee: number,
   leverage: number,
   feeAddress: string,
-  amountMinted: number
+  amountMinted: BigNumberish
 ): Promise<{
   signers: SignerWithAddress[];
   pool: LeveragedPool;
@@ -148,7 +148,7 @@ export const createCommit = async (
   pool: LeveragedPool,
   commitType: BigNumberish,
   imbalance: BigNumberish,
-  amount: number
+  amount: BigNumberish
 ): Promise<CommitEventArgs> => {
   const receipt = await (
     await pool.commit(commitType, imbalance, amount)

@@ -1,7 +1,11 @@
 # Tracer Pool Swaps
 
 Project base generated with the Typescript Solidity Dev Starter Kit. See [Blog Post](https://medium.com/@rahulsethuram/the-new-solidity-dev-stack-buidler-ethers-waffle-typescript-tutorial-f07917de48ae) for more details
-
+## Frontend Notes
+### Calculating ABDKMath64x64 values
+To convert a simple decimal (eg 5.5) to the correct format for use as a `maxImbalance` value, you should do the following:
+- For non negative number values >= 1 (ie 1, 5.2, 2.99): `ethers.BigNumber.from(value).mul(ethers.BigNumber.from(2).pow(64))`
+- For values less than 1 : `ethers.BigNumber.from(value).mul(ethers.BigNumber.from(2).pow(64)).div(x)` where x is the  number of de
 ## Environment variables
 The environment variables used in this project are documented in the `example.env` file at the root of the project. To configure, create a copy of `example.env`, rename to `.env`, and replace the placeholders with the correct values. 
 
