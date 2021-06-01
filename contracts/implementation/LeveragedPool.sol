@@ -17,6 +17,7 @@ import "hardhat/console.sol";
 */
 contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
   using SafeMath for uint256;
+  using SafeMath for uint128;
 
   // #### Globals
   // TODO: Rearrange to tight pack these for gas savings
@@ -83,7 +84,6 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     _setRoleAdmin(FEE_HOLDER, ADMIN);
     _setupRole(UPDATER, msg.sender);
     _setupRole(ADMIN, msg.sender);
-
     _setupRole(FEE_HOLDER, _feeAddress);
 
     // Setup variables
@@ -207,6 +207,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
         "Commit too new"
       );
       // Imbalance check.
+
       require(
         getRatio(longBalance, shortBalance) <= _commit.maxImbalance,
         "Imbalance tolerance exceeded"
@@ -271,20 +272,6 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     returns (uint256)
   {
     return ABDKMath64x64.mulu(ratio, amountIn);
-  }
-
-  /**
-  @notice Returns the amount of tokens a user is entitled to on mint or burn.
-  @param ratio The ratio to use for calculating the entitlement
-  @param tokenBalance The amount of tokens to run the ratio over
-  @return the amount of tokenBalance that a user is entitled to
- */
-  function _getRatioAmount(uint256 ratio, uint256 tokenBalance)
-    internal
-    pure
-    returns (uint256)
-  {
-    return tokenBalance.mul(ratio);
   }
 
   function executePriceChange(uint256 endPrice) external override {
