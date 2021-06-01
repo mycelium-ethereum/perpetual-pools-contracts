@@ -24,9 +24,7 @@ const updateInterval = 120; // 2 minutes
 const frontRunningInterval = 1; // seconds
 const fee = getRandomInt(256, 1);
 const leverage = 2;
-const imbalance = ethers.BigNumber.from("5").mul(
-  ethers.BigNumber.from("2").pow(64)
-); // ABDK 64.64 fixed point number == 5%
+const imbalance = ethers.BigNumber.from(100);
 
 describe("LeveragedPool - executeCommitment: Long Mint", () => {
   let token: TestToken;

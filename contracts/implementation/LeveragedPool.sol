@@ -8,7 +8,6 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/proxy/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "abdk-libraries-solidity/ABDKMath64x64.sol";
 
 import "hardhat/console.sol";
 
@@ -21,30 +20,30 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
 
   // #### Globals
   // TODO: Rearrange to tight pack these for gas savings
-  string public override poolCode;
+  string public poolCode;
 
   // Index 0 is the LONG token, index 1 is the SHORT token
-  address[2] public override tokens;
+  address[2] public tokens;
 
   // Each balance is the amount of quote tokens in the pair
-  uint256 public shortBalance;
-  uint256 public longBalance;
+  uint128 public shortBalance;
+  uint128 public longBalance;
 
-  int256 public override lastPrice;
-  uint256 public override lastPriceTimestamp;
+  int256 public lastPrice;
+  uint256 public lastPriceTimestamp;
 
-  address public override quoteToken;
-  uint32 public override updateInterval;
-  uint32 public override frontRunningInterval;
+  address public quoteToken;
+  uint32 public updateInterval;
+  uint32 public frontRunningInterval;
 
-  uint16 public override fee;
-  uint16 public override leverageAmount;
-  address public override feeAddress;
+  uint16 public fee;
+  uint16 public leverageAmount;
+  address public feeAddress;
 
-  uint256 public override commitIDCounter;
-  mapping(uint256 => Commit) public override commits;
+  uint256 public commitIDCounter;
+  mapping(uint256 => Commit) public commits;
 
-  mapping(CommitType => uint256) public override shadowPools;
+  mapping(CommitType => uint256) public shadowPools;
 
   // #### Roles
   /**
@@ -115,8 +114,8 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
 
   function commit(
     CommitType commitType,
-    int128 maxImbalance,
-    uint256 amount
+    uint256 maxImbalance,
+    uint128 amount
   ) external override {
     require(amount > 0, "Amount must not be zero");
     commitIDCounter += 1;
@@ -215,56 +214,65 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
         // Update pool balance
         longBalance += _commit.amount;
         // Issue pool tokens
-        PoolToken(tokens[0]).mint(
-          getAmountOut(
-            getRatio(
-              IERC20(tokens[0]).totalSupply(),
-              longBalance.sub(_commit.amount)
-            ),
-            _commit.amount
-          ),
-          _commit.owner
-        );
-      } else if (_commit.commitType == CommitType.ShortMint) {
-        // Update pool balance
-        shortBalance += _commit.amount;
-        // Issue pool tokens
-        PoolToken(tokens[1]).mint(
-          getAmountOut(
-            getRatio(
-              IERC20(tokens[1]).totalSupply(),
-              shortBalance.sub(_commit.amount)
-            ),
-            _commit.amount
-          ),
-          _commit.owner
-        );
-      } else if (_commit.commitType == CommitType.LongBurn) {
-        // Update pool balance
-        // remit quote tokens
-      } else if (_commit.commitType == CommitType.ShortBurn) {
-        // Update pool balance
-        // remit quote tokens
+        // PoolToken(tokens[0]).mint(
+        //   getAmountOut(
+        //     getRatio(
+        //       IERC20(tokens[0]).totalSupply(),
+        //       longBalance.sub(_commit.amount)
+        //     ),
+        //     _commit.amount
+        //   ),
+        //   _commit.owner
+        // );
       }
+      // else if (_commit.commitType == CommitType.ShortMint) {
+      //   // Update pool balance
+      //   shortBalance += _commit.amount;
+      //   // Issue pool tokens
+      //   PoolToken(tokens[1]).mint(
+      //     getAmountOut(
+      //       getRatio(
+      //         IERC20(tokens[1]).totalSupply(),
+      //         shortBalance.sub(_commit.amount)
+      //       ),
+      //       _commit.amount
+      //     ),
+      //     _commit.owner
+      //   );
+      // } else if (_commit.commitType == CommitType.LongBurn) {
+      //   // Update pool balance
+      //   // remit quote tokens
+      // } else if (_commit.commitType == CommitType.ShortBurn) {
+      //   // Update pool balance
+      //   // remit quote tokens
+      // }
     }
   }
 
-  function getRatio(uint256 a, uint256 b)
-    public
-    pure
-    override
-    returns (int128)
-  {
-    return ABDKMath64x64.divu((a == 0 ? 1 : a), (b == 0 ? 1 : b));
-  }
-
-  function getAmountOut(int128 ratio, uint256 amountIn)
+  function getRatio(uint128 _numerator, uint128 _denominator)
     public
     pure
     override
     returns (uint256)
   {
-    return ABDKMath64x64.mulu(ratio, amountIn);
+    // Catch the divide by zero error.
+    if (_denominator == 0) {
+      return 0;
+    }
+    return (uint256(_numerator) * 10**(18)).div(uint256(_denominator));
+  }
+
+  function getAmountOut(uint256 ratio, uint128 amountIn)
+    public
+    pure
+    override
+    returns (uint256)
+  {
+    if (ratio == 0) {
+      return amountIn;
+    }
+    // Ratio is the number of tokens user should receive for each token in amountIn
+    return amountIn.mul(ratio);
   }
 
   function executePriceChange(uint256 endPrice) external override {

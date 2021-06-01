@@ -26,7 +26,7 @@ const fee = getRandomInt(256, 1);
 const leverage = 2;
 const imbalance = ethers.BigNumber.from("5").mul(
   ethers.BigNumber.from("2").pow(64)
-); // ABDK 64.64 fixed point number == 5%
+);
 
 describe("LeveragedPool - executeCommitment: Long Burn", () => {
   let token: TestToken;
