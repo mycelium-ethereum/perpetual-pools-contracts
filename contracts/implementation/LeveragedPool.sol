@@ -190,13 +190,6 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
   }
 
   function executeCommitment(uint256[] memory _commitIDs) external override {
-    // console.log("0.5% Ratio: ");
-    // console.logInt(getRatio(11 ether, 2 ether));
-    // console.log(
-    //   // Pool ratio * amount user wants
-    //   "Entitlement: ",
-    //   ABDKMath64x64.mulu(getRatio(5 ether, 10 ether), uint256(5 ether))
-    // );
     Commit memory _commit;
     for (uint256 i = 0; i < _commitIDs.length; i++) {
       _commit = commits[_commitIDs[i]];
