@@ -48,30 +48,41 @@ describe("LeveragedPool - getAmountOut", () => {
           ethers.utils.parseEther("10")
         )
       ).toString()
-    ).to.eq(ethers.utils.parseUnits("10", "wei").toString());
+    ).to.eq(ethers.utils.parseEther("10").toString());
+
     expect(
       (
         await pool.getAmountOut(
-          ethers.utils.parseUnits("2", "ether"),
-          ethers.utils.parseEther("10")
-        )
-      ).toString()
-    ).to.eq(ethers.utils.parseUnits("20", "ether").toString());
-  });
-  it("should return the correct amount sans precision for values >2^256", async () => {
-    expect(
-      (
-        await pool.getAmountOut(
-          ethers.utils.parseEther("2").pow(4),
+          ethers.utils.parseEther("2"),
           ethers.utils.parseEther("10")
         )
       ).toString()
     ).to.eq(
-      ethers.utils
-        .parseEther("2")
-        .pow(4)
+      ethers.utils.parseEther("2").mul(ethers.utils.parseEther("10")).toString()
+    );
+  });
+  it("should return the correct amount sans precision for values >2^256", async () => {
+    console.log(
+      (
+        await pool.getAmountOut(
+          ethers.BigNumber.from(10).pow(38).mul(20),
+          ethers.utils.parseEther("10")
+        )
+      ).toString()
+    );
+    expect(
+      (
+        await pool.getAmountOut(
+          ethers.BigNumber.from(10).pow(38).mul(20),
+          ethers.utils.parseEther("10")
+        )
+      ).toString()
+    ).to.eq(
+      ethers.BigNumber.from(10)
+        .pow(38)
+        .mul(20)
         .mul(ethers.utils.parseEther("10"))
-        .div(ethers.utils.parseEther("1"))
+        .div(ethers.BigNumber.from(10).pow(38))
     );
   });
 });

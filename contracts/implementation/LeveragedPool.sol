@@ -210,46 +210,60 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
       shadowPools[_commit.commitType] -= _commit.amount;
       delete commits[_commitIDs[i]];
 
-      if (_commit.commitType == CommitType.LongMint) {
-        // Update pool balance
-        longBalance += _commit.amount;
-        // Issue pool tokens
-        // PoolToken(tokens[0]).mint(
-        //   getAmountOut(
-        //     getRatio(
-        //       IERC20(tokens[0]).totalSupply(),
-        //       longBalance.sub(_commit.amount)
-        //     ),
-        //     _commit.amount
-        //   ),
-        //   _commit.owner
-        // );
-      }
-      // else if (_commit.commitType == CommitType.ShortMint) {
+      // if (_commit.commitType == CommitType.LongMint) {
+      //   // Update pool balance
+      //   longBalance += _commit.amount;
+      //   // Issue pool tokens
+      //   PoolToken(tokens[0]).mint(
+      //     getAmountOut(
+      //       getRatio(
+      //         uint128(IERC20(tokens[0]).totalSupply()),
+      //         uint128(longBalance.sub(_commit.amount))
+      //       ),
+      //       _commit.amount
+      //     ),
+      //     _commit.owner
+      //   );
+      // } else if (_commit.commitType == CommitType.ShortMint) {
       //   // Update pool balance
       //   shortBalance += _commit.amount;
       //   // Issue pool tokens
       //   PoolToken(tokens[1]).mint(
       //     getAmountOut(
       //       getRatio(
-      //         IERC20(tokens[1]).totalSupply(),
-      //         shortBalance.sub(_commit.amount)
+      //         uint128(IERC20(tokens[1]).totalSupply()),
+      //         uint128(shortBalance.sub(_commit.amount))
       //       ),
       //       _commit.amount
       //     ),
       //     _commit.owner
       //   );
-      // } else if (_commit.commitType == CommitType.LongBurn) {
+      // }
+      // else if (_commit.commitType == CommitType.LongBurn) {
+      //   uint256 amountOut =
+      //     getAmountOut(
+      //       getRatio(
+      //         uint128(IERC20(tokens[0]).totalSupply()),
+      //         uint128(longBalance.sub(_commit.amount))
+      //       ),
+      //       _commit.amount
+      //     );
       //   // Update pool balance
+      //   longBalance -= uint128(amountOut);
+
       //   // remit quote tokens
-      // } else if (_commit.commitType == CommitType.ShortBurn) {
+      //   require(
+      //     IERC20(quoteToken).transfer(_commit.owner, amountOut),
+      //     "Transfer of collateral failed"
+      //   );
+      // }
+      // else if (_commit.commitType == CommitType.ShortBurn) {
       //   // Update pool balance
       //   // remit quote tokens
       // }
     }
   }
 
-  // TODO: Check return size. I'm fairly certain it will reduce to 0 before overflowing a uint192 (128 bits + 64 bits (technically you only need 60 for 1e18)), but it needs more testing.
   function getRatio(uint128 _numerator, uint128 _denominator)
     public
     pure
@@ -260,10 +274,11 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     if (_denominator == 0) {
       return 0;
     }
-    return (uint256(_numerator) * 10**(18)).div(uint256(_denominator));
+    // Create a 128.128 fixed point number
+    return (uint256(_numerator) * 10**(38)).div(uint256(_denominator));
   }
 
-  // TODO: Need to stress test this as well as the getRatio improvements. If the assumption about ratio <= 2^192 are correct, then ratio * amountIn outputs a maximum value of 2^320 (64 bits over 2^256). The last div clause should drop it to within the safe region for a uint256.
+  // TODO: Need to stress test this as well as the getRatio improvements.
   function getAmountOut(uint256 ratio, uint128 amountIn)
     public
     view
@@ -271,11 +286,18 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     returns (uint256)
   {
     require(amountIn > 0, "Invalid amount");
-    if (ratio == 0) {
+    if (ratio == 0 || ratio == 1) {
       return amountIn;
     }
+
     // Ratio is the number of tokens user should receive for each token in amountIn
-    return muldiv(ratio, amountIn, 1 ether);
+
+    // If we're dealing with a ratio < 1
+    if (ratio < 10**38) {
+      return amountIn.mul(ratio);
+    }
+
+    return muldiv(ratio, amountIn, 10**(38));
   }
 
   /**
@@ -283,13 +305,13 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     @param a Multiplier
     @param b Multiplicand
     @param denominator What to divide the > 2^256 product by
-    @return result The final result for a * b / c taking into account overflow
+    @return result The final result for a * b / c taking into account overflow for the product of a * b
  */
   function muldiv(
     uint256 a,
     uint256 b,
     uint256 denominator
-  ) internal view returns (uint256 result) {
+  ) internal pure returns (uint256 result) {
     // Handle division by zero
     require(denominator > 0);
 
@@ -318,7 +340,6 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
       }
       return result;
     }
-    console.log(prod1, a);
 
     ///////////////////////////////////////////////
     // 512 by 256 division.

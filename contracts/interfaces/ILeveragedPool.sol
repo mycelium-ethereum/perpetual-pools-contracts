@@ -129,11 +129,11 @@ interface ILeveragedPool {
   function updateFeeAddress(address account) external;
 
   /**
-    @notice Calculates the ratio between two numbers to 18 decimal places.
+    @notice Calculates the ratio between two numbers
     @dev Rounds any overflow towards 0. If either parameter is zero, the ratio is 0.
     @param _numerator The "parts per" side of the equation. If this is zero, the ratio is zero
     @param _denominator The "per part" side of the equation. If this is zero, the ratio is zero
-    @return the ratio, as a fixed point number with 18 decimal places
+    @return the ratio, as a 128.128 fixed point number
  */
   function getRatio(uint128 _numerator, uint128 _denominator)
     external
