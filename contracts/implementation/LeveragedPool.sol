@@ -263,7 +263,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     return (uint256(_numerator) * 10**(18)).div(uint256(_denominator));
   }
 
-  // TODO: Need to stress test this as well as the getRatio improvements. If the assumption about ratio <= 2^192 are correct, then this outputs a maximum value of 2^320.
+  // TODO: Need to stress test this as well as the getRatio improvements. If the assumption about ratio <= 2^192 are correct, then ratio * amountIn outputs a maximum value of 2^320 (64 bits over 2^256). The last div clause should drop it to within the safe region for a uint256.
   function getAmountOut(uint256 ratio, uint128 amountIn)
     public
     view
@@ -275,14 +275,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
       return amountIn;
     }
     // Ratio is the number of tokens user should receive for each token in amountIn
-
-    // Short circuit for results <= 2^256
-    if (ratio <= (2**128)) {
-      // Calculate the result, and drop the fixed point off the end
-      return amountIn.mul(ratio).div(1 ether);
-    } else {
-      return muldiv(ratio, amountIn, 1 ether);
-    }
+    return muldiv(ratio, amountIn, 1 ether);
   }
 
   /**
@@ -296,7 +289,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     uint256 a,
     uint256 b,
     uint256 denominator
-  ) internal pure returns (uint256 result) {
+  ) internal view returns (uint256 result) {
     // Handle division by zero
     require(denominator > 0);
 
@@ -313,7 +306,19 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
       prod1 := sub(sub(mm, prod0), lt(mm, prod0))
     }
 
-    // The original included a short circuit for 256 by 256 division. Since this only runs when the product is > 2^256, I removed it.
+    // Short circuit 256 by 256 division
+    // This saves gas when a * b is small, at the cost of making the
+    // large case a bit more expensive. Depending on your use case you
+    // may want to remove this short circuit and always go through the
+    // 512 bit path.
+
+    if (prod1 == 0) {
+      assembly {
+        result := div(prod0, denominator)
+      }
+      return result;
+    }
+    console.log(prod1, a);
 
     ///////////////////////////////////////////////
     // 512 by 256 division.

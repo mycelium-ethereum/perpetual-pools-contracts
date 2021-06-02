@@ -59,6 +59,19 @@ describe("LeveragedPool - getAmountOut", () => {
     ).to.eq(ethers.utils.parseUnits("20", "ether").toString());
   });
   it("should return the correct amount sans precision for values >2^256", async () => {
-    throw new Error();
+    expect(
+      (
+        await pool.getAmountOut(
+          ethers.utils.parseEther("2").pow(4),
+          ethers.utils.parseEther("10")
+        )
+      ).toString()
+    ).to.eq(
+      ethers.utils
+        .parseEther("2")
+        .pow(4)
+        .mul(ethers.utils.parseEther("10"))
+        .div(ethers.utils.parseEther("1"))
+    );
   });
 });
