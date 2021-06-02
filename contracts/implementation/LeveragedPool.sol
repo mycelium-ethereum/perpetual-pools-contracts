@@ -15,6 +15,8 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
   // #### Globals
   // TODO: Rearrange to tight pack these for gas savings
   string public override poolCode;
+
+  // Index 0 is the LONG token, index 1 is the SHORT token
   address[2] public override tokens;
   uint256 public shortBalance;
   uint256 public longBalance;
@@ -122,13 +124,61 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
 
     emit CreateCommit(commitIDCounter, amount, maxImbalance, commitType);
 
-    require(
-      IERC20(quoteToken).transferFrom(msg.sender, address(this), amount),
-      "Transfer of collateral failed"
-    );
+    if (
+      commitType == CommitType.LongMint || commitType == CommitType.ShortMint
+    ) {
+      require(
+        IERC20(quoteToken).transferFrom(msg.sender, address(this), amount),
+        "Transfer of collateral failed"
+      );
+    }
+    // TODO: finish implementation in TPS-9: executeCommitment
+    // else if (commitType == CommitType.LongBurn) {
+    //   require(
+    //     IERC20(tokens[0]).transferFrom(msg.sender, address(this), amount),
+    //     "Transfer of collateral failed"
+    //   );
+    // } else if (commitType == CommitType.ShortBurn) {
+    //   require(
+    //     IERC20(tokens[1]).transferFrom(msg.sender, address(this), amount),
+    //     "Transfer of collateral failed"
+    //   );
+    // }
   }
 
-  function uncommit(uint256 commitID) external override {}
+  function uncommit(uint256 _commitID) external override {
+    Commit memory _commit = commits[_commitID];
+    require(msg.sender == _commit.owner, "Unauthorized");
+    require(_commit.amount > 0, "Invalid commit");
+
+    shadowPools[_commit.commitType] -= _commit.amount;
+
+    emit RemoveCommit(_commitID, _commit.amount, _commit.commitType);
+
+    delete commits[_commitID];
+
+    if (
+      _commit.commitType == CommitType.LongMint ||
+      _commit.commitType == CommitType.ShortMint
+    ) {
+      require(
+        IERC20(quoteToken).transfer(msg.sender, _commit.amount),
+        "Transfer failed"
+      );
+    }
+    // TODO: finish implementation in TPS-9: executeCommitment
+    // else if (_commit.commitType == CommitType.LongBurn) {
+    //   require(
+    //     IERC20(tokens[0]).transfer(msg.sender, amount),
+    //     "Transfer failed"
+    //   );
+    // } else if (_commit.commitType == CommitType.ShortBurn) {
+    //   require(
+    //     IERC20(tokens[1]).transfer(msg.sender, amount),
+    //     "Transfer failed"
+    //   );
+    // }
+  }
 
   function executeCommitment(uint256[] memory commitID) external override {}
 
