@@ -34,7 +34,31 @@ describe("LeveragedPool - getAmountOut", () => {
     );
   });
 
-  it("should return amountIn if the ratio is zero", async () => {});
-  it("should revert if the amountIn is zero", async () => {});
-  it("should ", async () => {});
+  it("should return amountIn if the ratio is zero", async () => {
+    expect(await pool.getAmountOut(0, 5)).to.eq(5);
+  });
+  it("should revert if the amountIn is zero", async () => {
+    await expect(pool.getAmountOut(5, 0)).to.rejectedWith(Error);
+  });
+  it("should return the correct amount for safe values", async () => {
+    expect(
+      (
+        await pool.getAmountOut(
+          ethers.utils.parseUnits("1", "wei"),
+          ethers.utils.parseEther("10")
+        )
+      ).toString()
+    ).to.eq(ethers.utils.parseUnits("10", "wei").toString());
+    expect(
+      (
+        await pool.getAmountOut(
+          ethers.utils.parseUnits("2", "ether"),
+          ethers.utils.parseEther("10")
+        )
+      ).toString()
+    ).to.eq(ethers.utils.parseUnits("20", "ether").toString());
+  });
+  it("should return the correct amount sans precision for values >2^256", async () => {
+    throw new Error();
+  });
 });

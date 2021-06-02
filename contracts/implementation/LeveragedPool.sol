@@ -249,7 +249,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     }
   }
 
-  // TODO: Check return size. I'm fairly certain it will reduce to 0 before overflowing a uint128, but it needs more testing.
+  // TODO: Check return size. I'm fairly certain it will reduce to 0 before overflowing a uint192 (128 bits + 64 bits (technically you only need 60 for 1e18)), but it needs more testing.
   function getRatio(uint128 _numerator, uint128 _denominator)
     public
     pure
@@ -263,10 +263,10 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     return (uint256(_numerator) * 10**(18)).div(uint256(_denominator));
   }
 
-  // TODO: Need to stress test this as well as the getRatio improvements.
+  // TODO: Need to stress test this as well as the getRatio improvements. If the assumption about ratio <= 2^192 are correct, then this outputs a maximum value of 2^320.
   function getAmountOut(uint256 ratio, uint128 amountIn)
     public
-    pure
+    view
     override
     returns (uint256)
   {
@@ -275,7 +275,113 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
       return amountIn;
     }
     // Ratio is the number of tokens user should receive for each token in amountIn
-    return amountIn.mul(ratio);
+
+    // Short circuit for results <= 2^256
+    if (ratio <= (2**128)) {
+      // Calculate the result, and drop the fixed point off the end
+      return amountIn.mul(ratio).div(1 ether);
+    } else {
+      return muldiv(ratio, amountIn, 1 ether);
+    }
+  }
+
+  /**
+    @notice Remco Bloeman's muldiv function, see https://2π.com/21/muldiv/
+    @param a Multiplier
+    @param b Multiplicand
+    @param denominator What to divide the > 2^256 product by
+    @return result The final result for a * b / c taking into account overflow
+ */
+  function muldiv(
+    uint256 a,
+    uint256 b,
+    uint256 denominator
+  ) internal pure returns (uint256 result) {
+    // Handle division by zero
+    require(denominator > 0);
+
+    // 512-bit multiply [prod1 prod0] = a * b
+    // Compute the product mod 2**256 and mod 2**256 - 1
+    // then use the Chinese Remiander Theorem to reconstruct
+    // the 512 bit result. The result is stored in two 256
+    // variables such that product = prod1 * 2**256 + prod0
+    uint256 prod0; // Least significant 256 bits of the product
+    uint256 prod1; // Most significant 256 bits of the product
+    assembly {
+      let mm := mulmod(a, b, not(0))
+      prod0 := mul(a, b)
+      prod1 := sub(sub(mm, prod0), lt(mm, prod0))
+    }
+
+    // The original included a short circuit for 256 by 256 division. Since this only runs when the product is > 2^256, I removed it.
+
+    ///////////////////////////////////////////////
+    // 512 by 256 division.
+    ///////////////////////////////////////////////
+
+    // Handle overflow, the result must be < 2**256
+    require(prod1 < denominator);
+
+    // Make division exact by subtracting the remainder from [prod1 prod0]
+    // Compute remainder using mulmod
+    // Note mulmod(_, _, 0) == 0
+    uint256 remainder;
+    assembly {
+      remainder := mulmod(a, b, denominator)
+    }
+    // Subtract 256 bit number from 512 bit number
+    assembly {
+      prod1 := sub(prod1, gt(remainder, prod0))
+      prod0 := sub(prod0, remainder)
+    }
+
+    // Factor powers of two out of denominator
+    // Compute largest power of two divisor of denominator.
+    // Always >= 1 unless denominator is zero, then twos is zero.
+    uint256 twos = -denominator & denominator;
+    // Divide denominator by power of two
+    assembly {
+      denominator := div(denominator, twos)
+    }
+
+    // Divide [prod1 prod0] by the factors of two
+    assembly {
+      prod0 := div(prod0, twos)
+    }
+    // Shift in bits from prod1 into prod0. For this we need
+    // to flip `twos` such that it is 2**256 / twos.
+    // If twos is zero, then it becomes one
+    assembly {
+      twos := add(div(sub(0, twos), twos), 1)
+    }
+    prod0 |= prod1 * twos;
+
+    // Invert denominator mod 2**256
+    // Now that denominator is an odd number, it has an inverse
+    // modulo 2**256 such that denominator * inv = 1 mod 2**256.
+    // Compute the inverse by starting with a seed that is correct
+    // correct for four bits. That is, denominator * inv = 1 mod 2**4
+    // If denominator is zero the inverse starts with 2
+    uint256 inv = (3 * denominator) ^ 2;
+    // Now use Newton-Raphson itteration to improve the precision.
+    // Thanks to Hensel's lifting lemma, this also works in modular
+    // arithmetic, doubling the correct bits in each step.
+    inv *= 2 - denominator * inv; // inverse mod 2**8
+    inv *= 2 - denominator * inv; // inverse mod 2**16
+    inv *= 2 - denominator * inv; // inverse mod 2**32
+    inv *= 2 - denominator * inv; // inverse mod 2**64
+    inv *= 2 - denominator * inv; // inverse mod 2**128
+    inv *= 2 - denominator * inv; // inverse mod 2**256
+    // If denominator is zero, inv is now 128
+
+    // Because the division is now exact we can divide by multiplying
+    // with the modular inverse of denominator. This will give us the
+    // correct result modulo 2**256. Since the precoditions guarantee
+    // that the outcome is less than 2**256, this is the final result.
+    // We don't need to compute the high bits of the result and prod1
+    // is no longer required.
+    result = prod0 * inv;
+    return result;
   }
 
   function executePriceChange(uint256 endPrice) external override {

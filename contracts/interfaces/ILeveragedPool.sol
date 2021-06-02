@@ -149,7 +149,7 @@ interface ILeveragedPool {
    */
   function getAmountOut(uint256 ratio, uint128 amountIn)
     external
-    pure
+    view
     returns (uint256);
 
   // // #########################################################
