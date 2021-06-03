@@ -1,7 +1,12 @@
 import { ethers } from "hardhat";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
-import { LeveragedPool, TestToken, ERC20 } from "../../../typechain";
+import {
+  LeveragedPool,
+  TestToken,
+  ERC20,
+  PoolSwapLibrary,
+} from "../../../typechain";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { POOL_CODE } from "../../constants";
 import {
@@ -12,6 +17,7 @@ import {
   CommitEventArgs,
   timeout,
 } from "../../utilities";
+import { BytesLike } from "ethers";
 
 chai.use(chaiAsPromised);
 const { expect } = chai;
@@ -24,15 +30,15 @@ const updateInterval = 120; // 2 minutes
 const frontRunningInterval = 1; // seconds
 const fee = getRandomInt(256, 1);
 const leverage = 2;
-const imbalance = ethers.BigNumber.from(100);
+let imbalance: BytesLike;
 
 describe("LeveragedPool - executeCommitment: Long Mint", () => {
   let token: TestToken;
-
   let longToken: ERC20;
   let pool: LeveragedPool;
   let signers: SignerWithAddress[];
   let commit: CommitEventArgs;
+  let library: PoolSwapLibrary;
   describe("Long Mint", () => {
     beforeEach(async () => {
       const result = await deployPoolAndTokenContracts(
@@ -48,7 +54,11 @@ describe("LeveragedPool - executeCommitment: Long Mint", () => {
       pool = result.pool;
       signers = result.signers;
       token = result.token;
-
+      library = result.library;
+      imbalance = await library.getRatio(
+        ethers.utils.parseEther("100"),
+        ethers.utils.parseEther("23")
+      );
       longToken = result.longToken;
       await token.approve(pool.address, amountMinted);
       commit = await createCommit(pool, [2], imbalance, amountCommitted);

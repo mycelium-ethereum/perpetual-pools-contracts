@@ -6,8 +6,9 @@ import "../interfaces/ILeveragedPool.sol";
 import "./PoolToken.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/proxy/Initializable.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+// import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "../vendors/SafeMath_112.sol";
 import "./PoolSwapLibrary.sol";
 
 // import "hardhat/console.sol";
@@ -17,7 +18,7 @@ import "./PoolSwapLibrary.sol";
 */
 contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
   using SafeMath for uint256;
-  using SafeMath for uint128;
+  using SafeMath_112 for uint112;
   // #### Globals
   // TODO: Rearrange to tight pack these for gas savings
   string public poolCode;
@@ -183,6 +184,10 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     // }
   }
 
+  /**
+  @notice Executes a single commitment.
+  @param _commit The commit to execute
+ */
   function _executeCommitment(Commit memory _commit) internal {
     // checks
     require(_commit.amount > 0, "Invalid commit");
@@ -196,8 +201,62 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
       "Imbalance tolerance exceeded"
     );
     // effects
+    shadowPools[_commit.commitType] -= _commit.amount;
 
     // interactions
+    if (_commit.commitType == CommitType.LongMint) {
+      longBalance = longBalance.add(_commit.amount);
+      _mintTokens(tokens[0], _commit.amount, longBalance, _commit.owner);
+    }
+    // else if(_commit.commitType == CommitType.LongBurn){}
+    else if (_commit.commitType == CommitType.ShortMint) {
+      shortBalance = shortBalance.add(_commit.amount);
+      _mintTokens(tokens[1], _commit.amount, shortBalance, _commit.owner);
+    }
+    // else if(_commit.commitType == CommitType.ShortBurn){}
+  }
+
+  /**
+    @notice Mints new tokens
+    @param token The token to mint
+    @param amountIn The amount the user has committed to minting
+    @param balance The balance of pair. Must include the amountIn
+    @param owner The address to send the tokens to
+ */
+  function _mintTokens(
+    address token,
+    uint112 amountIn,
+    uint112 balance,
+    address owner
+  ) internal {
+    require(
+      PoolToken(token).mint(
+        PoolSwapLibrary.getAmountOut(
+          PoolSwapLibrary.getRatio(
+            uint112(PoolToken(token).totalSupply()),
+            balance.sub(amountIn)
+          ),
+          amountIn
+        ),
+        owner
+      ),
+      "Mint failed"
+    );
+  }
+
+  /**
+    @notice Burns the amount given from the owner's account
+    @dev Used to remove the requirement for an approval for burn commits
+    @param token The token to burn
+    @param amount The amount to burn
+    @param owner The account to burn from
+   */
+  function _burnTokens(
+    address token,
+    uint112 amount,
+    address owner
+  ) internal {
+    require(PoolToken(token).burn(amount, owner), "Burn failed");
   }
 
   function executeCommitment(uint256[] memory _commitIDs) external override {
@@ -208,64 +267,6 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
       emit ExecuteCommit(_commitIDs[i]);
       _executeCommitment(_commit);
     }
-    // for (uint256 i = 0; i < _commitIDs.length; i++) {
-    //   _commit = commits[_commitIDs[i]];
-
-    //   emit ExecuteCommit(_commitIDs[i]);
-    //   // Update shadow pools
-    //   shadowPools[_commit.commitType] -= _commit.amount;
-    //   delete commits[_commitIDs[i]];
-    // if (_commit.commitType == CommitType.LongMint) {
-    //   // Update pool balance
-    //   longBalance = longBalance.add(_commit.amount);
-    //   // Issue pool tokens
-    //   PoolToken(tokens[0]).mint(
-    //     getAmountOut(
-    //       getRatio(
-    //         uint128(IERC20(tokens[0]).totalSupply()),
-    //         uint128(longBalance.sub(_commit.amount))
-    //       ),
-    //       _commit.amount
-    //     ),
-    //     _commit.owner
-    //   );
-    // } else if (_commit.commitType == CommitType.ShortMint) {
-    //   // Update pool balance
-    //   shortBalance += _commit.amount;
-    //   // Issue pool tokens
-    //   PoolToken(tokens[1]).mint(
-    //     getAmountOut(
-    //       getRatio(
-    //         uint128(IERC20(tokens[1]).totalSupply()),
-    //         uint128(shortBalance.sub(_commit.amount))
-    //       ),
-    //       _commit.amount
-    //     ),
-    //     _commit.owner
-    //   );
-    // }
-    // else if (_commit.commitType == CommitType.LongBurn) {
-    //   uint256 amountOut =
-    //     getAmountOut(
-    //       getRatio(
-    //         uint128(IERC20(tokens[0]).totalSupply()),
-    //         uint128(longBalance.sub(_commit.amount))
-    //       ),
-    //       _commit.amount
-    //     );
-    //   // Update pool balance
-    //   longBalance -= uint128(amountOut);
-    //   // remit quote tokens
-    //   require(
-    //     IERC20(quoteToken).transfer(_commit.owner, amountOut),
-    //     "Transfer of collateral failed"
-    //   );
-    // }
-    // else if (_commit.commitType == CommitType.ShortBurn) {
-    //   // Update pool balance
-    //   // remit quote tokens
-    // }
-    // }
   }
 
   function executePriceChange(uint256 endPrice) external override {
