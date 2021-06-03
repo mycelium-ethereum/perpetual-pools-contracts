@@ -1,7 +1,7 @@
 import { ethers } from "hardhat";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
-import { LeveragedPool, TestToken } from "../../../typechain";
+import { PoolSwapLibrary, LeveragedPool, TestToken } from "../../../typechain";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { POOL_CODE } from "../../constants";
 import {
@@ -13,6 +13,7 @@ import {
   CommitEventArgs,
   timeout,
 } from "../../utilities";
+import { BytesLike } from "ethers";
 
 chai.use(chaiAsPromised);
 const { expect } = chai;
@@ -25,18 +26,17 @@ const updateInterval = 120; // 2 minutes
 const frontRunningInterval = 1; // seconds
 const fee = getRandomInt(256, 1);
 const leverage = 2;
-const imbalance = ethers.BigNumber.from("5").mul(
-  ethers.BigNumber.from("2").pow(64)
-); // ABDK 64.64 fixed point number == 5%
+let imbalance: BytesLike;
 const commitType = [2]; //long mint;
 
 describe("LeveragedPool - executeCommitment: Basic test cases", () => {
   let token: TestToken;
   let pool: LeveragedPool;
+  let library: PoolSwapLibrary;
   let signers: SignerWithAddress[];
 
   describe("Revert cases", () => {
-    beforeEach(async () => {
+    before(async () => {
       const result = await deployPoolAndTokenContracts(
         POOL_CODE,
         lastPrice,
@@ -50,6 +50,11 @@ describe("LeveragedPool - executeCommitment: Basic test cases", () => {
       pool = result.pool;
       signers = result.signers;
       token = result.token;
+      library = result.library;
+      imbalance = await library.getRatio(
+        ethers.utils.parseEther("50"),
+        ethers.utils.parseEther("10")
+      );
     });
     it("should revert if the commitment is too new", async () => {
       await token.approve(pool.address, amountCommitted);
@@ -74,7 +79,12 @@ describe("LeveragedPool - executeCommitment: Basic test cases", () => {
       await timeout(6000); // wait six seconds
       await pool.executePriceChange(5);
       await pool.executeCommitment([commit.commitID]);
-      const commit2 = await createCommit(pool, commitType, 5, amountCommitted);
+      const commit2 = await createCommit(
+        pool,
+        commitType,
+        imbalance,
+        amountCommitted
+      );
       await expect(
         pool.executeCommitment([commit2.commitID])
       ).to.be.rejectedWith(Error);
@@ -100,6 +110,12 @@ describe("LeveragedPool - executeCommitment: Basic test cases", () => {
       pool = result.pool;
       signers = result.signers;
       token = result.token;
+      library = result.library;
+
+      imbalance = await library.getRatio(
+        ethers.utils.parseEther("5"),
+        ethers.utils.parseEther("2")
+      );
 
       await token.approve(pool.address, amountCommitted);
       commit = await createCommit(pool, commitType, imbalance, amountCommitted);

@@ -1,12 +1,14 @@
 import { ethers } from "hardhat";
-import { BigNumberish, Contract, ContractReceipt, Event } from "ethers";
-import { Result } from "ethers/lib/utils";
+import { BigNumberish, ContractReceipt, Event } from "ethers";
+import { BytesLike, Result } from "ethers/lib/utils";
 import {
   ERC20,
   LeveragedPool,
   TestPoolFactory__factory,
   TestToken,
   TestToken__factory,
+  PoolSwapLibrary,
+  PoolSwapLibrary__factory,
 } from "../typechain";
 
 import { abi as Pool } from "../artifacts/contracts/implementation/LeveragedPool.sol/LeveragedPool.json";
@@ -55,7 +57,7 @@ export const getEventArgs = (
  * @param leverage The amount of leverage the pool will apply
  * @param feeAddress The address to transfer fees to on a fund movement
  * @param amountMinted The amount of test quote tokens to mint
- * @returns {signers, token, pool} An object containing an array of ethers signers, a Contract instance for the token, and a Contract instance for the pool.
+ * @returns {signers, token, pool, library, shortToken, longToken} An object containing an array of ethers signers, a Contract instance for the token, and a Contract instance for the pool.
  */
 export const deployPoolAndTokenContracts = async (
   POOL_CODE: string,
@@ -72,6 +74,7 @@ export const deployPoolAndTokenContracts = async (
   token: TestToken;
   shortToken: ERC20;
   longToken: ERC20;
+  library: PoolSwapLibrary;
 }> => {
   const signers = await ethers.getSigners();
   // Deploy test ERC20 token
@@ -84,11 +87,17 @@ export const deployPoolAndTokenContracts = async (
   await token.mint(amountMinted, signers[0].address);
 
   // Deploy and initialise pool
-
-  const testFactory = (await ethers.getContractFactory(
-    "TestPoolFactory",
+  const libraryFactory = (await ethers.getContractFactory(
+    "PoolSwapLibrary",
     signers[0]
-  )) as TestPoolFactory__factory;
+  )) as PoolSwapLibrary__factory;
+  const library = await libraryFactory.deploy();
+  await library.deployed();
+
+  const testFactory = (await ethers.getContractFactory("TestPoolFactory", {
+    signer: signers[0],
+    libraries: { PoolSwapLibrary: library.address },
+  })) as TestPoolFactory__factory;
   const testFactoryActual = await testFactory.deploy();
   await testFactoryActual.deployed();
   const factoryReceipt = await (
@@ -118,6 +127,7 @@ export const deployPoolAndTokenContracts = async (
     signers,
     pool,
     token,
+    library,
     shortToken: new ethers.Contract(
       getEventArgs(poolReceipt, "PoolInitialized")?.shortToken,
       ERC20Abi,
@@ -147,7 +157,7 @@ export interface CommitEventArgs {
 export const createCommit = async (
   pool: LeveragedPool,
   commitType: BigNumberish,
-  imbalance: BigNumberish,
+  imbalance: BytesLike,
   amount: BigNumberish
 ): Promise<CommitEventArgs> => {
   const receipt = await (

@@ -8,8 +8,9 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/proxy/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "./PoolSwapLibrary.sol";
 
-import "hardhat/console.sol";
+// import "hardhat/console.sol";
 
 /*
 @title The pool controller contract
@@ -25,8 +26,8 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
   address[2] public tokens;
 
   // Each balance is the amount of quote tokens in the pair
-  uint128 public shortBalance;
-  uint128 public longBalance;
+  uint112 public shortBalance;
+  uint112 public longBalance;
 
   int256 public lastPrice;
   uint256 public lastPriceTimestamp;
@@ -113,8 +114,8 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
 
   function commit(
     CommitType commitType,
-    uint256 maxImbalance,
-    uint128 amount
+    bytes16 maxImbalance,
+    uint112 amount
   ) external override {
     require(amount > 0, "Amount must not be zero");
     commitIDCounter += 1;
@@ -153,21 +154,21 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
   }
 
   function uncommit(uint256 _commitID) external override {
-    // require(msg.sender == commits[_commitID].owner, "Unauthorized");
-    // require(commits[_commitID].amount > 0, "Invalid commit");
-    // uint256 amount = commits[_commitID].amount;
-    // CommitType commitType = commits[_commitID].commitType;
-    // shadowPools[commits[_commitID].commitType] -= amount;
-    // emit RemoveCommit(_commitID, amount, commitType);
-    // delete commits[_commitID];
-    // if (
-    //   commitType == CommitType.LongMint || commitType == CommitType.ShortMint
-    // ) {
-    //   require(
-    //     IERC20(quoteToken).transfer(msg.sender, amount),
-    //     "Transfer failed"
-    //   );
-    // }
+    require(msg.sender == commits[_commitID].owner, "Unauthorized");
+    require(commits[_commitID].amount > 0, "Invalid commit");
+    uint256 amount = commits[_commitID].amount;
+    CommitType commitType = commits[_commitID].commitType;
+    shadowPools[commits[_commitID].commitType] -= amount;
+    emit RemoveCommit(_commitID, amount, commitType);
+    delete commits[_commitID];
+    if (
+      commitType == CommitType.LongMint || commitType == CommitType.ShortMint
+    ) {
+      require(
+        IERC20(quoteToken).transfer(msg.sender, amount),
+        "Transfer failed"
+      );
+    }
     // TODO: finish implementation in TPS-9: executeCommitment
     // else if (commitType == CommitType.LongBurn) {
     //   require(
@@ -182,21 +183,34 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     // }
   }
 
+  function _executeCommitment(Commit memory _commit) internal {
+    // checks
+    require(_commit.amount > 0, "Invalid commit");
+    require(
+      _commit.created + frontRunningInterval < lastPriceTimestamp,
+      "Commit too new"
+    );
+    require(
+      PoolSwapLibrary.getRatio(longBalance, shortBalance) <=
+        _commit.maxImbalance,
+      "Imbalance tolerance exceeded"
+    );
+    // effects
+
+    // interactions
+  }
+
   function executeCommitment(uint256[] memory _commitIDs) external override {
-    // Commit memory _commit;
+    Commit memory _commit;
+    for (uint256 i = 0; i < _commitIDs.length; i++) {
+      _commit = commits[_commitIDs[i]];
+      delete commits[_commitIDs[i]];
+      emit ExecuteCommit(_commitIDs[i]);
+      _executeCommitment(_commit);
+    }
     // for (uint256 i = 0; i < _commitIDs.length; i++) {
     //   _commit = commits[_commitIDs[i]];
-    //   require(_commit.amount > 0, "Invalid commit");
-    //   // TODO: Double check this
-    //   require(
-    //     _commit.created + frontRunningInterval < lastPriceTimestamp,
-    //     "Commit too new"
-    //   );
-    //   // Imbalance check.
-    //   require(
-    //     getRatio(longBalance, shortBalance) <= _commit.maxImbalance,
-    //     "Imbalance tolerance exceeded"
-    //   );
+
     //   emit ExecuteCommit(_commitIDs[i]);
     //   // Update shadow pools
     //   shadowPools[_commit.commitType] -= _commit.amount;

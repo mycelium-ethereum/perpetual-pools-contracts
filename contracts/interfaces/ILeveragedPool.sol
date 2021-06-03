@@ -11,8 +11,8 @@ interface ILeveragedPool {
 
   struct Commit {
     uint256 created;
-    uint128 amount;
-    uint256 maxImbalance;
+    uint112 amount;
+    bytes16 maxImbalance;
     address owner;
     CommitType commitType;
   }
@@ -42,7 +42,7 @@ interface ILeveragedPool {
   event CreateCommit(
     uint256 indexed commitID,
     uint128 indexed amount,
-    uint256 indexed maxImbalance,
+    bytes16 indexed maxImbalance,
     CommitType commitType
   );
 
@@ -96,8 +96,8 @@ interface ILeveragedPool {
      */
   function commit(
     CommitType commitType,
-    uint256 maxImbalance,
-    uint128 amount
+    bytes16 maxImbalance,
+    uint112 amount
   ) external;
 
   /**

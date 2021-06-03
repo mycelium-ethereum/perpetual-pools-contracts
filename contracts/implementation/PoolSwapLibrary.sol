@@ -12,7 +12,7 @@ library PoolSwapLibrary {
     @return the ratio, as an ABDKMathQuad number (IEEE 754 quadruple precision floating point)
    */
   function getRatio(uint112 _numerator, uint112 _denominator)
-    public
+    external
     pure
     returns (bytes16)
   {
@@ -35,7 +35,7 @@ library PoolSwapLibrary {
     @return The amount of tokens to mint/remit to the user.
    */
   function getAmountOut(bytes16 ratio, uint112 amountIn)
-    public
+    external
     pure
     returns (uint256)
   {
