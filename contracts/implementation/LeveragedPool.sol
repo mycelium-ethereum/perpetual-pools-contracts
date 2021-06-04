@@ -6,12 +6,12 @@ import "../interfaces/ILeveragedPool.sol";
 import "./PoolToken.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/proxy/Initializable.sol";
-// import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../vendors/SafeMath_112.sol";
 import "./PoolSwapLibrary.sol";
 
-// import "hardhat/console.sol";
+import "hardhat/console.sol";
 
 /*
 @title The pool controller contract
@@ -30,21 +30,21 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
   uint112 public shortBalance;
   uint112 public longBalance;
 
-  int256 public lastPrice;
-  uint256 public lastPriceTimestamp;
-
-  address public quoteToken;
   uint32 public updateInterval;
   uint32 public frontRunningInterval;
 
   uint16 public fee;
   uint16 public leverageAmount;
   address public feeAddress;
+  address public quoteToken;
+
+  int256 public lastPrice;
+  uint256 public lastPriceTimestamp;
 
   uint256 public commitIDCounter;
   mapping(uint256 => Commit) public commits;
 
-  mapping(CommitType => uint256) public shadowPools;
+  mapping(CommitType => uint112) public shadowPools;
 
   // #### Roles
   /**
@@ -119,7 +119,8 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     uint112 amount
   ) external override {
     require(amount > 0, "Amount must not be zero");
-    commitIDCounter += 1;
+    commitIDCounter = commitIDCounter.add(1);
+
     commits[commitIDCounter] = Commit({
       commitType: commitType,
       maxImbalance: maxImbalance,
@@ -128,7 +129,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
       created: block.timestamp
     });
 
-    shadowPools[commitType] += amount;
+    shadowPools[commitType] = shadowPools[commitType].add(amount);
 
     emit CreateCommit(commitIDCounter, amount, maxImbalance, commitType);
 
@@ -137,29 +138,24 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     ) {
       require(
         IERC20(quoteToken).transferFrom(msg.sender, address(this), amount),
-        "Transfer of collateral failed"
+        "Transfer failed"
       );
+    } else if (commitType == CommitType.LongBurn) {
+      require(PoolToken(tokens[0]).burn(amount, msg.sender), "Transfer failed");
+    } else if (commitType == CommitType.ShortBurn) {
+      require(PoolToken(tokens[1]).burn(amount, msg.sender), "Transfer failed");
     }
-    // TODO: finish implementation in TPS-9: executeCommitment
-    // else if (commitType == CommitType.LongBurn) {
-    //   require(
-    //     PoolToken(tokens[0]).burn(amount, msg.sender),
-    //     "Transfer of collateral failed"
-    //   );
-    // } else if (commitType == CommitType.ShortBurn) {
-    //   require(
-    //     PoolToken(tokens[1]).burn(amount, msg.sender),
-    //     "Transfer of collateral failed"
-    //   );
-    // }
   }
 
   function uncommit(uint256 _commitID) external override {
     require(msg.sender == commits[_commitID].owner, "Unauthorized");
     require(commits[_commitID].amount > 0, "Invalid commit");
-    uint256 amount = commits[_commitID].amount;
+    uint112 amount = commits[_commitID].amount;
     CommitType commitType = commits[_commitID].commitType;
-    shadowPools[commits[_commitID].commitType] -= amount;
+    shadowPools[commits[_commitID].commitType] = shadowPools[
+      commits[_commitID].commitType
+    ]
+      .sub(amount);
     emit RemoveCommit(_commitID, amount, commitType);
     delete commits[_commitID];
     if (
@@ -169,19 +165,11 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
         IERC20(quoteToken).transfer(msg.sender, amount),
         "Transfer failed"
       );
+    } else if (commitType == CommitType.LongBurn) {
+      require(PoolToken(tokens[0]).mint(amount, msg.sender), "Transfer failed");
+    } else if (commitType == CommitType.ShortBurn) {
+      require(PoolToken(tokens[1]).mint(amount, msg.sender), "Transfer failed");
     }
-    // TODO: finish implementation in TPS-9: executeCommitment
-    // else if (commitType == CommitType.LongBurn) {
-    //   require(
-    //     PoolTokens(tokens[0]).mint(amount, msg.sender),
-    //     "Transfer failed"
-    //   );
-    // } else if (commitType == CommitType.ShortBurn) {
-    //   require(
-    //     PoolTokens(tokens[1]).mint(amount, msg.sender),
-    //     "Transfer failed"
-    //   );
-    // }
   }
 
   /**
@@ -201,28 +189,58 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
       "Imbalance tolerance exceeded"
     );
     // effects
-    shadowPools[_commit.commitType] -= _commit.amount;
-
+    shadowPools[_commit.commitType] = shadowPools[_commit.commitType].sub(
+      _commit.amount
+    );
     // interactions
     if (_commit.commitType == CommitType.LongMint) {
       longBalance = longBalance.add(_commit.amount);
-      _mintTokens(tokens[0], _commit.amount, longBalance, _commit.owner);
-    }
-    // else if(_commit.commitType == CommitType.LongBurn){}
-    else if (_commit.commitType == CommitType.ShortMint) {
+      _mintTokens(
+        tokens[0],
+        _commit.amount,
+        longBalance.sub(_commit.amount),
+        _commit.owner
+      );
+    } else if (_commit.commitType == CommitType.LongBurn) {
+      uint112 amountOut =
+        PoolSwapLibrary.getAmountOut(
+          PoolSwapLibrary.getRatio(
+            longBalance,
+            uint112(PoolToken(tokens[0]).totalSupply())
+          ),
+          _commit.amount
+        );
+      longBalance = longBalance.sub(amountOut);
+      IERC20(quoteToken).transfer(_commit.owner, amountOut);
+    } else if (_commit.commitType == CommitType.ShortMint) {
       shortBalance = shortBalance.add(_commit.amount);
-      _mintTokens(tokens[1], _commit.amount, shortBalance, _commit.owner);
+      _mintTokens(
+        tokens[1],
+        _commit.amount,
+        shortBalance.sub(_commit.amount),
+        _commit.owner
+      );
+    } else if (_commit.commitType == CommitType.ShortBurn) {
+      uint112 amountOut =
+        PoolSwapLibrary.getAmountOut(
+          PoolSwapLibrary.getRatio(
+            shortBalance,
+            uint112(PoolToken(tokens[1]).totalSupply())
+          ),
+          _commit.amount
+        );
+      shortBalance = shortBalance.sub(amountOut);
+      IERC20(quoteToken).transfer(_commit.owner, amountOut);
     }
-    // else if(_commit.commitType == CommitType.ShortBurn){}
   }
 
   /**
-    @notice Mints new tokens
-    @param token The token to mint
-    @param amountIn The amount the user has committed to minting
-    @param balance The balance of pair. Must include the amountIn
-    @param owner The address to send the tokens to
- */
+      @notice Mints new tokens
+      @param token The token to mint
+      @param amountIn The amount the user has committed to minting
+      @param balance The balance of pair at the start of the execution
+      @param owner The address to send the tokens to
+   */
   function _mintTokens(
     address token,
     uint112 amountIn,
@@ -234,7 +252,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
         PoolSwapLibrary.getAmountOut(
           PoolSwapLibrary.getRatio(
             uint112(PoolToken(token).totalSupply()),
-            balance.sub(amountIn)
+            balance
           ),
           amountIn
         ),
@@ -242,21 +260,6 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
       ),
       "Mint failed"
     );
-  }
-
-  /**
-    @notice Burns the amount given from the owner's account
-    @dev Used to remove the requirement for an approval for burn commits
-    @param token The token to burn
-    @param amount The amount to burn
-    @param owner The account to burn from
-   */
-  function _burnTokens(
-    address token,
-    uint112 amount,
-    address owner
-  ) internal {
-    require(PoolToken(token).burn(amount, owner), "Burn failed");
   }
 
   function executeCommitment(uint256[] memory _commitIDs) external override {

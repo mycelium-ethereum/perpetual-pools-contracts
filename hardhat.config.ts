@@ -25,6 +25,9 @@ const config: HardhatUserConfig = {
   },
   networks: {
     hardhat: {
+      gas: 12000000,
+      blockGasLimit: 0x1fffffffffffff,
+      allowUnlimitedContractSize: true,
       forking: {
         url: ALCHEMY_API_MAINNET_URL,
         blockNumber: 12474747,

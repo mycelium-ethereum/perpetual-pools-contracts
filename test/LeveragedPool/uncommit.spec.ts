@@ -1,7 +1,7 @@
 import { ethers } from "hardhat";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
-import { LeveragedPool, TestToken } from "../../typechain";
+import { LeveragedPool, PoolSwapLibrary, TestToken } from "../../typechain";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { POOL_CODE } from "../constants";
 import {
@@ -9,9 +9,10 @@ import {
   deployPoolAndTokenContracts,
   getRandomInt,
   generateRandomAddress,
+  timeout,
 } from "../utilities";
 
-import { ContractReceipt } from "ethers";
+import { BytesLike, ContractReceipt } from "ethers";
 
 chai.use(chaiAsPromised);
 const { expect } = chai;
@@ -24,13 +25,14 @@ const updateInterval = getRandomInt(99999, 10);
 const frontRunningInterval = getRandomInt(updateInterval - 1, 1);
 const fee = getRandomInt(256, 1);
 const leverage = getRandomInt(256, 1);
-const imbalance = getRandomInt(99999999, 1);
+let imbalance: BytesLike;
 const commitType = [2]; // Long mint;
 
 describe("LeveragedPool - uncommit", () => {
   let signers: SignerWithAddress[];
   let pool: LeveragedPool;
   let token: TestToken;
+  let library: PoolSwapLibrary;
   describe("Delete commit", () => {
     let receipt: ContractReceipt;
     let commitID: string;
@@ -48,6 +50,11 @@ describe("LeveragedPool - uncommit", () => {
       signers = elements.signers;
       pool = elements.pool;
       token = elements.token;
+      library = elements.library;
+      imbalance = await library.getRatio(
+        ethers.utils.parseEther("10"),
+        ethers.utils.parseEther("5")
+      );
       await token.approve(pool.address, amountCommitted);
       receipt = await (
         await pool.commit(commitType, imbalance, amountCommitted)
@@ -72,7 +79,11 @@ describe("LeveragedPool - uncommit", () => {
       );
       expect((await pool.commits(commitID)).created).to.eq(0);
       expect((await pool.commits(commitID)).amount).to.eq(0);
-      expect((await pool.commits(commitID)).maxImbalance).to.eq(0);
+      expect(
+        ethers.BigNumber.from(
+          (await pool.commits(commitID)).maxImbalance
+        ).toHexString()
+      ).to.eq(ethers.BigNumber.from(0).toHexString());
       expect((await pool.commits(commitID)).commitType).to.eq(0);
     });
     it("should emit an event for uncommitting", async () => {
@@ -129,6 +140,14 @@ describe("LeveragedPool - uncommit", () => {
       );
     });
     it("should update the shadow short burn balance", async () => {
+      const pairToken = await (
+        await pool.commit([0], imbalance, amountCommitted)
+      ).wait();
+      await timeout(2000);
+      await pool.executePriceChange(1);
+      await pool.executeCommitment([
+        getEventArgs(pairToken, "CreateCommit")?.commitID,
+      ]);
       const receipt = await (
         await pool.commit([1], imbalance, amountCommitted)
       ).wait();
@@ -235,7 +254,11 @@ describe("LeveragedPool - uncommit", () => {
       expect(await token.balanceOf(signers[0].address)).to.eq(amountMinted);
       expect(await token.balanceOf(pool.address)).to.eq(0);
     });
-    // it("should refund short pair tokens to the user for short burn commits", async () => {});
-    // it("should refund long pair tokens to the user for long burn commits", async () => {});
+    it("should refund short pair tokens to the user for short burn commits", async () => {
+      throw new Error();
+    });
+    it("should refund long pair tokens to the user for long burn commits", async () => {
+      throw new Error();
+    });
   });
 });

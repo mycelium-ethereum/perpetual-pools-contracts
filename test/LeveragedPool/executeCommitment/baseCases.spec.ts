@@ -147,4 +147,9 @@ describe("LeveragedPool - executeCommitment: Basic test cases", () => {
       expect((await pool.commits(commit.commitID)).amount).to.eq(0);
     });
   });
+  describe("Burn commit", () => {
+    it("should burn the pool tokens from the sender's wallet", async () => {
+      throw new Error();
+    });
+  });
 });

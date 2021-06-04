@@ -15,21 +15,8 @@ contract TestPoolFactory {
   /**
     @notice Constructs a minimal base to create clones from
    */
-  constructor() {
-    // Deploy pool base to share logic among pools
-    LeveragedPool _poolBase = new LeveragedPool();
-    poolBase = address(_poolBase);
-    // Initialise the base contract so no one else abuses it.
-    _poolBase.initialize(
-      "BASE_POOL",
-      1,
-      5,
-      2,
-      0,
-      0,
-      address(this),
-      address(this)
-    );
+  constructor(address _pool) {
+    poolBase = _pool;
   }
 
   /**

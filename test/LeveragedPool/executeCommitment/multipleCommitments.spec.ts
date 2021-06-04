@@ -1,7 +1,12 @@
 import { ethers } from "hardhat";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
-import { LeveragedPool, TestToken, ERC20 } from "../../../typechain";
+import {
+  LeveragedPool,
+  TestToken,
+  ERC20,
+  PoolSwapLibrary,
+} from "../../../typechain";
 
 import { POOL_CODE } from "../../constants";
 import {
@@ -12,6 +17,7 @@ import {
   CommitEventArgs,
   timeout,
 } from "../../utilities";
+import { BytesLike } from "ethers";
 
 chai.use(chaiAsPromised);
 const { expect } = chai;
@@ -24,15 +30,14 @@ const updateInterval = 120; // 2 minutes
 const frontRunningInterval = 1; // seconds
 const fee = getRandomInt(256, 1);
 const leverage = 2;
-const imbalance = ethers.BigNumber.from("5").mul(
-  ethers.BigNumber.from("2").pow(64)
-); // ABDK 64.64 fixed point number == 5%
+let imbalance: BytesLike;
 const commitType = [0]; //Short mint;
 
 describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
   let token: TestToken;
   let shortToken: ERC20;
   let pool: LeveragedPool;
+  let library: PoolSwapLibrary;
   const commits: CommitEventArgs[] | undefined = [];
   beforeEach(async () => {
     const result = await deployPoolAndTokenContracts(
@@ -46,15 +51,19 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
       amountMinted
     );
     pool = result.pool;
-
+    library = result.library;
+    imbalance = await library.getRatio(
+      ethers.utils.parseEther("10"),
+      ethers.utils.parseEther("5")
+    );
     token = result.token;
     shortToken = result.shortToken;
 
-    await token.approve(pool.address, amountCommitted);
+    await token.approve(pool.address, amountMinted);
     commits.push(
       await createCommit(pool, commitType, imbalance, amountCommitted)
     );
-    await shortToken.approve(pool.address, amountCommitted.div(2));
+    await shortToken.approve(pool.address, amountCommitted);
     commits.push(
       await createCommit(pool, [1], imbalance, amountCommitted.div(2))
     );

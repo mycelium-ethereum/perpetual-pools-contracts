@@ -9,9 +9,9 @@ import {
   TestToken__factory,
   PoolSwapLibrary,
   PoolSwapLibrary__factory,
+  LeveragedPool__factory,
 } from "../typechain";
 
-import { abi as Pool } from "../artifacts/contracts/implementation/LeveragedPool.sol/LeveragedPool.json";
 import { abi as ERC20Abi } from "../artifacts/@openzeppelin/contracts/token/ERC20/ERC20.sol/ERC20.json";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
@@ -94,22 +94,12 @@ export const deployPoolAndTokenContracts = async (
   const library = await libraryFactory.deploy();
   await library.deployed();
 
-  const testFactory = (await ethers.getContractFactory("TestPoolFactory", {
-    signer: signers[0],
-    libraries: { PoolSwapLibrary: library.address },
-  })) as TestPoolFactory__factory;
-  const testFactoryActual = await testFactory.deploy();
-  await testFactoryActual.deployed();
-  const factoryReceipt = await (
-    await testFactoryActual.createPool(POOL_CODE)
-  ).wait();
-
-  const pool = new ethers.Contract(
-    getEventArgs(factoryReceipt, "CreatePool")?.pool,
-    Pool,
-    signers[0]
-  ) as LeveragedPool;
-
+  const leveragedPoolFactory = (await ethers.getContractFactory(
+    "LeveragedPool",
+    { signer: signers[0], libraries: { PoolSwapLibrary: library.address } }
+  )) as LeveragedPool__factory;
+  const pool = await leveragedPoolFactory.deploy();
+  await pool.deployed();
   const poolReceipt = await (
     await pool.initialize(
       POOL_CODE,

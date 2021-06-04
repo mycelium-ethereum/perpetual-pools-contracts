@@ -37,7 +37,7 @@ library PoolSwapLibrary {
   function getAmountOut(bytes16 ratio, uint112 amountIn)
     external
     pure
-    returns (uint256)
+    returns (uint112)
   {
     require(amountIn > 0, "Invalid amount");
     if (
@@ -47,8 +47,10 @@ library PoolSwapLibrary {
       return amountIn;
     }
     return
-      ABDKMathQuad.toUInt(
-        ABDKMathQuad.mul(ratio, ABDKMathQuad.fromUInt(amountIn))
+      uint112(
+        ABDKMathQuad.toUInt(
+          ABDKMathQuad.mul(ratio, ABDKMathQuad.fromUInt(amountIn))
+        )
       );
   }
 
