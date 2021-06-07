@@ -1,7 +1,12 @@
 import { ethers } from "hardhat";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
-import { PoolSwapLibrary, LeveragedPool, TestToken } from "../../../typechain";
+import {
+  PoolSwapLibrary,
+  LeveragedPool,
+  TestToken,
+  ERC20,
+} from "../../../typechain";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { POOL_CODE } from "../../constants";
 import {
@@ -145,11 +150,6 @@ describe("LeveragedPool - executeCommitment: Basic test cases", () => {
       await pool.executePriceChange(9);
       await pool.connect(signers[1]).executeCommitment([commit.commitID]);
       expect((await pool.commits(commit.commitID)).amount).to.eq(0);
-    });
-  });
-  describe("Burn commit", () => {
-    it("should burn the pool tokens from the sender's wallet", async () => {
-      throw new Error();
     });
   });
 });

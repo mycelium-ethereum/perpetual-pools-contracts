@@ -27,6 +27,10 @@ library PoolSwapLibrary {
       );
   }
 
+  function convertRatio(bytes16 ratio) external pure returns (uint256) {
+    return ABDKMathQuad.toUInt(ratio);
+  }
+
   /**
     @notice Gets the amount of tokens a user is entitled to according to the ratio
     @dev This is useful for getting the amount of pool tokens to mint, and the amount of quote tokens to remit when minting and burning. Can also be used to provide the user with an estimate of their commit results.

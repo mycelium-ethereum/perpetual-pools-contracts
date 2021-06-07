@@ -199,6 +199,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
         tokens[0],
         _commit.amount,
         longBalance.sub(_commit.amount),
+        shadowPools[CommitType.LongBurn],
         _commit.owner
       );
     } else if (_commit.commitType == CommitType.LongBurn) {
@@ -206,7 +207,12 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
         PoolSwapLibrary.getAmountOut(
           PoolSwapLibrary.getRatio(
             longBalance,
-            uint112(PoolToken(tokens[0]).totalSupply())
+            uint112(
+              PoolToken(tokens[0])
+                .totalSupply()
+                .add(shadowPools[CommitType.LongBurn])
+                .add(_commit.amount)
+            )
           ),
           _commit.amount
         );
@@ -218,6 +224,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
         tokens[1],
         _commit.amount,
         shortBalance.sub(_commit.amount),
+        shadowPools[CommitType.ShortBurn],
         _commit.owner
       );
     } else if (_commit.commitType == CommitType.ShortBurn) {
@@ -226,9 +233,12 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
           PoolSwapLibrary.getRatio(
             shortBalance,
             uint112(PoolToken(tokens[1]).totalSupply())
+              .add(shadowPools[CommitType.ShortBurn])
+              .add(_commit.amount)
           ),
           _commit.amount
         );
+
       shortBalance = shortBalance.sub(amountOut);
       IERC20(quoteToken).transfer(_commit.owner, amountOut);
     }
@@ -239,19 +249,21 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
       @param token The token to mint
       @param amountIn The amount the user has committed to minting
       @param balance The balance of pair at the start of the execution
+      @param inverseShadowbalance The amount of tokens burned from total supply
       @param owner The address to send the tokens to
    */
   function _mintTokens(
     address token,
     uint112 amountIn,
     uint112 balance,
+    uint112 inverseShadowbalance,
     address owner
   ) internal {
     require(
       PoolToken(token).mint(
         PoolSwapLibrary.getAmountOut(
           PoolSwapLibrary.getRatio(
-            uint112(PoolToken(token).totalSupply()),
+            uint112(PoolToken(token).totalSupply()).add(inverseShadowbalance),
             balance
           ),
           amountIn

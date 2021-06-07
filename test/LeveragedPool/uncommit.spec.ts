@@ -1,7 +1,12 @@
 import { ethers } from "hardhat";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
-import { LeveragedPool, PoolSwapLibrary, TestToken } from "../../typechain";
+import {
+  ERC20,
+  LeveragedPool,
+  PoolSwapLibrary,
+  TestToken,
+} from "../../typechain";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { POOL_CODE } from "../constants";
 import {
@@ -17,14 +22,14 @@ import { BytesLike, ContractReceipt } from "ethers";
 chai.use(chaiAsPromised);
 const { expect } = chai;
 
-const amountCommitted = getRandomInt(2000, 1);
-const amountMinted = getRandomInt(50000, 10000);
+const amountCommitted = ethers.utils.parseEther("2000");
+const amountMinted = ethers.utils.parseEther("10000");
 const feeAddress = generateRandomAddress();
 const lastPrice = getRandomInt(99999999, 1);
-const updateInterval = getRandomInt(99999, 10);
-const frontRunningInterval = getRandomInt(updateInterval - 1, 1);
-const fee = getRandomInt(256, 1);
-const leverage = getRandomInt(256, 1);
+const updateInterval = 2;
+const frontRunningInterval = 1;
+const fee = 0;
+const leverage = 1;
 let imbalance: BytesLike;
 const commitType = [2]; // Long mint;
 
@@ -173,19 +178,30 @@ describe("LeveragedPool - uncommit", () => {
       );
     });
     it("should update the shadow long burn balance", async () => {
+      const pairToken = await (
+        await pool.commit([2], imbalance, amountCommitted)
+      ).wait();
+      await timeout(2000);
+      await pool.executePriceChange(1);
+      await pool.executeCommitment([
+        getEventArgs(pairToken, "CreateCommit")?.commitID,
+      ]);
       const receipt = await (
         await pool.commit([3], imbalance, amountCommitted)
       ).wait();
+
       expect(
         (await pool.shadowPools(3)).eq(ethers.BigNumber.from(amountCommitted))
       ).to.eq(true);
       await pool.uncommit(getEventArgs(receipt, "CreateCommit")?.commitID);
-      expect((await pool.shadowPools(3)).eq(ethers.BigNumber.from(0))).to.eq(
+      expect((await pool.shadowPools(1)).eq(ethers.BigNumber.from(0))).to.eq(
         true
       );
     });
   });
   describe("Token transfers", () => {
+    let shortToken: ERC20;
+    let longToken: ERC20;
     beforeEach(async () => {
       const elements = await deployPoolAndTokenContracts(
         POOL_CODE,
@@ -200,6 +216,8 @@ describe("LeveragedPool - uncommit", () => {
       signers = elements.signers;
       pool = elements.pool;
       token = elements.token;
+      shortToken = elements.shortToken;
+      longToken = elements.longToken;
       await token.approve(pool.address, amountCommitted);
     });
     it("should refund the user's quote tokens for long mint commits", async () => {
@@ -207,7 +225,7 @@ describe("LeveragedPool - uncommit", () => {
         await pool.commit([0], imbalance, amountCommitted)
       ).wait();
       expect(await token.balanceOf(signers[0].address)).to.eq(
-        amountMinted - amountCommitted
+        amountMinted.sub(amountCommitted)
       );
       expect(await token.balanceOf(pool.address)).to.eq(amountCommitted);
 
@@ -221,7 +239,7 @@ describe("LeveragedPool - uncommit", () => {
         await pool.commit([2], imbalance, amountCommitted)
       ).wait();
       expect(await token.balanceOf(signers[0].address)).to.eq(
-        amountMinted - amountCommitted
+        amountMinted.sub(amountCommitted)
       );
       expect(await token.balanceOf(pool.address)).to.eq(amountCommitted);
 
@@ -231,34 +249,88 @@ describe("LeveragedPool - uncommit", () => {
       expect(await token.balanceOf(pool.address)).to.eq(0);
     });
     it("should not transfer quote tokens for short burn commits", async () => {
+      const pairToken = await (
+        await pool.commit([0], imbalance, amountCommitted)
+      ).wait();
+      await timeout(2000);
+      await pool.executePriceChange(1);
+      await pool.executeCommitment([
+        getEventArgs(pairToken, "CreateCommit")?.commitID,
+      ]);
       const receipt = await (
         await pool.commit([1], imbalance, amountCommitted)
       ).wait();
-      expect(await token.balanceOf(signers[0].address)).to.eq(amountMinted);
-      expect(await token.balanceOf(pool.address)).to.eq(0);
+      expect(await token.balanceOf(signers[0].address)).to.eq(
+        amountMinted.sub(amountCommitted)
+      );
+      expect(await token.balanceOf(pool.address)).to.eq(amountCommitted);
 
       await pool.uncommit(getEventArgs(receipt, "CreateCommit")?.commitID);
 
-      expect(await token.balanceOf(signers[0].address)).to.eq(amountMinted);
-      expect(await token.balanceOf(pool.address)).to.eq(0);
+      expect(await token.balanceOf(signers[0].address)).to.eq(
+        amountMinted.sub(amountCommitted)
+      );
+      expect(await token.balanceOf(pool.address)).to.eq(amountCommitted);
     });
     it("should not transfer quote tokens for long burn commits", async () => {
+      const pairToken = await (
+        await pool.commit([2], imbalance, amountCommitted)
+      ).wait();
+      await timeout(2000);
+      await pool.executePriceChange(1);
+      await pool.executeCommitment([
+        getEventArgs(pairToken, "CreateCommit")?.commitID,
+      ]);
       const receipt = await (
         await pool.commit([3], imbalance, amountCommitted)
       ).wait();
-      expect(await token.balanceOf(signers[0].address)).to.eq(amountMinted);
-      expect(await token.balanceOf(pool.address)).to.eq(0);
+      expect(await token.balanceOf(signers[0].address)).to.eq(
+        amountMinted.sub(amountCommitted)
+      );
+      expect(await token.balanceOf(pool.address)).to.eq(amountCommitted);
 
       await pool.uncommit(getEventArgs(receipt, "CreateCommit")?.commitID);
 
-      expect(await token.balanceOf(signers[0].address)).to.eq(amountMinted);
-      expect(await token.balanceOf(pool.address)).to.eq(0);
+      expect(await token.balanceOf(signers[0].address)).to.eq(
+        amountMinted.sub(amountCommitted)
+      );
+      expect(await token.balanceOf(pool.address)).to.eq(amountCommitted);
     });
     it("should refund short pair tokens to the user for short burn commits", async () => {
-      throw new Error();
+      const pairToken = await (
+        await pool.commit([0], imbalance, amountCommitted)
+      ).wait();
+      await timeout(2000);
+      await pool.executePriceChange(1);
+      await pool.executeCommitment([
+        getEventArgs(pairToken, "CreateCommit")?.commitID,
+      ]);
+      const receipt = await (
+        await pool.commit([1], imbalance, amountCommitted)
+      ).wait();
+      expect(await shortToken.balanceOf(signers[0].address)).to.eq(0);
+      await pool.uncommit(getEventArgs(receipt, "CreateCommit")?.commitID);
+      expect(await shortToken.balanceOf(signers[0].address)).to.eq(
+        amountCommitted
+      );
     });
     it("should refund long pair tokens to the user for long burn commits", async () => {
-      throw new Error();
+      const pairToken = await (
+        await pool.commit([2], imbalance, amountCommitted)
+      ).wait();
+      await timeout(2000);
+      await pool.executePriceChange(1);
+      await pool.executeCommitment([
+        getEventArgs(pairToken, "CreateCommit")?.commitID,
+      ]);
+      const receipt = await (
+        await pool.commit([3], imbalance, amountCommitted)
+      ).wait();
+      expect(await longToken.balanceOf(signers[0].address)).to.eq(0);
+      await pool.uncommit(getEventArgs(receipt, "CreateCommit")?.commitID);
+      expect(await longToken.balanceOf(signers[0].address)).to.eq(
+        amountCommitted
+      );
     });
   });
 });
