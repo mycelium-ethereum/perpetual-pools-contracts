@@ -27,6 +27,11 @@ library PoolSwapLibrary {
       );
   }
 
+  /**
+    @notice Converts a raw ratio value to a more readable uint256 value
+    @param ratio The ratio to convert
+    @return The converted value
+ */
   function convertRatio(bytes16 ratio) external pure returns (uint256) {
     return ABDKMathQuad.toUInt(ratio);
   }
