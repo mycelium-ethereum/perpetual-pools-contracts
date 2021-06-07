@@ -148,27 +148,33 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
   }
 
   function uncommit(uint256 _commitID) external override {
-    require(msg.sender == commits[_commitID].owner, "Unauthorized");
-    require(commits[_commitID].amount > 0, "Invalid commit");
-    uint112 amount = commits[_commitID].amount;
-    CommitType commitType = commits[_commitID].commitType;
-    shadowPools[commits[_commitID].commitType] = shadowPools[
-      commits[_commitID].commitType
-    ]
-      .sub(amount);
-    emit RemoveCommit(_commitID, amount, commitType);
+    Commit memory _commit = commits[_commitID];
+    require(msg.sender == _commit.owner, "Unauthorized");
+    require(_commit.amount > 0, "Invalid commit");
+
+    shadowPools[_commit.commitType] -= _commit.amount;
+
+    emit RemoveCommit(_commitID, _commit.amount, _commit.commitType);
+
     delete commits[_commitID];
     if (
-      commitType == CommitType.LongMint || commitType == CommitType.ShortMint
+      _commit.commitType == CommitType.LongMint ||
+      _commit.commitType == CommitType.ShortMint
     ) {
       require(
-        IERC20(quoteToken).transfer(msg.sender, amount),
+        IERC20(quoteToken).transfer(msg.sender, _commit.amount),
         "Transfer failed"
       );
-    } else if (commitType == CommitType.LongBurn) {
-      require(PoolToken(tokens[0]).mint(amount, msg.sender), "Transfer failed");
-    } else if (commitType == CommitType.ShortBurn) {
-      require(PoolToken(tokens[1]).mint(amount, msg.sender), "Transfer failed");
+    } else if (_commit.commitType == CommitType.LongBurn) {
+      require(
+        PoolToken(tokens[0]).mint(_commit.amount, msg.sender),
+        "Transfer failed"
+      );
+    } else if (_commit.commitType == CommitType.ShortBurn) {
+      require(
+        PoolToken(tokens[1]).mint(_commit.amount, msg.sender),
+        "Transfer failed"
+      );
     }
   }
 
