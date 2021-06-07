@@ -16,6 +16,7 @@ contract TestPoolFactory {
     @notice Constructs a minimal base to create clones from
    */
   constructor(address _pool) {
+    require(_pool != address(0));
     poolBase = _pool;
   }
 

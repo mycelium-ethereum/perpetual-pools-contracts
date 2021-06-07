@@ -28,11 +28,30 @@ library PoolSwapLibrary {
   }
 
   /**
+    @notice Compares two ratios
+    @param x The first ratio to compare
+    @param y The second ratio to compare
+    @return -1 if x < y, 0 if x = y, or 1 if x > y
+   */
+  function compareRatios(bytes16 x, bytes16 y) external pure returns (int8) {
+    return ABDKMathQuad.cmp(x, y);
+  }
+
+  /**
+    @notice Converts an integer value to a compatible value for use as a ratio
+    @param amount The amount to convert
+    @return The amount as a IEEE754 quadruple precision number
+ */
+  function convertUIntToRatio(uint112 amount) external pure returns (bytes16) {
+    return ABDKMathQuad.fromUInt(uint256(amount));
+  }
+
+  /**
     @notice Converts a raw ratio value to a more readable uint256 value
     @param ratio The ratio to convert
     @return The converted value
  */
-  function convertRatio(bytes16 ratio) external pure returns (uint256) {
+  function convertRatioToUInt(bytes16 ratio) external pure returns (uint256) {
     return ABDKMathQuad.toUInt(ratio);
   }
 

@@ -150,13 +150,14 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
   function uncommit(uint256 _commitID) external override {
     Commit memory _commit = commits[_commitID];
     require(msg.sender == _commit.owner, "Unauthorized");
-    require(_commit.amount > 0, "Invalid commit");
+    require(_commit.owner != address(0), "Invalid commit");
 
     shadowPools[_commit.commitType] -= _commit.amount;
 
     emit RemoveCommit(_commitID, _commit.amount, _commit.commitType);
 
     delete commits[_commitID];
+
     if (
       _commit.commitType == CommitType.LongMint ||
       _commit.commitType == CommitType.ShortMint
@@ -186,12 +187,14 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     // checks
     require(_commit.amount > 0, "Invalid commit");
     require(
-      _commit.created + frontRunningInterval < lastPriceTimestamp,
+      _commit.created.add(frontRunningInterval) < lastPriceTimestamp,
       "Commit too new"
     );
     require(
-      PoolSwapLibrary.getRatio(longBalance, shortBalance) <=
-        _commit.maxImbalance,
+      PoolSwapLibrary.compareRatios(
+        PoolSwapLibrary.getRatio(longBalance, shortBalance),
+        _commit.maxImbalance
+      ) <= 0,
       "Imbalance tolerance exceeded"
     );
     // effects
@@ -223,7 +226,10 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
           _commit.amount
         );
       longBalance = longBalance.sub(amountOut);
-      IERC20(quoteToken).transfer(_commit.owner, amountOut);
+      require(
+        IERC20(quoteToken).transfer(_commit.owner, amountOut),
+        "Transfer failed"
+      );
     } else if (_commit.commitType == CommitType.ShortMint) {
       shortBalance = shortBalance.add(_commit.amount);
       _mintTokens(
@@ -246,7 +252,10 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
         );
 
       shortBalance = shortBalance.sub(amountOut);
-      IERC20(quoteToken).transfer(_commit.owner, amountOut);
+      require(
+        IERC20(quoteToken).transfer(_commit.owner, amountOut),
+        "Transfer failed"
+      );
     }
   }
 
