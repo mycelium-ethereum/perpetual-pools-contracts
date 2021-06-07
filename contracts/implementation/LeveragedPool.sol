@@ -180,8 +180,8 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
   }
 
   /**
-  @notice Executes a single commitment.
-  @param _commit The commit to execute
+    @notice Executes a single commitment.
+    @param _commit The commit to execute
  */
   function _executeCommitment(Commit memory _commit) internal {
     // checks
@@ -299,7 +299,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     }
   }
 
-  function executePriceChange(uint256 endPrice) external override {
+  function executePriceChange(uint256 newPrice) external override {
     lastPriceTimestamp = block.timestamp;
   }
 

@@ -81,6 +81,4 @@ library PoolSwapLibrary {
         )
       );
   }
-
-  // 128 bit safe math
 }
