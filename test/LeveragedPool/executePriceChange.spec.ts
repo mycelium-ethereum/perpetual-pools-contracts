@@ -14,6 +14,7 @@ import {
   generateRandomAddress,
   getRandomInt,
   timeout,
+  createCommit,
 } from "../utilities";
 
 import { BytesLike, ContractReceipt } from "ethers";
@@ -31,13 +32,10 @@ const frontRunningInterval = 1;
 const fee = ethers.BigNumber.from(0.2e12).div((365 * 24 * 60 * 60) / 15); // 15 second update interval at 2% per annum
 const leverage = 1;
 let imbalance: BytesLike;
-const commitType = [0]; // Short mint
 
 let library: PoolSwapLibrary;
 let pool: LeveragedPool;
 let quoteToken: ERC20;
-let shortToken: ERC20;
-let longToken: ERC20;
 let signers: SignerWithAddress[];
 
 /**
@@ -50,7 +48,7 @@ const setupHook = async () => {
     lastPrice,
     updateInterval,
     frontRunningInterval,
-    fee,
+    fee.toNumber(), // Max safe value for JS is 9e15, this is always less than 1e13
     leverage,
     feeAddress,
     amountMinted
@@ -58,15 +56,27 @@ const setupHook = async () => {
   library = result.library;
   pool = result.pool;
   quoteToken = result.token;
-  shortToken = result.shortToken;
-  longToken = result.longToken;
   signers = result.signers;
+  await quoteToken.approve(pool.address, amountMinted);
 };
 
 /**
  * Adds 2000 quote tokens to each pool
  */
-const fundPools = async () => {};
+const fundPools = async () => {
+  imbalance = await library.convertUIntToRatio(ethers.utils.parseEther("2001"));
+  const shortMint = await createCommit(pool, [0], imbalance, amountCommitted);
+  const longMint = await createCommit(pool, [2], imbalance, amountCommitted);
+  await timeout(2000);
+  await pool.executePriceChange(lastPrice);
+  await pool.executeCommitment([shortMint.commitID, longMint.commitID]);
+  expect((await pool.shortBalance()).toString()).to.eq(
+    amountCommitted.toString()
+  );
+  expect((await pool.longBalance()).toString()).to.eq(
+    amountCommitted.toString()
+  );
+};
 
 describe("LeveragedPool - executePriceUpdate", () => {
   describe("Base cases", () => {
