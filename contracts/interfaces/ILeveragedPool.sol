@@ -82,7 +82,7 @@ interface ILeveragedPool {
     int256 _firstPrice,
     uint32 _updateInterval,
     uint32 _frontRunningInterval,
-    uint16 _fee,
+    uint40 _fee,
     uint16 _leverageAmount,
     address _feeAddress,
     address _quoteToken

@@ -33,7 +33,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
   uint32 public updateInterval;
   uint32 public frontRunningInterval;
 
-  uint16 public fee;
+  uint40 public fee;
   uint16 public leverageAmount;
   address public feeAddress;
   address public quoteToken;
