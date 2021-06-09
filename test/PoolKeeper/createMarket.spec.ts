@@ -6,6 +6,7 @@ import {
   PoolKeeper,
   OracleWrapper__factory,
   OracleWrapper,
+  PoolSwapLibrary__factory,
 } from "../../typechain";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import {
@@ -34,11 +35,16 @@ describe("PoolKeeper - createMarket", () => {
     )) as OracleWrapper__factory;
     oracleWrapper = await oracleWrapperFactory.deploy();
     await oracleWrapper.deployed();
-
-    const poolKeeperFactory = (await ethers.getContractFactory(
-      "PoolKeeper",
+    const libraryFactory = (await ethers.getContractFactory(
+      "PoolSwapLibrary",
       signers[0]
-    )) as PoolKeeper__factory;
+    )) as PoolSwapLibrary__factory;
+    const library = await libraryFactory.deploy();
+    await library.deployed();
+    const poolKeeperFactory = (await ethers.getContractFactory("PoolKeeper", {
+      signer: signers[0],
+      libraries: { PoolSwapLibrary: library.address },
+    })) as PoolKeeper__factory;
     poolKeeper = await poolKeeperFactory.deploy(oracleWrapper.address);
     await poolKeeper.deployed();
 

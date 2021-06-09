@@ -5,6 +5,9 @@ import {
   TestPoolFactory__factory,
   LeveragedPool,
   TestPoolFactory,
+  LeveragedPool__factory,
+  TestToken__factory,
+  PoolSwapLibrary__factory,
 } from "../../typechain";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import {
@@ -24,7 +27,7 @@ import { ContractReceipt } from "ethers";
 chai.use(chaiAsPromised);
 const { expect } = chai;
 
-const quoteToken = generateRandomAddress();
+const amountMinted = ethers.utils.parseEther("10000");
 const feeAddress = generateRandomAddress();
 const lastPrice = getRandomInt(9999999999, 1);
 const updateInterval = getRandomInt(99999, 10);
@@ -34,6 +37,7 @@ const leverage = getRandomInt(256, 1);
 
 describe("LeveragedPool - initialize", () => {
   let signers: SignerWithAddress[];
+  let quoteToken: string;
   before(async () => {
     signers = await ethers.getSigners();
   });
@@ -42,12 +46,48 @@ describe("LeveragedPool - initialize", () => {
     let receipt: ContractReceipt;
     before(async () => {
       // Deploy the contracts
+      const testToken = (await ethers.getContractFactory(
+        "TestToken",
+        signers[0]
+      )) as TestToken__factory;
+      const token = await testToken.deploy("TEST TOKEN", "TST1");
+      await token.deployed();
+      await token.mint(amountMinted, signers[0].address);
+      quoteToken = token.address;
 
+      const libraryFactory = (await ethers.getContractFactory(
+        "PoolSwapLibrary",
+        signers[0]
+      )) as PoolSwapLibrary__factory;
+      const library = await libraryFactory.deploy();
+      await library.deployed();
+
+      const leveragedPoolFactory = (await ethers.getContractFactory(
+        "LeveragedPool",
+        {
+          signer: signers[0],
+          libraries: { PoolSwapLibrary: library.address },
+        }
+      )) as LeveragedPool__factory;
+      const pool = await leveragedPoolFactory.deploy();
+      await pool.deployed();
+      await (
+        await pool.initialize(
+          POOL_CODE,
+          1,
+          updateInterval,
+          frontRunningInterval,
+          fee,
+          leverage,
+          feeAddress,
+          token.address
+        )
+      ).wait();
       const testFactory = (await ethers.getContractFactory(
         "TestPoolFactory",
         signers[0]
       )) as TestPoolFactory__factory;
-      const testFactoryActual = await testFactory.deploy();
+      const testFactoryActual = await testFactory.deploy(pool.address);
       await testFactoryActual.deployed();
       const factoryReceipt = await (
         await testFactoryActual.createPool(POOL_CODE)
@@ -172,11 +212,47 @@ describe("LeveragedPool - initialize", () => {
     let testFactoryActual: TestPoolFactory;
     beforeEach(async () => {
       // Deploy the contracts
+      const testToken = (await ethers.getContractFactory(
+        "TestToken",
+        signers[0]
+      )) as TestToken__factory;
+      const token = await testToken.deploy("TEST TOKEN", "TST1");
+      await token.deployed();
+      await token.mint(amountMinted, signers[0].address);
+      quoteToken = token.address;
+      const libraryFactory = (await ethers.getContractFactory(
+        "PoolSwapLibrary",
+        signers[0]
+      )) as PoolSwapLibrary__factory;
+      const library = await libraryFactory.deploy();
+      await library.deployed();
+
+      const leveragedPoolFactory = (await ethers.getContractFactory(
+        "LeveragedPool",
+        {
+          signer: signers[0],
+          libraries: { PoolSwapLibrary: library.address },
+        }
+      )) as LeveragedPool__factory;
+      const pool = await leveragedPoolFactory.deploy();
+      await pool.deployed();
+      await (
+        await pool.initialize(
+          POOL_CODE,
+          1,
+          updateInterval,
+          frontRunningInterval,
+          fee,
+          leverage,
+          feeAddress,
+          token.address
+        )
+      ).wait();
       const testFactory = (await ethers.getContractFactory(
         "TestPoolFactory",
         signers[0]
       )) as TestPoolFactory__factory;
-      testFactoryActual = await testFactory.deploy();
+      testFactoryActual = await testFactory.deploy(pool.address);
       await testFactoryActual.deployed();
       const factoryReceipt = await (
         await testFactoryActual.createPool(POOL_CODE)

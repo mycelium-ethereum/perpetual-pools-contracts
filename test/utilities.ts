@@ -1,14 +1,18 @@
 import { ethers } from "hardhat";
-import { ContractReceipt, Event } from "ethers";
-import { Result } from "ethers/lib/utils";
+import { BigNumberish, ContractReceipt, Event } from "ethers";
+import { BytesLike, Result } from "ethers/lib/utils";
 import {
+  ERC20,
   LeveragedPool,
   TestPoolFactory__factory,
   TestToken,
   TestToken__factory,
+  PoolSwapLibrary,
+  PoolSwapLibrary__factory,
+  LeveragedPool__factory,
 } from "../typechain";
 
-import { abi as Pool } from "../artifacts/contracts/implementation/LeveragedPool.sol/LeveragedPool.json";
+import { abi as ERC20Abi } from "../artifacts/@openzeppelin/contracts/token/ERC20/ERC20.sol/ERC20.json";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
 /**
@@ -53,7 +57,7 @@ export const getEventArgs = (
  * @param leverage The amount of leverage the pool will apply
  * @param feeAddress The address to transfer fees to on a fund movement
  * @param amountMinted The amount of test quote tokens to mint
- * @returns {signers, token, pool} An object containing an array of ethers signers, a Contract instance for the token, and a Contract instance for the pool.
+ * @returns {signers, token, pool, library, shortToken, longToken} An object containing an array of ethers signers, a Contract instance for the token, and a Contract instance for the pool.
  */
 export const deployPoolAndTokenContracts = async (
   POOL_CODE: string,
@@ -63,11 +67,14 @@ export const deployPoolAndTokenContracts = async (
   fee: number,
   leverage: number,
   feeAddress: string,
-  amountMinted: number
+  amountMinted: BigNumberish
 ): Promise<{
   signers: SignerWithAddress[];
   pool: LeveragedPool;
   token: TestToken;
+  shortToken: ERC20;
+  longToken: ERC20;
+  library: PoolSwapLibrary;
 }> => {
   const signers = await ethers.getSigners();
   // Deploy test ERC20 token
@@ -80,32 +87,85 @@ export const deployPoolAndTokenContracts = async (
   await token.mint(amountMinted, signers[0].address);
 
   // Deploy and initialise pool
-
-  const testFactory = (await ethers.getContractFactory(
-    "TestPoolFactory",
+  const libraryFactory = (await ethers.getContractFactory(
+    "PoolSwapLibrary",
     signers[0]
-  )) as TestPoolFactory__factory;
-  const testFactoryActual = await testFactory.deploy();
-  await testFactoryActual.deployed();
-  const factoryReceipt = await (
-    await testFactoryActual.createPool(POOL_CODE)
+  )) as PoolSwapLibrary__factory;
+  const library = await libraryFactory.deploy();
+  await library.deployed();
+
+  const leveragedPoolFactory = (await ethers.getContractFactory(
+    "LeveragedPool",
+    { signer: signers[0], libraries: { PoolSwapLibrary: library.address } }
+  )) as LeveragedPool__factory;
+  const pool = await leveragedPoolFactory.deploy();
+  await pool.deployed();
+  const poolReceipt = await (
+    await pool.initialize(
+      POOL_CODE,
+      firstPrice,
+      updateInterval,
+      frontRunningInterval,
+      fee,
+      leverage,
+      feeAddress,
+      token.address
+    )
   ).wait();
 
-  const pool = new ethers.Contract(
-    getEventArgs(factoryReceipt, "CreatePool")?.pool,
-    Pool,
-    signers[0]
-  ) as LeveragedPool;
+  return {
+    signers,
+    pool,
+    token,
+    library,
+    shortToken: new ethers.Contract(
+      getEventArgs(poolReceipt, "PoolInitialized")?.shortToken,
+      ERC20Abi,
+      signers[0]
+    ) as ERC20,
+    longToken: new ethers.Contract(
+      getEventArgs(poolReceipt, "PoolInitialized")?.longToken,
+      ERC20Abi,
+      signers[0]
+    ) as ERC20,
+  };
+};
 
-  await pool.initialize(
-    POOL_CODE,
-    firstPrice,
-    updateInterval,
-    frontRunningInterval,
-    fee,
-    leverage,
-    feeAddress,
-    token.address
-  );
-  return { signers, pool, token };
+export interface CommitEventArgs {
+  commitID: BigNumberish;
+  amount: BigNumberish;
+  maxImbalance: BigNumberish;
+  commitType: BigNumberish;
+}
+/**
+ * Creates a commit and returns the event arguments for it
+ * @param pool The pool contract instance
+ * @param commitType The type of commit
+ * @param imbalance The max imbalance for the commit
+ * @param amount The amount to commit to
+ */
+export const createCommit = async (
+  pool: LeveragedPool,
+  commitType: BigNumberish,
+  imbalance: BytesLike,
+  amount: BigNumberish
+): Promise<CommitEventArgs> => {
+  const receipt = await (
+    await pool.commit(commitType, imbalance, amount)
+  ).wait();
+  return {
+    commitID: getEventArgs(receipt, "CreateCommit")?.commitID,
+    amount: getEventArgs(receipt, "CreateCommit")?.amount,
+    maxImbalance: getEventArgs(receipt, "CreateCommit")?.maxImbalance,
+    commitType: getEventArgs(receipt, "CreateCommit")?.commitType,
+  };
+};
+
+/**
+ * Delays execution of a function by the amount specified
+ * @param milliseconds the number of milliseconds to wait
+ * @returns nothing
+ */
+export const timeout = async (milliseconds: number): Promise<void> => {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
 };
