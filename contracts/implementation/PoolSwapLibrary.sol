@@ -100,16 +100,20 @@ library PoolSwapLibrary {
     pure
     returns (uint256)
   {
+    bytes16 lm =
+      ABDKMathQuad.add(
+        ABDKMathQuad.mul(direction < 1 ? one : zero, ratio),
+        ABDKMathQuad.div(
+          ABDKMathQuad.mul(direction >= 1 ? one : zero, one),
+          ratio
+        )
+      );
     return
       ABDKMathQuad.toUInt(
         ABDKMathQuad.mul(
           ABDKMathQuad.fromUInt(1e18),
-          ABDKMathQuad.add(
-            ABDKMathQuad.mul(direction < 1 ? one : zero, ratio),
-            ABDKMathQuad.div(
-              ABDKMathQuad.mul(direction >= 1 ? one : zero, one),
-              ratio
-            )
+          ABDKMathQuad.pow_2(
+            ABDKMathQuad.mul(ABDKMathQuad.fromUInt(10), ABDKMathQuad.log_2(lm))
           )
         )
       );
