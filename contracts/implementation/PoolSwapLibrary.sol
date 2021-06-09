@@ -3,8 +3,6 @@ pragma solidity ^0.7.6;
 pragma abicoder v2;
 import "abdk-libraries-solidity/ABDKMathQuad.sol";
 
-import "hardhat/console.sol";
-
 library PoolSwapLibrary {
   bytes16 public constant one = 0x3fff0000000000000000000000000000;
   bytes16 public constant zero = 0x00000000000000000000000000000000;
@@ -91,30 +89,54 @@ library PoolSwapLibrary {
     return ABDKMathQuad.toUInt(ratio);
   }
 
+  function multiplyDecimalByUInt(bytes16 a, uint256 b)
+    external
+    pure
+    returns (bytes16)
+  {
+    return ABDKMathQuad.mul(a, ABDKMathQuad.fromUInt(b));
+  }
+
   function divInt(int256 a, int256 b) external pure returns (bytes16) {
     return ABDKMathQuad.div(ABDKMathQuad.fromInt(a), ABDKMathQuad.fromInt(b));
   }
 
-  function getLossMultiplier(bytes16 ratio, int8 direction)
+  function toDouble(bytes16 a) external pure returns (bytes8) {
+    return ABDKMathQuad.toDouble(a);
+  }
+
+  function getLossMultiplier(
+    bytes16 ratio,
+    int8 direction,
+    uint16 leverage
+  ) external pure returns (bytes16) {
+    return
+      ABDKMathQuad.pow_2(
+        ABDKMathQuad.mul(
+          ABDKMathQuad.fromUInt(leverage),
+          ABDKMathQuad.log_2(
+            ABDKMathQuad.add(
+              ABDKMathQuad.mul(direction < 0 ? one : zero, ratio),
+              ABDKMathQuad.div(
+                ABDKMathQuad.mul(direction >= 0 ? one : zero, one),
+                ratio
+              )
+            )
+          )
+        )
+      );
+  }
+
+  function getLossAmount(bytes16 lossMultiplier, uint112 balance)
     external
     pure
     returns (uint256)
   {
-    bytes16 lm =
-      ABDKMathQuad.add(
-        ABDKMathQuad.mul(direction < 1 ? one : zero, ratio),
-        ABDKMathQuad.div(
-          ABDKMathQuad.mul(direction >= 1 ? one : zero, one),
-          ratio
-        )
-      );
     return
       ABDKMathQuad.toUInt(
         ABDKMathQuad.mul(
-          ABDKMathQuad.fromUInt(1e18),
-          ABDKMathQuad.pow_2(
-            ABDKMathQuad.mul(ABDKMathQuad.fromUInt(10), ABDKMathQuad.log_2(lm))
-          )
+          ABDKMathQuad.sub(one, lossMultiplier),
+          ABDKMathQuad.fromUInt(balance)
         )
       );
   }

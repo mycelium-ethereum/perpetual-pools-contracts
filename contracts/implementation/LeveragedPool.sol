@@ -304,17 +304,32 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
       block.timestamp.sub(lastPriceTimestamp) >= updateInterval,
       "Update too soon"
     );
-    // Transfer fee: fee * quoteToken.balanceOf(this.address)
+    // Remove transfer fee from pairs
+
+    // fee * quoteToken.balanceOf(this.address)
 
     bytes16 ratio = PoolSwapLibrary.divInt(newPrice, lastPrice);
     int8 direction =
-      PoolSwapLibrary.compareDecimals(ratio, PoolSwapLibrary.one); // >=1 move short to long else move long to short
-    uint256 lossMultiplier =
-      PoolSwapLibrary.getLossMultiplier(ratio, direction);
+      PoolSwapLibrary.compareDecimals(ratio, PoolSwapLibrary.one); // >=0 move short to long else move long to short
+    bytes16 lossMultiplier =
+      PoolSwapLibrary.getLossMultiplier(ratio, direction, leverageAmount);
 
-    // Update last price at the end
     lastPriceTimestamp = block.timestamp;
     lastPrice = newPrice;
+
+    if (direction >= 0 && shortBalance > 0) {
+      // Move funds from short to long pair
+      uint112 lossAmount =
+        uint112(PoolSwapLibrary.getLossAmount(lossMultiplier, shortBalance));
+      shortBalance = shortBalance.sub(lossAmount);
+      longBalance = longBalance.add(lossAmount);
+    } else if (direction < 0 && longBalance > 0) {
+      // Move funds from long to short pair
+      uint112 lossAmount =
+        uint112(PoolSwapLibrary.getLossAmount(lossMultiplier, longBalance));
+      shortBalance = shortBalance.add(lossAmount);
+      longBalance = longBalance.sub(lossAmount);
+    }
   }
 
   function updateFeeAddress(address account) external override {}
