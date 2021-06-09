@@ -33,7 +33,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
   uint32 public updateInterval;
   uint32 public frontRunningInterval;
 
-  uint40 public fee;
+  bytes16 public fee;
   uint16 public leverageAmount;
   address public feeAddress;
   address public quoteToken;
@@ -68,7 +68,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     int256 _firstPrice,
     uint32 _updateInterval,
     uint32 _frontRunningInterval,
-    uint40 _fee,
+    bytes16 _fee,
     uint16 _leverageAmount,
     address _feeAddress,
     address _quoteToken
@@ -182,7 +182,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
   /**
     @notice Executes a single commitment.
     @param _commit The commit to execute
- */
+  */
   function _executeCommitment(Commit memory _commit) internal {
     // checks
     require(_commit.amount > 0, "Invalid commit");
@@ -191,7 +191,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
       "Commit too new"
     );
     require(
-      PoolSwapLibrary.compareRatios(
+      PoolSwapLibrary.compareDecimals(
         PoolSwapLibrary.getRatio(longBalance, shortBalance),
         _commit.maxImbalance
       ) <= 0,
@@ -299,8 +299,22 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     }
   }
 
-  function executePriceChange(uint256 newPrice) external override {
+  function executePriceChange(int256 newPrice) external override {
+    require(
+      block.timestamp.sub(lastPriceTimestamp) >= updateInterval,
+      "Update too soon"
+    );
+    // Transfer fee: fee * quoteToken.balanceOf(this.address)
+
+    bytes16 ratio = PoolSwapLibrary.divInt(newPrice, lastPrice);
+    int8 direction =
+      PoolSwapLibrary.compareDecimals(ratio, PoolSwapLibrary.one); // >=1 move short to long else move long to short
+    uint256 lossMultiplier =
+      PoolSwapLibrary.getLossMultiplier(ratio, direction);
+
+    // Update last price at the end
     lastPriceTimestamp = block.timestamp;
+    lastPrice = newPrice;
   }
 
   function updateFeeAddress(address account) external override {}

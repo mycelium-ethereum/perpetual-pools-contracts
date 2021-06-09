@@ -64,7 +64,7 @@ export const deployPoolAndTokenContracts = async (
   firstPrice: number,
   updateInterval: number,
   frontRunningInterval: number,
-  fee: number,
+  fee: BytesLike,
   leverage: number,
   feeAddress: string,
   amountMinted: BigNumberish

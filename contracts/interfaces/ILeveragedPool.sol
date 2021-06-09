@@ -82,7 +82,7 @@ interface ILeveragedPool {
     int256 _firstPrice,
     uint32 _updateInterval,
     uint32 _frontRunningInterval,
-    uint40 _fee,
+    bytes16 _fee,
     uint16 _leverageAmount,
     address _feeAddress,
     address _quoteToken
@@ -118,7 +118,7 @@ interface ILeveragedPool {
     @dev This function should be secured with some form of access control
     @param newPrice The latest price from the oracle. 
     */
-  function executePriceChange(uint256 newPrice) external;
+  function executePriceChange(int256 newPrice) external;
 
   /** 
     @notice Updates the fee address

@@ -3,7 +3,12 @@ pragma solidity ^0.7.6;
 pragma abicoder v2;
 import "abdk-libraries-solidity/ABDKMathQuad.sol";
 
+import "hardhat/console.sol";
+
 library PoolSwapLibrary {
+  bytes16 public constant one = 0x3fff0000000000000000000000000000;
+  bytes16 public constant zero = 0x00000000000000000000000000000000;
+
   /**
     @notice Calculates the ratio between two numbers
     @dev Rounds any overflow towards 0. If either parameter is zero, the ratio is 0.
@@ -25,34 +30,6 @@ library PoolSwapLibrary {
         ABDKMathQuad.fromUInt(_numerator),
         ABDKMathQuad.fromUInt(_denominator)
       );
-  }
-
-  /**
-    @notice Compares two ratios
-    @param x The first ratio to compare
-    @param y The second ratio to compare
-    @return -1 if x < y, 0 if x = y, or 1 if x > y
-   */
-  function compareRatios(bytes16 x, bytes16 y) external pure returns (int8) {
-    return ABDKMathQuad.cmp(x, y);
-  }
-
-  /**
-    @notice Converts an integer value to a compatible value for use as a ratio
-    @param amount The amount to convert
-    @return The amount as a IEEE754 quadruple precision number
- */
-  function convertUIntToRatio(uint112 amount) external pure returns (bytes16) {
-    return ABDKMathQuad.fromUInt(uint256(amount));
-  }
-
-  /**
-    @notice Converts a raw ratio value to a more readable uint256 value
-    @param ratio The ratio to convert
-    @return The converted value
- */
-  function convertRatioToUInt(bytes16 ratio) external pure returns (uint256) {
-    return ABDKMathQuad.toUInt(ratio);
   }
 
   /**
@@ -78,6 +55,62 @@ library PoolSwapLibrary {
       uint112(
         ABDKMathQuad.toUInt(
           ABDKMathQuad.mul(ratio, ABDKMathQuad.fromUInt(amountIn))
+        )
+      );
+  }
+
+  /**
+    @notice Compares two decimal numbers
+    @param x The first number to compare
+    @param y The second number to compare
+    @return -1 if x < y, 0 if x = y, or 1 if x > y
+   */
+  function compareDecimals(bytes16 x, bytes16 y) external pure returns (int8) {
+    return ABDKMathQuad.cmp(x, y);
+  }
+
+  /**
+    @notice Converts an integer value to a compatible decimal value
+    @param amount The amount to convert
+    @return The amount as a IEEE754 quadruple precision number
+ */
+  function convertUIntToDecimal(uint112 amount)
+    external
+    pure
+    returns (bytes16)
+  {
+    return ABDKMathQuad.fromUInt(uint256(amount));
+  }
+
+  /**
+    @notice Converts a raw decimal value to a more readable uint256 value
+    @param ratio The value to convert
+    @return The converted value
+ */
+  function convertDecimalToUInt(bytes16 ratio) external pure returns (uint256) {
+    return ABDKMathQuad.toUInt(ratio);
+  }
+
+  function divInt(int256 a, int256 b) external pure returns (bytes16) {
+    return ABDKMathQuad.div(ABDKMathQuad.fromInt(a), ABDKMathQuad.fromInt(b));
+  }
+
+  function getLossMultiplier(bytes16 ratio, int8 direction)
+    external
+    pure
+    returns (uint256)
+  {
+    return
+      ABDKMathQuad.toUInt(
+        ABDKMathQuad.mul(
+          ABDKMathQuad.fromUInt(1e18),
+          ABDKMathQuad.add(
+            ABDKMathQuad.mul(direction < 1 ? one : zero, ratio),
+            ABDKMathQuad.div(
+              ABDKMathQuad.mul(direction >= 1 ? one : zero, one),
+              ratio
+            )
+          )
         )
       );
   }
