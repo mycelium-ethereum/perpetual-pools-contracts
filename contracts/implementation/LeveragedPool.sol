@@ -304,7 +304,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
       block.timestamp.sub(lastPriceTimestamp) >= updateInterval,
       "Update too soon"
     );
-    // Remove fee amount from pairs
+
     uint112 longFeeAmount =
       uint112(
         PoolSwapLibrary.convertDecimalToUInt(
@@ -329,7 +329,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
 
     bytes16 ratio = PoolSwapLibrary.divInt(newPrice, lastPrice);
     int8 direction =
-      PoolSwapLibrary.compareDecimals(ratio, PoolSwapLibrary.one); // >=0 move short to long else move long to short
+      PoolSwapLibrary.compareDecimals(ratio, PoolSwapLibrary.one);
     bytes16 lossMultiplier =
       PoolSwapLibrary.getLossMultiplier(ratio, direction, leverageAmount);
 
