@@ -11,8 +11,6 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../vendors/SafeMath_112.sol";
 import "./PoolSwapLibrary.sol";
 
-import "hardhat/console.sol";
-
 /*
 @title The pool controller contract
 */
