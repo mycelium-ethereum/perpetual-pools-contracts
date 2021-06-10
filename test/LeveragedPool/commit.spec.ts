@@ -28,7 +28,7 @@ const feeAddress = generateRandomAddress();
 const lastPrice = getRandomInt(99999999, 1);
 const updateInterval = 2;
 const frontRunningInterval = 1;
-const fee = "0x3fff0000000000000000000000000000";
+const fee = "0x00000000000000000000000000000000";
 const leverage = 1;
 let imbalance: BytesLike;
 const commitType = [0]; // Short mint

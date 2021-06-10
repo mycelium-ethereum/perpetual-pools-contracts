@@ -8,6 +8,7 @@ import {
   LeveragedPool__factory,
   TestToken__factory,
   PoolSwapLibrary__factory,
+  PoolSwapLibrary,
 } from "../../typechain";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import {
@@ -32,7 +33,7 @@ const feeAddress = generateRandomAddress();
 const lastPrice = getRandomInt(9999999999, 1);
 const updateInterval = getRandomInt(99999, 10);
 const frontRunningInterval = getRandomInt(updateInterval - 1, 1);
-const fee = "0x3fff0000000000000000000000000000";
+const fee = "0x00000000000000000000000000000000";
 const leverage = getRandomInt(256, 1);
 
 describe("LeveragedPool - initialize", () => {
@@ -44,6 +45,7 @@ describe("LeveragedPool - initialize", () => {
   describe("Initializes contract state and roles", () => {
     let leveragedPool: LeveragedPool;
     let receipt: ContractReceipt;
+    let library: PoolSwapLibrary;
     before(async () => {
       // Deploy the contracts
       const testToken = (await ethers.getContractFactory(
@@ -59,7 +61,7 @@ describe("LeveragedPool - initialize", () => {
         "PoolSwapLibrary",
         signers[0]
       )) as PoolSwapLibrary__factory;
-      const library = await libraryFactory.deploy();
+      library = await libraryFactory.deploy();
       await library.deployed();
 
       const leveragedPoolFactory = (await ethers.getContractFactory(
@@ -142,7 +144,9 @@ describe("LeveragedPool - initialize", () => {
     });
 
     it("should set the leverage amount", async () => {
-      expect(await leveragedPool.leverageAmount()).to.eq(leverage);
+      expect(
+        await library.convertDecimalToUInt(await leveragedPool.leverageAmount())
+      ).to.eq(leverage);
     });
 
     it("should set the fee", async () => {

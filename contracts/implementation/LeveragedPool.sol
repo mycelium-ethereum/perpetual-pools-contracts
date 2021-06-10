@@ -313,11 +313,11 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
         )
       );
     uint112 totalFeeAmount = 0;
-    if (shortBalance > 0) {
+    if (shortBalance >= shortFeeAmount) {
       shortBalance = shortBalance.sub(shortFeeAmount);
       totalFeeAmount = totalFeeAmount.add(shortFeeAmount);
     }
-    if (longBalance > 0) {
+    if (longBalance > longFeeAmount) {
       longBalance = longBalance.sub(longFeeAmount);
       totalFeeAmount = totalFeeAmount.add(longFeeAmount);
     }

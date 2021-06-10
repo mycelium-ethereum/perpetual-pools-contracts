@@ -84,7 +84,7 @@ describe("PoolKeeper - createPool", () => {
         POOL_CODE,
         5,
         2,
-        "0x3fff0000000000000000000000000000",
+        "0x00000000000000000000000000000000",
         5,
         generateRandomAddress(),
         generateRandomAddress()
@@ -105,7 +105,7 @@ describe("PoolKeeper - createPool", () => {
         POOL_CODE,
         5,
         2,
-        "0x3fff0000000000000000000000000000",
+        "0x00000000000000000000000000000000",
         5,
         generateRandomAddress(),
         generateRandomAddress()
@@ -125,7 +125,7 @@ describe("PoolKeeper - createPool", () => {
         POOL_CODE,
         5,
         2,
-        "0x3fff0000000000000000000000000000",
+        "0x00000000000000000000000000000000",
         5,
         generateRandomAddress(),
         generateRandomAddress()
@@ -144,7 +144,7 @@ describe("PoolKeeper - createPool", () => {
         POOL_CODE,
         5,
         2,
-        "0x3fff0000000000000000000000000000",
+        "0x00000000000000000000000000000000",
         5,
         generateRandomAddress(),
         generateRandomAddress()
@@ -156,7 +156,7 @@ describe("PoolKeeper - createPool", () => {
         POOL_CODE,
         5,
         2,
-        "0x3fff0000000000000000000000000000",
+        "0x00000000000000000000000000000000",
         5,
         generateRandomAddress(),
         generateRandomAddress()
