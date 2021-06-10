@@ -71,7 +71,7 @@ library PoolSwapLibrary {
     @notice Converts an integer value to a compatible decimal value
     @param amount The amount to convert
     @return The amount as a IEEE754 quadruple precision number
- */
+  */
   function convertUIntToDecimal(uint112 amount)
     external
     pure
@@ -84,11 +84,17 @@ library PoolSwapLibrary {
     @notice Converts a raw decimal value to a more readable uint256 value
     @param ratio The value to convert
     @return The converted value
- */
+  */
   function convertDecimalToUInt(bytes16 ratio) external pure returns (uint256) {
     return ABDKMathQuad.toUInt(ratio);
   }
 
+  /**
+    @notice Multiplies a decimal and an unsigned integer
+    @param a The first term
+    @param b The second term
+    @return The product of a*b as a decimal
+  */
   function multiplyDecimalByUInt(bytes16 a, uint256 b)
     external
     pure
@@ -97,23 +103,32 @@ library PoolSwapLibrary {
     return ABDKMathQuad.mul(a, ABDKMathQuad.fromUInt(b));
   }
 
+  /**
+    @notice Divides two integers
+    @param a The dividend
+    @param b The divisor
+    @return The qotient 
+  */
   function divInt(int256 a, int256 b) external pure returns (bytes16) {
     return ABDKMathQuad.div(ABDKMathQuad.fromInt(a), ABDKMathQuad.fromInt(b));
   }
 
-  function sub(bytes16 b) external pure returns (bytes16) {
-    return ABDKMathQuad.sub(one, b);
-  }
-
+  /**
+    @notice Calculates the loss multiplier to apply to the losing pool. Includes the power leverage
+    @param ratio The ratio of new price to old price
+    @param direction The direction of the change. -1 if it's decreased, 0 if it hasn't changed, and 1 if it's increased.
+    @param leverage The amount of leverage to apply
+    @return The multiplier
+  */
   function getLossMultiplier(
     bytes16 ratio,
     int8 direction,
-    uint16 leverage
+    bytes16 leverage
   ) external pure returns (bytes16) {
     return
       ABDKMathQuad.pow_2(
         ABDKMathQuad.mul(
-          ABDKMathQuad.fromUInt(leverage),
+          leverage,
           ABDKMathQuad.log_2(
             ABDKMathQuad.add(
               ABDKMathQuad.mul(direction < 0 ? one : zero, ratio),
@@ -127,6 +142,11 @@ library PoolSwapLibrary {
       );
   }
 
+  /**
+    @notice Calculates the amount to take from the losing pool.
+    @param lossMultiplier The multiplier to use
+    @param balance The balance of the losing pool
+  */
   function getLossAmount(bytes16 lossMultiplier, uint112 balance)
     external
     pure

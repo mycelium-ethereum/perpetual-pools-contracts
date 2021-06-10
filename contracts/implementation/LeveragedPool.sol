@@ -34,7 +34,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
   uint32 public frontRunningInterval;
 
   bytes16 public fee;
-  uint16 public leverageAmount;
+  bytes16 public leverageAmount;
   address public feeAddress;
   address public quoteToken;
 
@@ -92,7 +92,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     updateInterval = _updateInterval;
     frontRunningInterval = _frontRunningInterval;
     fee = _fee;
-    leverageAmount = _leverageAmount;
+    leverageAmount = PoolSwapLibrary.convertUIntToDecimal(_leverageAmount);
     feeAddress = _feeAddress;
     lastPriceTimestamp = block.timestamp;
     poolCode = _poolCode;
