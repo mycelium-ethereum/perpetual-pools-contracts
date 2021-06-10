@@ -182,24 +182,14 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     @param _commit The commit to execute
   */
   function _executeCommitment(Commit memory _commit) internal {
-    // checks
-    require(_commit.amount > 0, "Invalid commit");
+    require(_commit.owner != address(0), "Invalid commit");
     require(
       _commit.created.add(frontRunningInterval) < lastPriceTimestamp,
       "Commit too new"
     );
-    require(
-      PoolSwapLibrary.compareDecimals(
-        PoolSwapLibrary.getRatio(longBalance, shortBalance),
-        _commit.maxImbalance
-      ) <= 0,
-      "Imbalance tolerance exceeded"
-    );
-    // effects
     shadowPools[_commit.commitType] = shadowPools[_commit.commitType].sub(
       _commit.amount
     );
-    // interactions
     if (_commit.commitType == CommitType.LongMint) {
       longBalance = longBalance.add(_commit.amount);
       _mintTokens(
@@ -255,6 +245,13 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
         "Transfer failed"
       );
     }
+    require(
+      PoolSwapLibrary.compareRatios(
+        PoolSwapLibrary.getRatio(longBalance, shortBalance),
+        _commit.maxImbalance
+      ) <= 0,
+      "Imbalance tolerance exceeded"
+    );
   }
 
   /**
