@@ -17,7 +17,7 @@ import {
   createCommit,
 } from "../utilities";
 
-import { BigNumberish, BytesLike, ContractReceipt } from "ethers";
+import { BigNumber, BigNumberish, BytesLike, ContractReceipt } from "ethers";
 import { POOL_CODE } from "../constants";
 
 chai.use(chaiAsPromised);
@@ -36,7 +36,6 @@ let imbalance: BytesLike;
 let library: PoolSwapLibrary;
 let pool: LeveragedPool;
 let quoteToken: ERC20;
-let signers: SignerWithAddress[];
 
 /**
  * Deploys the pool
@@ -48,7 +47,7 @@ const setupHook = async () => {
     lastPrice,
     updateInterval,
     frontRunningInterval,
-    fee, // Max safe value for JS is 9e15, this is always less than 1e13
+    fee,
     leverage,
     feeAddress,
     amountMinted
@@ -56,7 +55,7 @@ const setupHook = async () => {
   library = result.library;
   pool = result.pool;
   quoteToken = result.token;
-  signers = result.signers;
+
   await quoteToken.approve(pool.address, amountMinted);
 };
 
@@ -77,6 +76,11 @@ const fundPools = async () => {
   );
   expect((await pool.longBalance()).toString()).to.eq(
     amountCommitted.toString()
+  );
+};
+const calculateFee = async (fee: string, amount: BigNumberish) => {
+  return await library.convertDecimalToUInt(
+    await library.multiplyDecimalByUInt(fee, amount)
   );
 };
 
@@ -106,11 +110,7 @@ describe("LeveragedPool - executePriceUpdate", () => {
 
       await pool.executePriceChange(newPrice);
       expect(await quoteToken.balanceOf(feeAddress)).to.eq(
-        (
-          await library.convertDecimalToUInt(
-            await library.multiplyDecimalByUInt(fee, amountCommitted)
-          )
-        ).mul(2)
+        (await calculateFee(fee, amountCommitted)).mul(2)
       );
     });
   });
@@ -132,36 +132,71 @@ describe("LeveragedPool - executePriceUpdate", () => {
     });
   });
   describe("Movement to long pool", () => {
-    // const feeAmount: BigNumberish = fee.mul(amountCommitted.mul(2));
-    before(async () => {
+    beforeEach(async () => {
       await setupHook();
       await fundPools();
-      // Increase price by 25%
+    });
+    it("should update the short pair balance", async () => {
+      expect(await pool.shortBalance()).to.eq(amountCommitted);
+      // Increase price by 1 cent
       await pool.executePriceChange(
         ethers.BigNumber.from(lastPrice).add(1000000)
       );
-    });
-    it("should update the short pair balance", async () => {
-      throw new Error("Not Implemented");
+      expect(await pool.shortBalance()).to.eq(
+        ethers.BigNumber.from("1722730315330386595645")
+      );
     });
     it("should update the long pair balance", async () => {
-      throw new Error("Not Implemented");
+      expect(await pool.longBalance()).to.eq(ethers.utils.parseEther("2000"));
+      // Increase price by 1 cent
+      await pool.executePriceChange(
+        ethers.BigNumber.from(lastPrice).add(1000000)
+      );
+      expect(await pool.longBalance()).to.eq(
+        amountCommitted
+          .sub(await calculateFee(fee, amountCommitted))
+          .add(
+            amountCommitted.sub(
+              ethers.BigNumber.from("1722730315330386595645").add(
+                await calculateFee(fee, amountCommitted)
+              )
+            )
+          )
+      );
     });
   });
   describe("Movement to short pool", () => {
-    before(async () => {
+    beforeEach(async () => {
       await setupHook();
       await fundPools();
-      // Increase price by 25%
+    });
+    it("should update the short pair balance", async () => {
+      expect(await pool.shortBalance()).to.eq(ethers.utils.parseEther("2000"));
+      // Increase price by 1 cent
       await pool.executePriceChange(
         ethers.BigNumber.from(lastPrice).sub(1000000)
       );
-    });
-    it("should update the short pair balance", async () => {
-      throw new Error("Not Implemented");
+      expect(await pool.shortBalance()).to.eq(
+        amountCommitted
+          .sub(await calculateFee(fee, amountCommitted))
+          .add(
+            amountCommitted.sub(
+              ethers.BigNumber.from("1719826919507855595287").add(
+                await calculateFee(fee, amountCommitted)
+              )
+            )
+          )
+      );
     });
     it("should update the long pair balance", async () => {
-      throw new Error("Not Implemented");
+      expect(await pool.longBalance()).to.eq(amountCommitted);
+      // Increase price by 1 cent
+      await pool.executePriceChange(
+        ethers.BigNumber.from(lastPrice).sub(1000000)
+      );
+      expect(await pool.longBalance()).to.eq(
+        ethers.BigNumber.from("1719826919507855595287")
+      );
     });
   });
 });

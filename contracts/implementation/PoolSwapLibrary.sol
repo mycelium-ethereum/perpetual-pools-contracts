@@ -101,8 +101,8 @@ library PoolSwapLibrary {
     return ABDKMathQuad.div(ABDKMathQuad.fromInt(a), ABDKMathQuad.fromInt(b));
   }
 
-  function toDouble(bytes16 a) external pure returns (bytes8) {
-    return ABDKMathQuad.toDouble(a);
+  function sub(bytes16 b) external pure returns (bytes16) {
+    return ABDKMathQuad.sub(one, b);
   }
 
   function getLossMultiplier(
