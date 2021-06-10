@@ -28,7 +28,7 @@ const feeAddress = generateRandomAddress();
 const lastPrice = getRandomInt(99999999, 1);
 const updateInterval = 2;
 const frontRunningInterval = 1;
-const fee = 0;
+const fee = "0x3fff0000000000000000000000000000";
 const leverage = 1;
 let imbalance: BytesLike;
 const commitType = [2]; // Long mint;
@@ -88,7 +88,7 @@ describe("LeveragedPool - uncommit", () => {
         ethers.BigNumber.from(
           (await pool.commits(commitID)).maxImbalance
         ).toHexString()
-      ).to.eq(ethers.BigNumber.from(0).toHexString());
+      ).to.eq("0x3fff0000000000000000000000000000");
       expect((await pool.commits(commitID)).commitType).to.eq(0);
     });
     it("should emit an event for uncommitting", async () => {

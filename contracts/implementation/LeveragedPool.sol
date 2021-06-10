@@ -246,7 +246,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
       );
     }
     require(
-      PoolSwapLibrary.compareRatios(
+      PoolSwapLibrary.compareDecimals(
         PoolSwapLibrary.getRatio(longBalance, shortBalance),
         _commit.maxImbalance
       ) <= 0,

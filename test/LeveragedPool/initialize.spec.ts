@@ -32,7 +32,7 @@ const feeAddress = generateRandomAddress();
 const lastPrice = getRandomInt(9999999999, 1);
 const updateInterval = getRandomInt(99999, 10);
 const frontRunningInterval = getRandomInt(updateInterval - 1, 1);
-const fee = getRandomInt(256, 1);
+const fee = "0x3fff0000000000000000000000000000";
 const leverage = getRandomInt(256, 1);
 
 describe("LeveragedPool - initialize", () => {

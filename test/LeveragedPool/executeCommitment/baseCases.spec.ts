@@ -29,7 +29,7 @@ const feeAddress = generateRandomAddress();
 const lastPrice = getRandomInt(99999999, 1);
 const updateInterval = 120; // 2 minutes
 const frontRunningInterval = 1; // seconds
-const fee = getRandomInt(256, 1);
+const fee = "0x3fff0000000000000000000000000000";
 const leverage = 2;
 let imbalance: BytesLike;
 const commitType = [2]; //long mint;
