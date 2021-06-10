@@ -26,7 +26,7 @@ const { expect } = chai;
 const amountCommitted = ethers.utils.parseEther("2000");
 const amountMinted = ethers.utils.parseEther("10000");
 const feeAddress = generateRandomAddress();
-const fee = "0x3ff947ae147ae147ae147ae147ae147a"; // 2%
+const fee = "0x3ff947ae147ae147ae147ae147ae147a"; // 2% per execution. An IEEE 754 quadruple precision number
 const lastPrice = 77000000;
 const updateInterval = 2; // 2 seconds
 const frontRunningInterval = 1;
@@ -58,16 +58,6 @@ const setupHook = async () => {
   quoteToken = result.token;
   signers = result.signers;
   await quoteToken.approve(pool.address, amountMinted);
-  console.log(
-    (
-      await library.convertDecimalToUInt(
-        await library.multiplyDecimalByUInt(
-          await library.divInt(2, 100),
-          ethers.utils.parseEther("2000")
-        )
-      )
-    ).toString()
-  );
 };
 
 /**
@@ -90,7 +80,6 @@ const fundPools = async () => {
   );
 };
 
-// 2102400 | 15 second update interval at 2% per annum
 describe("LeveragedPool - executePriceUpdate", () => {
   describe("Base cases", () => {
     beforeEach(async () => {
@@ -113,11 +102,16 @@ describe("LeveragedPool - executePriceUpdate", () => {
     });
     it("should send the fund movement fee to the fee holder", async () => {
       expect(await quoteToken.balanceOf(feeAddress)).to.eq(0);
-      throw new Error("Not Implemented");
-      // const newPrice = lastPrice * 2;
-      // const feeAmount = fee.mul(amountCommitted.mul(2));
-      // await pool.executePriceChange(newPrice);
-      // expect(await quoteToken.balanceOf(feeAddress)).to.eq(feeAmount);
+      const newPrice = lastPrice * 2;
+
+      await pool.executePriceChange(newPrice);
+      expect(await quoteToken.balanceOf(feeAddress)).to.eq(
+        (
+          await library.convertDecimalToUInt(
+            await library.multiplyDecimalByUInt(fee, amountCommitted)
+          )
+        ).mul(2)
+      );
     });
   });
   describe("Exception cases", () => {
@@ -137,37 +131,37 @@ describe("LeveragedPool - executePriceUpdate", () => {
       );
     });
   });
-  // describe("Movement to long pool", () => {
-  //   // const feeAmount: BigNumberish = fee.mul(amountCommitted.mul(2));
-  //   before(async () => {
-  //     await setupHook();
-  //     await fundPools();
-  //     // Increase price by 25%
-  //     await pool.executePriceChange(
-  //       ethers.BigNumber.from(lastPrice).add(1000000)
-  //     );
-  //   });
-  //   it("should update the short pair balance", async () => {
-  //     throw new Error("Not Implemented");
-  //   });
-  //   it("should update the long pair balance", async () => {
-  //     throw new Error("Not Implemented");
-  //   });
-  // });
-  // describe("Movement to short pool", () => {
-  //   before(async () => {
-  //     await setupHook();
-  //     await fundPools();
-  //     // Increase price by 25%
-  //     await pool.executePriceChange(
-  //       ethers.BigNumber.from(lastPrice).sub(1000000)
-  //     );
-  //   });
-  //   it("should update the short pair balance", async () => {
-  //     throw new Error("Not Implemented");
-  //   });
-  //   it("should update the long pair balance", async () => {
-  //     throw new Error("Not Implemented");
-  //   });
-  // });
+  describe("Movement to long pool", () => {
+    // const feeAmount: BigNumberish = fee.mul(amountCommitted.mul(2));
+    before(async () => {
+      await setupHook();
+      await fundPools();
+      // Increase price by 25%
+      await pool.executePriceChange(
+        ethers.BigNumber.from(lastPrice).add(1000000)
+      );
+    });
+    it("should update the short pair balance", async () => {
+      throw new Error("Not Implemented");
+    });
+    it("should update the long pair balance", async () => {
+      throw new Error("Not Implemented");
+    });
+  });
+  describe("Movement to short pool", () => {
+    before(async () => {
+      await setupHook();
+      await fundPools();
+      // Increase price by 25%
+      await pool.executePriceChange(
+        ethers.BigNumber.from(lastPrice).sub(1000000)
+      );
+    });
+    it("should update the short pair balance", async () => {
+      throw new Error("Not Implemented");
+    });
+    it("should update the long pair balance", async () => {
+      throw new Error("Not Implemented");
+    });
+  });
 });

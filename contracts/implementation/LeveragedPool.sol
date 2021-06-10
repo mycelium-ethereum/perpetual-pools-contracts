@@ -304,9 +304,28 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
       block.timestamp.sub(lastPriceTimestamp) >= updateInterval,
       "Update too soon"
     );
-    // Remove transfer fee from pairs
-
-    // fee * quoteToken.balanceOf(this.address)
+    // Remove fee amount from pairs
+    uint112 longFeeAmount =
+      uint112(
+        PoolSwapLibrary.convertDecimalToUInt(
+          PoolSwapLibrary.multiplyDecimalByUInt(fee, longBalance)
+        )
+      );
+    uint112 shortFeeAmount =
+      uint112(
+        PoolSwapLibrary.convertDecimalToUInt(
+          PoolSwapLibrary.multiplyDecimalByUInt(fee, shortBalance)
+        )
+      );
+    uint112 totalFeeAmount = 0;
+    if (shortBalance > 0) {
+      shortBalance = shortBalance.sub(shortFeeAmount);
+      totalFeeAmount = totalFeeAmount.add(shortFeeAmount);
+    }
+    if (longBalance > 0) {
+      longBalance = longBalance.sub(longFeeAmount);
+      totalFeeAmount = totalFeeAmount.add(longFeeAmount);
+    }
 
     bytes16 ratio = PoolSwapLibrary.divInt(newPrice, lastPrice);
     int8 direction =
@@ -330,6 +349,11 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
       shortBalance = shortBalance.add(lossAmount);
       longBalance = longBalance.sub(lossAmount);
     }
+
+    require(
+      IERC20(quoteToken).transfer(feeAddress, totalFeeAmount),
+      "Fee transfer failed"
+    );
   }
 
   function updateFeeAddress(address account) external override {}
