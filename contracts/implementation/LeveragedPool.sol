@@ -328,23 +328,23 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     bytes16 lossMultiplier =
       PoolSwapLibrary.getLossMultiplier(ratio, direction, leverageAmount);
 
-    lastPriceTimestamp = block.timestamp;
-    lastPrice = newPrice;
-
     if (direction >= 0 && shortBalance > 0) {
       // Move funds from short to long pair
       uint112 lossAmount =
         uint112(PoolSwapLibrary.getLossAmount(lossMultiplier, shortBalance));
       shortBalance = shortBalance.sub(lossAmount);
       longBalance = longBalance.add(lossAmount);
+      emit PriceChange(lastPrice, newPrice, lossAmount);
     } else if (direction < 0 && longBalance > 0) {
       // Move funds from long to short pair
       uint112 lossAmount =
         uint112(PoolSwapLibrary.getLossAmount(lossMultiplier, longBalance));
       shortBalance = shortBalance.add(lossAmount);
       longBalance = longBalance.sub(lossAmount);
+      emit PriceChange(lastPrice, newPrice, lossAmount);
     }
-
+    lastPriceTimestamp = block.timestamp;
+    lastPrice = newPrice;
     require(
       IERC20(quoteToken).transfer(feeAddress, totalFeeAmount),
       "Fee transfer failed"

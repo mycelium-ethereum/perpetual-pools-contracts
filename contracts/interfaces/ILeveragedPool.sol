@@ -64,6 +64,18 @@ interface ILeveragedPool {
  */
   event ExecuteCommit(uint256 commitID);
 
+  /**
+  @notice Creates a notification of a price execution
+  @param startPrice The price from the last execution
+  @param endPrice The price for this execution
+  @param transferAmount The amount that was transferred between pools
+ */
+  event PriceChange(
+    int256 indexed startPrice,
+    int256 indexed endPrice,
+    uint112 indexed transferAmount
+  );
+
   // #### Functions
   /**
   @notice Configures the pool on deployment. The pools are EIP 1167 clones.
