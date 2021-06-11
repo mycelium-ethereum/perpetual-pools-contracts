@@ -6,13 +6,14 @@ import "../interfaces/IPoolKeeper.sol";
 import "../interfaces/IOracleWrapper.sol";
 import "../implementation/LeveragedPool.sol";
 
+import "@chainlink/contracts/src/v0.7/interfaces/UpkeepInterface.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 
 /*
 @title The manager contract for multiple markets and the pools in them
 */
-contract PoolKeeper is IPoolKeeper, AccessControl {
+contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
   // #### Global variables
   /**
     @notice Format: Pool code => pool address, where pool code looks like TSLA/USD^5+aDAI
@@ -116,6 +117,27 @@ contract PoolKeeper is IPoolKeeper, AccessControl {
       _quoteToken
     );
   }
+
+  // Keeper network
+  /**
+  @notice Simulated by chainlink keeper nodes to check if upkeep is required
+  @dev This should not be called or executed.
+  @param checkData The ABI encoded market code to check if updating is required. There are two types of upkeep: market and pool. Market updates will manage the average price calculations, and pool updates will execute a price change in one or more pools
+  @return upkeepNeeded Whether or not upkeep is needed
+  @return checkData The data to pass to the performUpkeep method when updating
+   */
+  function checkUpkeep(bytes calldata checkData)
+    external
+    view
+    override
+    returns (bool upkeepNeeded, bytes memory performData)
+  {}
+
+  /**
+  @notice Called by keepers to perform an update
+  @param performData The market code to perform the update for.
+   */
+  function performUpkeep(bytes calldata performData) external override {}
 
   // #### Modifiers
   modifier onlyAdmin {
