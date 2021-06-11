@@ -65,7 +65,7 @@ interface IPoolKeeper is  {
     string memory poolCode,
     uint32 updateInterval,
     uint32 frontRunningInterval,
-    uint16 fee,
+    bytes16 fee,
     uint16 leverageAmount,
     address feeAddress,
     address quoteToken
