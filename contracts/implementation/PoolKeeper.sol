@@ -124,7 +124,7 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
   @dev This should not be called or executed.
   @param checkData The ABI encoded market code to check if updating is required. There are two types of upkeep: market and pool. Market updates will manage the average price calculations, and pool updates will execute a price change in one or more pools
   @return upkeepNeeded Whether or not upkeep is needed
-  @return checkData The data to pass to the performUpkeep method when updating
+  @return performData The data to pass to the performUpkeep method when updating
    */
   function checkUpkeep(bytes calldata checkData)
     external

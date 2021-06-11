@@ -2,10 +2,12 @@
 pragma solidity ^0.7.6;
 pragma abicoder v2;
 
+
+
 /*
 @title The manager contract interface for multiple markets and the pools in them
 */
-interface IPoolKeeper {
+interface IPoolKeeper is  {
   // #### Events
   /**
   @notice Creates a notification when a pool is created
