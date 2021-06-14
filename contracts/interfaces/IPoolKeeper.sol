@@ -2,19 +2,36 @@
 pragma solidity ^0.7.6;
 pragma abicoder v2;
 
-
-
 /*
 @title The manager contract interface for multiple markets and the pools in them
 */
-interface IPoolKeeper is  {
+interface IPoolKeeper {
+  // #### Structs
+
+  struct Upkeep {
+    int256 cumulativePrice; // The sum of all the samples for the current interval.
+    int256 lastSamplePrice; // The last price added to the cumulative price
+    int256 executionPrice; // The price for the current execution
+    int256 lastExecutionPrice; // The last price executed on.
+    uint32 count; // The number of samples taken during the current interval.
+    uint32 updateInterval;
+    uint32 roundStart;
+  }
+
   // #### Events
   /**
   @notice Creates a notification when a pool is created
   @param poolAddress The pool address of the newly created pool. This is deterministic and utilizes create2 and the pool code as the salt.
-  @param firstPrice The price of the market oracle when the pool was created. This is the initial value of the lastPrice param in the pool.
+  @param firstPrice The price of the market oracle when the pool was created. 
+  @param updateInterval The pool's update interval. This is used for upkeep
+  @param market The market the pool was created for. This combined with the updateInterval provide the upkeep details.
    */
-  event CreatePool(address indexed poolAddress, int256 indexed firstPrice);
+  event CreatePool(
+    address indexed poolAddress,
+    int256 indexed firstPrice,
+    uint32 indexed updateInterval,
+    string market
+  );
 
   /**
   @notice Creates a notification when a market is created

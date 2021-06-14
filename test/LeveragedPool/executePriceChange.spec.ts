@@ -1,23 +1,16 @@
 import { ethers } from "hardhat";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
+import { ERC20, LeveragedPool, PoolSwapLibrary } from "../../typechain";
+
 import {
-  ERC20,
-  LeveragedPool,
-  PoolSwapLibrary,
-  TestToken,
-} from "../../typechain";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import {
-  getEventArgs,
   deployPoolAndTokenContracts,
   generateRandomAddress,
-  getRandomInt,
   timeout,
   createCommit,
 } from "../utilities";
 
-import { BigNumber, BigNumberish, BytesLike, ContractReceipt } from "ethers";
+import { BigNumberish, BytesLike } from "ethers";
 import { POOL_CODE } from "../constants";
 
 chai.use(chaiAsPromised);
