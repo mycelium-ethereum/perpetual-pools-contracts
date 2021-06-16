@@ -1,7 +1,7 @@
 import { ethers } from "hardhat";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
-import { generateRandomAddress, timeout } from "../utilities";
+import { generateRandomAddress, getEventArgs, timeout } from "../utilities";
 
 import { MARKET_2, POOL_CODE } from "../constants";
 import {
@@ -14,6 +14,7 @@ import {
 } from "../../typechain";
 import { MARKET, POOL_CODE_2 } from "../constants";
 import { BigNumber } from "ethers";
+import { Result } from "ethers/lib/utils";
 
 chai.use(chaiAsPromised);
 const { expect } = chai;
@@ -104,6 +105,8 @@ interface Upkeep {
   roundStart: number;
 }
 describe("PoolKeeper - performUpkeep", () => {
+  let oldRound: Upkeep;
+  let newRound: Upkeep;
   describe("Base cases", () => {
     beforeEach(setupHook);
     it("should revert if performData is invalid", async () => {
@@ -139,35 +142,44 @@ describe("PoolKeeper - performUpkeep", () => {
     });
   });
   describe("Upkeep - Price execution", () => {
+    let event: Result | undefined;
+    let lastTime: number;
     before(async () => {
-      // Check starting conditions
-
       await setupHook();
+      // process a few upkeeps
+      lastTime = await poolKeeper.lastExecutionTime(callData);
+      await oracleWrapper.increasePrice();
+      await poolKeeper.performUpkeep(callData);
+      await oracleWrapper.increasePrice();
+      await poolKeeper.performUpkeep(callData);
+      await timeout(updateInterval * 1000 + 1000);
+
+      const result = await (await poolKeeper.performUpkeep(callData)).wait();
+      event = getEventArgs(result, "ExecutePriceChange");
+      newRound = await poolKeeper.upkeep(MARKET, updateInterval);
     });
-    it("should call the triggerPriceUpdate function with the average price", async () => {
-      throw new Error("Not Implemented");
+    it("should emit an event with the details", async () => {
+      expect(event?.updateInterval).to.eq(updateInterval);
+      expect(event?.oldPrice).to.eq(newRound.lastExecutionPrice);
+      expect(event?.newPrice).to.eq(newRound.executionPrice);
+      expect(event?.market).to.eq(MARKET);
+      expect(event?.pools[0]).to.eq(POOL_CODE);
+      expect(event?.pools[1]).to.eq(POOL_CODE_2);
     });
-    it("should include the latest price in the average calculation", async () => {
-      throw new Error("Not Implemented");
-    });
-    it("should reset the count for the market+pools in performData", async () => {
-      throw new Error("Not Implemented");
-    });
-    it("should reset the cumulative price for the market+pools in perform data", async () => {
-      throw new Error("Not Implemented");
+    it("should set last execution time", async () => {
+      expect(await poolKeeper.lastExecutionTime(callData)).to.be.greaterThan(
+        lastTime
+      );
     });
   });
   describe("Upkeep - New round", () => {
-    let oldRound: Upkeep;
-    let newRound: Upkeep;
     before(async () => {
       // Check starting conditions
       await setupHook();
       // process a few upkeeps
       await oracleWrapper.increasePrice();
       await poolKeeper.performUpkeep(callData);
-      await oracleWrapper.increasePrice();
-      await poolKeeper.performUpkeep(callData);
+
       oldRound = await poolKeeper.upkeep(MARKET, updateInterval);
       // delay and upkeep again
       await timeout(updateInterval * 1000 + 1000);

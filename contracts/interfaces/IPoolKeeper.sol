@@ -40,6 +40,48 @@ interface IPoolKeeper {
    */
   event CreateMarket(string marketCode, address oracle);
 
+  /**
+    @notice Creates notification of a new round for a market/update interval pair
+    @param oldPrice The average price for the penultimate round
+    @param newPrice The average price for the round that's just ended
+    @param updateInterval The length of the round
+    @param market The market that's being updated
+   */
+  event NewRound(
+    int256 indexed oldPrice,
+    int256 indexed newPrice,
+    uint32 indexed updateInterval,
+    string market
+  );
+  /**
+    @notice Creates a notification of a price sample being taken
+    @param cumulativePrice The sum of all samples taken for this round
+    @param count The number of samples inclusive
+    @param updateInterval The length of the round
+    @param market The market that's being updated
+   */
+  event PriceSample(
+    int256 indexed cumulativePrice,
+    int256 indexed count,
+    uint32 indexed updateInterval,
+    string market
+  );
+  /**
+    @notice Creates notification of a price execution for a set of pools
+    @param oldPrice The average price for the penultimate round
+    @param newPrice The average price for the round that's just ended
+    @param updateInterval The length of the round
+    @param market The market that's being updated
+    @param pools The pools that are being updated
+   */
+  event ExecutePriceChange(
+    int256 indexed oldPrice,
+    int256 indexed newPrice,
+    uint32 indexed updateInterval,
+    string market,
+    string[] pools
+  );
+
   // #### Functions
   // /**
   //   @notice Checks for a price update for the pools specified. Several pools can be updated with a single call to the oracle. For instance, a market code of TSLA/USD+aDAI can be used to update TSLA/USD^2+aDAI, TSLA/USD^5+aDAI, and TSLA/USD^10+aDAI

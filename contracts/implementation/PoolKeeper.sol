@@ -62,6 +62,8 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
   }
 
   function triggerPriceUpdate(
+    int256 oldPrice,
+    int256 newPrice,
     string memory marketCode,
     string[] memory poolCodes
   ) internal {}
@@ -240,6 +242,23 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
       upkeep[market][upkeepData.updateInterval].lastSamplePrice = price;
       upkeep[market][upkeepData.updateInterval].cumulativePrice = price;
       console.log("new round");
+      if (lastExecutionTime[performData] <= upkeepData.roundStart) {
+        console.log("Execute");
+        lastExecutionTime[performData] = uint32(block.timestamp);
+        emit ExecutePriceChange(
+          upkeep[market][upkeepData.updateInterval].lastExecutionPrice,
+          upkeep[market][upkeepData.updateInterval].executionPrice,
+          upkeepData.updateInterval,
+          market,
+          poolCodes
+        );
+        triggerPriceUpdate(
+          upkeep[market][upkeepData.updateInterval].lastExecutionPrice,
+          upkeep[market][upkeepData.updateInterval].executionPrice,
+          market,
+          poolCodes
+        );
+      }
     } else if (
       _validateUpkeep(
         market,
@@ -259,22 +278,15 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
         .add(IOracleWrapper(oracleWrapper).getPrice(market));
       console.log("sample");
     }
-    console.log(lastExecutionTime[performData], upkeepData.roundStart);
-    if (lastExecutionTime[performData] <= upkeepData.roundStart) {
-      console.log("Execute");
-      // Execute this group using executionPrice and lastExecutionPrice from storage
-      lastExecutionTime[performData] = uint32(block.timestamp);
-      triggerPriceUpdate(market, poolCodes);
-    }
   }
 
   /**
-@notice Calculates the average price
-@dev Calculates the price to 4 decimal places, round the last decimal place up or down before returning.
-@param cumulative The cumulative price
-@param count The number of samples
-@return The average price to 3 decimal places
- */
+  @notice Calculates the average price
+  @dev Calculates the price to 4 decimal places, round the last decimal place up or down before returning.
+  @param cumulative The cumulative price
+  @param count The number of samples
+  @return The average price to 3 decimal places
+  */
   function _average(int256 cumulative, uint32 count)
     internal
     pure
