@@ -241,24 +241,14 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
       int256 price = IOracleWrapper(oracleWrapper).getPrice(market);
       upkeep[market][upkeepData.updateInterval].lastSamplePrice = price;
       upkeep[market][upkeepData.updateInterval].cumulativePrice = price;
-      console.log("new round");
-      if (lastExecutionTime[performData] <= upkeepData.roundStart) {
-        console.log("Execute");
-        lastExecutionTime[performData] = uint32(block.timestamp);
-        emit ExecutePriceChange(
-          upkeep[market][upkeepData.updateInterval].lastExecutionPrice,
-          upkeep[market][upkeepData.updateInterval].executionPrice,
-          upkeepData.updateInterval,
-          market,
-          poolCodes
-        );
-        triggerPriceUpdate(
-          upkeep[market][upkeepData.updateInterval].lastExecutionPrice,
-          upkeep[market][upkeepData.updateInterval].executionPrice,
-          market,
-          poolCodes
-        );
-      }
+      _executePriceChange(
+        performData,
+        market,
+        upkeepData.updateInterval,
+        poolCodes
+      );
+      console.log("new round", block.number);
+      return;
     } else if (
       _validateUpkeep(
         market,
@@ -276,8 +266,46 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
       ][upkeepData.updateInterval]
         .cumulativePrice
         .add(IOracleWrapper(oracleWrapper).getPrice(market));
+
+      emit PriceSample(
+        upkeep[market][upkeepData.updateInterval].cumulativePrice,
+        upkeep[market][upkeepData.updateInterval].count,
+        upkeepData.updateInterval,
+        market
+      );
       console.log("sample");
     }
+    if (lastExecutionTime[performData] <= upkeepData.roundStart) {
+      console.log("Execute", block.number);
+      _executePriceChange(
+        performData,
+        market,
+        upkeepData.updateInterval,
+        poolCodes
+      );
+    }
+  }
+
+  function _executePriceChange(
+    bytes memory performData,
+    string memory market,
+    uint32 updateInterval,
+    string[] memory poolCodes
+  ) internal {
+    lastExecutionTime[performData] = uint32(block.timestamp);
+    emit ExecutePriceChange(
+      upkeep[market][updateInterval].lastExecutionPrice,
+      upkeep[market][updateInterval].executionPrice,
+      updateInterval,
+      market,
+      poolCodes
+    );
+    triggerPriceUpdate(
+      upkeep[market][updateInterval].lastExecutionPrice,
+      upkeep[market][updateInterval].executionPrice,
+      market,
+      poolCodes
+    );
   }
 
   /**

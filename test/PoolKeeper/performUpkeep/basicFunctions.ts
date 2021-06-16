@@ -1,9 +1,9 @@
 import { ethers } from "hardhat";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
-import { generateRandomAddress, getEventArgs, timeout } from "../utilities";
+import { generateRandomAddress, getEventArgs, timeout } from "../../utilities";
 
-import { MARKET_2, POOL_CODE } from "../constants";
+import { MARKET_2, POOL_CODE } from "../../constants";
 import {
   PoolKeeper,
   PoolKeeper__factory,
@@ -11,8 +11,8 @@ import {
   TestOracleWrapper,
   TestOracleWrapper__factory,
   TestToken__factory,
-} from "../../typechain";
-import { MARKET, POOL_CODE_2 } from "../constants";
+} from "../../../typechain";
+import { MARKET, POOL_CODE_2 } from "../../constants";
 import { BigNumber } from "ethers";
 import { Result } from "ethers/lib/utils";
 
@@ -22,7 +22,7 @@ const { expect } = chai;
 let quoteToken: string;
 let oracleWrapper: TestOracleWrapper;
 let poolKeeper: PoolKeeper;
-let blockNumber: BigNumber;
+
 const updateInterval = 10;
 
 const setupHook = async () => {
@@ -63,7 +63,7 @@ const setupHook = async () => {
   // Create pool
   await poolKeeper.createMarket(MARKET, oracleWrapper.address);
   await oracleWrapper.increasePrice();
-  blockNumber = ethers.BigNumber.from(1);
+
   await poolKeeper.createPool(
     MARKET,
     POOL_CODE,
@@ -104,7 +104,7 @@ interface Upkeep {
   updateInterval: number;
   roundStart: number;
 }
-describe("PoolKeeper - performUpkeep", () => {
+describe("PoolKeeper - performUpkeep: basic functionality", () => {
   let oldRound: Upkeep;
   let newRound: Upkeep;
   describe("Base cases", () => {
@@ -135,7 +135,7 @@ describe("PoolKeeper - performUpkeep", () => {
     it("should update the cumulative price for the market+pools in performData", async () => {
       expect(
         (await poolKeeper.upkeep(MARKET, updateInterval)).cumulativePrice
-      ).to.eq(blockNumber.add(2).add(3).add(4));
+      ).to.eq(ethers.BigNumber.from(1).add(2).add(3).add(4));
     });
     it("should update the count for the market+pools in performData", async () => {
       expect((await poolKeeper.upkeep(MARKET, updateInterval)).count).to.eq(4);
@@ -149,19 +149,14 @@ describe("PoolKeeper - performUpkeep", () => {
       // process a few upkeeps
       lastTime = await poolKeeper.lastExecutionTime(callData);
       await oracleWrapper.increasePrice();
-      await poolKeeper.performUpkeep(callData);
-      await oracleWrapper.increasePrice();
-      await poolKeeper.performUpkeep(callData);
-      await timeout(updateInterval * 1000 + 1000);
-
       const result = await (await poolKeeper.performUpkeep(callData)).wait();
+      oldRound = await poolKeeper.upkeep(MARKET, updateInterval);
       event = getEventArgs(result, "ExecutePriceChange");
-      newRound = await poolKeeper.upkeep(MARKET, updateInterval);
     });
     it("should emit an event with the details", async () => {
       expect(event?.updateInterval).to.eq(updateInterval);
-      expect(event?.oldPrice).to.eq(newRound.lastExecutionPrice);
-      expect(event?.newPrice).to.eq(newRound.executionPrice);
+      expect(event?.oldPrice).to.eq(oldRound.lastExecutionPrice);
+      expect(event?.newPrice).to.eq(oldRound.executionPrice);
       expect(event?.market).to.eq(MARKET);
       expect(event?.pools[0]).to.eq(POOL_CODE);
       expect(event?.pools[1]).to.eq(POOL_CODE_2);
