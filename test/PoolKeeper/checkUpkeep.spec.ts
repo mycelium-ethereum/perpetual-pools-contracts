@@ -23,7 +23,6 @@ let poolKeeper: PoolKeeper;
 
 const setupHook = async () => {
   const signers = await ethers.getSigners();
-
   // Deploy quote token
   const testToken = (await ethers.getContractFactory(
     "TestToken",
@@ -81,10 +80,11 @@ const setupHook = async () => {
 };
 const callData = ethers.utils.defaultAbiCoder.encode(
   [
+    ethers.utils.ParamType.from("uint32"),
     ethers.utils.ParamType.from("string"),
     ethers.utils.ParamType.from("string[]"),
   ],
-  [MARKET, [POOL_CODE, POOL_CODE_2]]
+  [2, MARKET, [POOL_CODE, POOL_CODE_2]]
 );
 describe("PoolKeeper - checkUpkeep", () => {
   beforeEach(async () => {
@@ -94,6 +94,8 @@ describe("PoolKeeper - checkUpkeep", () => {
     expect((await poolKeeper.checkUpkeep(callData))[0]).to.eq(true);
   });
   it("should return false if the trigger condition isn't met", async () => {
+    await poolKeeper.performUpkeep(callData);
+
     expect((await poolKeeper.checkUpkeep(callData))[0]).to.eq(false);
   });
   it("should return the correct perform data to call for upkeep with", async () => {
@@ -103,10 +105,11 @@ describe("PoolKeeper - checkUpkeep", () => {
   it("should return false if the check data provided is invalid", async () => {
     const falseCallData = ethers.utils.defaultAbiCoder.encode(
       [
+        ethers.utils.ParamType.from("uint32"),
         ethers.utils.ParamType.from("string"),
         ethers.utils.ParamType.from("string[]"),
       ],
-      [MARKET_2, [POOL_CODE, POOL_CODE_2]]
+      [2, MARKET_2, [POOL_CODE, POOL_CODE_2]]
     );
     expect((await poolKeeper.checkUpkeep(falseCallData))[0]).to.eq(false);
   });

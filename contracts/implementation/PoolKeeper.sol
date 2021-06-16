@@ -12,8 +12,6 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 
-import "hardhat/console.sol";
-
 /*
 @title The manager contract for multiple markets and the pools in them
 */
@@ -64,7 +62,7 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
   function triggerPriceUpdate(
     string memory marketCode,
     string[] memory poolCodes
-  ) public override {}
+  ) internal {}
 
   function updateOracleWrapper(address oracle) external override onlyAdmin {
     require(oracle != address(0), "Oracle cannot be 0 address");
@@ -113,7 +111,7 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
         )
       );
     int256 firstPrice = oracle.getPrice(_marketCode);
-    if (upkeep[_marketCode][_updateInterval].updateInterval == 0) {
+    if (upkeep[_marketCode][_updateInterval].lastExecutionPrice == 0) {
       upkeep[_marketCode][_updateInterval] = Upkeep(
         firstPrice,
         firstPrice,
@@ -123,7 +121,9 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
         _updateInterval,
         uint32(block.timestamp)
       );
-    } else {
+    } else if (
+      firstPrice != upkeep[_marketCode][_updateInterval].lastSamplePrice
+    ) {
       upkeep[_marketCode][_updateInterval].cumulativePrice = upkeep[
         _marketCode
       ][_updateInterval]
@@ -172,20 +172,32 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
     Upkeep memory upkeepData = upkeep[market][updateInterval];
 
     // TODO: Implement more sophisticated trigger states (delay for gas savings, etc)
-    return (_validateUpkeep(market, upkeepData.lastSamplePrice), checkData);
+    return (
+      _validateUpkeep(
+        market,
+        upkeepData.lastSamplePrice,
+        checkData,
+        updateInterval
+      ),
+      checkData
+    );
   }
 
-  function _validateUpkeep(string memory market, int256 lastSamplePrice)
-    internal
-    view
-    returns (bool)
-  {
+  function _validateUpkeep(
+    string memory market,
+    int256 lastSamplePrice,
+    bytes memory checkData,
+    uint32 updateInterval
+  ) internal view returns (bool) {
     int256 latestPrice = IOracleWrapper(oracleWrapper).getPrice(market);
-    if (latestPrice == lastSamplePrice) {
-      // Only sample on a price change
-      return false;
+    if (
+      latestPrice != lastSamplePrice ||
+      lastExecutionTime[checkData] <= upkeep[market][updateInterval].roundStart
+    ) {
+      // Upkeep required for price change or if the round hasn't been executed
+      return true;
     }
-    return true;
+    return false;
   }
 
   /**
@@ -210,25 +222,27 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
       block.timestamp >= upkeepData.roundStart.add(upkeepData.updateInterval)
     ) {
       // Start new round
-      upkeep[market][upkeepData.updateInterval].roundStart = uint32(
-        block.timestamp
-      );
-      upkeep[market][upkeepData.updateInterval].count = 1;
-      int256 price = IOracleWrapper(oracleWrapper).getPrice(market);
-      upkeep[market][upkeepData.updateInterval].lastSamplePrice = price;
-      upkeep[market][upkeepData.updateInterval].cumulativePrice = upkeep[
-        market
-      ][upkeepData.updateInterval]
-        .cumulativePrice
-        .add(price);
       upkeep[market][upkeepData.updateInterval].executionPrice = _average(
         upkeepData.cumulativePrice,
         upkeepData.count
       );
       upkeep[market][upkeepData.updateInterval].lastExecutionPrice = upkeepData
         .executionPrice;
-    }
-    if (_validateUpkeep(market, upkeepData.lastSamplePrice)) {
+      upkeep[market][upkeepData.updateInterval].roundStart = uint32(
+        block.timestamp
+      );
+      upkeep[market][upkeepData.updateInterval].count = 1;
+      int256 price = IOracleWrapper(oracleWrapper).getPrice(market);
+      upkeep[market][upkeepData.updateInterval].lastSamplePrice = price;
+      upkeep[market][upkeepData.updateInterval].cumulativePrice = price;
+    } else if (
+      _validateUpkeep(
+        market,
+        upkeepData.lastSamplePrice,
+        performData,
+        updateInterval
+      )
+    ) {
       // Add a sample
       upkeep[market][upkeepData.updateInterval].count = uint32(
         upkeep[market][upkeepData.updateInterval].count.add(1)
@@ -239,11 +253,9 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
         .cumulativePrice
         .add(IOracleWrapper(oracleWrapper).getPrice(market));
     }
-    if (
-      lastExecutionTime[performData] <=
-      upkeepData.roundStart.add(upkeepData.updateInterval)
-    ) {
+    if (lastExecutionTime[performData] <= upkeepData.roundStart) {
       // Execute this group using executionPrice and lastExecutionPrice from storage
+      lastExecutionTime[performData] = uint32(block.timestamp);
       triggerPriceUpdate(market, poolCodes);
     }
   }
@@ -273,20 +285,19 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
       string[] memory poolCodes
     )
   {
-    (uint32 updateInterval, string memory market, string[] memory poolCodes) =
+    (uint32 updateInterval, string memory market, string[] memory poolGroup) =
       abi.decode(checkData, (uint32, string, string[]));
-
     IOracleWrapper oracle = IOracleWrapper(oracleWrapper);
     if (oracle.assetOracles(market) == address(0)) {
-      return (false, updateInterval, market, poolCodes);
+      return (false, updateInterval, market, poolGroup);
     }
 
-    for (uint8 i = 0; i < poolCodes.length; i++) {
-      if (pools[poolCodes[i]] == address(0)) {
-        return (false, updateInterval, market, poolCodes);
+    for (uint8 i = 0; i < poolGroup.length; i++) {
+      if (pools[poolGroup[i]] == address(0)) {
+        return (false, updateInterval, market, poolGroup);
       }
     }
-    return (true, updateInterval, market, poolCodes);
+    return (true, updateInterval, market, poolGroup);
   }
 
   // #### Modifiers
