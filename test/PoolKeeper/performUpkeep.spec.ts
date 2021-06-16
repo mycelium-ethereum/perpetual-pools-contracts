@@ -171,7 +171,6 @@ describe("PoolKeeper - performUpkeep", () => {
       oldRound = await poolKeeper.upkeep(MARKET, updateInterval);
       // delay and upkeep again
       await timeout(updateInterval * 1000 + 1000);
-      console.log("Execute");
       await poolKeeper.performUpkeep(callData);
       newRound = await poolKeeper.upkeep(MARKET, updateInterval);
     });

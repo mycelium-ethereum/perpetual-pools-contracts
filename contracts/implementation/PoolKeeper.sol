@@ -12,6 +12,8 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 
+import "hardhat/console.sol";
+
 /*
 @title The manager contract for multiple markets and the pools in them
 */
@@ -214,10 +216,12 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
     if (!valid) {
       revert("Input data is invalid");
     }
-    if (lastExecutionTime[performData] == 0) {
-      lastExecutionTime[performData] = uint32(block.timestamp);
-    }
+
     Upkeep memory upkeepData = upkeep[market][updateInterval];
+    if (lastExecutionTime[performData] == 0) {
+      console.log("Set last execution time");
+      lastExecutionTime[performData] = upkeepData.roundStart;
+    }
     if (
       block.timestamp >= upkeepData.roundStart.add(upkeepData.updateInterval)
     ) {
@@ -235,6 +239,7 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
       int256 price = IOracleWrapper(oracleWrapper).getPrice(market);
       upkeep[market][upkeepData.updateInterval].lastSamplePrice = price;
       upkeep[market][upkeepData.updateInterval].cumulativePrice = price;
+      console.log("new round");
     } else if (
       _validateUpkeep(
         market,
@@ -252,8 +257,11 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
       ][upkeepData.updateInterval]
         .cumulativePrice
         .add(IOracleWrapper(oracleWrapper).getPrice(market));
+      console.log("sample");
     }
+    console.log(lastExecutionTime[performData], upkeepData.roundStart);
     if (lastExecutionTime[performData] <= upkeepData.roundStart) {
+      console.log("Execute");
       // Execute this group using executionPrice and lastExecutionPrice from storage
       lastExecutionTime[performData] = uint32(block.timestamp);
       triggerPriceUpdate(market, poolCodes);
