@@ -320,6 +320,7 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
     pure
     returns (int256)
   {
+    require(count > 0, "Count < 1");
     return cumulative.mul(10000).div(count).add(5).div(10);
   }
 

@@ -140,14 +140,58 @@ describe("PoolKeeper - performUpkeep: corner cases", () => {
       const upTwo = await (await poolKeeper.performUpkeep(upkeepTwo)).wait();
       upkeepOneEvent = getEventArgs(upOne, "ExecutePriceChange");
       upkeepTwoEvent = getEventArgs(upTwo, "ExecutePriceChange");
-      console.log(upkeepOneEvent, upkeepTwoEvent);
-      throw new Error("Not implemented");
+      expect(upkeepOneEvent?.newPrice).to.eq(upkeepTwoEvent?.newPrice);
+      expect(upkeepOneEvent?.oldPrice).to.eq(upkeepTwoEvent?.oldPrice);
+      expect(upkeepOneEvent?.market).to.eq(upkeepTwoEvent?.market);
+      expect(upkeepOneEvent?.updateInterval).to.eq(
+        upkeepTwoEvent?.updateInterval
+      );
     });
   });
   describe("Malicious upkeep requests", () => {
     beforeEach(setupHook);
     it("should revert if the pools do not belong to the market", async () => {
-      throw new Error("Not implemented");
+      // Setup a malicious market
+      await poolKeeper.createMarket(MARKET_2, oracleWrapper.address);
+      const badPool = POOL_CODE.concat("BAD");
+      await poolKeeper.createPool(
+        MARKET_2,
+        badPool,
+        updateInterval,
+        1,
+        "0x00000000000000000000000000000000",
+        1,
+        generateRandomAddress(),
+        quoteToken
+      );
+      await oracleWrapper.increasePrice();
+      const goodData = ethers.utils.defaultAbiCoder.encode(
+        [
+          ethers.utils.ParamType.from("uint32"),
+          ethers.utils.ParamType.from("string"),
+          ethers.utils.ParamType.from("string[]"),
+        ],
+        [updateInterval, MARKET_2, [badPool]]
+      );
+
+      await poolKeeper.performUpkeep(goodData);
+
+      await timeout(updateInterval * 1000 + 1000);
+      await poolKeeper.performUpkeep(goodData);
+
+      // Update a pool not in the malicious market
+      await expect(
+        poolKeeper.performUpkeep(
+          ethers.utils.defaultAbiCoder.encode(
+            [
+              ethers.utils.ParamType.from("uint32"),
+              ethers.utils.ParamType.from("string"),
+              ethers.utils.ParamType.from("string[]"),
+            ],
+            [updateInterval, MARKET, [POOL_CODE]]
+          )
+        )
+      ).to.be.rejectedWith(Error);
     });
   });
 });
