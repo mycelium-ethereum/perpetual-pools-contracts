@@ -12,6 +12,8 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 
+import "hardhat/console.sol";
+
 /*
 @title The manager contract for multiple markets and the pools in them
 */
@@ -111,7 +113,8 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
         )
       );
     int256 firstPrice = oracle.getPrice(_marketCode);
-    if (upkeep[_marketCode][_updateInterval].lastExecutionPrice == 0) {
+    Upkeep memory upkeepData = upkeep[_marketCode][_updateInterval];
+    if (upkeepData.lastExecutionPrice == 0) {
       upkeep[_marketCode][_updateInterval] = Upkeep(
         firstPrice,
         firstPrice,
@@ -121,16 +124,12 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
         _updateInterval,
         uint32(block.timestamp)
       );
-    } else if (
-      firstPrice != upkeep[_marketCode][_updateInterval].lastSamplePrice
-    ) {
-      upkeep[_marketCode][_updateInterval].cumulativePrice = upkeep[
-        _marketCode
-      ][_updateInterval]
+    } else if (firstPrice != upkeepData.lastSamplePrice) {
+      upkeep[_marketCode][_updateInterval].cumulativePrice = upkeepData
         .cumulativePrice
         .add(firstPrice);
       upkeep[_marketCode][_updateInterval].count = uint32(
-        upkeep[_marketCode][_updateInterval].count.add(1)
+        upkeepData.count.add(1)
       );
     }
     emit CreatePool(address(pool), firstPrice, _updateInterval, _marketCode);
@@ -205,17 +204,26 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
       block.timestamp >= upkeepData.roundStart.add(upkeepData.updateInterval)
     ) {
       // Start new round
+      console.log("new round", block.number);
       int256 newPrice = _average(upkeepData.cumulativePrice, upkeepData.count);
-      upkeep[market][upkeepData.updateInterval].executionPrice = newPrice;
-      upkeep[market][upkeepData.updateInterval].lastExecutionPrice = upkeepData
-        .executionPrice;
-      upkeep[market][upkeepData.updateInterval].roundStart = uint32(
-        block.timestamp
-      );
-      upkeep[market][upkeepData.updateInterval].count = 1;
       int256 price = IOracleWrapper(oracleWrapper).getPrice(market);
-      upkeep[market][upkeepData.updateInterval].lastSamplePrice = price;
-      upkeep[market][upkeepData.updateInterval].cumulativePrice = price;
+      upkeep[market][updateInterval] = Upkeep(
+        price,
+        price,
+        newPrice,
+        upkeepData.executionPrice,
+        1,
+        upkeepData.updateInterval,
+        uint32(block.timestamp)
+      );
+
+      emit NewRound(
+        upkeepData.executionPrice,
+        newPrice,
+        upkeepData.updateInterval,
+        market
+      );
+
       _executePriceChange(
         performData,
         market,
@@ -234,23 +242,30 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
       )
     ) {
       // Add a sample
-      upkeep[market][upkeepData.updateInterval].count = uint32(
-        upkeep[market][upkeepData.updateInterval].count.add(1)
+      console.log("sample", block.number);
+
+      int256 latestPrice = IOracleWrapper(oracleWrapper).getPrice(market);
+      int256 cumulative = upkeepData.cumulativePrice.add(latestPrice);
+      upkeep[market][updateInterval] = Upkeep(
+        cumulative,
+        latestPrice,
+        upkeepData.executionPrice,
+        upkeepData.lastExecutionPrice,
+        uint32(upkeepData.count.add(1)),
+        upkeepData.updateInterval,
+        upkeepData.roundStart
       );
-      upkeep[market][upkeepData.updateInterval].cumulativePrice = upkeep[
-        market
-      ][upkeepData.updateInterval]
-        .cumulativePrice
-        .add(IOracleWrapper(oracleWrapper).getPrice(market));
 
       emit PriceSample(
-        upkeep[market][upkeepData.updateInterval].cumulativePrice,
-        upkeep[market][upkeepData.updateInterval].count,
+        cumulative,
+        uint32(upkeepData.count.add(1)),
         upkeepData.updateInterval,
         market
       );
     }
     if (lastExecutionTime[performData] < upkeepData.roundStart) {
+      console.log("exec", block.number);
+
       _executePriceChange(
         performData,
         market,

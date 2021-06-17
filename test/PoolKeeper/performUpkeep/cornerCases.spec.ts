@@ -123,7 +123,7 @@ describe("PoolKeeper - performUpkeep: corner cases", () => {
       await oracleWrapper.increasePrice();
       await poolKeeper.performUpkeep(upkeepOne);
       await poolKeeper.performUpkeep(upkeepTwo);
-      await timeout(updateInterval * 1000 + 500);
+      await timeout(updateInterval * 1000 + 1000);
 
       const upOne = await (await poolKeeper.performUpkeep(upkeepOne)).wait();
 

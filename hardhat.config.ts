@@ -8,6 +8,7 @@ import "@typechain/hardhat";
 import "@nomiclabs/hardhat-etherscan";
 import "@openzeppelin/hardhat-upgrades";
 import "hardhat-log-remover";
+// import "hardhat-gas-reporter";
 
 // TODO: reenable solidity-coverage when it works
 // import "solidity-coverage";
