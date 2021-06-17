@@ -64,6 +64,18 @@ interface ILeveragedPool {
  */
   event ExecuteCommit(uint256 commitID);
 
+  /**
+  @notice Creates a notification of a price execution
+  @param startPrice The price from the last execution
+  @param endPrice The price for this execution
+  @param transferAmount The amount that was transferred between pools
+ */
+  event PriceChange(
+    int256 indexed startPrice,
+    int256 indexed endPrice,
+    uint112 indexed transferAmount
+  );
+
   // #### Functions
   /**
   @notice Configures the pool on deployment. The pools are EIP 1167 clones.
@@ -82,7 +94,7 @@ interface ILeveragedPool {
     int256 _firstPrice,
     uint32 _updateInterval,
     uint32 _frontRunningInterval,
-    uint16 _fee,
+    bytes16 _fee,
     uint16 _leverageAmount,
     address _feeAddress,
     address _quoteToken
@@ -116,9 +128,9 @@ interface ILeveragedPool {
     @notice Processes the effect of a price change. The effect of a price change on a pool is left to the implementer. The pool stores the last price, and is given the latest price on update. 
     @dev This function should be called by the Pool Keeper.
     @dev This function should be secured with some form of access control
-    @param endPrice The latest price from the oracle. 
+    @param newPrice The latest price from the oracle. 
     */
-  function executePriceChange(uint256 endPrice) external;
+  function executePriceChange(int256 newPrice) external;
 
   /** 
     @notice Updates the fee address

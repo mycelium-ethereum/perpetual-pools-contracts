@@ -26,9 +26,9 @@ const amountCommitted = ethers.utils.parseEther("2000");
 const amountMinted = ethers.utils.parseEther("10000");
 const feeAddress = generateRandomAddress();
 const lastPrice = getRandomInt(99999999, 1);
-const updateInterval = 120; // 2 minutes
+const updateInterval = 2;
 const frontRunningInterval = 1; // seconds
-const fee = getRandomInt(256, 1);
+const fee = "0x00000000000000000000000000000000";
 const leverage = 2;
 let imbalance: BytesLike;
 

@@ -81,7 +81,7 @@ contract PoolKeeper is IPoolKeeper, AccessControl {
     string memory _poolCode,
     uint32 _updateInterval,
     uint32 _frontRunningInterval,
-    uint16 _fee,
+    bytes16 _fee,
     uint16 _leverageAmount,
     address _feeAddress,
     address _quoteToken

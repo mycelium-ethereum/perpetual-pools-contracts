@@ -31,8 +31,8 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
   uint32 public updateInterval;
   uint32 public frontRunningInterval;
 
-  uint16 public fee;
-  uint16 public leverageAmount;
+  bytes16 public fee;
+  bytes16 public leverageAmount;
   address public feeAddress;
   address public quoteToken;
 
@@ -66,7 +66,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     int256 _firstPrice,
     uint32 _updateInterval,
     uint32 _frontRunningInterval,
-    uint16 _fee,
+    bytes16 _fee,
     uint16 _leverageAmount,
     address _feeAddress,
     address _quoteToken
@@ -90,7 +90,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     updateInterval = _updateInterval;
     frontRunningInterval = _frontRunningInterval;
     fee = _fee;
-    leverageAmount = _leverageAmount;
+    leverageAmount = PoolSwapLibrary.convertUIntToDecimal(_leverageAmount);
     feeAddress = _feeAddress;
     lastPriceTimestamp = block.timestamp;
     poolCode = _poolCode;
@@ -178,9 +178,9 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
   }
 
   /**
-  @notice Executes a single commitment.
-  @param _commit The commit to execute
- */
+    @notice Executes a single commitment.
+    @param _commit The commit to execute
+  */
   function _executeCommitment(Commit memory _commit) internal {
     require(_commit.owner != address(0), "Invalid commit");
     require(
@@ -246,7 +246,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
       );
     }
     require(
-      PoolSwapLibrary.compareRatios(
+      PoolSwapLibrary.compareDecimals(
         PoolSwapLibrary.getRatio(longBalance, shortBalance),
         _commit.maxImbalance
       ) <= 0,
@@ -294,8 +294,61 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     }
   }
 
-  function executePriceChange(uint256 endPrice) external override {
+  function executePriceChange(int256 newPrice) external override {
+    require(
+      block.timestamp.sub(lastPriceTimestamp) >= updateInterval,
+      "Update too soon"
+    );
+
+    uint112 longFeeAmount =
+      uint112(
+        PoolSwapLibrary.convertDecimalToUInt(
+          PoolSwapLibrary.multiplyDecimalByUInt(fee, longBalance)
+        )
+      );
+    uint112 shortFeeAmount =
+      uint112(
+        PoolSwapLibrary.convertDecimalToUInt(
+          PoolSwapLibrary.multiplyDecimalByUInt(fee, shortBalance)
+        )
+      );
+    uint112 totalFeeAmount = 0;
+    if (shortBalance >= shortFeeAmount) {
+      shortBalance = shortBalance.sub(shortFeeAmount);
+      totalFeeAmount = totalFeeAmount.add(shortFeeAmount);
+    }
+    if (longBalance > longFeeAmount) {
+      longBalance = longBalance.sub(longFeeAmount);
+      totalFeeAmount = totalFeeAmount.add(longFeeAmount);
+    }
+
+    bytes16 ratio = PoolSwapLibrary.divInt(newPrice, lastPrice);
+    int8 direction =
+      PoolSwapLibrary.compareDecimals(ratio, PoolSwapLibrary.one);
+    bytes16 lossMultiplier =
+      PoolSwapLibrary.getLossMultiplier(ratio, direction, leverageAmount);
+
+    if (direction >= 0 && shortBalance > 0) {
+      // Move funds from short to long pair
+      uint112 lossAmount =
+        uint112(PoolSwapLibrary.getLossAmount(lossMultiplier, shortBalance));
+      shortBalance = shortBalance.sub(lossAmount);
+      longBalance = longBalance.add(lossAmount);
+      emit PriceChange(lastPrice, newPrice, lossAmount);
+    } else if (direction < 0 && longBalance > 0) {
+      // Move funds from long to short pair
+      uint112 lossAmount =
+        uint112(PoolSwapLibrary.getLossAmount(lossMultiplier, longBalance));
+      shortBalance = shortBalance.add(lossAmount);
+      longBalance = longBalance.sub(lossAmount);
+      emit PriceChange(lastPrice, newPrice, lossAmount);
+    }
     lastPriceTimestamp = block.timestamp;
+    lastPrice = newPrice;
+    require(
+      IERC20(quoteToken).transfer(feeAddress, totalFeeAmount),
+      "Fee transfer failed"
+    );
   }
 
   function updateFeeAddress(address account) external override {}
