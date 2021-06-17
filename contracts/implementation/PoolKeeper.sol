@@ -12,8 +12,6 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 
-import "hardhat/console.sol";
-
 /*
 @title The manager contract for multiple markets and the pools in them
 */
@@ -201,7 +199,6 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
 
     Upkeep memory upkeepData = upkeep[market][updateInterval];
     if (lastExecutionTime[performData] == 0) {
-      console.log("Set last execution time");
       lastExecutionTime[performData] = upkeepData.roundStart;
     }
     if (
@@ -227,7 +224,6 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
         upkeepData.executionPrice,
         newPrice
       );
-      console.log("new round", block.number);
       return;
     } else if (
       _validateUpkeep(
@@ -253,10 +249,8 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
         upkeepData.updateInterval,
         market
       );
-      console.log("sample", block.number);
     }
     if (lastExecutionTime[performData] < upkeepData.roundStart) {
-      console.log("Execute", block.number);
       _executePriceChange(
         performData,
         market,

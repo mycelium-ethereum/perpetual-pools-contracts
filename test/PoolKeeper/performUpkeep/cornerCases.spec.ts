@@ -140,7 +140,7 @@ describe("PoolKeeper - performUpkeep: corner cases", () => {
     });
     it("should use the same price for a new round + execute transaction and an execution transaction that follows for a second upkeep group", async () => {
       await timeout(updateInterval * 1000 + 1000);
-      console.log("new round + exe");
+
       const upOne = await (await poolKeeper.performUpkeep(upkeepOne)).wait();
       const upTwo = await (await poolKeeper.performUpkeep(upkeepTwo)).wait();
       upkeepOneEvent = getEventArgs(upOne, "ExecutePriceChange");
