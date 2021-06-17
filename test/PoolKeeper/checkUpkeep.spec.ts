@@ -95,7 +95,6 @@ describe("PoolKeeper - checkUpkeep", () => {
   });
   it("should return false if the trigger condition isn't met", async () => {
     await poolKeeper.performUpkeep(callData);
-
     expect((await poolKeeper.checkUpkeep(callData))[0]).to.eq(false);
   });
   it("should return the correct perform data to call for upkeep with", async () => {

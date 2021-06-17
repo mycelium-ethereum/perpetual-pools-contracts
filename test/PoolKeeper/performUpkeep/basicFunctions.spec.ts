@@ -124,9 +124,15 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
     });
   });
   describe("Upkeep - Price averaging", () => {
+    let price: BigNumber;
     before(async () => {
       // Check starting conditions
       await setupHook();
+
+      await timeout(updateInterval * 1000 + 1000);
+      await oracleWrapper.increasePrice();
+      price = await oracleWrapper.getPrice(MARKET);
+      await poolKeeper.performUpkeep(callData);
       await oracleWrapper.increasePrice();
       await poolKeeper.performUpkeep(callData);
       await oracleWrapper.increasePrice();
@@ -135,10 +141,10 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
     it("should update the cumulative price for the market+pools in performData", async () => {
       expect(
         (await poolKeeper.upkeep(MARKET, updateInterval)).cumulativePrice
-      ).to.eq(ethers.BigNumber.from(1).add(2).add(3).add(4));
+      ).to.eq(price.add(price.add(1)).add(price.add(2)));
     });
     it("should update the count for the market+pools in performData", async () => {
-      expect((await poolKeeper.upkeep(MARKET, updateInterval)).count).to.eq(4);
+      expect((await poolKeeper.upkeep(MARKET, updateInterval)).count).to.eq(3);
     });
   });
   describe("Upkeep - Price execution", () => {
@@ -149,6 +155,7 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
       // process a few upkeeps
       lastTime = await poolKeeper.lastExecutionTime(callData);
       await oracleWrapper.increasePrice();
+      await timeout(updateInterval * 1000 + 1000);
       const result = await (await poolKeeper.performUpkeep(callData)).wait();
       oldRound = await poolKeeper.upkeep(MARKET, updateInterval);
       event = getEventArgs(result, "ExecutePriceChange");

@@ -76,7 +76,6 @@ describe("LeveragedPool - initialize", () => {
       await (
         await pool.initialize(
           POOL_CODE,
-          1,
           updateInterval,
           frontRunningInterval,
           fee,
@@ -106,7 +105,7 @@ describe("LeveragedPool - initialize", () => {
       receipt = await (
         await leveragedPool.initialize(
           POOL_CODE,
-          lastPrice,
+
           updateInterval,
           frontRunningInterval,
           fee,
@@ -119,10 +118,6 @@ describe("LeveragedPool - initialize", () => {
 
     it("should set the quote token", async () => {
       expect(await leveragedPool.quoteToken()).to.eq(quoteToken);
-    });
-
-    it("should set the last price", async () => {
-      expect(await leveragedPool.lastPrice()).to.eq(lastPrice);
     });
 
     it("should set the last price timestamp", async () => {
@@ -243,7 +238,6 @@ describe("LeveragedPool - initialize", () => {
       await (
         await pool.initialize(
           POOL_CODE,
-          1,
           updateInterval,
           frontRunningInterval,
           fee,
@@ -276,7 +270,6 @@ describe("LeveragedPool - initialize", () => {
     it("should revert if an attempt is made to run it a second time", async () => {
       await leveragedPool.initialize(
         POOL_CODE,
-        lastPrice,
         updateInterval,
         frontRunningInterval,
         fee,
@@ -287,7 +280,6 @@ describe("LeveragedPool - initialize", () => {
       await expect(
         leveragedPool.initialize(
           POOL_CODE,
-          lastPrice,
           updateInterval,
           frontRunningInterval,
           fee,
@@ -301,7 +293,6 @@ describe("LeveragedPool - initialize", () => {
       await expect(
         leveragedPool.initialize(
           POOL_CODE,
-          lastPrice,
           updateInterval,
           frontRunningInterval,
           fee,
@@ -315,7 +306,6 @@ describe("LeveragedPool - initialize", () => {
       await expect(
         leveragedPool.initialize(
           POOL_CODE,
-          lastPrice,
           updateInterval,
           frontRunningInterval,
           fee,
@@ -329,7 +319,6 @@ describe("LeveragedPool - initialize", () => {
       await expect(
         leveragedPool.initialize(
           POOL_CODE,
-          lastPrice,
           1,
           2,
           fee,
@@ -352,7 +341,7 @@ describe("LeveragedPool - initialize", () => {
       ) as LeveragedPool;
       await secondPool.initialize(
         POOL_CODE_2,
-        lastPrice,
+
         updateInterval,
         frontRunningInterval,
         fee,
@@ -362,7 +351,7 @@ describe("LeveragedPool - initialize", () => {
       );
       await leveragedPool.initialize(
         POOL_CODE,
-        lastPrice,
+
         updateInterval,
         frontRunningInterval,
         fee,

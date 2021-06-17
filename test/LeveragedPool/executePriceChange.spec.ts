@@ -62,7 +62,7 @@ const fundPools = async () => {
   const shortMint = await createCommit(pool, [0], imbalance, amountCommitted);
   const longMint = await createCommit(pool, [2], imbalance, amountCommitted);
   await timeout(2000);
-  await pool.executePriceChange(lastPrice);
+  await pool.executePriceChange(1, lastPrice);
   await pool.executeCommitment([shortMint.commitID, longMint.commitID]);
   expect((await pool.shortBalance()).toString()).to.eq(
     amountCommitted.toString()
@@ -85,23 +85,16 @@ describe("LeveragedPool - executePriceUpdate", () => {
     });
     it("should set the last update timestamp", async () => {
       const firstTimestamp = await pool.lastPriceTimestamp();
-      await pool.executePriceChange(1);
+      await pool.executePriceChange(1, 2);
       expect((await pool.lastPriceTimestamp()).toNumber()).to.be.greaterThan(
         firstTimestamp.toNumber()
       );
-    });
-    it("should set the last price", async () => {
-      const firstPrice = await pool.lastPrice();
-      await pool.executePriceChange(5);
-      const lastPrice = (await pool.lastPrice()).toNumber();
-      expect(lastPrice).to.eq(5);
-      expect(firstPrice.toNumber()).not.to.eq(lastPrice);
     });
     it("should send the fund movement fee to the fee holder", async () => {
       expect(await quoteToken.balanceOf(feeAddress)).to.eq(0);
       const newPrice = lastPrice * 2;
 
-      await pool.executePriceChange(newPrice);
+      await pool.executePriceChange(lastPrice, newPrice);
       expect(await quoteToken.balanceOf(feeAddress)).to.eq(
         (await calculateFee(fee, amountCommitted)).mul(2)
       );
@@ -110,15 +103,12 @@ describe("LeveragedPool - executePriceUpdate", () => {
   describe("Exception cases", () => {
     beforeEach(setupHook);
     it("should revert if the update is too soon from the previous one", async () => {
-      await pool.executePriceChange(9);
-      await expect(pool.executePriceChange(10)).to.be.rejectedWith(Error);
+      await pool.executePriceChange(9, 10);
+      await expect(pool.executePriceChange(10, 11)).to.be.rejectedWith(Error);
     });
-    it("should only update the price and timestamp if the losing pool balance is zero", async () => {
-      const oldPrice = await pool.lastPrice();
+    it("should only update the timestamp if the losing pool balance is zero", async () => {
       const oldTimestamp = await pool.lastPriceTimestamp();
-      await pool.executePriceChange(78000000);
-      expect(await pool.lastPrice()).not.to.eq(oldPrice);
-      expect(await pool.lastPrice()).to.eq(ethers.BigNumber.from(78000000));
+      await pool.executePriceChange(lastPrice, 78000000);
       expect((await pool.lastPriceTimestamp()).toNumber()).to.be.greaterThan(
         oldTimestamp.toNumber()
       );
@@ -133,6 +123,7 @@ describe("LeveragedPool - executePriceUpdate", () => {
       expect(await pool.shortBalance()).to.eq(amountCommitted);
       // Increase price by 1 cent
       await pool.executePriceChange(
+        lastPrice,
         ethers.BigNumber.from(lastPrice).add(1000000)
       );
       expect(await pool.shortBalance()).to.eq(
@@ -143,6 +134,7 @@ describe("LeveragedPool - executePriceUpdate", () => {
       expect(await pool.longBalance()).to.eq(ethers.utils.parseEther("2000"));
       // Increase price by 1 cent
       await pool.executePriceChange(
+        lastPrice,
         ethers.BigNumber.from(lastPrice).add(1000000)
       );
       expect(await pool.longBalance()).to.eq(
@@ -167,6 +159,7 @@ describe("LeveragedPool - executePriceUpdate", () => {
       expect(await pool.shortBalance()).to.eq(ethers.utils.parseEther("2000"));
       // Increase price by 1 cent
       await pool.executePriceChange(
+        lastPrice,
         ethers.BigNumber.from(lastPrice).sub(1000000)
       );
       expect(await pool.shortBalance()).to.eq(
@@ -185,6 +178,7 @@ describe("LeveragedPool - executePriceUpdate", () => {
       expect(await pool.longBalance()).to.eq(amountCommitted);
       // Increase price by 1 cent
       await pool.executePriceChange(
+        lastPrice,
         ethers.BigNumber.from(lastPrice).sub(1000000)
       );
       expect(await pool.longBalance()).to.eq(

@@ -69,7 +69,7 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
       await shortToken.approve(pool.address, amountMinted);
       await timeout(2000);
 
-      await pool.executePriceChange(9);
+      await pool.executePriceChange(lastPrice, lastPrice + 10);
       await pool.executeCommitment([commit.commitID]);
 
       commits.push(await createCommit(pool, [2], imbalance, amountCommitted));
@@ -86,7 +86,7 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
         amountCommitted.div(2)
       );
       await timeout(2000);
-      await pool.executePriceChange(9);
+      await pool.executePriceChange(lastPrice, lastPrice + 10);
       await pool.executeCommitment([commits[0].commitID, commits[1].commitID]);
 
       expect(await pool.shadowPools(commits[0].commitType)).to.eq(0);
@@ -95,7 +95,7 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
     it("should adjust the balances of the live pools involved", async () => {
       expect(await pool.longBalance()).to.eq(amountCommitted);
       await timeout(2000);
-      await pool.executePriceChange(9);
+      await pool.executePriceChange(lastPrice, lastPrice + 10);
 
       await pool.executeCommitment([commits[0].commitID, commits[1].commitID]);
       expect(await pool.longBalance()).to.eq(
@@ -133,7 +133,7 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
       await shortToken.approve(pool.address, amountMinted);
       await timeout(2000);
 
-      await pool.executePriceChange(9);
+      await pool.executePriceChange(lastPrice, 10);
       await pool.executeCommitment([commit.commitID]);
 
       commits.push(await createCommit(pool, [0], imbalance, amountCommitted));
@@ -150,7 +150,7 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
         amountCommitted.div(2)
       );
       await timeout(2000);
-      await pool.executePriceChange(9);
+      await pool.executePriceChange(lastPrice, 10);
       await pool.executeCommitment([commits[0].commitID, commits[1].commitID]);
 
       expect(await pool.shadowPools(commits[0].commitType)).to.eq(0);
@@ -159,7 +159,7 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
     it("should adjust the balances of the live pools involved", async () => {
       expect(await pool.shortBalance()).to.eq(amountCommitted);
       await timeout(2000);
-      await pool.executePriceChange(9);
+      await pool.executePriceChange(lastPrice, 10);
 
       await pool.executeCommitment([commits[0].commitID, commits[1].commitID]);
 

@@ -83,16 +83,6 @@ interface IPoolKeeper {
   );
 
   // #### Functions
-  // /**
-  //   @notice Checks for a price update for the pools specified. Several pools can be updated with a single call to the oracle. For instance, a market code of TSLA/USD+aDAI can be used to update TSLA/USD^2+aDAI, TSLA/USD^5+aDAI, and TSLA/USD^10+aDAI
-  //   @dev This should remain open. It should only cause a change in the pools if the price has actually changed.
-  //   @param marketCode The market to get a quote for. Should be in the format BASE/QUOTE-DIGITAL_ASSET, eg TSLA/USD+aDAI
-  //  */
-  // function triggerPriceUpdate(
-  //   string memory marketCode,
-  //   string[] memory poolCodes
-  // ) external;
-
   /**
     @notice Updates the address of the oracle wrapper.
     @dev Should be restricted to authorised users with access controls

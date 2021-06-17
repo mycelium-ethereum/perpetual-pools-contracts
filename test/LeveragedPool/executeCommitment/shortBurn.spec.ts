@@ -64,7 +64,7 @@ describe("LeveragedPool - executeCommitment: Short Burn", () => {
       await token.approve(pool.address, amountMinted);
       commit = await createCommit(pool, [0], imbalance, amountCommitted);
       await timeout(2000);
-      await pool.executePriceChange(9);
+      await pool.executePriceChange(lastPrice, 10);
       await pool.executeCommitment([commit.commitID]);
 
       await shortToken.approve(pool.address, amountCommitted);
@@ -73,14 +73,14 @@ describe("LeveragedPool - executeCommitment: Short Burn", () => {
     it("should reduce the live short pool balance", async () => {
       expect(await pool.shortBalance()).to.eq(amountCommitted);
       await timeout(2000);
-      await pool.executePriceChange(9);
+      await pool.executePriceChange(lastPrice, 10);
       await pool.executeCommitment([commit.commitID]);
       expect(await pool.shortBalance()).to.eq(0);
     });
     it("should reduce the shadow short burn pool balance", async () => {
       expect(await pool.shadowPools(commit.commitType)).to.eq(amountCommitted);
       await timeout(2000);
-      await pool.executePriceChange(9);
+      await pool.executePriceChange(lastPrice, 10);
       await pool.executeCommitment([commit.commitID]);
       expect(await pool.shadowPools(commit.commitType)).to.eq(0);
     });
@@ -89,7 +89,7 @@ describe("LeveragedPool - executeCommitment: Short Burn", () => {
         amountMinted.sub(amountCommitted)
       );
       await timeout(2000);
-      await pool.executePriceChange(9);
+      await pool.executePriceChange(lastPrice, 10);
       await pool.executeCommitment([commit.commitID]);
       expect(await token.balanceOf(signers[0].address)).to.eq(amountMinted);
     });

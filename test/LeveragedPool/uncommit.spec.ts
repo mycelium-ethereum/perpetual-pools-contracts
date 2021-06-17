@@ -149,7 +149,7 @@ describe("LeveragedPool - uncommit", () => {
         await pool.commit([0], imbalance, amountCommitted)
       ).wait();
       await timeout(2000);
-      await pool.executePriceChange(1);
+      await pool.executePriceChange(1, 2);
       await pool.executeCommitment([
         getEventArgs(pairToken, "CreateCommit")?.commitID,
       ]);
@@ -182,7 +182,7 @@ describe("LeveragedPool - uncommit", () => {
         await pool.commit([2], imbalance, amountCommitted)
       ).wait();
       await timeout(2000);
-      await pool.executePriceChange(1);
+      await pool.executePriceChange(1, 2);
       await pool.executeCommitment([
         getEventArgs(pairToken, "CreateCommit")?.commitID,
       ]);
@@ -253,7 +253,7 @@ describe("LeveragedPool - uncommit", () => {
         await pool.commit([0], imbalance, amountCommitted)
       ).wait();
       await timeout(2000);
-      await pool.executePriceChange(1);
+      await pool.executePriceChange(1, 2);
       await pool.executeCommitment([
         getEventArgs(pairToken, "CreateCommit")?.commitID,
       ]);
@@ -277,7 +277,7 @@ describe("LeveragedPool - uncommit", () => {
         await pool.commit([2], imbalance, amountCommitted)
       ).wait();
       await timeout(2000);
-      await pool.executePriceChange(1);
+      await pool.executePriceChange(1, 2);
       await pool.executeCommitment([
         getEventArgs(pairToken, "CreateCommit")?.commitID,
       ]);
@@ -301,7 +301,7 @@ describe("LeveragedPool - uncommit", () => {
         await pool.commit([0], imbalance, amountCommitted)
       ).wait();
       await timeout(2000);
-      await pool.executePriceChange(1);
+      await pool.executePriceChange(1, 2);
       await pool.executeCommitment([
         getEventArgs(pairToken, "CreateCommit")?.commitID,
       ]);
@@ -319,7 +319,7 @@ describe("LeveragedPool - uncommit", () => {
         await pool.commit([2], imbalance, amountCommitted)
       ).wait();
       await timeout(2000);
-      await pool.executePriceChange(1);
+      await pool.executePriceChange(1, 2);
       await pool.executeCommitment([
         getEventArgs(pairToken, "CreateCommit")?.commitID,
       ]);

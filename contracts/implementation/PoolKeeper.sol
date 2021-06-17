@@ -27,6 +27,11 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
   mapping(string => address) public override pools;
 
   /**
+  @notice Format: Pool Code => Market code. Used to prevent a pool from being updated with pricing from a market it doesn't belong to.
+  */
+  mapping(string => string) public poolMarkets;
+
+  /**
   @notice Format: market code => updateInterval => Upkeep details
    */
   mapping(string => mapping(uint256 => Upkeep)) public upkeep;
@@ -60,13 +65,6 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
     // Initialise the base contract so no one else abuses it.
     _poolBase.initialize("BASE_POOL", 5, 2, 0, 0, address(this), address(this));
   }
-
-  function triggerPriceUpdate(
-    int256 oldPrice,
-    int256 newPrice,
-    string memory marketCode,
-    string[] memory poolCodes
-  ) internal {}
 
   function updateOracleWrapper(address oracle) external override onlyAdmin {
     require(oracle != address(0), "Oracle cannot be 0 address");
@@ -140,7 +138,7 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
     emit CreatePool(address(pool), firstPrice, _updateInterval, _marketCode);
 
     pools[_poolCode] = address(pool);
-
+    poolMarkets[_poolCode] = _marketCode;
     pool.initialize(
       _poolCode,
       _updateInterval,
@@ -175,7 +173,6 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
     // Check trigger state
     Upkeep memory upkeepData = upkeep[market][updateInterval];
 
-    // TODO: Implement more sophisticated trigger states (delay for gas savings, etc)
     return (
       _validateUpkeep(
         market,
@@ -185,23 +182,6 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
       ),
       checkData
     );
-  }
-
-  function _validateUpkeep(
-    string memory market,
-    int256 lastSamplePrice,
-    bytes memory checkData,
-    uint32 updateInterval
-  ) internal view returns (bool) {
-    int256 latestPrice = IOracleWrapper(oracleWrapper).getPrice(market);
-    if (
-      latestPrice != lastSamplePrice ||
-      lastExecutionTime[checkData] <= upkeep[market][updateInterval].roundStart
-    ) {
-      // Upkeep required for price change or if the round hasn't been executed
-      return true;
-    }
-    return false;
   }
 
   /**
@@ -228,10 +208,8 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
       block.timestamp >= upkeepData.roundStart.add(upkeepData.updateInterval)
     ) {
       // Start new round
-      upkeep[market][upkeepData.updateInterval].executionPrice = _average(
-        upkeepData.cumulativePrice,
-        upkeepData.count
-      );
+      int256 newPrice = _average(upkeepData.cumulativePrice, upkeepData.count);
+      upkeep[market][upkeepData.updateInterval].executionPrice = newPrice;
       upkeep[market][upkeepData.updateInterval].lastExecutionPrice = upkeepData
         .executionPrice;
       upkeep[market][upkeepData.updateInterval].roundStart = uint32(
@@ -245,7 +223,9 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
         performData,
         market,
         upkeepData.updateInterval,
-        poolCodes
+        poolCodes,
+        upkeepData.executionPrice,
+        newPrice
       );
       console.log("new round", block.number);
       return;
@@ -273,39 +253,72 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
         upkeepData.updateInterval,
         market
       );
-      console.log("sample");
+      console.log("sample", block.number);
     }
-    if (lastExecutionTime[performData] <= upkeepData.roundStart) {
+    if (lastExecutionTime[performData] < upkeepData.roundStart) {
       console.log("Execute", block.number);
       _executePriceChange(
         performData,
         market,
         upkeepData.updateInterval,
-        poolCodes
+        poolCodes,
+        upkeepData.lastExecutionPrice,
+        upkeepData.executionPrice
       );
     }
   }
 
+  /**
+  @notice Executes a price change
+  @param performData The id used to update the last execution time of the upkeep
+  @param market The market the pools belong to 
+  @param updateInterval The update interval of the pools
+  @param poolCodes The pools to update
+   */
   function _executePriceChange(
     bytes memory performData,
     string memory market,
     uint32 updateInterval,
-    string[] memory poolCodes
+    string[] memory poolCodes,
+    int256 oldPrice,
+    int256 newPrice
   ) internal {
     lastExecutionTime[performData] = uint32(block.timestamp);
     emit ExecutePriceChange(
-      upkeep[market][updateInterval].lastExecutionPrice,
-      upkeep[market][updateInterval].executionPrice,
+      oldPrice,
+      newPrice,
       updateInterval,
       market,
       poolCodes
     );
-    triggerPriceUpdate(
-      upkeep[market][updateInterval].lastExecutionPrice,
-      upkeep[market][updateInterval].executionPrice,
-      market,
-      poolCodes
-    );
+    for (uint8 i = 0; i < poolCodes.length; i++) {
+      LeveragedPool(pools[poolCodes[i]]).executePriceChange(oldPrice, newPrice);
+    }
+  }
+
+  /**
+  @notice Checks to see if upkeep is required for the given market
+  @param market The market being upkept.
+  @param lastSamplePrice The last price added to the upkeep sample
+  @param checkData The checkdata used to store the last execution time for the upkeep
+  @param updateInterval The update interval for the pools
+  @return A boolean flag to indicate if upkeep is required or not
+   */
+  function _validateUpkeep(
+    string memory market,
+    int256 lastSamplePrice,
+    bytes memory checkData,
+    uint32 updateInterval
+  ) internal view returns (bool) {
+    int256 latestPrice = IOracleWrapper(oracleWrapper).getPrice(market);
+    if (
+      latestPrice != lastSamplePrice ||
+      lastExecutionTime[checkData] < upkeep[market][updateInterval].roundStart
+    ) {
+      // Upkeep required for price change or if the round hasn't been executed
+      return true;
+    }
+    return false;
   }
 
   /**
@@ -324,6 +337,14 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
     return cumulative.mul(10000).div(count).add(5).div(10);
   }
 
+  /**
+  @notice Checks input data for validity, making sure the market and pools are correct.
+  @param checkData The input data to check. Should follow the same format as the checkUpkeep/performUpkeep methods.
+  @return valid Whether the data is valid or not
+  @return updateInterval The update interval for the pools
+  @return market The market the pools belong to
+  @return poolCodes The list of pools to upkeep.
+   */
   function _checkInputData(bytes calldata checkData)
     internal
     view
@@ -342,6 +363,12 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
     }
 
     for (uint8 i = 0; i < poolGroup.length; i++) {
+      if (
+        keccak256(abi.encodePacked(poolMarkets[poolGroup[i]])) !=
+        keccak256(abi.encodePacked(market))
+      ) {
+        return (false, updateInterval, market, poolGroup);
+      }
       if (pools[poolGroup[i]] == address(0)) {
         return (false, updateInterval, market, poolGroup);
       }

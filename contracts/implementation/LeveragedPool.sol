@@ -71,6 +71,10 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
   ) external override initializer() {
     require(_feeAddress != address(0), "Fee address cannot be 0 address");
     require(_quoteToken != address(0), "Quote token cannot be 0 address");
+    require(
+      _updateInterval > _frontRunningInterval,
+      "Update interval < FR interval"
+    );
     // Setup roles
     _setRoleAdmin(UPDATER, ADMIN);
     _setRoleAdmin(FEE_HOLDER, ADMIN);

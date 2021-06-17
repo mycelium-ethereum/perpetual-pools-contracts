@@ -15,6 +15,7 @@ import {
 import { MARKET, POOL_CODE_2 } from "../../constants";
 import { BigNumber } from "ethers";
 import { Result } from "ethers/lib/utils";
+import { Console } from "console";
 
 chai.use(chaiAsPromised);
 const { expect } = chai;
@@ -112,7 +113,6 @@ interface Upkeep {
 }
 describe("PoolKeeper - performUpkeep: corner cases", () => {
   let oldRound: Upkeep;
-  let newRound: Upkeep;
   let upkeepOneEvent: Result | undefined;
   let upkeepTwoEvent: Result | undefined;
   describe("Multiple upkeep groups for the same market", () => {
@@ -121,6 +121,10 @@ describe("PoolKeeper - performUpkeep: corner cases", () => {
 
       // Sample and execute the first upkeep group
       await oracleWrapper.increasePrice();
+      await poolKeeper.performUpkeep(upkeepOne);
+      await poolKeeper.performUpkeep(upkeepTwo);
+      await timeout(updateInterval * 1000 + 500);
+
       const upOne = await (await poolKeeper.performUpkeep(upkeepOne)).wait();
 
       const upTwo = await (await poolKeeper.performUpkeep(upkeepTwo)).wait();
@@ -136,6 +140,7 @@ describe("PoolKeeper - performUpkeep: corner cases", () => {
     });
     it("should use the same price for a new round + execute transaction and an execution transaction that follows for a second upkeep group", async () => {
       await timeout(updateInterval * 1000 + 1000);
+      console.log("new round + exe");
       const upOne = await (await poolKeeper.performUpkeep(upkeepOne)).wait();
       const upTwo = await (await poolKeeper.performUpkeep(upkeepTwo)).wait();
       upkeepOneEvent = getEventArgs(upOne, "ExecutePriceChange");
@@ -188,7 +193,7 @@ describe("PoolKeeper - performUpkeep: corner cases", () => {
               ethers.utils.ParamType.from("string"),
               ethers.utils.ParamType.from("string[]"),
             ],
-            [updateInterval, MARKET, [POOL_CODE]]
+            [updateInterval, MARKET_2, [POOL_CODE]]
           )
         )
       ).to.be.rejectedWith(Error);
