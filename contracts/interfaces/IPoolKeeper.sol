@@ -82,6 +82,13 @@ interface IPoolKeeper {
     string[] pools
   );
 
+  /**
+    @notice Creates a notification of a failed pool update
+    @param poolCode The pool that failed to update
+    @param reason The reason for the error
+   */
+  event PoolUpdateError(string indexed poolCode, string reason);
+
   // #### Functions
   /**
     @notice Updates the address of the oracle wrapper.

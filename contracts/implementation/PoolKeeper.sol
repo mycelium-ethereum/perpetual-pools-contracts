@@ -12,8 +12,6 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 
-import "hardhat/console.sol";
-
 /*
 @title The manager contract for multiple markets and the pools in them
 */
@@ -197,7 +195,6 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
 
     Upkeep memory upkeepData = upkeep[market][updateInterval];
     if (lastExecutionTime[performData] == 0) {
-      console.log("Set exec time", block.number);
       lastExecutionTime[performData] = upkeepData.roundStart;
     }
     int256 latestPrice = IOracleWrapper(oracleWrapper).getPrice(market);
@@ -205,7 +202,6 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
       block.timestamp >= upkeepData.roundStart.add(upkeepData.updateInterval)
     ) {
       // Start new round
-      console.log("new round", block.number);
       int256 newPrice = _average(upkeepData.cumulativePrice, upkeepData.count);
 
       upkeep[market][updateInterval] = Upkeep(
@@ -236,7 +232,6 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
       return;
     } else if (latestPrice != upkeepData.lastSamplePrice) {
       // Add a sample
-      console.log("sample", block.number);
 
       int256 cumulative = upkeepData.cumulativePrice.add(latestPrice);
       uint32 count = uint32(upkeepData.count.add(1));
@@ -253,7 +248,6 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
       emit PriceSample(cumulative, count, upkeepData.updateInterval, market);
     }
     if (lastExecutionTime[performData] < upkeepData.roundStart) {
-      console.log("exec", block.number);
 
       _executePriceChange(
         performData,
@@ -289,8 +283,17 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
       market,
       poolCodes
     );
-    for (uint8 i = 0; i < poolCodes.length; i++) {
-      LeveragedPool(pools[poolCodes[i]]).executePriceChange(oldPrice, newPrice);
+    if (oldPrice > 0) {
+      for (uint8 i = 0; i < poolCodes.length; i++) {
+        try
+          LeveragedPool(pools[poolCodes[i]]).executePriceChange(
+            oldPrice,
+            newPrice
+          )
+        {} catch Error(string memory reason) {
+          emit PoolUpdateError(poolCodes[i], reason);
+        }
+      }
     }
   }
 
