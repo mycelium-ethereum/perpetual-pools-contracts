@@ -169,16 +169,15 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
     }
     // Check trigger state
     Upkeep memory upkeepData = upkeep[market][updateInterval];
-
-    return (
-      _validateUpkeep(
-        market,
-        upkeepData.lastSamplePrice,
-        checkData,
-        updateInterval
-      ),
-      checkData
-    );
+    int256 latestPrice = IOracleWrapper(oracleWrapper).getPrice(market);
+    if (
+      latestPrice != upkeepData.lastSamplePrice ||
+      lastExecutionTime[checkData] < upkeepData.roundStart
+    ) {
+      // Upkeep required for price change or if the round hasn't been executed
+      return (true, checkData);
+    }
+    return (false, checkData);
   }
 
   /**
@@ -198,18 +197,20 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
 
     Upkeep memory upkeepData = upkeep[market][updateInterval];
     if (lastExecutionTime[performData] == 0) {
+      console.log("Set exec time", block.number);
       lastExecutionTime[performData] = upkeepData.roundStart;
     }
+    int256 latestPrice = IOracleWrapper(oracleWrapper).getPrice(market);
     if (
       block.timestamp >= upkeepData.roundStart.add(upkeepData.updateInterval)
     ) {
       // Start new round
       console.log("new round", block.number);
       int256 newPrice = _average(upkeepData.cumulativePrice, upkeepData.count);
-      int256 price = IOracleWrapper(oracleWrapper).getPrice(market);
+
       upkeep[market][updateInterval] = Upkeep(
-        price,
-        price,
+        latestPrice,
+        latestPrice,
         newPrice,
         upkeepData.executionPrice,
         1,
@@ -233,35 +234,23 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
         newPrice
       );
       return;
-    } else if (
-      _validateUpkeep(
-        market,
-        upkeepData.lastSamplePrice,
-        performData,
-        updateInterval
-      )
-    ) {
+    } else if (latestPrice != upkeepData.lastSamplePrice) {
       // Add a sample
       console.log("sample", block.number);
 
-      int256 latestPrice = IOracleWrapper(oracleWrapper).getPrice(market);
       int256 cumulative = upkeepData.cumulativePrice.add(latestPrice);
+      uint32 count = uint32(upkeepData.count.add(1));
       upkeep[market][updateInterval] = Upkeep(
         cumulative,
         latestPrice,
         upkeepData.executionPrice,
         upkeepData.lastExecutionPrice,
-        uint32(upkeepData.count.add(1)),
+        count,
         upkeepData.updateInterval,
         upkeepData.roundStart
       );
 
-      emit PriceSample(
-        cumulative,
-        uint32(upkeepData.count.add(1)),
-        upkeepData.updateInterval,
-        market
-      );
+      emit PriceSample(cumulative, count, upkeepData.updateInterval, market);
     }
     if (lastExecutionTime[performData] < upkeepData.roundStart) {
       console.log("exec", block.number);
@@ -306,31 +295,6 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
   }
 
   /**
-  @notice Checks to see if upkeep is required for the given market
-  @param market The market being upkept.
-  @param lastSamplePrice The last price added to the upkeep sample
-  @param checkData The checkdata used to store the last execution time for the upkeep
-  @param updateInterval The update interval for the pools
-  @return A boolean flag to indicate if upkeep is required or not
-   */
-  function _validateUpkeep(
-    string memory market,
-    int256 lastSamplePrice,
-    bytes memory checkData,
-    uint32 updateInterval
-  ) internal view returns (bool) {
-    int256 latestPrice = IOracleWrapper(oracleWrapper).getPrice(market);
-    if (
-      latestPrice != lastSamplePrice ||
-      lastExecutionTime[checkData] < upkeep[market][updateInterval].roundStart
-    ) {
-      // Upkeep required for price change or if the round hasn't been executed
-      return true;
-    }
-    return false;
-  }
-
-  /**
   @notice Calculates the average price
   @dev Calculates the price to 4 decimal places, round the last decimal place up or down before returning.
   @param cumulative The cumulative price
@@ -358,10 +322,10 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
     internal
     view
     returns (
-      bool valid,
-      uint32 updateInterval,
-      string memory market,
-      string[] memory poolCodes
+      bool,
+      uint32,
+      string memory,
+      string[] memory
     )
   {
     (uint32 updateInterval, string memory market, string[] memory poolGroup) =

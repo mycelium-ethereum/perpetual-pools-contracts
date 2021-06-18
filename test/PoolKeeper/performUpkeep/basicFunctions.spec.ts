@@ -181,11 +181,11 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
       // process a few upkeeps
       await oracleWrapper.increasePrice();
       // await poolKeeper.performUpkeep(callData);
-      console.log("Get old round");
+
       oldRound = await poolKeeper.upkeep(MARKET, updateInterval);
       // delay and upkeep again
       await timeout(updateInterval * 1000 + 1000);
-      console.log("new round");
+
       await poolKeeper.performUpkeep(callData);
       newRound = await poolKeeper.upkeep(MARKET, updateInterval);
     });

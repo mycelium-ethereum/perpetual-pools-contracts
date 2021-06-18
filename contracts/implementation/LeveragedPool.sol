@@ -296,10 +296,6 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     override
     onlyUpdater
   {
-    require(
-      block.timestamp.sub(lastPriceTimestamp) >= updateInterval,
-      "Update too soon"
-    );
     uint112 longFeeAmount =
       uint112(
         PoolSwapLibrary.convertDecimalToUInt(

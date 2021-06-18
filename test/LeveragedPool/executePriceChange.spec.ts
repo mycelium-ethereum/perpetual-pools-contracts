@@ -102,10 +102,6 @@ describe("LeveragedPool - executePriceUpdate", () => {
   });
   describe("Exception cases", () => {
     beforeEach(setupHook);
-    it("should revert if the update is too soon from the previous one", async () => {
-      await pool.executePriceChange(9, 10);
-      await expect(pool.executePriceChange(10, 11)).to.be.rejectedWith(Error);
-    });
     it("should only update the timestamp if the losing pool balance is zero", async () => {
       const oldTimestamp = await pool.lastPriceTimestamp();
       await pool.executePriceChange(lastPrice, 78000000);

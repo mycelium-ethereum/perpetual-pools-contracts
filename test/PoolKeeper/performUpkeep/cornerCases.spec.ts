@@ -15,7 +15,6 @@ import {
 import { MARKET, POOL_CODE_2 } from "../../constants";
 import { BigNumber } from "ethers";
 import { Result } from "ethers/lib/utils";
-import { Console } from "console";
 
 chai.use(chaiAsPromised);
 const { expect } = chai;

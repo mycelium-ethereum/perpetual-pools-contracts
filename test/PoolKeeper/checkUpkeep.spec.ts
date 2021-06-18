@@ -56,6 +56,7 @@ const setupHook = async () => {
   await poolKeeper.deployed();
 
   // Create pool
+  await oracleWrapper.increasePrice();
   await poolKeeper.createMarket(MARKET, oracleWrapper.address);
   await poolKeeper.createPool(
     MARKET,
