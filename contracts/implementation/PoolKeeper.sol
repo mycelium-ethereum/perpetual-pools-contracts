@@ -25,9 +25,9 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
   mapping(string => address) public override pools;
 
   /**
-  @notice Format: Pool Code => Market code. Used to prevent a pool from being updated with pricing from a market it doesn't belong to.
+  @notice Format: Pool Code => update interval => Market code. Used to prevent a pool from being updated with pricing from a market it doesn't belong to.
   */
-  mapping(string => string) public poolMarkets;
+  mapping(string => mapping(uint32 => string)) public poolMarkets;
 
   /**
   @notice Format: market code => updateInterval => Upkeep details
@@ -61,7 +61,7 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
     LeveragedPool _poolBase = new LeveragedPool();
     poolBase = address(_poolBase);
     // Initialise the base contract so no one else abuses it.
-    _poolBase.initialize("BASE_POOL", 5, 2, 0, 0, address(this), address(this));
+    _poolBase.initialize("BASE_POOL", 2, 0, 0, address(this), address(this));
   }
 
   function updateOracleWrapper(address oracle) external override onlyAdmin {
@@ -133,10 +133,9 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
     emit CreatePool(address(pool), firstPrice, _updateInterval, _marketCode);
 
     pools[_poolCode] = address(pool);
-    poolMarkets[_poolCode] = _marketCode;
+    poolMarkets[_poolCode][_updateInterval] = _marketCode;
     pool.initialize(
       _poolCode,
-      _updateInterval,
       _frontRunningInterval,
       _fee,
       _leverageAmount,
@@ -248,7 +247,6 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
       emit PriceSample(cumulative, count, upkeepData.updateInterval, market);
     }
     if (lastExecutionTime[performData] < upkeepData.roundStart) {
-
       _executePriceChange(
         performData,
         market,
@@ -340,8 +338,9 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
 
     for (uint8 i = 0; i < poolGroup.length; i++) {
       if (
-        keccak256(abi.encodePacked(poolMarkets[poolGroup[i]])) !=
-        keccak256(abi.encodePacked(market))
+        keccak256(
+          abi.encodePacked(poolMarkets[poolGroup[i]][updateInterval])
+        ) != keccak256(abi.encodePacked(market))
       ) {
         return (false, updateInterval, market, poolGroup);
       }

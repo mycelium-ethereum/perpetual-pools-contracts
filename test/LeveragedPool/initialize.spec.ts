@@ -76,7 +76,7 @@ describe("LeveragedPool - initialize", () => {
       await (
         await pool.initialize(
           POOL_CODE,
-          updateInterval,
+
           frontRunningInterval,
           fee,
           leverage,
@@ -105,8 +105,6 @@ describe("LeveragedPool - initialize", () => {
       receipt = await (
         await leveragedPool.initialize(
           POOL_CODE,
-
-          updateInterval,
           frontRunningInterval,
           fee,
           leverage,
@@ -126,10 +124,6 @@ describe("LeveragedPool - initialize", () => {
 
     it("should set the fee address", async () => {
       expect(await leveragedPool.feeAddress()).to.eq(feeAddress);
-    });
-
-    it("should set the update interval", async () => {
-      expect(await leveragedPool.updateInterval()).to.eq(updateInterval);
     });
 
     it("should set the front running interval", async () => {
@@ -238,7 +232,6 @@ describe("LeveragedPool - initialize", () => {
       await (
         await pool.initialize(
           POOL_CODE,
-          updateInterval,
           frontRunningInterval,
           fee,
           leverage,
@@ -270,7 +263,7 @@ describe("LeveragedPool - initialize", () => {
     it("should revert if an attempt is made to run it a second time", async () => {
       await leveragedPool.initialize(
         POOL_CODE,
-        updateInterval,
+
         frontRunningInterval,
         fee,
         leverage,
@@ -280,7 +273,7 @@ describe("LeveragedPool - initialize", () => {
       await expect(
         leveragedPool.initialize(
           POOL_CODE,
-          updateInterval,
+
           frontRunningInterval,
           fee,
           leverage,
@@ -293,7 +286,7 @@ describe("LeveragedPool - initialize", () => {
       await expect(
         leveragedPool.initialize(
           POOL_CODE,
-          updateInterval,
+
           frontRunningInterval,
           fee,
           leverage,
@@ -306,24 +299,11 @@ describe("LeveragedPool - initialize", () => {
       await expect(
         leveragedPool.initialize(
           POOL_CODE,
-          updateInterval,
+
           frontRunningInterval,
           fee,
           leverage,
           ethers.constants.AddressZero,
-          quoteToken
-        )
-      ).to.rejectedWith(Error);
-    });
-    it("should revert if the front running interval is larger than the update interval", async () => {
-      await expect(
-        leveragedPool.initialize(
-          POOL_CODE,
-          1,
-          2,
-          fee,
-          leverage,
-          feeAddress,
           quoteToken
         )
       ).to.rejectedWith(Error);
@@ -342,7 +322,6 @@ describe("LeveragedPool - initialize", () => {
       await secondPool.initialize(
         POOL_CODE_2,
 
-        updateInterval,
         frontRunningInterval,
         fee,
         leverage,
@@ -352,7 +331,6 @@ describe("LeveragedPool - initialize", () => {
       await leveragedPool.initialize(
         POOL_CODE,
 
-        updateInterval,
         frontRunningInterval,
         fee,
         leverage,

@@ -28,7 +28,6 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
   uint112 public shortBalance;
   uint112 public longBalance;
 
-  uint32 public updateInterval;
   uint32 public frontRunningInterval;
 
   bytes16 public fee;
@@ -62,7 +61,6 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
 
   function initialize(
     string memory _poolCode,
-    uint32 _updateInterval,
     uint32 _frontRunningInterval,
     bytes16 _fee,
     uint16 _leverageAmount,
@@ -71,10 +69,6 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
   ) external override initializer() {
     require(_feeAddress != address(0), "Fee address cannot be 0 address");
     require(_quoteToken != address(0), "Quote token cannot be 0 address");
-    require(
-      _updateInterval > _frontRunningInterval,
-      "Update interval < FR interval"
-    );
     // Setup roles
     _setRoleAdmin(UPDATER, ADMIN);
     _setRoleAdmin(FEE_HOLDER, ADMIN);
@@ -84,7 +78,6 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
 
     // Setup variables
     quoteToken = _quoteToken;
-    updateInterval = _updateInterval;
     frontRunningInterval = _frontRunningInterval;
     fee = _fee;
     leverageAmount = PoolSwapLibrary.convertUIntToDecimal(_leverageAmount);

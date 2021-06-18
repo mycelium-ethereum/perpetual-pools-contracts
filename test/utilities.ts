@@ -103,7 +103,6 @@ export const deployPoolAndTokenContracts = async (
   const poolReceipt = await (
     await pool.initialize(
       POOL_CODE,
-      updateInterval,
       frontRunningInterval,
       fee,
       leverage,

@@ -89,7 +89,6 @@ interface ILeveragedPool {
  */
   function initialize(
     string memory _poolCode,
-    uint32 _updateInterval,
     uint32 _frontRunningInterval,
     bytes16 _fee,
     uint16 _leverageAmount,
