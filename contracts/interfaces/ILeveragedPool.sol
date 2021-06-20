@@ -124,7 +124,8 @@ interface ILeveragedPool {
     @notice Processes the effect of a price change. The effect of a price change on a pool is left to the implementer. The pool stores the last price, and is given the latest price on update. 
     @dev This function should be called by the Pool Keeper.
     @dev This function should be secured with some form of access control
-    @param newPrice The latest price from the oracle. 
+    @param oldPrice The previously executed price
+    @param newPrice The price for the latest interval. 
     */
   function executePriceChange(int256 oldPrice, int256 newPrice) external;
 

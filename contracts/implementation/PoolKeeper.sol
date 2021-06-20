@@ -264,6 +264,8 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
   @param market The market the pools belong to 
   @param updateInterval The update interval of the pools
   @param poolCodes The pools to update
+  @param oldPrice The previously executed price
+  @param newPrice The price for the current interval
    */
   function _executePriceChange(
     bytes memory performData,
