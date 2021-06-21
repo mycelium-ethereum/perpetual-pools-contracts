@@ -11,7 +11,15 @@ interface IOracleWrapper {
     @notice Deploys a LeveragedPool contract
     @return The address of the new pool
    */
-  function deployPool(address owner) external returns (address);
+  function deployPool(
+    address owner,
+    string memory _poolCode,
+    uint32 _frontRunningInterval,
+    bytes16 _fee,
+    uint16 _leverageAmount,
+    address _feeAddress,
+    address _quoteToken
+  ) external returns (address);
 
   /**
     @notice Deploys an ERC20 token for use as a pair token
