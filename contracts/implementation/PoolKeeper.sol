@@ -34,10 +34,10 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
    */
   mapping(string => mapping(uint256 => Upkeep)) public upkeep;
   /**
-  @notice Format: Upkeep identifier (checkData) => timestamp of last price execution
+  @notice Format: Pool code => timestamp of last price execution
   @dev Used to allow multiple upkeep registrations to use the same market/update interval price data.
    */
-  mapping(bytes => uint32) public lastExecutionTime;
+  mapping(string => uint32) public lastExecutionTime;
 
   address public oracleWrapper;
   address public immutable override poolBase;
@@ -159,20 +159,27 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
     returns (bool upkeepNeeded, bytes memory performData)
   {
     // Validate checkData
-    (bool valid, uint32 updateInterval, string memory market, ) =
-      _checkInputData(checkData);
+    (
+      bool valid,
+      uint32 updateInterval,
+      string memory market,
+      string[] memory poolCodes
+    ) = _checkInputData(checkData);
     if (!valid) {
       return (false, new bytes(0));
     }
     // Check trigger state
     Upkeep memory upkeepData = upkeep[market][updateInterval];
     int256 latestPrice = IOracleWrapper(oracleWrapper).getPrice(market);
-    if (
-      latestPrice != upkeepData.lastSamplePrice ||
-      lastExecutionTime[checkData] < upkeepData.roundStart
-    ) {
+    if (latestPrice != upkeepData.lastSamplePrice) {
       // Upkeep required for price change or if the round hasn't been executed
       return (true, checkData);
+    }
+    for (uint256 i = 0; i < poolCodes.length; i++) {
+      // At least one pool needs updating
+      if (lastExecutionTime[poolCodes[i]] < upkeepData.roundStart) {
+        return (true, checkData);
+      }
     }
     return (false, checkData);
   }
@@ -193,9 +200,7 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
     }
 
     Upkeep memory upkeepData = upkeep[market][updateInterval];
-    if (lastExecutionTime[performData] == 0) {
-      lastExecutionTime[performData] = upkeepData.roundStart;
-    }
+
     int256 latestPrice = IOracleWrapper(oracleWrapper).getPrice(market);
     if (
       block.timestamp >= upkeepData.roundStart.add(upkeepData.updateInterval)
@@ -221,7 +226,7 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
       );
 
       _executePriceChange(
-        performData,
+        upkeepData.roundStart,
         market,
         upkeepData.updateInterval,
         poolCodes,
@@ -246,9 +251,9 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
 
       emit PriceSample(cumulative, count, upkeepData.updateInterval, market);
     }
-    if (lastExecutionTime[performData] < upkeepData.roundStart) {
+    if (lastExecutionTime[poolCodes[0]] < upkeepData.roundStart) {
       _executePriceChange(
-        performData,
+        upkeepData.roundStart,
         market,
         upkeepData.updateInterval,
         poolCodes,
@@ -260,7 +265,7 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
 
   /**
   @notice Executes a price change
-  @param performData The id used to update the last execution time of the upkeep
+  @param roundStart The start time of the round
   @param market The market the pools belong to 
   @param updateInterval The update interval of the pools
   @param poolCodes The pools to update
@@ -268,14 +273,13 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
   @param newPrice The price for the current interval
    */
   function _executePriceChange(
-    bytes memory performData,
+    uint32 roundStart,
     string memory market,
     uint32 updateInterval,
     string[] memory poolCodes,
     int256 oldPrice,
     int256 newPrice
   ) internal {
-    lastExecutionTime[performData] = uint32(block.timestamp);
     emit ExecutePriceChange(
       oldPrice,
       newPrice,
@@ -285,13 +289,18 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
     );
     if (oldPrice > 0) {
       for (uint8 i = 0; i < poolCodes.length; i++) {
-        try
-          LeveragedPool(pools[poolCodes[i]]).executePriceChange(
-            oldPrice,
-            newPrice
-          )
-        {} catch Error(string memory reason) {
-          emit PoolUpdateError(poolCodes[i], reason);
+        if (lastExecutionTime[poolCodes[i]] < roundStart) {
+          lastExecutionTime[poolCodes[i]] = uint32(block.timestamp);
+          try
+            LeveragedPool(pools[poolCodes[i]]).executePriceChange(
+              oldPrice,
+              newPrice
+            )
+          {} catch Error(string memory reason) {
+            emit PoolUpdateError(poolCodes[i], reason);
+          }
+        } else {
+          emit PoolUpdateError(poolCodes[i], "Update too soon");
         }
       }
     }

@@ -169,7 +169,7 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
       expect(event?.pools[1]).to.eq(POOL_CODE_2);
     });
     it("should set last execution time", async () => {
-      expect(await poolKeeper.lastExecutionTime(callData)).to.be.greaterThan(
+      expect(await poolKeeper.lastExecutionTime(POOL_CODE)).to.be.greaterThan(
         lastTime
       );
     });
