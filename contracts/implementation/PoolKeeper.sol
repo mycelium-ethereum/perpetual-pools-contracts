@@ -296,8 +296,6 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
           {} catch Error(string memory reason) {
             emit PoolUpdateError(poolCodes[i], reason);
           }
-        } else {
-          emit PoolUpdateError(poolCodes[i], "Update too soon");
         }
       }
     }
