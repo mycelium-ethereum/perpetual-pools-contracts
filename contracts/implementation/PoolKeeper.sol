@@ -226,7 +226,7 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
       );
 
       _executePriceChange(
-        upkeepData.roundStart,
+        uint32(block.timestamp),
         market,
         upkeepData.updateInterval,
         poolCodes,
@@ -236,7 +236,6 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
       return;
     } else if (latestPrice != upkeepData.lastSamplePrice) {
       // Add a sample
-
       int256 cumulative = upkeepData.cumulativePrice.add(latestPrice);
       uint32 count = uint32(upkeepData.count.add(1));
       upkeep[market][updateInterval] = Upkeep(
@@ -251,16 +250,14 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
 
       emit PriceSample(cumulative, count, upkeepData.updateInterval, market);
     }
-    if (lastExecutionTime[poolCodes[0]] < upkeepData.roundStart) {
-      _executePriceChange(
-        upkeepData.roundStart,
-        market,
-        upkeepData.updateInterval,
-        poolCodes,
-        upkeepData.lastExecutionPrice,
-        upkeepData.executionPrice
-      );
-    }
+    _executePriceChange(
+      upkeepData.roundStart,
+      market,
+      upkeepData.updateInterval,
+      poolCodes,
+      upkeepData.lastExecutionPrice,
+      upkeepData.executionPrice
+    );
   }
 
   /**
@@ -280,17 +277,17 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
     int256 oldPrice,
     int256 newPrice
   ) internal {
-    emit ExecutePriceChange(
-      oldPrice,
-      newPrice,
-      updateInterval,
-      market,
-      poolCodes
-    );
     if (oldPrice > 0) {
       for (uint8 i = 0; i < poolCodes.length; i++) {
         if (lastExecutionTime[poolCodes[i]] < roundStart) {
           lastExecutionTime[poolCodes[i]] = uint32(block.timestamp);
+          emit ExecutePriceChange(
+            oldPrice,
+            newPrice,
+            updateInterval,
+            market,
+            poolCodes[i]
+          );
           try
             LeveragedPool(pools[poolCodes[i]]).executePriceChange(
               oldPrice,

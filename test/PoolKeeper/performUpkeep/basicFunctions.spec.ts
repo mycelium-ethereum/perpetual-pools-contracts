@@ -165,8 +165,7 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
       expect(event?.oldPrice).to.eq(oldRound.lastExecutionPrice);
       expect(event?.newPrice).to.eq(oldRound.executionPrice);
       expect(event?.market).to.eq(MARKET);
-      expect(event?.pools[0]).to.eq(POOL_CODE);
-      expect(event?.pools[1]).to.eq(POOL_CODE_2);
+      expect(event?.pool).to.eq(POOL_CODE);
     });
     it("should set last execution time", async () => {
       expect(await poolKeeper.lastExecutionTime(POOL_CODE)).to.be.greaterThan(

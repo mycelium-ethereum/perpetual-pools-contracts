@@ -72,14 +72,14 @@ interface IPoolKeeper {
     @param newPrice The average price for the round that's just ended
     @param updateInterval The length of the round
     @param market The market that's being updated
-    @param pools The pools that are being updated
+    @param pool The pool that is being updated
    */
   event ExecutePriceChange(
     int256 indexed oldPrice,
     int256 indexed newPrice,
     uint32 indexed updateInterval,
     string market,
-    string[] pools
+    string pool
   );
 
   /**
