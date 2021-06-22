@@ -100,7 +100,7 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
     );
     require(
       _updateInterval > _frontRunningInterval,
-      "Update interval < FR interval"
+      "Update interval <= FR interval"
     );
 
     LeveragedPool pool =
