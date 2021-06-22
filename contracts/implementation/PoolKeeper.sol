@@ -11,6 +11,7 @@ import "@openzeppelin/contracts/math/SignedSafeMath.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
+import "abdk-libraries-solidity/ABDKMathQuad.sol";
 
 /*
 @title The manager contract for multiple markets and the pools in them
@@ -113,11 +114,18 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
     int256 firstPrice = oracle.getPrice(_marketCode);
     Upkeep memory upkeepData = upkeep[_marketCode][_updateInterval];
     if (upkeepData.lastExecutionPrice == 0) {
+      int256 startingPrice =
+        ABDKMathQuad.toInt(
+          ABDKMathQuad.mul(
+            ABDKMathQuad.fromInt(firstPrice),
+            ABDKMathQuad.fromUInt(1 ether)
+          )
+        );
       upkeep[_marketCode][_updateInterval] = Upkeep(
         firstPrice,
         firstPrice,
-        firstPrice.mul(1000),
-        firstPrice.mul(1000),
+        startingPrice,
+        startingPrice,
         1,
         _updateInterval,
         uint32(block.timestamp)
@@ -314,7 +322,16 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
     returns (int256)
   {
     require(count > 0, "Count < 1");
-    return cumulative.mul(10000).div(count).add(5).div(10);
+    return
+      ABDKMathQuad.toInt(
+        ABDKMathQuad.div(
+          ABDKMathQuad.mul(
+            ABDKMathQuad.fromInt(cumulative),
+            ABDKMathQuad.fromUInt(1 ether)
+          ),
+          ABDKMathQuad.fromInt(count)
+        )
+      );
   }
 
   /**
