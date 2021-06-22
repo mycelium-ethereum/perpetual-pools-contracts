@@ -61,8 +61,6 @@ export const getEventArgs = (
  */
 export const deployPoolAndTokenContracts = async (
   POOL_CODE: string,
-  firstPrice: number,
-  updateInterval: number,
   frontRunningInterval: number,
   fee: BytesLike,
   leverage: number,

@@ -3,7 +3,6 @@ import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 import { generateRandomAddress, getEventArgs, timeout } from "../../utilities";
 
-import { MARKET_2, POOL_CODE } from "../../constants";
 import {
   PoolKeeper,
   PoolKeeper__factory,
@@ -12,7 +11,7 @@ import {
   TestOracleWrapper__factory,
   TestToken__factory,
 } from "../../../typechain";
-import { MARKET, POOL_CODE_2 } from "../../constants";
+import { MARKET, POOL_CODE_2, MARKET_2, POOL_CODE } from "../../constants";
 import { BigNumber } from "ethers";
 import { Result } from "ethers/lib/utils";
 

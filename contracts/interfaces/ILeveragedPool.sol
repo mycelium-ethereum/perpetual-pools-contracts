@@ -88,6 +88,9 @@ interface ILeveragedPool {
   @param _quoteToken The digital asset that the pool accepts
  */
   function initialize(
+    address _updater,
+    address _longToken,
+    address _shortToken,
     string memory _poolCode,
     uint32 _frontRunningInterval,
     bytes16 _fee,
