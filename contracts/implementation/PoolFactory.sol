@@ -7,6 +7,8 @@ import "./LeveragedPool.sol";
 import "./PoolToken.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 
+import "hardhat/console.sol";
+
 /*
 @title The oracle management contract
 */
@@ -72,6 +74,8 @@ contract PoolFactory is IPoolFactory {
       _feeAddress,
       _quoteToken
     );
+    emit DeployPool(address(pool), _poolCode);
+
     return address(pool);
   }
 

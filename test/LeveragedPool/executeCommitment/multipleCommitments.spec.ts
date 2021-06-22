@@ -44,8 +44,7 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
     beforeEach(async () => {
       const result = await deployPoolAndTokenContracts(
         POOL_CODE,
-        lastPrice,
-        updateInterval,
+
         frontRunningInterval,
         fee,
         leverage,
@@ -108,8 +107,7 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
     beforeEach(async () => {
       const result = await deployPoolAndTokenContracts(
         POOL_CODE,
-        lastPrice,
-        updateInterval,
+
         frontRunningInterval,
         fee,
         leverage,

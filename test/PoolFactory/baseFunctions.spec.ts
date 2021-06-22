@@ -1,8 +1,9 @@
 import { ethers } from "hardhat";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
+import PoolToken from "../../artifacts/contracts/implementation/PoolToken.sol/PoolToken.json";
+import LeveragedPool from "../../artifacts/contracts/implementation/LeveragedPool.sol/LeveragedPool.json";
 import {
-  LeveragedPool,
   PoolFactory,
   PoolFactory__factory,
   PoolSwapLibrary__factory,
@@ -38,10 +39,20 @@ describe("PoolFactory - Basic functions", () => {
     );
   });
   it("should initialize the base pool", async () => {
-    const pool = new ethers.Contract(await factory.poolBase(), , await ethers.getSigner())
-    await expect().to.be.rejectedWith(Error);
+    const pool = new ethers.Contract(
+      await factory.poolBase(),
+      PoolToken.abi,
+      (await ethers.getSigners())[0]
+    );
+
+    await expect(pool.initialize()).to.be.rejectedWith(Error);
   });
   it("should initialize the base token", async () => {
-    await expect().to.be.rejectedWith(Error);
+    const pair = new ethers.Contract(
+      await factory.pairTokenBase(),
+      LeveragedPool.abi,
+      (await ethers.getSigners())[0]
+    );
+    await expect(pair.initialize()).to.be.rejectedWith(Error);
   });
 });

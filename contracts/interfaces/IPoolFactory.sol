@@ -6,10 +6,9 @@ pragma abicoder v2;
 @title The contract factory for the keeper and pool contracts. Utilizes minimal clones to keep gas costs low.
 */
 interface IPoolFactory {
-  //   // #### Events
+  // #### Events
 
-  //   event DeployPool(address indexed pool, string poolCode);
-  //   event DeployPairToken(address indexed pair, string name);
+  event DeployPool(address indexed pool, string poolCode);
 
   // #### Functions
   /**
