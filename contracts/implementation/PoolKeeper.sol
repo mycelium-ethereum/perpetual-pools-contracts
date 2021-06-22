@@ -42,6 +42,7 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
 
   address public oracleWrapper;
   address public immutable override poolBase;
+  bytes16 constant fixedPoint = 0x403abc16d674ec800000000000000000; // 1 ether
 
   // #### Roles
   /**
@@ -116,10 +117,7 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
     if (upkeepData.lastExecutionPrice == 0) {
       int256 startingPrice =
         ABDKMathQuad.toInt(
-          ABDKMathQuad.mul(
-            ABDKMathQuad.fromInt(firstPrice),
-            ABDKMathQuad.fromUInt(1 ether)
-          )
+          ABDKMathQuad.mul(ABDKMathQuad.fromInt(firstPrice), fixedPoint)
         );
       upkeep[_marketCode][_updateInterval] = Upkeep(
         firstPrice,
@@ -203,6 +201,7 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
       string memory market,
       string[] memory poolCodes
     ) = _checkInputData(performData);
+
     if (!valid) {
       revert("Input data is invalid");
     }
@@ -325,10 +324,7 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
     return
       ABDKMathQuad.toInt(
         ABDKMathQuad.div(
-          ABDKMathQuad.mul(
-            ABDKMathQuad.fromInt(cumulative),
-            ABDKMathQuad.fromUInt(1 ether)
-          ),
+          ABDKMathQuad.mul(ABDKMathQuad.fromInt(cumulative), fixedPoint),
           ABDKMathQuad.fromInt(count)
         )
       );
