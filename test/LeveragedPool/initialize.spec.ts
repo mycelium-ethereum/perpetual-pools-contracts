@@ -65,10 +65,16 @@ describe("LeveragedPool - initialize", () => {
         "TestToken",
         signers[0]
       )) as TestToken__factory;
-      short = await poolTokenFactory.deploy("Short token", "SHORT");
+      short = await poolTokenFactory.deploy(
+        POOL_CODE.concat("-SHORT"),
+        "S-".concat(POOL_CODE)
+      );
       await short.deployed();
 
-      long = await poolTokenFactory.deploy("Long", "Long");
+      long = await poolTokenFactory.deploy(
+        POOL_CODE.concat("-LONG"),
+        "L-".concat(POOL_CODE)
+      );
       await long.deployed();
       const libraryFactory = (await ethers.getContractFactory(
         "PoolSwapLibrary",
