@@ -27,7 +27,7 @@ const config: HardhatUserConfig = {
   },
   networks: {
     hardhat: {
-      gas: 12000000,
+      gas: 15000000000,
       blockGasLimit: 0x1fffffffffffff,
       allowUnlimitedContractSize: true,
       forking: {

@@ -5,6 +5,7 @@ import {
   PoolKeeper__factory,
   PoolKeeper,
   PoolSwapLibrary__factory,
+  PoolFactory__factory,
 } from "../../typechain";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { OPERATOR_ROLE, ADMIN_ROLE } from "../constants";
@@ -29,9 +30,13 @@ describe("PoolKeeper - updateOracleWrapper", () => {
     await library.deployed();
     const poolKeeperFactory = (await ethers.getContractFactory("PoolKeeper", {
       signer: signers[0],
-      libraries: { PoolSwapLibrary: library.address },
     })) as PoolKeeper__factory;
-    poolKeeper = await poolKeeperFactory.deploy(oracleWrapper);
+    const PoolFactory = (await ethers.getContractFactory("PoolFactory", {
+      signer: signers[0],
+      libraries: { PoolSwapLibrary: library.address },
+    })) as PoolFactory__factory;
+    const factory = await (await PoolFactory.deploy()).deployed();
+    poolKeeper = await poolKeeperFactory.deploy(oracleWrapper, factory.address);
     await poolKeeper.deployed();
 
     // Sanity check the deployment

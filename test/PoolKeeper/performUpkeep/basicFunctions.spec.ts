@@ -5,6 +5,7 @@ import { generateRandomAddress, getEventArgs, timeout } from "../../utilities";
 
 import { MARKET_2, POOL_CODE } from "../../constants";
 import {
+  PoolFactory__factory,
   PoolKeeper,
   PoolKeeper__factory,
   PoolSwapLibrary__factory,
@@ -55,9 +56,16 @@ const setupHook = async () => {
   await library.deployed();
   const poolKeeperFactory = (await ethers.getContractFactory("PoolKeeper", {
     signer: signers[0],
-    libraries: { PoolSwapLibrary: library.address },
   })) as PoolKeeper__factory;
-  poolKeeper = await poolKeeperFactory.deploy(oracleWrapper.address);
+  const PoolFactory = (await ethers.getContractFactory("PoolFactory", {
+    signer: signers[0],
+    libraries: { PoolSwapLibrary: library.address },
+  })) as PoolFactory__factory;
+  const factory = await (await PoolFactory.deploy()).deployed();
+  poolKeeper = await poolKeeperFactory.deploy(
+    oracleWrapper.address,
+    factory.address
+  );
   await poolKeeper.deployed();
 
   // Create pool
