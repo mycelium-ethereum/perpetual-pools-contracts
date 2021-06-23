@@ -7,8 +7,6 @@ import "./LeveragedPool.sol";
 import "./PoolToken.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 
-import "hardhat/console.sol";
-
 /*
 @title The oracle management contract
 */
