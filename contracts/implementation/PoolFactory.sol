@@ -55,6 +55,7 @@ contract PoolFactory is IPoolFactory {
           keccak256(abi.encode(_poolCode))
         )
       );
+    emit DeployPool(address(pool), _poolCode);
     pool.initialize(
       _owner,
       deployPairToken(
@@ -74,8 +75,6 @@ contract PoolFactory is IPoolFactory {
       _feeAddress,
       _quoteToken
     );
-    emit DeployPool(address(pool), _poolCode);
-
     return address(pool);
   }
 

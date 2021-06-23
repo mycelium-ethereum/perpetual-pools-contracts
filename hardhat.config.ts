@@ -54,6 +54,7 @@ const config: HardhatUserConfig = {
   },
   gasReporter: {
     currency: "AUD",
+    coinmarketcap: process.env.COINMARKET_KEY,
   },
 };
 

@@ -11,6 +11,7 @@ import "@chainlink/contracts/src/v0.7/interfaces/UpkeepInterface.sol";
 import "@openzeppelin/contracts/math/SignedSafeMath.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/proxy/Clones.sol";
 
 /*
 @title The manager contract for multiple markets and the pools in them
@@ -120,6 +121,16 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
     }
 
     poolMarkets[_poolCode][_updateInterval] = _marketCode;
+    emit CreatePool(
+      Clones.predictDeterministicAddress(
+        address(factory.poolBase()),
+        keccak256(abi.encode(_poolCode)),
+        address(factory)
+      ),
+      firstPrice,
+      _updateInterval,
+      _marketCode
+    );
     pools[_poolCode] = factory.deployPool(
       address(this),
       _poolCode,
@@ -129,7 +140,6 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
       _feeAddress,
       _quoteToken
     );
-    emit CreatePool(pools[_poolCode], firstPrice, _updateInterval, _marketCode);
   }
 
   // Keeper network
