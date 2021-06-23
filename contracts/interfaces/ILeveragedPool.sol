@@ -40,7 +40,7 @@ interface ILeveragedPool {
     @param commitType The commitment type
    */
   event CreateCommit(
-    uint40 indexed commitID,
+    uint128 indexed commitID,
     uint128 indexed amount,
     bytes16 indexed maxImbalance,
     CommitType commitType
@@ -53,7 +53,7 @@ interface ILeveragedPool {
     @param commitType The type of commit that was removed
    */
   event RemoveCommit(
-    uint40 indexed commitID,
+    uint128 indexed commitID,
     uint128 indexed amount,
     CommitType indexed commitType
   );
@@ -62,7 +62,7 @@ interface ILeveragedPool {
   @notice Creates a notification that a commit has been executed
   @param commitID The commit that was executed
  */
-  event ExecuteCommit(uint40 commitID);
+  event ExecuteCommit(uint128 commitID);
 
   /**
   @notice Creates a notification of a price execution
@@ -115,13 +115,13 @@ interface ILeveragedPool {
     @notice Withdraws a user's existing commit. This cannot be used to remove another user's commits. The sender must own the commits they are withdrawing
     @param commitID the ID of the commit to be withdrawn
      */
-  function uncommit(uint40 commitID) external;
+  function uncommit(uint128 commitID) external;
 
   /**
     @notice Executes one or more commitments and effects the changes on the live and shadow pools respectively. This can be used to execute on any valid commits in the commit pool
     @param _commitIDs an array of commits to execute. These do not have to all belong to the sender, nor do they need to be in a specific order.
      */
-  function executeCommitment(uint40[] memory _commitIDs) external;
+  function executeCommitment(uint128[] memory _commitIDs) external;
 
   /**
     @notice Processes the effect of a price change. The effect of a price change on a pool is left to the implementer. The pool stores the last price, and is given the latest price on update. 

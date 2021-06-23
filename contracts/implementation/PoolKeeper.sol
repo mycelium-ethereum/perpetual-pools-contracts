@@ -280,7 +280,7 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
   @param newPrice The price for the current interval
    */
   function _executePriceChange(
-    uint32 roundStart,
+    uint40 roundStart,
     string memory market,
     uint32 updateInterval,
     string[] memory poolCodes,

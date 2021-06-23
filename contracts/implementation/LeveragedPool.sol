@@ -8,8 +8,10 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/proxy/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import "../vendors/SafeMath_112.sol";
 import "../vendors/SafeMath_40.sol";
+import "../vendors/SafeMath_112.sol";
+import "../vendors/SafeMath_128.sol";
+
 import "./PoolSwapLibrary.sol";
 
 /*
@@ -18,6 +20,8 @@ import "./PoolSwapLibrary.sol";
 contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
   using SafeMath_40 for uint40;
   using SafeMath_112 for uint112;
+  using SafeMath_128 for uint128;
+
   // #### Globals
   string public poolCode;
 
@@ -26,18 +30,18 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
   uint112 public longBalance;
   uint32 public frontRunningInterval;
 
+  bytes16 public fee;
+  bytes16 public leverageAmount;
+
   // Index 0 is the LONG token, index 1 is the SHORT token
   address[2] public tokens;
 
-  bytes16 public fee;
-  bytes16 public leverageAmount;
   address public feeAddress;
   address public quoteToken;
-
   uint40 public lastPriceTimestamp;
 
-  uint40 public commitIDCounter;
-  mapping(uint40 => Commit) public commits;
+  uint128 public commitIDCounter;
+  mapping(uint128 => Commit) public commits;
 
   mapping(CommitType => uint112) public shadowPools;
 
@@ -125,7 +129,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     }
   }
 
-  function uncommit(uint40 _commitID) external override {
+  function uncommit(uint128 _commitID) external override {
     Commit memory _commit = commits[_commitID];
     require(msg.sender == _commit.owner, "Unauthorized");
     require(_commit.owner != address(0), "Invalid commit");
@@ -185,8 +189,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
           PoolSwapLibrary.getRatio(
             longBalance,
             uint112(
-              PoolToken(tokens[0])
-                .totalSupply()
+              uint112(PoolToken(tokens[0]).totalSupply())
                 .add(shadowPools[CommitType.LongBurn])
                 .add(_commit.amount)
             )
@@ -264,9 +267,9 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     );
   }
 
-  function executeCommitment(uint40[] memory _commitIDs) external override {
+  function executeCommitment(uint128[] memory _commitIDs) external override {
     Commit memory _commit;
-    for (uint256 i = 0; i < _commitIDs.length; i++) {
+    for (uint128 i = 0; i < _commitIDs.length; i++) {
       _commit = commits[_commitIDs[i]];
       delete commits[_commitIDs[i]];
       emit ExecuteCommit(_commitIDs[i]);
