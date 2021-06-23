@@ -7,38 +7,37 @@ import "./PoolToken.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/proxy/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
+
 import "../vendors/SafeMath_112.sol";
+import "../vendors/SafeMath_40.sol";
 import "./PoolSwapLibrary.sol";
 
 /*
 @title The pool controller contract
 */
 contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
-  using SafeMath for uint256;
+  using SafeMath_40 for uint40;
   using SafeMath_112 for uint112;
   // #### Globals
-  // TODO: Rearrange to tight pack these for gas savings
   string public poolCode;
-
-  // Index 0 is the LONG token, index 1 is the SHORT token
-  address[2] public tokens;
 
   // Each balance is the amount of quote tokens in the pair
   uint112 public shortBalance;
   uint112 public longBalance;
-
   uint32 public frontRunningInterval;
+
+  // Index 0 is the LONG token, index 1 is the SHORT token
+  address[2] public tokens;
 
   bytes16 public fee;
   bytes16 public leverageAmount;
   address public feeAddress;
   address public quoteToken;
 
-  uint256 public lastPriceTimestamp;
+  uint40 public lastPriceTimestamp;
 
-  uint256 public commitIDCounter;
-  mapping(uint256 => Commit) public commits;
+  uint40 public commitIDCounter;
+  mapping(uint40 => Commit) public commits;
 
   mapping(CommitType => uint112) public shadowPools;
 
@@ -85,7 +84,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     fee = _fee;
     leverageAmount = PoolSwapLibrary.convertUIntToDecimal(_leverageAmount);
     feeAddress = _feeAddress;
-    lastPriceTimestamp = block.timestamp;
+    lastPriceTimestamp = uint40(block.timestamp);
     poolCode = _poolCode;
     tokens[0] = _longToken;
     tokens[1] = _shortToken;
@@ -105,7 +104,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
       maxImbalance: maxImbalance,
       amount: amount,
       owner: msg.sender,
-      created: block.timestamp
+      created: uint40(block.timestamp)
     });
 
     shadowPools[commitType] = shadowPools[commitType].add(amount);
@@ -126,7 +125,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     }
   }
 
-  function uncommit(uint256 _commitID) external override {
+  function uncommit(uint40 _commitID) external override {
     Commit memory _commit = commits[_commitID];
     require(msg.sender == _commit.owner, "Unauthorized");
     require(_commit.owner != address(0), "Invalid commit");
@@ -265,7 +264,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     );
   }
 
-  function executeCommitment(uint256[] memory _commitIDs) external override {
+  function executeCommitment(uint40[] memory _commitIDs) external override {
     Commit memory _commit;
     for (uint256 i = 0; i < _commitIDs.length; i++) {
       _commit = commits[_commitIDs[i]];
@@ -323,14 +322,16 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
       longBalance = longBalance.sub(lossAmount);
       emit PriceChange(oldPrice, newPrice, lossAmount);
     }
-    lastPriceTimestamp = block.timestamp;
+    lastPriceTimestamp = uint40(block.timestamp);
     require(
       IERC20(quoteToken).transfer(feeAddress, totalFeeAmount),
       "Fee transfer failed"
     );
   }
 
-  function updateFeeAddress(address account) external override onlyFeeHolder {}
+  function updateFeeAddress(address account) external override onlyFeeHolder {
+    feeAddress = account;
+  }
 
   // #### Modifiers
   /**

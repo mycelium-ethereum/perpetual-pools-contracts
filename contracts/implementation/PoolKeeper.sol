@@ -6,10 +6,11 @@ import "../interfaces/IPoolKeeper.sol";
 import "../interfaces/IOracleWrapper.sol";
 import "../implementation/LeveragedPool.sol";
 import "../implementation/PoolFactory.sol";
+import "../vendors/SafeMath_40.sol";
+import "../vendors/SafeMath_32.sol";
 
 import "@chainlink/contracts/src/v0.7/interfaces/UpkeepInterface.sol";
 import "@openzeppelin/contracts/math/SignedSafeMath.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "abdk-libraries-solidity/ABDKMathQuad.sol";
@@ -19,7 +20,9 @@ import "abdk-libraries-solidity/ABDKMathQuad.sol";
 */
 contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
   using SignedSafeMath for int256;
-  using SafeMath for uint32;
+  using SafeMath_32 for uint32;
+  using SafeMath_40 for uint40;
+
   // #### Global variables
   /**
     @notice Format: Pool code => pool address, where pool code looks like TSLA/USD^5+aDAI
@@ -34,12 +37,12 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
   /**
   @notice Format: market code => updateInterval => Upkeep details
    */
-  mapping(string => mapping(uint256 => Upkeep)) public upkeep;
+  mapping(string => mapping(uint32 => Upkeep)) public upkeep;
   /**
   @notice Format: Pool code => timestamp of last price execution
   @dev Used to allow multiple upkeep registrations to use the same market/update interval price data.
    */
-  mapping(string => uint32) public lastExecutionTime;
+  mapping(string => uint40) public lastExecutionTime;
 
   address public oracleWrapper;
 
@@ -116,7 +119,7 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
         startingPrice,
         1,
         _updateInterval,
-        uint32(block.timestamp)
+        uint40(block.timestamp)
       );
     } else if (firstPrice != upkeepData.lastSamplePrice) {
       upkeep[_marketCode][_updateInterval].cumulativePrice = upkeepData
@@ -209,7 +212,8 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
 
     int256 latestPrice = IOracleWrapper(oracleWrapper).getPrice(market);
     if (
-      block.timestamp >= upkeepData.roundStart.add(upkeepData.updateInterval)
+      block.timestamp >=
+      upkeepData.roundStart.add(uint40(upkeepData.updateInterval))
     ) {
       // Start new round
       int256 newPrice = _average(upkeepData.cumulativePrice, upkeepData.count);
@@ -221,7 +225,7 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
         upkeepData.executionPrice,
         1,
         upkeepData.updateInterval,
-        uint32(block.timestamp)
+        uint40(block.timestamp)
       );
 
       emit NewRound(
@@ -286,7 +290,7 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
     if (oldPrice > 0) {
       for (uint8 i = 0; i < poolCodes.length; i++) {
         if (lastExecutionTime[poolCodes[i]] < roundStart) {
-          lastExecutionTime[poolCodes[i]] = uint32(block.timestamp);
+          lastExecutionTime[poolCodes[i]] = uint40(block.timestamp);
           emit ExecutePriceChange(
             oldPrice,
             newPrice,
