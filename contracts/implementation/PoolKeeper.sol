@@ -12,6 +12,7 @@ import "@openzeppelin/contracts/math/SignedSafeMath.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
+import "abdk-libraries-solidity/ABDKMathQuad.sol";
 
 /*
 @title The manager contract for multiple markets and the pools in them
@@ -41,7 +42,9 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
   mapping(string => uint32) public lastExecutionTime;
 
   address public oracleWrapper;
+
   PoolFactory public immutable factory;
+  bytes16 constant fixedPoint = 0x403abc16d674ec800000000000000000; // 1 ether
 
   // #### Roles
   /**
@@ -96,17 +99,21 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
     );
     require(
       _updateInterval > _frontRunningInterval,
-      "Update interval < FR interval"
+      "Update interval <= FR interval"
     );
 
     int256 firstPrice = oracle.getPrice(_marketCode);
     Upkeep memory upkeepData = upkeep[_marketCode][_updateInterval];
     if (upkeepData.lastExecutionPrice == 0) {
+      int256 startingPrice =
+        ABDKMathQuad.toInt(
+          ABDKMathQuad.mul(ABDKMathQuad.fromInt(firstPrice), fixedPoint)
+        );
       upkeep[_marketCode][_updateInterval] = Upkeep(
         firstPrice,
         firstPrice,
-        firstPrice.mul(1000),
-        firstPrice.mul(1000),
+        startingPrice,
+        startingPrice,
         1,
         _updateInterval,
         uint32(block.timestamp)
@@ -193,6 +200,7 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
       string memory market,
       string[] memory poolCodes
     ) = _checkInputData(performData);
+
     if (!valid) {
       revert("Input data is invalid");
     }
@@ -312,7 +320,13 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
     returns (int256)
   {
     require(count > 0, "Count < 1");
-    return cumulative.mul(10000).div(count).add(5).div(10);
+    return
+      ABDKMathQuad.toInt(
+        ABDKMathQuad.div(
+          ABDKMathQuad.mul(ABDKMathQuad.fromInt(cumulative), fixedPoint),
+          ABDKMathQuad.fromInt(count)
+        )
+      );
   }
 
   /**

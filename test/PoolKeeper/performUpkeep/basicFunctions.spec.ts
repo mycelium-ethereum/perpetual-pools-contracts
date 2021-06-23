@@ -16,6 +16,7 @@ import {
 import { MARKET, POOL_CODE_2 } from "../../constants";
 import { BigNumber } from "ethers";
 import { Result } from "ethers/lib/utils";
+import { count } from "console";
 
 chai.use(chaiAsPromised);
 const { expect } = chai;
@@ -206,7 +207,9 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
     it("should calculate a new execution price", async () => {
       expect(newRound.lastExecutionPrice).to.eq(oldRound.executionPrice);
       expect(newRound.executionPrice).to.eq(
-        oldRound.cumulativePrice.mul(10000).div(oldRound.count).add(5).div(10)
+        ethers.utils
+          .parseEther(oldRound.cumulativePrice.toString())
+          .div(oldRound.count)
       );
     });
   });
