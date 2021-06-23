@@ -28,7 +28,6 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
   uint112 public shortBalance;
   uint112 public longBalance;
 
-  uint32 public updateInterval;
   uint32 public frontRunningInterval;
 
   bytes16 public fee;
@@ -36,7 +35,6 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
   address public feeAddress;
   address public quoteToken;
 
-  int256 public lastPrice;
   uint256 public lastPriceTimestamp;
 
   uint256 public commitIDCounter;
@@ -63,8 +61,6 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
 
   function initialize(
     string memory _poolCode,
-    int256 _firstPrice,
-    uint32 _updateInterval,
     uint32 _frontRunningInterval,
     bytes16 _fee,
     uint16 _leverageAmount,
@@ -73,10 +69,6 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
   ) external override initializer() {
     require(_feeAddress != address(0), "Fee address cannot be 0 address");
     require(_quoteToken != address(0), "Quote token cannot be 0 address");
-    require(
-      _updateInterval > _frontRunningInterval,
-      "Update interval < FR interval"
-    );
     // Setup roles
     _setRoleAdmin(UPDATER, ADMIN);
     _setRoleAdmin(FEE_HOLDER, ADMIN);
@@ -86,8 +78,6 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
 
     // Setup variables
     quoteToken = _quoteToken;
-    lastPrice = _firstPrice;
-    updateInterval = _updateInterval;
     frontRunningInterval = _frontRunningInterval;
     fee = _fee;
     leverageAmount = PoolSwapLibrary.convertUIntToDecimal(_leverageAmount);
@@ -294,12 +284,11 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     }
   }
 
-  function executePriceChange(int256 newPrice) external override {
-    require(
-      block.timestamp.sub(lastPriceTimestamp) >= updateInterval,
-      "Update too soon"
-    );
-
+  function executePriceChange(int256 oldPrice, int256 newPrice)
+    external
+    override
+    onlyUpdater
+  {
     uint112 longFeeAmount =
       uint112(
         PoolSwapLibrary.convertDecimalToUInt(
@@ -317,12 +306,12 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
       shortBalance = shortBalance.sub(shortFeeAmount);
       totalFeeAmount = totalFeeAmount.add(shortFeeAmount);
     }
-    if (longBalance > longFeeAmount) {
+    if (longBalance >= longFeeAmount) {
       longBalance = longBalance.sub(longFeeAmount);
       totalFeeAmount = totalFeeAmount.add(longFeeAmount);
     }
 
-    bytes16 ratio = PoolSwapLibrary.divInt(newPrice, lastPrice);
+    bytes16 ratio = PoolSwapLibrary.divInt(newPrice, oldPrice);
     int8 direction =
       PoolSwapLibrary.compareDecimals(ratio, PoolSwapLibrary.one);
     bytes16 lossMultiplier =
@@ -334,24 +323,23 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
         uint112(PoolSwapLibrary.getLossAmount(lossMultiplier, shortBalance));
       shortBalance = shortBalance.sub(lossAmount);
       longBalance = longBalance.add(lossAmount);
-      emit PriceChange(lastPrice, newPrice, lossAmount);
+      emit PriceChange(oldPrice, newPrice, lossAmount);
     } else if (direction < 0 && longBalance > 0) {
       // Move funds from long to short pair
       uint112 lossAmount =
         uint112(PoolSwapLibrary.getLossAmount(lossMultiplier, longBalance));
       shortBalance = shortBalance.add(lossAmount);
       longBalance = longBalance.sub(lossAmount);
-      emit PriceChange(lastPrice, newPrice, lossAmount);
+      emit PriceChange(oldPrice, newPrice, lossAmount);
     }
     lastPriceTimestamp = block.timestamp;
-    lastPrice = newPrice;
     require(
       IERC20(quoteToken).transfer(feeAddress, totalFeeAmount),
       "Fee transfer failed"
     );
   }
 
-  function updateFeeAddress(address account) external override {}
+  function updateFeeAddress(address account) external override onlyFeeHolder {}
 
   // #### Modifiers
   /**

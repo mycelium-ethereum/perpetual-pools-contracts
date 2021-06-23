@@ -82,7 +82,7 @@ describe("LeveragedPool - executeCommitment: Basic test cases", () => {
         amountCommitted
       );
       await timeout(6000); // wait six seconds
-      await pool.executePriceChange(5);
+      await pool.executePriceChange(5, 500);
       await pool.executeCommitment([commit.commitID]);
       const commit2 = await createCommit(
         pool,
@@ -131,13 +131,13 @@ describe("LeveragedPool - executeCommitment: Basic test cases", () => {
         amountCommitted
       );
       await timeout(2000);
-      await pool.executePriceChange(9);
+      await pool.executePriceChange(9, 10);
       await pool.executeCommitment([commit.commitID]);
       expect((await pool.commits(commit.commitID)).amount).to.eq(0);
     });
     it("should emit an event for commitment removal", async () => {
       await timeout(2000);
-      await pool.executePriceChange(9);
+      await pool.executePriceChange(9, 10);
       const receipt = await (
         await pool.executeCommitment([commit.commitID])
       ).wait();
@@ -147,7 +147,7 @@ describe("LeveragedPool - executeCommitment: Basic test cases", () => {
     });
     it("should allow anyone to execute a commitment", async () => {
       await timeout(2000);
-      await pool.executePriceChange(9);
+      await pool.executePriceChange(9, 10);
       await pool.connect(signers[1]).executeCommitment([commit.commitID]);
       expect((await pool.commits(commit.commitID)).amount).to.eq(0);
     });

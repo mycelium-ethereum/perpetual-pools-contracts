@@ -81,8 +81,6 @@ interface ILeveragedPool {
   @notice Configures the pool on deployment. The pools are EIP 1167 clones.
   @dev This should only be able to be run once to prevent abuse of the pool. Use of Openzeppelin Initializable or similar is recommended.
   @param _poolCode The pool identification code. This is unique per pool per pool keeper
-  @param _firstPrice The initial price of the asset that the pool tracks
-  @param _updateInterval The frequency in seconds at which the pool will be updated. Must be large enough to handle a 15 second margin
   @param _frontRunningInterval The minimum number of seconds that must elapse before a commit can be executed. Must be smaller than the update interval to prevent deadlock. The difference must be greater than 15 seconds.
   @param _fee The fund movement fee. This amount is extracted from the deposited asset with every update and sent to the fee address.
   @param _leverageAmount The amount of exposure to price movements for the pool
@@ -91,8 +89,6 @@ interface ILeveragedPool {
  */
   function initialize(
     string memory _poolCode,
-    int256 _firstPrice,
-    uint32 _updateInterval,
     uint32 _frontRunningInterval,
     bytes16 _fee,
     uint16 _leverageAmount,
@@ -128,9 +124,10 @@ interface ILeveragedPool {
     @notice Processes the effect of a price change. The effect of a price change on a pool is left to the implementer. The pool stores the last price, and is given the latest price on update. 
     @dev This function should be called by the Pool Keeper.
     @dev This function should be secured with some form of access control
-    @param newPrice The latest price from the oracle. 
+    @param oldPrice The previously executed price
+    @param newPrice The price for the latest interval. 
     */
-  function executePriceChange(int256 newPrice) external;
+  function executePriceChange(int256 oldPrice, int256 newPrice) external;
 
   /** 
     @notice Updates the fee address

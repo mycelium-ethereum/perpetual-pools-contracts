@@ -6,13 +6,32 @@ pragma abicoder v2;
 @title The manager contract interface for multiple markets and the pools in them
 */
 interface IPoolKeeper {
+  // #### Structs
+
+  struct Upkeep {
+    int256 cumulativePrice; // The sum of all the samples for the current interval.
+    int256 lastSamplePrice; // The last price added to the cumulative price
+    int256 executionPrice; // The price for the current execution
+    int256 lastExecutionPrice; // The last price executed on.
+    uint32 count; // The number of samples taken during the current interval.
+    uint32 updateInterval;
+    uint32 roundStart;
+  }
+
   // #### Events
   /**
   @notice Creates a notification when a pool is created
   @param poolAddress The pool address of the newly created pool. This is deterministic and utilizes create2 and the pool code as the salt.
-  @param firstPrice The price of the market oracle when the pool was created. This is the initial value of the lastPrice param in the pool.
+  @param firstPrice The price of the market oracle when the pool was created. 
+  @param updateInterval The pool's update interval. This is used for upkeep
+  @param market The market the pool was created for. This combined with the updateInterval provide the upkeep details.
    */
-  event CreatePool(address indexed poolAddress, int256 indexed firstPrice);
+  event CreatePool(
+    address indexed poolAddress,
+    int256 indexed firstPrice,
+    uint32 indexed updateInterval,
+    string market
+  );
 
   /**
   @notice Creates a notification when a market is created
@@ -21,17 +40,56 @@ interface IPoolKeeper {
    */
   event CreateMarket(string marketCode, address oracle);
 
-  // #### Functions
   /**
-    @notice Checks for a price update for the pools specified. Several pools can be updated with a single call to the oracle. For instance, a market code of TSLA/USD+aDAI can be used to update TSLA/USD^2+aDAI, TSLA/USD^5+aDAI, and TSLA/USD^10+aDAI
-    @dev This should remain open. It should only cause a change in the pools if the price has actually changed. 
-    @param marketCode The market to get a quote for. Should be in the format BASE/QUOTE-DIGITAL_ASSET, eg TSLA/USD+aDAI
+    @notice Creates notification of a new round for a market/update interval pair
+    @param oldPrice The average price for the penultimate round
+    @param newPrice The average price for the round that's just ended
+    @param updateInterval The length of the round
+    @param market The market that's being updated
    */
-  function triggerPriceUpdate(
-    string memory marketCode,
-    string[] memory poolCodes
-  ) external;
+  event NewRound(
+    int256 indexed oldPrice,
+    int256 indexed newPrice,
+    uint32 indexed updateInterval,
+    string market
+  );
+  /**
+    @notice Creates a notification of a price sample being taken
+    @param cumulativePrice The sum of all samples taken for this round
+    @param count The number of samples inclusive
+    @param updateInterval The length of the round
+    @param market The market that's being updated
+   */
+  event PriceSample(
+    int256 indexed cumulativePrice,
+    int256 indexed count,
+    uint32 indexed updateInterval,
+    string market
+  );
+  /**
+    @notice Creates notification of a price execution for a set of pools
+    @param oldPrice The average price for the penultimate round
+    @param newPrice The average price for the round that's just ended
+    @param updateInterval The length of the round
+    @param market The market that's being updated
+    @param pool The pool that is being updated
+   */
+  event ExecutePriceChange(
+    int256 indexed oldPrice,
+    int256 indexed newPrice,
+    uint32 indexed updateInterval,
+    string market,
+    string pool
+  );
 
+  /**
+    @notice Creates a notification of a failed pool update
+    @param poolCode The pool that failed to update
+    @param reason The reason for the error
+   */
+  event PoolUpdateError(string indexed poolCode, string reason);
+
+  // #### Functions
   /**
     @notice Updates the address of the oracle wrapper.
     @dev Should be restricted to authorised users with access controls

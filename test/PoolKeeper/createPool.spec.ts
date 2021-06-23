@@ -163,4 +163,18 @@ describe("PoolKeeper - createPool", () => {
       )
     ).to.be.rejectedWith(Error);
   });
+  it("should revert if the front running interval is larger than the update interval", async () => {
+    await expect(
+      poolKeeper.createPool(
+        MARKET_CODE,
+        POOL_CODE,
+        5,
+        7,
+        "0x00000000000000000000000000000000",
+        5,
+        generateRandomAddress(),
+        generateRandomAddress()
+      )
+    ).to.rejectedWith(Error);
+  });
 });
