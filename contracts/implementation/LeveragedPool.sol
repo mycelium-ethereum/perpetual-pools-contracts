@@ -23,7 +23,6 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
   using SafeMath_128 for uint128;
 
   // #### Globals
-  string public poolCode;
 
   // Each balance is the amount of quote tokens in the pair
   uint112 public shortBalance;
@@ -42,9 +41,8 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
 
   uint128 public commitIDCounter;
   mapping(uint128 => Commit) public commits;
-
   mapping(CommitType => uint112) public shadowPools;
-
+  string public poolCode;
   // #### Roles
   /**
   @notice The Updater role is for addresses that can update a pool's price

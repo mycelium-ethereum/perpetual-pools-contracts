@@ -10,9 +10,9 @@ interface ILeveragedPool {
   enum CommitType { ShortMint, ShortBurn, LongMint, LongBurn }
 
   struct Commit {
-    uint40 created;
     bytes16 maxImbalance;
     uint112 amount;
+    uint40 created;
     address owner;
     CommitType commitType;
   }
