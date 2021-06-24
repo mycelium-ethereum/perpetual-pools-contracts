@@ -16,6 +16,7 @@ Build everything with `npm run build`.
 ## Available Functionality
 
 ### Build Contracts and Generate Typechain Typeings
+You'll need to run this before running tests if typescript throws an error about not finding the typechain artifacts.
 
 `npm run compile`
 
