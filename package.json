@@ -1,6 +1,6 @@
 {
-  "name": "solidity-ts-dev-stack-example",
-  "version": "0.0.2",
+  "name": "tracer-pool-swaps",
+  "version": "0.0.1",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -14,14 +14,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/rhlsthrm/solidity-ts-dev-stack-example.git"
+    "url": "git+https://github.com/lions-mane/tracer-pool-swaps.git"
   },
   "author": "rhlsthrm",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/rhlsthrm/solidity-ts-dev-stack-example/issues"
+    "url": "https://github.com/lions-mane/tracer-pool-swaps/issues"
   },
-  "homepage": "https://github.com/rhlsthrm/solidity-ts-dev-stack-example#readme",
+  "homepage": "https://github.com/lions-mane/tracer-pool-swaps#readme",
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",
     "@nomiclabs/hardhat-etherscan": "^2.1.2",
