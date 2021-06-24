@@ -331,6 +331,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
   }
 
   function updateFeeAddress(address account) external override onlyFeeHolder {
+    require(account != address(0), "Invalid address");
     feeAddress = account;
   }
 
