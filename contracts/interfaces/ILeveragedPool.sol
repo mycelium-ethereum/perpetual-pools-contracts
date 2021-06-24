@@ -12,9 +12,9 @@ interface ILeveragedPool {
   struct Commit {
     bytes16 maxImbalance;
     uint112 amount;
+    CommitType commitType;
     uint40 created;
     address owner;
-    CommitType commitType;
   }
 
   // #### Events
