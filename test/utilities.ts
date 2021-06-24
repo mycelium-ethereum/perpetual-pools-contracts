@@ -61,8 +61,6 @@ export const getEventArgs = (
  */
 export const deployPoolAndTokenContracts = async (
   POOL_CODE: string,
-  firstPrice: number,
-  updateInterval: number,
   frontRunningInterval: number,
   fee: BytesLike,
   leverage: number,
@@ -86,6 +84,17 @@ export const deployPoolAndTokenContracts = async (
   await token.deployed();
   await token.mint(amountMinted, signers[0].address);
 
+  // Deploy tokens
+  const poolTokenFactory = (await ethers.getContractFactory(
+    "TestToken",
+    signers[0]
+  )) as TestToken__factory;
+  const short = await poolTokenFactory.deploy("Short token", "SHORT");
+  await short.deployed();
+
+  const long = await poolTokenFactory.deploy("Long", "Long");
+  await long.deployed();
+
   // Deploy and initialise pool
   const libraryFactory = (await ethers.getContractFactory(
     "PoolSwapLibrary",
@@ -102,6 +111,9 @@ export const deployPoolAndTokenContracts = async (
   await pool.deployed();
   const poolReceipt = await (
     await pool.initialize(
+      signers[0].address,
+      long.address,
+      short.address,
       POOL_CODE,
       frontRunningInterval,
       fee,

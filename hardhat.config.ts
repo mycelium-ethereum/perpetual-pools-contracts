@@ -27,9 +27,9 @@ const config: HardhatUserConfig = {
   },
   networks: {
     hardhat: {
-      gas: 12000000,
-      blockGasLimit: 0x1fffffffffffff,
-      allowUnlimitedContractSize: true,
+      // gas: 15000000000,
+      // blockGasLimit: 0x1fffffffffffff,
+      // allowUnlimitedContractSize: true,
       forking: {
         url: ALCHEMY_API_MAINNET_URL,
         blockNumber: 12474747,
@@ -51,6 +51,10 @@ const config: HardhatUserConfig = {
   },
   mocha: {
     timeout: 60000,
+  },
+  gasReporter: {
+    currency: "AUD",
+    coinmarketcap: process.env.COINMARKET_KEY,
   },
 };
 

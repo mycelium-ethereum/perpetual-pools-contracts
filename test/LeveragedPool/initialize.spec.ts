@@ -9,6 +9,7 @@ import {
   TestToken__factory,
   PoolSwapLibrary__factory,
   PoolSwapLibrary,
+  ERC20,
 } from "../../typechain";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import {
@@ -30,7 +31,7 @@ const { expect } = chai;
 
 const amountMinted = ethers.utils.parseEther("10000");
 const feeAddress = generateRandomAddress();
-const lastPrice = getRandomInt(9999999999, 1);
+
 const updateInterval = getRandomInt(99999, 10);
 const frontRunningInterval = getRandomInt(updateInterval - 1, 1);
 const fee = "0x00000000000000000000000000000000";
@@ -39,6 +40,8 @@ const leverage = getRandomInt(256, 1);
 describe("LeveragedPool - initialize", () => {
   let signers: SignerWithAddress[];
   let quoteToken: string;
+  let short: ERC20;
+  let long: ERC20;
   before(async () => {
     signers = await ethers.getSigners();
   });
@@ -56,7 +59,23 @@ describe("LeveragedPool - initialize", () => {
       await token.deployed();
       await token.mint(amountMinted, signers[0].address);
       quoteToken = token.address;
+      // Pair tokens
 
+      const poolTokenFactory = (await ethers.getContractFactory(
+        "TestToken",
+        signers[0]
+      )) as TestToken__factory;
+      short = await poolTokenFactory.deploy(
+        POOL_CODE.concat("-SHORT"),
+        "S-".concat(POOL_CODE)
+      );
+      await short.deployed();
+
+      long = await poolTokenFactory.deploy(
+        POOL_CODE.concat("-LONG"),
+        "L-".concat(POOL_CODE)
+      );
+      await long.deployed();
       const libraryFactory = (await ethers.getContractFactory(
         "PoolSwapLibrary",
         signers[0]
@@ -75,8 +94,10 @@ describe("LeveragedPool - initialize", () => {
       await pool.deployed();
       await (
         await pool.initialize(
+          signers[0].address,
+          long.address,
+          short.address,
           POOL_CODE,
-
           frontRunningInterval,
           fee,
           leverage,
@@ -104,6 +125,9 @@ describe("LeveragedPool - initialize", () => {
 
       receipt = await (
         await leveragedPool.initialize(
+          signers[0].address,
+          long.address,
+          short.address,
           POOL_CODE,
           frontRunningInterval,
           fee,
@@ -231,6 +255,9 @@ describe("LeveragedPool - initialize", () => {
       await pool.deployed();
       await (
         await pool.initialize(
+          signers[0].address,
+          long.address,
+          short.address,
           POOL_CODE,
           frontRunningInterval,
           fee,
@@ -262,8 +289,10 @@ describe("LeveragedPool - initialize", () => {
 
     it("should revert if an attempt is made to run it a second time", async () => {
       await leveragedPool.initialize(
+        signers[0].address,
+        long.address,
+        short.address,
         POOL_CODE,
-
         frontRunningInterval,
         fee,
         leverage,
@@ -272,6 +301,9 @@ describe("LeveragedPool - initialize", () => {
       );
       await expect(
         leveragedPool.initialize(
+          signers[0].address,
+          long.address,
+          short.address,
           POOL_CODE,
 
           frontRunningInterval,
@@ -285,6 +317,9 @@ describe("LeveragedPool - initialize", () => {
     it("should revert if quoteToken address is the zero address", async () => {
       await expect(
         leveragedPool.initialize(
+          signers[0].address,
+          long.address,
+          short.address,
           POOL_CODE,
 
           frontRunningInterval,
@@ -298,6 +333,9 @@ describe("LeveragedPool - initialize", () => {
     it("should revert if the fee address is the zero address", async () => {
       await expect(
         leveragedPool.initialize(
+          signers[0].address,
+          long.address,
+          short.address,
           POOL_CODE,
 
           frontRunningInterval,
@@ -320,8 +358,10 @@ describe("LeveragedPool - initialize", () => {
         signers[0]
       ) as LeveragedPool;
       await secondPool.initialize(
+        signers[0].address,
+        long.address,
+        short.address,
         POOL_CODE_2,
-
         frontRunningInterval,
         fee,
         leverage,
@@ -329,6 +369,9 @@ describe("LeveragedPool - initialize", () => {
         quoteToken
       );
       await leveragedPool.initialize(
+        signers[0].address,
+        long.address,
+        short.address,
         POOL_CODE,
 
         frontRunningInterval,

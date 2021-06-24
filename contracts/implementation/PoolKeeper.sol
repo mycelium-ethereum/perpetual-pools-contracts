@@ -5,6 +5,7 @@ pragma abicoder v2;
 import "../interfaces/IPoolKeeper.sol";
 import "../interfaces/IOracleWrapper.sol";
 import "../implementation/LeveragedPool.sol";
+import "../implementation/PoolFactory.sol";
 
 import "@chainlink/contracts/src/v0.7/interfaces/UpkeepInterface.sol";
 import "@openzeppelin/contracts/math/SignedSafeMath.sol";
@@ -23,7 +24,7 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
   /**
     @notice Format: Pool code => pool address, where pool code looks like TSLA/USD^5+aDAI
    */
-  mapping(string => address) public override pools;
+  mapping(string => address) public pools;
 
   /**
   @notice Format: Pool Code => update interval => Market code. Used to prevent a pool from being updated with pricing from a market it doesn't belong to.
@@ -41,7 +42,8 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
   mapping(string => uint32) public lastExecutionTime;
 
   address public oracleWrapper;
-  address public immutable override poolBase;
+
+  PoolFactory public immutable factory;
   bytes16 constant fixedPoint = 0x403abc16d674ec800000000000000000; // 1 ether
 
   // #### Roles
@@ -52,18 +54,13 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
   bytes32 public constant ADMIN = keccak256("ADMIN");
 
   // #### Functions
-  constructor(address _oracleWrapper) {
+  constructor(address _oracleWrapper, address _factory) {
     require(_oracleWrapper != address(0), "Oracle cannot be 0 address");
     oracleWrapper = _oracleWrapper;
     _setRoleAdmin(ADMIN, OPERATOR);
     _setupRole(ADMIN, msg.sender);
     _setupRole(OPERATOR, msg.sender);
-
-    // Deploy pool base to share logic among pools
-    LeveragedPool _poolBase = new LeveragedPool();
-    poolBase = address(_poolBase);
-    // Initialise the base contract so no one else abuses it.
-    _poolBase.initialize("BASE_POOL", 2, 0, 0, address(this), address(this));
+    factory = PoolFactory(_factory);
   }
 
   function updateOracleWrapper(address oracle) external override onlyAdmin {
@@ -105,13 +102,6 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
       "Update interval <= FR interval"
     );
 
-    LeveragedPool pool =
-      LeveragedPool(
-        Clones.cloneDeterministic(
-          address(poolBase),
-          keccak256(abi.encode(_poolCode))
-        )
-      );
     int256 firstPrice = oracle.getPrice(_marketCode);
     Upkeep memory upkeepData = upkeep[_marketCode][_updateInterval];
     if (upkeepData.lastExecutionPrice == 0) {
@@ -136,11 +126,20 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
         upkeepData.count.add(1)
       );
     }
-    emit CreatePool(address(pool), firstPrice, _updateInterval, _marketCode);
 
-    pools[_poolCode] = address(pool);
     poolMarkets[_poolCode][_updateInterval] = _marketCode;
-    pool.initialize(
+    emit CreatePool(
+      Clones.predictDeterministicAddress(
+        address(factory.poolBase()),
+        keccak256(abi.encode(_poolCode)),
+        address(factory)
+      ),
+      firstPrice,
+      _updateInterval,
+      _marketCode
+    );
+    pools[_poolCode] = factory.deployPool(
+      address(this),
       _poolCode,
       _frontRunningInterval,
       _fee,

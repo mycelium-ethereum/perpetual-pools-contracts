@@ -60,6 +60,9 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
   // #### Functions
 
   function initialize(
+    address _updater,
+    address _longToken,
+    address _shortToken,
     string memory _poolCode,
     uint32 _frontRunningInterval,
     bytes16 _fee,
@@ -72,8 +75,8 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     // Setup roles
     _setRoleAdmin(UPDATER, ADMIN);
     _setRoleAdmin(FEE_HOLDER, ADMIN);
-    _setupRole(UPDATER, msg.sender);
-    _setupRole(ADMIN, msg.sender);
+    _setupRole(UPDATER, _updater);
+    _setupRole(ADMIN, _updater);
     _setupRole(FEE_HOLDER, _feeAddress);
 
     // Setup variables
@@ -84,20 +87,8 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     feeAddress = _feeAddress;
     lastPriceTimestamp = block.timestamp;
     poolCode = _poolCode;
-
-    // Create pair tokens
-    tokens[0] = address(
-      new PoolToken(
-        string(abi.encodePacked(_poolCode, "-LONG")),
-        string(abi.encodePacked("L-", _poolCode))
-      )
-    );
-    tokens[1] = address(
-      new PoolToken(
-        string(abi.encodePacked(_poolCode, "-SHORT")),
-        string(abi.encodePacked("S-", _poolCode))
-      )
-    );
+    tokens[0] = _longToken;
+    tokens[1] = _shortToken;
     emit PoolInitialized(tokens[0], tokens[1], _quoteToken, _poolCode);
   }
 

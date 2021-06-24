@@ -44,8 +44,7 @@ describe("LeveragedPool - uncommit", () => {
     beforeEach(async () => {
       const elements = await deployPoolAndTokenContracts(
         POOL_CODE,
-        lastPrice,
-        updateInterval,
+
         frontRunningInterval,
         fee,
         leverage,
@@ -118,8 +117,7 @@ describe("LeveragedPool - uncommit", () => {
     beforeEach(async () => {
       const elements = await deployPoolAndTokenContracts(
         POOL_CODE,
-        lastPrice,
-        updateInterval,
+
         frontRunningInterval,
         fee,
         leverage,
@@ -205,8 +203,7 @@ describe("LeveragedPool - uncommit", () => {
     beforeEach(async () => {
       const elements = await deployPoolAndTokenContracts(
         POOL_CODE,
-        lastPrice,
-        updateInterval,
+
         frontRunningInterval,
         fee,
         leverage,
