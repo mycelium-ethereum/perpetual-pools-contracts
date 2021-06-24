@@ -4,8 +4,6 @@ pragma abicoder v2;
 
 import "../vendors/ERC20_Cloneable.sol";
 
-import "hardhat/console.sol";
-
 /*
 @title The pool token
 */
