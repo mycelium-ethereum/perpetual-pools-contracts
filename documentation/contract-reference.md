@@ -7,7 +7,7 @@ The factory only needs to be deployed once. It can support multiple keepers, and
 
 ### Events
 #### DeployPool
-`event DeployPool(address indexed pool, string poolCode);`
+`event DeployPool(address indexed pool, string poolCode);`  
 Emitted every time a pool is deployed.
 - `pool` The address of the new pool.
 - `poolCode` The pool code for the newly deployed pool
@@ -24,25 +24,25 @@ function deployPool(
     address _feeAddress,
     address _quoteToken
   ) external returns (address);
-```
+```  
 Deploys a minimal clone of the `LeveragedPool` contract and two minimal clones of an ERC20 token for the pool to use as pair tokens. The pool and tokens are initialised. The access control for the two pair tokens is set to the newly deployed pool
 - `owner` The access control for the pool's `executePriceChange` function is granted for this address. Typically this will be the keeper that is requesting the deployment.
 
 ## OracleWrapper
 ### Read only functions
 #### assetOracles
-`function assetOracles(string memory marketCode) external view returns (address);`
+`function assetOracles(string memory marketCode) external view returns (address);`  
 Returns the oracle being used for a given market.
 - `marketCode` The market to look up.
 
 #### getPrice
-`function getPrice(string memory marketCode) external view returns (int256);`
+`function getPrice(string memory marketCode) external view returns (int256);`  
 Returns the price from the chainlink oracle for the latest round. 
 - `marketCode` The market to look up.
 
 ### State changing functions
 #### setOracle
-`function setOracle(string memory marketCode, address oracle) external;`
+`function setOracle(string memory marketCode, address oracle) external;`  
 Sets the oracle address for a market. By default this can only be used by the account that deployed the oracle wrapper. 
 - `marketCode` The market to set an oracle for
 - `oracle` The new oracle address. Currently this must conform to the Chain link `AggregatorV3Interface`. 
@@ -58,7 +58,7 @@ event CreatePool(
     uint32 indexed updateInterval,
     string market
   );
-```
+```  
 Emitted when a new pool is created. 
 - `poolAddress` The address of the new pool
 - `firstPrice` The current price of the market oracle multiplied by 1e18. The pools use pricing with a fixed point of 18 decimal places.
@@ -66,7 +66,7 @@ Emitted when a new pool is created.
 - `market` The market code for the market the pool was created in.
 
 #### CreateMarket
-`event CreateMarket(string marketCode, address oracle);`
+`event CreateMarket(string marketCode, address oracle);`  
 Emitted when a market is created. 
 - `marketCode` The new market's identifier
 - `oracle` The oracle that the market will use for price change executions.
@@ -79,7 +79,7 @@ event NewRound(
     uint32 indexed updateInterval,
     string market
   );
-```
+```  
 Emitted when a new pricing interval occurs for a pool. This occurs when the current unix timestamp is greater than the last price execution time plus the pool's update interval. Not all price change executions will emit this. It should only be emitted once per market/update interval pair, by the upkeep transaction that occurs first in the new interval.
 - `oldPrice` The price from the penultimate price execution.
 - `newPrice` The new price used for execution in the interval just past. Both `oldPrice` and `newPrice` are an average of the price changes that have occurred during an interval (a price sample is taken whenever the price changes).
@@ -94,7 +94,7 @@ event PriceSample(
     uint32 indexed updateInterval,
     string market
   );
-```
+```  
 Emitted when a price sample is taken for the current interval. The prices used in price change executions are the average price of a market during the interval. 
 - `cumulativePrice` The sum of price samples taken during the interval
 - `count` The number of samples taken so far
@@ -110,13 +110,13 @@ event ExecutePriceChange(
     string market,
     string pool
   );
-```
+```  
 Emitted when a pool has a price change execution. If a pool fails to update, a `PoolUpdateError` will be emitted instead.
 - `pool` An 
 
 
 #### PoolUpdateError
-`event PoolUpdateError(string indexed poolCode, string reason);`
+`event PoolUpdateError(string indexed poolCode, string reason);`  
 Emitted when a pool fails a price change execution. Since pools are updated in groups, this is used to signal an issue instead of reverting and leaving all pools out of date.
 - `poolCode` The pool's identifier
 - `reason` The reason for the failure. The most likely reason is that the `ERC20.transfer` call failed when transfering the fee to the fee holder.
@@ -124,12 +124,12 @@ Emitted when a pool fails a price change execution. Since pools are updated in g
 
 ### State changing functions
 #### updateOracleWrapper
-`function updateOracleWrapper(address oracle) external;`
+`function updateOracleWrapper(address oracle) external;`  
  Updates the address of the oracle wrapper that the keeper uses to get price data. This can only be used by an account that has been granted the `ADMIN` role. By default this role is granted to the account that deployed the keeper. The contract uses Openzeppelin access controls, so this can be changed post deployment.
  - `oracle` The new oracle address.
  
 #### createMarket
-`function createMarket(string memory marketCode, address oracle) external;`
+`function createMarket(string memory marketCode, address oracle) external;`  
 Creates a new market. This must be done before a pool can be created. This only needs to be done once for each asset to be tracked. Multiple pools at different intervals can use the same oracle.
 - `marketCode` The unique market identifier. There is no restriction on format, but it must not already exist in the keeper. 
 - `oracle` The oracle to use for the market.
@@ -146,7 +146,7 @@ function createPool(
     address feeAddress,
     address quoteToken
   ) external;
-```
+```  
 Creates a pool in a given market. 
 - `marketCode` The identifier for the market to create the pool in. This must exist before the pool is created.
 - `poolCode` The name of the pool. There are no restrictions on the format, however the pool must not already exist in the keeper.
@@ -167,7 +167,7 @@ event PoolInitialized(
     address quoteToken,
     string poolCode
   );
-```
+```  
 Emitted when a newly deployed pool is initialized. A pool that isn't initialized in the same transaction as it was deployed should be considered suspect (there should be a `DeployPool` event in the same transaction). A pool that hasn't emitted this event should not be used as it is vulnerable to being taken over by an attacker.
 - `longToken` The address of the token that represents the long pool
 - `shortToken` The address of the token that represents the short pool
@@ -182,7 +182,7 @@ event CreateCommit(
   bytes16 indexed maxImbalance,
   CommitType commitType
 );
-```
+```  
 Emitted when a commit is created. This forms the user's record of commits, as the commit details are not retrievable without the commit ID.
 - `commitID` The ID of the commit, to be used when withdrawing or executing the commit.
 - `amount` The amount that was committed
@@ -196,14 +196,14 @@ event RemoveCommit(
     uint128 indexed amount,
     CommitType indexed commitType
   );
-```
+```  
 Emitted when a commit is withdrawn.
 - `commitID` The ID of the withdrawn commit
 - `amount` The amount of tokens that were returned to the user
 - `commitType` The type of commit that was withdrawn
 
 #### ExecuteCommit
-`event ExecuteCommit(uint128 commitID);`
+`event ExecuteCommit(uint128 commitID);`  
 Emitted when a commit is executed. Commit execution is the transfer of funds from the pool's shadow balance into the live balances. 
 
 #### PriceChange
@@ -213,7 +213,7 @@ event PriceChange(
     int256 indexed endPrice,
     uint112 indexed transferAmount
   );
-```
+```  
 Emitted when a price change execution occurs.
 - `startPrice` The price from the last execution interval
 - `endPrice` The price from the current execution interval
@@ -226,24 +226,24 @@ function commit(
     bytes16 maxImbalance,
     uint112 amount
   ) external;
-```
+```  
 Used to create a commitment to add or remove funds from one of the pool's pairs.
 - `maxImbalance` The maximum difference between the pools that the user will tolerate. This is the ratio between the long and the short live balances. The value should be generated using the `PoolSwapLibrary.getRatio` method.
 
 #### uncommit
-`function uncommit(uint128 commitID) external;`
+`function uncommit(uint128 commitID) external;`  
 Used to withdraw a commitment. This cannot be used to withdraw a commit that the user doesn't own.
 
 #### executeCommitment
-`function executeCommitment(uint128[] memory _commitIDs) external;`
+`function executeCommitment(uint128[] memory _commitIDs) external;`  
 Used to execute the transfer of funds from the shadow pool balance into the live pool balance. A user can execute commits that they do not own.
 
 #### executePriceChange
-`function executePriceChange(int256 oldPrice, int256 newPrice) external;`
+`function executePriceChange(int256 oldPrice, int256 newPrice) external;`  
 Used by the pool keeper to move funds between the long and short pool balances based on the change in price of the underlying market asset. This function is only able to be called by the pool keeper (or other party, as setup during deployment of the pool). 
 
 #### updateFeeAddress
-`function updateFeeAddress(address account) external;` 
+`function updateFeeAddress(address account) external;`  
 Used by the pool owner to change the address that the pool fees are transfered to every price execution. This is secured with an Openzeppelin access control role, so it is possible that the owner's address is not the same as the address the funds are transferred to.
 
 ## PoolSwapLibrary
@@ -256,7 +256,7 @@ function getRatio(uint112 _numerator, uint112 _denominator)
     external
     pure
     returns (bytes16);
-```
+```  
 Calculates `_numerator/denominator` and returns the result as a IEEE754 binary128 number.
 
 #### getAmountOut
@@ -265,22 +265,22 @@ function getAmountOut(bytes16 ratio, uint112 amountIn)
     external
     pure
     returns (uint112)
-```
+```  
 Returns the amount of `amountIn` to transfer based on the `ratio`.
 
 #### compareDecimals
-`function compareDecimals(bytes16 x, bytes16 y) external pure returns (int8)`
+`function compareDecimals(bytes16 x, bytes16 y) external pure returns (int8)`  
 Compares two IEEE754 binary128 numbers and returns:
 - `-1` if the first is lower than the second
 - `0` if they are the the same value
 - `1` if the first number is larger than the second
 
 #### convertUIntToDecimal
-`function convertDecimalToUInt(bytes16 ratio) external pure returns (uint256)`
+`function convertDecimalToUInt(bytes16 ratio) external pure returns (uint256)`  
 Converts a `uint` value to an IEEE754 binary128 number.
 
 #### convertDecimalToUInt
-`function convertDecimalToUInt(bytes16 ratio) external pure returns (uint256)`
+`function convertDecimalToUInt(bytes16 ratio) external pure returns (uint256)`  
 Converts an IEEE754 binary128 number to a `uint256`.
 
 #### multiplyDecimalByUInt
@@ -293,7 +293,7 @@ function multiplyDecimalByUInt(bytes16 a, uint256 b)
 Returns the product of and IEEE754 binary128 number and a `uint256`.
 
 #### divInt
-`function divInt(int256 a, int256 b) external pure returns (bytes16)`
+`function divInt(int256 a, int256 b) external pure returns (bytes16)`  
 Divides two `int256` values and returns the result as an IEEE754 binary128 value.
 
 #### getLossMultiplier
@@ -303,7 +303,7 @@ function getLossMultiplier(
     int8 direction,
     bytes16 leverage
   ) external pure returns (bytes16)
-```
+```  
 Calculates the multiplier to apply to the losing pool balance to get the amount to transfer. The formula it uses is:
 ```
 DO ON MONDAY
@@ -315,7 +315,7 @@ function getLossAmount(bytes16 lossMultiplier, uint112 balance)
     external
     pure
     returns (uint256)
-```
+```  
 Applies a loss multiplier to an amount and returns the amount that should be transferred.
 
 #### one and zero
