@@ -247,7 +247,7 @@ Used by the pool keeper to move funds between the long and short pool balances b
 Used by the pool owner to change the address that the pool fees are transfered to every price execution. This is secured with an Openzeppelin access control role, so it is possible that the owner's address is not the same as the address the funds are transferred to.
 
 ## PoolSwapLibrary
-Utilizes the ABDKMathQuad library to work with 128 bit floating point numbers.
+Utilizes the ABDKMathQuad library to work with 128 bit floating point numbers (IEEE754 binary128).
 
 ### Read only functions
 #### getRatio
