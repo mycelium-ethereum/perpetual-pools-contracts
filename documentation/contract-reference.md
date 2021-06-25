@@ -48,6 +48,7 @@ Sets the oracle address for a market. By default this can only be used by the ac
 - `oracle` The new oracle address. Currently this must conform to the Chain link `AggregatorV3Interface`. 
 
 ## PoolKeeper
+Something about the constructor here.
 ### Events
 #### CreatePool
 ```
@@ -101,14 +102,76 @@ Emitted when a price sample is taken for the current interval. The prices used i
 - `market` The market identifier for the market that's been sampled
 
 #### ExecutePriceChange
+```
+event ExecutePriceChange(
+    int256 indexed oldPrice,
+    int256 indexed newPrice,
+    uint32 indexed updateInterval,
+    string market,
+    string pool
+  );
+```
+Emitted when a pool has a price change execution. If a pool fails to update, a `PoolUpdateError` will be emitted instead.
+- `pool` An 
+
+
 #### PoolUpdateError
+`event PoolUpdateError(string indexed poolCode, string reason);`
+Emitted when a pool fails a price change execution. Since pools are updated in groups, this is used to signal an issue instead of reverting and leaving all pools out of date.
+- `poolCode` The pool's identifier
+- `reason` The reason for the failure. The most likely reason is that the `ERC20.transfer` call failed when transfering the fee to the fee holder.
+
 
 ### State changing functions
 #### updateOracleWrapper
+`function updateOracleWrapper(address oracle) external;`
+ Updates the address of the oracle wrapper that the keeper uses to get price data. This can only be used by an account that has been granted the `ADMIN` role. By default this role is granted to the account that deployed the keeper. The contract uses Openzeppelin access controls, so this can be changed post deployment.
+ - `oracle` The new oracle address.
+ 
 #### createMarket
+`function createMarket(string memory marketCode, address oracle) external;`
+Creates a new market. This must be done before a pool can be created. This only needs to be done once for each asset to be tracked. Multiple pools at different intervals can use the same oracle.
+- `marketCode` The unique market identifier. There is no restriction on format, but it must not already exist in the keeper. 
+- `oracle` The oracle to use for the market.
+
 #### createPool
+```
+function createPool(
+    string memory marketCode,
+    string memory poolCode,
+    uint32 updateInterval,
+    uint32 frontRunningInterval,
+    bytes16 fee,
+    uint16 leverageAmount,
+    address feeAddress,
+    address quoteToken
+  ) external;
+```
+Creates a pool in a given market. 
+- `marketCode` The identifier for the market to create the pool in. This must exist before the pool is created.
+- `poolCode` The name of the pool. There are no restrictions on the format, however the pool must not already exist in the keeper.
+- `updateInterval` The frequency in seconds that the pool will be updated
+- `frontRunningInterval` The amount of time a user must commit to adding or withdrawing to the pool before the movement of funds can actually occur. This must be smaller than the update interval.
+- `fee` The percentage fee to be charged with every price change execution. This is per update interval, so for 2% annual fee at 7 day updates, the fee would be 0.02 / 52 = ~0.00038. To generate the number in the correct format, the `PoolSwapLibrary.getRatio` method should be used.
+- `leverageAmount` The amount to be applied in the power leverage calculation. Internally this is stored as a decimal so the `PoolSwapLibrary.convertDecimalToUInt` method should be used when retrieving a pool's leverage for users to view.
+- `feeAddress` The address to send fees to
+- `quoteToken` The address of the digital asset that the pool is demarcated in
 
 ## LeveragedPool
 ### Events
 ### Read only functions
 ### State changing functions
+
+## PoolSwapLibrary
+### Read only functions
+#### getRatio
+#### getAmountOut
+#### compareDecimals
+#### convertUIntToDecimal
+#### convertDecimalToUInt
+#### multiplyDecimalByUInt
+#### divInt
+#### getLossMultiplier
+#### getLossAmount
+#### one and zero
+Getter functions for pregenerated decimal values for 1 and 0 respectively.
