@@ -21,9 +21,8 @@ const amountMinted = ethers.utils.parseEther("10000");
 const feeAddress = generateRandomAddress();
 const fee = "0x3ff947ae147ae147ae147ae147ae147a"; // 2% per execution. An IEEE 754 quadruple precision number
 const lastPrice = 77000000;
-const updateInterval = 2; // 2 seconds
 const frontRunningInterval = 1;
-const leverage = 10;
+const leverage = 10; //
 let imbalance: BytesLike;
 
 let library: PoolSwapLibrary;
