@@ -68,12 +68,7 @@ describe("PoolKeeper - createMarket", () => {
         signers[0].address
       )
     ).to.eq(true);
-    expect(
-      await poolKeeper.hasRole(
-        ethers.utils.keccak256(ethers.utils.toUtf8Bytes(OPERATOR_ROLE)),
-        signers[0].address
-      )
-    ).to.eq(true);
+
     expect(
       await oracleWrapper.hasRole(
         ethers.utils.keccak256(ethers.utils.toUtf8Bytes(ADMIN_ROLE)),

@@ -37,6 +37,8 @@ Deploys a minimal clone of the `LeveragedPool` contract and two minimal clones o
 - `owner` The access control for the pool's `executePriceChange` function is granted for this address. Typically this will be the keeper that is requesting the deployment.
 
 ## OracleWrapper
+Abstracts the source of the pricing data. Currently supports chainlink compatible oracles.
+
 ### Read only functions
 #### assetOracles
 `function assetOracles(string memory marketCode) external view returns (address);`  
@@ -57,11 +59,6 @@ Sets the oracle address for a market. By default, this can only be used by the a
 
 ## PoolKeeper
 Responsible for collecting average price data for an interval. Provides a single point of contact to perform price executions for multiple pools. 
-#### constructor
-`constructor(address _oracleWrapper, address _factory)`  
-Initializes the contract and grants a contract admin role to the deployer.
-- `_oracleWrapper` The oracle wrapper that will be used to collect price data for the pools
-- `_factory` The pool factory to use when deploying new pools.
 
 ### Events
 #### CreatePool
@@ -172,7 +169,7 @@ Creates a pool in a given market.
 - `quoteToken` The address of the digital asset that the pool is demarcated in
 
 ## LeveragedPool
-Manages the short and long pairs of a pool. 
+Manages the short and long pairs of a pool. This is the contract most users will be interacting with as they commit to deposit and withdraw.
 ### Events
 #### PoolInitialized
 ```
@@ -278,7 +275,7 @@ Used by the pool keeper to move funds between the long and short pool balances b
 Used by the pool owner to change the address that the pool fees are transferred to every price execution. This address is the only one allowed to change the fee address. Care must be taken to not change it to an address outside of the pool owner's control.
 
 ## PoolSwapLibrary
-Utilizes the ABDKMathQuad library to work with 128-bit floating-point numbers (IEEE754 binary128).
+Utilizes the ABDKMathQuad library to work with 128-bit floating-point numbers (IEEE754 binary128). Provides utility functions to support the `LeveragedPool` contract, and any potential frontend clients.
 
 ### Read only functions
 #### getRatio

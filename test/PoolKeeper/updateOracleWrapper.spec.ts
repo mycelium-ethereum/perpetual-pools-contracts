@@ -46,12 +46,6 @@ describe("PoolKeeper - updateOracleWrapper", () => {
         signers[0].address
       )
     ).to.eq(true);
-    expect(
-      await poolKeeper.hasRole(
-        ethers.utils.keccak256(ethers.utils.toUtf8Bytes(OPERATOR_ROLE)),
-        signers[0].address
-      )
-    ).to.eq(true);
   });
 
   it("should allow an authorized user to update the oracle wrapper", async () => {
