@@ -85,9 +85,7 @@ describe("LeveragedPool - executePriceUpdate", () => {
     it("should set the last update timestamp", async () => {
       const firstTimestamp = await pool.lastPriceTimestamp();
       await pool.executePriceChange(1, 2);
-      expect((await pool.lastPriceTimestamp()).toNumber()).to.be.greaterThan(
-        firstTimestamp.toNumber()
-      );
+      expect(await pool.lastPriceTimestamp()).to.be.greaterThan(firstTimestamp);
     });
     it("should send the fund movement fee to the fee holder", async () => {
       expect(await quoteToken.balanceOf(feeAddress)).to.eq(0);
@@ -104,9 +102,7 @@ describe("LeveragedPool - executePriceUpdate", () => {
     it("should only update the timestamp if the losing pool balance is zero", async () => {
       const oldTimestamp = await pool.lastPriceTimestamp();
       await pool.executePriceChange(lastPrice, 78000000);
-      expect((await pool.lastPriceTimestamp()).toNumber()).to.be.greaterThan(
-        oldTimestamp.toNumber()
-      );
+      expect(await pool.lastPriceTimestamp()).to.be.greaterThan(oldTimestamp);
     });
   });
   describe("Movement to long pool", () => {

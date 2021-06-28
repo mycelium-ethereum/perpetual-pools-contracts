@@ -15,7 +15,7 @@ interface IPoolKeeper {
     int256 lastExecutionPrice; // The last price executed on.
     uint32 count; // The number of samples taken during the current interval.
     uint32 updateInterval;
-    uint32 roundStart;
+    uint40 roundStart;
   }
 
   // #### Events
