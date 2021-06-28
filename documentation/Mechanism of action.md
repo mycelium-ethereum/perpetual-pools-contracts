@@ -55,13 +55,19 @@ A market consists of an identifier and an oracle. When creating the market, thes
 ## Pool upkeep
 The pool implements the Chainlink keeper interface for upkeep. There are two types of upkeep: market data management, and pool maintenance.
 
+An upkeep is made up of a market, an update interval, and one or more pools.
+
 An upkeep will occur when one of the following conditions is met:
 1. The price for the market and update interval is met
 2. The last execution time for one or more of the pools in the upkeep is less than the start time of the current update interval (this occurs when a new interval is started)
 
 Market data management consists of the following:
 1. A price sample for the current update interval is taken
-2. Optionally 
+2. Optionally a price update execution will occur. This will update each pool in the upkeep with the new price, causing them to adjust the live balances accordingly. This will only happen if there is more than one upkeep for a given market/update interval pair. It is possible for multiple upkeeps to use the same market data.
+
+Pool maintenance:
+1. Start a new interval. The average price for the interval will be calculated and stored.
+2. Execute a price update for each pool in the upkeep.
 
 ## Events
 To reduce the amount of data stored on chain, and save on gas, events are used as a form of storage. In particular, commits, and pool addresses are not accessible without knowing their identifier (commit id, and pool code, respectively). Frontend clients should be aware of this, and save event logs accordingly. 
