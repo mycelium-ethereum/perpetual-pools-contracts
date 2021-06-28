@@ -307,7 +307,12 @@ Compares two IEEE754 binary128 numbers and returns:
 - `1` if the first number is larger than the second
 
 #### convertUIntToDecimal
-`function convertDecimalToUInt(bytes16 ratio) external pure returns (uint256)`  
+```
+function convertUIntToDecimal(uint112 amount)
+    external
+    pure
+    returns (bytes16)
+```  
 Converts a `uint` value to an IEEE754 binary128 number.
 
 #### convertDecimalToUInt
@@ -321,7 +326,7 @@ function multiplyDecimalByUInt(bytes16 a, uint256 b)
     pure
     returns (bytes16)
 ```
-Returns the product of an IEEE754 binary128 number and a `uint256`.
+Returns the product of an IEEE754 binary128 number and a `uint256` as a IEEE754 binary128 number.
 
 #### divInt
 `function divInt(int256 a, int256 b) external pure returns (bytes16)`  
@@ -341,7 +346,7 @@ Ratio R = old price / new price
 Loss multiplier LM = (R < 1 ? 1 : 0) * R + (R >= 1 ? 1 : 0) * 1 / R
 Adjusted loss multiplier = 1 - LM ^ leverage
 ```
-The exact implementation uses the following formula for the power calculation for performance reasons.   
+The exact implementation for the power function uses the following formula for performance reasons.   
 ![Exponent with an arbitrary base using a power of 2](https://miro.medium.com/max/233/1*Q4VX0wvgVXrFDwdwda7gtg.png "Power of 2 exponents with an arbitrary base")  
 
 #### getLossAmount
