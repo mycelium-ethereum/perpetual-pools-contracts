@@ -95,7 +95,7 @@ Emitted when a new pricing interval occurs for a pool. This occurs when the curr
 - `oldPrice` The price from the penultimate price execution.
 - `newPrice` The new price used for execution in the interval just passed. Both `oldPrice` and `newPrice` are an average of the price changes that have occurred during an interval (a price sample is taken whenever the price changes).
 - `updateInterval` The size of the interval in seconds. 
-- `market` The market identifier. Price data is gathered and stored for `marketCode`/`updateInterval` pairs, to easily share data between pools on the same interval tracking the same market. These two parameters allow access to the current price data.
+- `market` The market identifier. Price data is gathered and stored for `marketCode`/`updateInterval` pairs, to easily share data between pools on the same interval tracking the same market. These two parameters allow access to the current average price for the interval in progress.
 
 #### PriceSample
 ```
@@ -123,12 +123,16 @@ event ExecutePriceChange(
   );
 ```  
 Emitted when a pool has a price change execution. If a pool fails to update, a `PoolUpdateError` will be emitted instead.
-- `pool` An 
+- `oldPrice` The price from the penultimate price execution.
+- `newPrice` The new price used for execution in the interval just passed. Both `oldPrice` and `newPrice` are an average of the price changes that have occurred during an interval (a price sample is taken whenever the price changes).
+- `updateInterval` The interval length in seconds
+- `market` The market identifier for the market that's been sampled
+- `pool` The pool that was updated
 
 
 #### PoolUpdateError
 `event PoolUpdateError(string indexed poolCode, string reason);`  
-Emitted when a pool fails a price change execution. Since pools are updated in groups, this is used to signal an issue instead of reverting and leaving all pools out of date.
+Emitted when a pool fails a price change execution. Since pools are updated in groups, this is used to signal an issue without reverting and leaving all pools out of date.
 - `poolCode` The pool's identifier
 - `reason` The reason for the failure. The most likely reason is that the `ERC20.transfer` call failed when transferring the fee to the fee holder.
 
@@ -285,7 +289,7 @@ function getRatio(uint112 _numerator, uint112 _denominator)
     pure
     returns (bytes16);
 ```  
-Calculates `_numerator/denominator` and returns the result as an IEEE754 binary128 number.
+Calculates `_numerator/_denominator` and returns the result as an IEEE754 binary128 number.
 
 #### getAmountOut
 ```
