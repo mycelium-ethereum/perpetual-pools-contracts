@@ -6,7 +6,7 @@
 - `frontrunning interval` The length of time in seconds before a price update execution that a user must commit for the commitment to be executable in the following update interval.
 - `price execution` A movement of funds from one pair to the other. The direction will depend on the price change
 - `shadow pool` The combined value of all unexecuted commits of a certain type. There are 4 types of shadow pool (Long mint, long burn, short mint, and short burn). The mint types represent amounts of the digital asset to be added to the pool. The burn types represent claims on the digital assets of a given pool.
-- `live pool` The balance each pair holds in the digital asset. There are only two live pools. These funds are what is moved during a price execution.
+- `live pool` The balance each pair holds in the digital asset. There are only two live pools. These funds are what are moved during a price execution.
 - `market data` Price data for a specific market code and update interval pair.
 - `upkeep` The combination of update interval, market code, and one or more pools. It is possible (but not required) to register an upkeep with the Chainlink keeper network. 
 
@@ -20,7 +20,7 @@ The process for depositing into a pair is identical for both pairs. A user can e
    - For this to be possible, the user must have added the commit between the start of the interval, and the interval length minus the frontrunning interval. 
      - If the frontrunning interval is 5 minutes, and the next price execution is at 20:00, then the user must commit before 19:55 for the commit to be executable immediately after the price execution.
    - This is enforced by checking `last execution time - commit creation time > front running interval` when executing a commit.
-   - If the user did not commit before the frontrunning interval, they must wait for the next interval to execute their commit.
+   - If the user did not commit before the frontrunning interval, they must wait for the next interval to execute their commitment.
 4. Upon execution, the following happens:
    1. The commit amount is moved from the shadow pool into the relevant live pool for the commit. 
       - For instance, executing a commit to deposit into the short pair will add the commit amount to the live short balance and subtract it from the shadow short mint balance.
@@ -49,7 +49,7 @@ For mint commits:
 3. The commit is deleted
 
 For burn commits:
-1. The amount of pair tokens committed are minted to the user's account (They were burned on commit)
+1. The number of pair tokens committed are minted to the user's account (They were burned on commit)
 2. The amount of pair tokens being refunded is subtracted from the shadow pool
 3. The commit is deleted
 
@@ -64,13 +64,13 @@ Creating a pool will:
    1. Start a new interval
    2. Add a price sample to the market/update interval price data
 3. Otherwise, if the current price and the last price sample taken are not the same, a new sample will be added to the price data for the market/update interval
-4. A new pool will be deployed using the pool factory. Details will be emitted via event.
+4. A new pool will be deployed using the pool factory. Details will be emitted via an event.
 
 
 ## Pool upkeep
 The pool implements the Chainlink keeper interface for upkeep. There are two types of upkeep: market data management, and pool maintenance.
 
-An upkeep is made up of a market, an update interval, and one or more pools. New upkeeps are registered in the pool keeper the first time an unkeep is performed. The pool keeper will track the following to ensure pool security:
+An upkeep is made up of a market, an update interval, and one or more pools. New upkeeps are registered in the pool keeper the first time an upkeep is performed. The pool keeper will track the following to ensure pool security:
 - The last execution time of a pool
 - The market that a pool belongs to
 - The pool's update interval
