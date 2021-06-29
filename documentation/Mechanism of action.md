@@ -28,7 +28,7 @@ The process for depositing into a pair is identical for both pairs. A user can e
       1. The exact amount is determined by `Amount of the digital asset committed * (Total number of pair tokens issued / Total amount of the digital asset held by the pair)`. 
 
 ## Withdrawing from a pair (Burning)
-The process is the same for withdrawing from either pool. 
+The process is the same for withdrawing from either pair. 
 
 1. The user must have a balance of the pair token that they wish to redeem.
 2. The user creates a commitment to withdraw. 
@@ -60,7 +60,7 @@ Creating a market will add a record for the market code and oracle to the oracle
 
 Creating a pool will:
 1. Take the current price for the market
-2. If this is the first time that this market data has been used:
+2. If this is the first pool to use the market data:
    1. Start a new interval
    2. Add a price sample to the market/update interval price data
 3. Otherwise, if the current price and the last price sample taken are not the same, a new sample will be added to the price data for the market/update interval
@@ -70,10 +70,10 @@ Creating a pool will:
 ## Pool upkeep
 The pool implements the Chainlink keeper interface for upkeep. There are two types of upkeep: market data management, and pool maintenance.
 
-An upkeep is made up of a market, an update interval, and one or more pools. New upkeeps are registered in the pool keeper on first use. The pool keeper will track:
+An upkeep is made up of a market, an update interval, and one or more pools. New upkeeps are registered in the pool keeper the first time an unkeep is performed. The pool keeper will track the following to ensure pool security:
 - The last execution time of a pool
 - The market that a pool belongs to
-- The pool's update interval 
+- The pool's update interval
 
 Market price data is stored under pairs of market code and update interval. Multiple pools at different leverage points can use the same price data, as long as they all share the same update interval and market.
 
