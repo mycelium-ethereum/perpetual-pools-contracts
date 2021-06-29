@@ -137,6 +137,12 @@ Emitted when a pool fails a price change execution. Since pools are updated in g
 - `reason` The reason for the failure. The most likely reason is that the `ERC20.transfer` call failed when transferring the fee to the fee holder.
 
 
+### Read only functions
+#### checkUpkeep
+`function checkUpkeep(bytes calldata checkData) external view;`
+Used by pool keepers to check if an upkeep is necessary. An upkeep will occur if one of the pools requires a price execution or if the price has changed from the last sample.
+- `checkData` The abi encoded data in the format `uint32, string, string[]`. In order, this is: update interval, market code, and an array of pool codes.
+
 ### State changing functions
 #### updateOracleWrapper
 `function updateOracleWrapper(address oracle) external;`  
@@ -172,6 +178,11 @@ Creates a pool in a given market.
 - `feeAddress` The address to send fees to
 - `quoteToken` The address of the digital asset that the pool is demarcated in
 
+#### performUpkeep
+`function performUpkeep(bytes calldata performData) external;`  
+Performs upkeep on one or more pools. This will either take a price sample (and optionally execute a price change for the pools), or it will start a new interval and execute a price change for the pools in the calldata.
+- `performData` The abi encoded data in the format `uint32, string, string[]`. In order, this is: update interval, market code, and an array of pool codes.
+  
 ## LeveragedPool
 Manages the short and long pairs of a pool. This is the contract most users will be interacting with as they commit to deposit and withdraw.
 ### Events
