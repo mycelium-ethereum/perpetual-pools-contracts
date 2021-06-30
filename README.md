@@ -1,6 +1,14 @@
 # Tracer Pool Swaps
 
 Project base generated with the Typescript Solidity Dev Starter Kit. See [Blog Post](https://medium.com/@rahulsethuram/the-new-solidity-dev-stack-buidler-ethers-waffle-typescript-tutorial-f07917de48ae) for more details
+
+## Deployed contracts:
+### Kovan 
+All contracts have been verified.
+`PoolSwapLibrary`:  	`0xc83dbd0C50F8E782C32aa511a2c888999907f00d`
+`PoolFactory`:  	    `0xfdca221410B054770F987dBDe82Bed671f3af1d5`
+`OracleWrapper`: 	    `0x20C3868b4cf0aD0F1b23F561Ea9c2254389C7Eb6`
+`PoolKeeper`:   	    `0xF588f2A1D12e5A32373570f2Deb74d960769250C`
 ## Frontend Notes
 ### Calculating ABDKMathQuad values
 The `PoolSwapLibrary` contains several methods for generating, converting, and using the raw ratio values. These can be used in the frontend to estimate the result of a transaction. It is vital when estimating the result of a transaction that the shadow pool amount for the commit type's opposite is included in the token total supply.
@@ -60,11 +68,11 @@ To use the script, there are two options available.
 Use the two prebuilt script commands: `npm run deploy:localhost:all` to deploy to a local hardhat node, or `npm run deploy:testnet:all` to deploy to the configured testnet (kovan)
 
 #### Run the script with custom options
-Hardhat requires the network to be set via environment variable for the current usage. Add `HARDHAT_NETWORK="kovan" ` (change to your preferred testnet) before running the commands below.
+Hardhat requires the network to be set via environment variable for the current usage. Add `HARDHAT_NETWORK="kovan" ` (change to your preferred testnet) before running the commands below.  
 To run the script manually, use `npx ts-node scripts/deploy.ts` with the following flags.
 - `--all` Will deploy a new instance of each contract. This will override the contracts and address type flags
 - `--contracts PoolSwapLibrary PoolKeeper PoolFactory OracleWrapper` Deploys a new instance of each contract named. If deploying the factory and not the library, you must provide the address of a library instance. If deploying the pool keeper by itself, you must provide the address of a factory and oracle wrapper instance.
-- `--factory 0xabcd` The address of a deployed PoolFactory instance
+- `--factory 0xabcd` The address of a deployed PoolFactory instance.
 - `--oracle 0xabcd` The address of a deployed OracleWrapper instance
 - `--library 0xabcd` The address of a deployed PoolSwapLibrary instance
 - `--verify` Verifies the deployed contracts on etherscan. This requires an etherscan key to be configured in the `.env`
