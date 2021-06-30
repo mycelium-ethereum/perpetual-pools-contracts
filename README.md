@@ -63,6 +63,8 @@ Notes:
 ### Deploy to Ethereum
 There is a built in deployment script for the contracts. It's intended to be used on a testnet (and was tested to work on kovan). The PoolFactory contract won't deploy to goerli due to the lower block gas limit (currently 8 million). It was tested against a fork of mainnet (12 million gas limit) during development. 
 
+If you are deploying to kovan, and all the faucets are down, post a request here: https://forum.poa.network/c/kovan-testnet/faucet-requests/107 and you'll get some KETH in a day or two.
+
 To use the script, there are two options available.
 #### Pre-built commands
 Use the two prebuilt script commands: `npm run deploy:localhost:all` to deploy to a local hardhat node, or `npm run deploy:testnet:all` to deploy to the configured testnet (kovan)
