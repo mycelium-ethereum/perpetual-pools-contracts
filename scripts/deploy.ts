@@ -1,5 +1,3 @@
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const hardhat = require("hardhat");
 import {
   deployPoolKeeper,
   deployOracleWrapper,
@@ -38,7 +36,7 @@ const deploy = async (): Promise<void> => {
     verify: { type: Boolean, multiple: false, optional: true },
   });
   const getIsDeploying = (name: string) =>
-    argv.contracts?.some(
+    argv?.contracts?.some(
       (el: string) => el?.toLowerCase() === name.toLowerCase()
     );
 
@@ -54,7 +52,7 @@ const deploy = async (): Promise<void> => {
   let library: string | undefined = undefined;
   let poolKeeper: string | undefined = undefined;
 
-  if (argv.all) {
+  if (argv?.all) {
     console.log(`
     Deploying all contracts\n 
     Now deploying PoolSwapLibrary...\n
@@ -62,93 +60,92 @@ const deploy = async (): Promise<void> => {
     library = await deployPoolSwapLibrary();
     console.log("Library address is: ", library);
 
-    console.log("Now deploying PoolFactory...\n");
+    console.log("\nNow deploying PoolFactory...\n");
     factory = await deployPoolFactory(library);
-    console.log("PoolFactory address is ", factory);
+    console.log("PoolFactory address is:\t", factory);
 
-    console.log("Now deploying OracleWrapper...\n");
+    console.log("\nNow deploying OracleWrapper...\n");
     oracle = await deployOracleWrapper();
-    console.log("OracleWrapper address is ", oracle);
+    console.log("\nOracleWrapper address is:\n", oracle);
 
-    console.log("Now deploying PoolKeeper...\n");
+    console.log("\nNow deploying PoolKeeper...\n");
     poolKeeper = await deployPoolKeeper(oracle, factory);
-    console.log("PoolKeeper address is ", poolKeeper);
+    console.log("\nPoolKeeper address is:\t", poolKeeper);
+  } else {
+    if (isDeployingContract.oracleWrapper) {
+      console.log("Now deploying OracleWrapper...\n");
+      oracle = await deployOracleWrapper();
+      console.log("OracleWrapper address is:\t", oracle);
+    }
+    if (isDeployingContract.poolLibrary) {
+      console.log("\nNow deploying PoolSwapLibrary...\n");
+      library = await deployPoolSwapLibrary();
+      console.log("Library address is:\t", library);
+    }
+    if (isDeployingContract.poolFactory) {
+      if (!library && !argv?.library) {
+        throw new Error("Library deployed or address not provided");
+      }
+      console.log("\nNow deploying PoolFactory...\n");
+      if (library) {
+        factory = await deployPoolFactory(library);
+      } else if (argv?.library) {
+        factory = await deployPoolFactory(argv?.library);
+      }
+      console.log("PoolFactory address is:\t", factory);
+    }
+    if (isDeployingContract.poolKeeper) {
+      if (!oracle && !argv?.oracle) {
+        throw new Error("OracleWrapper not deployed or address not provided");
+      }
+      if (!factory && !argv?.factory) {
+        throw new Error("Factory not deployed or address not provided");
+      }
+      console.log("\nNow deploying PoolKeeper...\n");
+      if (oracle) {
+        if (factory) {
+          poolKeeper = await deployPoolKeeper(oracle, factory);
+        } else if (argv?.factory) {
+          factory = argv?.factory;
+          poolKeeper = await deployPoolKeeper(oracle, argv?.factory);
+        }
+      } else if (argv?.oracle) {
+        oracle = argv?.oracle;
+        if (factory) {
+          poolKeeper = await deployPoolKeeper(oracle, factory);
+        } else if (argv?.factory) {
+          factory = argv?.factory;
+          poolKeeper = await deployPoolKeeper(oracle, argv?.factory);
+        }
+      }
+      console.log("PoolKeeper address is:\t", poolKeeper);
+    }
+  }
 
-    if (argv.verify) {
-      console.log("Verifying contracts on etherscan, this may take a while...");
-      await timeout(20000); // Delay for etherscan to catch up and confirm deployment
+  if (argv?.verify) {
+    console.log("Verifying deployed contracts...");
+    await timeout(30000); // Delay so etherscan can catch up and confirm deployment
+    if ((isDeployingContract.oracleWrapper || argv?.all) && oracle) {
+      await verifyOnEtherscan(oracle, []);
+    }
+    if ((isDeployingContract.poolFactory || argv?.all) && factory) {
+      if (!library && !argv?.library) {
+        throw new Error("Library not deployed, or address not provided");
+      }
+      if (!library) {
+        library = argv?.library;
+      }
+      await verifyOnEtherscan(factory, [], {
+        PoolSwapLibrary: library,
+      });
+    }
+    if ((isDeployingContract.poolKeeper || argv?.all) && poolKeeper) {
+      await verifyOnEtherscan(poolKeeper, [oracle, factory]);
+    }
+    if ((isDeployingContract.poolLibrary || argv?.all) && library) {
       await verifyOnEtherscan(library, []);
-      await verifyOnEtherscan(oracle, []);
-      await verifyOnEtherscan(factory, []);
-      await verifyOnEtherscan(poolKeeper, [oracle, factory]);
     }
-    console.log("Deployment complete, exiting");
-    return;
-  }
-
-  if (isDeployingContract.oracleWrapper) {
-    console.log("Now deploying OracleWrapper...\n");
-    oracle = await deployOracleWrapper();
-    console.log("OracleWrapper address is ", oracle);
-  }
-  if (isDeployingContract.poolLibrary) {
-    console.log("Now deploying PoolSwapLibrary...\n");
-    library = await deployPoolSwapLibrary();
-    console.log("Library address is: ", library);
-  }
-  if (isDeployingContract.poolFactory) {
-    if (!library && !argv.library) {
-      throw new Error("Library deployed or address not provided");
-    }
-    console.log("Now deploying PoolFactory...\n");
-    if (library) {
-      factory = await deployPoolFactory(library);
-    } else if (argv?.library) {
-      factory = await deployPoolFactory(argv.library);
-    }
-    console.log("PoolFactory address is ", factory);
-  }
-  if (isDeployingContract.poolKeeper) {
-    if (!oracle && !argv?.oracle) {
-      throw new Error("OracleWrapper not deployed or address not provided");
-    }
-    if (!factory && !argv.factory) {
-      throw new Error("Factory not deployed or address not provided");
-    }
-    console.log("Now deploying PoolKeeper...\n");
-    if (oracle) {
-      if (factory) {
-        poolKeeper = await deployPoolKeeper(oracle, factory);
-        console.log("PoolKeeper address is ", poolKeeper);
-      } else if (argv?.factory) {
-        factory = argv?.factory;
-        poolKeeper = await deployPoolKeeper(oracle, argv?.factory);
-        console.log("PoolKeeper address is ", poolKeeper);
-      }
-    } else if (argv?.oracle) {
-      oracle = argv?.oracle;
-      if (factory) {
-        poolKeeper = await deployPoolKeeper(argv?.oracle, factory);
-        console.log("PoolKeeper address is ", poolKeeper);
-      } else if (argv?.factory) {
-        poolKeeper = await deployPoolKeeper(argv?.oracle, argv?.factory);
-        console.log("PoolKeeper address is ", poolKeeper);
-      }
-    }
-    poolKeeper = await deployPoolKeeper(oracle, factory);
-    console.log("PoolKeeper address is ", poolKeeper);
-  }
-  if (argv.verify) {
-    await timeout(20000);
-    if (isDeployingContract.oracleWrapper && oracle) {
-      await verifyOnEtherscan(oracle, []);
-    }
-    if (isDeployingContract.poolFactory && factory) {
-      await verifyOnEtherscan(factory, []);
-    }
-    if (isDeployingContract.poolKeeper && poolKeeper) {
-      await verifyOnEtherscan(poolKeeper, [oracle, factory]);
-    }
+    console.log("Verification complete\n");
   }
   console.log(`Deployment complete, exiting...`);
 };

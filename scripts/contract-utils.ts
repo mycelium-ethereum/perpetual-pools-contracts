@@ -96,13 +96,16 @@ export const deployPoolKeeper = async (
  * Verifies a contract on etherscan
  * @param address The address of the deployed contract
  * @param constructorArguments The constructor arguments that the contract was deployed with
+ * @param libraries  A library object to properly verify linking with. See https://hardhat.org/plugins/nomiclabs-hardhat-etherscan.html#libraries-with-undetectable-addresses. Looks like {SomeLibrary:"0x1234"}
  */
 export const verifyOnEtherscan = async (
   address: string,
-  constructorArguments: any[]
+  constructorArguments: any[],
+  libraries?: any | undefined
 ) => {
   await hardhat.run("verify:verify", {
     address,
     constructorArguments,
+    libraries,
   });
 };
