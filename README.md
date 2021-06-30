@@ -53,7 +53,7 @@ Notes:
 - running a coverage report currently deletes artifacts, so after each coverage run you will then need to run `npx hardhat clean` followed by `npm run build` before re-running tests
  
 ### Deploy to Ethereum
-There is a built in deployment script for the contracts. It's intended to be used on a testnet (and was tested to work on kovan). The contracts won't deploy to goerli due to the lower block gas limit. 
+There is a built in deployment script for the contracts. It's intended to be used on a testnet (and was tested to work on kovan). The PoolFactory contract won't deploy to goerli due to the lower block gas limit (currently 8 million). It was tested against a fork of mainnet (12 million gas limit) during development. 
 
 To use the script, there are two options available.
 #### Pre-built commands
