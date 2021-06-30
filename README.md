@@ -53,12 +53,25 @@ Notes:
 - running a coverage report currently deletes artifacts, so after each coverage run you will then need to run `npx hardhat clean` followed by `npm run build` before re-running tests
  
 ### Deploy to Ethereum
+There is a built in deployment script for the contracts. It's intended to be used on a testnet (and was tested to work on kovan). The contracts won't deploy to goerli due to the lower block gas limit. 
 
-Create/modify network config in `hardhat.config.ts` and add API key and private key, then run:
+To use the script, there are two options available.
+#### Pre-built commands
+Use the two prebuilt script commands: `npm run deploy:localhost:all` to deploy to a local hardhat node, or `npm run deploy:testnet:all` to deploy to the configured testnet (kovan)
 
-`npx hardhat run --network rinkeby scripts/deploy.ts`
+#### Run the script with custom options
+To run the script manually, use `HARDHAT_NETWORK="kovan" npx ts-node scripts/deploy.ts` with the following flags.
+- `--all` Will deploy a new instance of each contract. This will override the contracts and address type flags
+- `--contracts PoolSwapLibrary PoolKeeper PoolFactory OracleWrapper` Deploys a new instance of each contract named. If deploying the factory and not the library, you must provide the address of a library instance. If deploying the pool keeper by itself, you must provide the address of a factory and oracle wrapper instance.
+- `--factory 0xabcd` The address of a deployed PoolFactory instance
+- `--oracle 0xabcd` The address of a deployed OracleWrapper instance
+- `--library 0xabcd` The address of a deployed PoolSwapLibrary instance
+- `--verify` Verifies the deployed contracts on etherscan. This requires an etherscan key to be configured in the `.env`
+
 
 ### Verify on Etherscan
+
+Verification can be run automatically during deployment with the `--verify` flag. 
 
 Using the [hardhat-etherscan plugin](https://hardhat.org/plugins/nomiclabs-hardhat-etherscan.html), add Etherscan API key to `hardhat.config.ts`, then run:
 
