@@ -10,7 +10,10 @@
     "test": "npx hardhat test",
     "coverage": "npm run build && npx hardhat coverage --temp artifacts --network coverage",
     "slither": "npm run build && slither . --filter-path node_modules --exclude-dependencies --exclude-optimization --exclude-informational",
-    "removeLogs": "npx hardhat remove-logs"
+    "remove-logs": "npx hardhat remove-logs",
+    "local-node": "npx hardhat node --hostname localhost",
+    "deploy:localhost:all": "npx hardhat compile && cross-env HARDHAT_NETWORK='localhost' npx ts-node  scripts/deploy.ts --all",
+    "deploy:testnet:all": "npx hardhat compile && cross-env HARDHAT_NETWORK='kovan' npx ts-node  scripts/deploy.ts --all"
   },
   "repository": {
     "type": "git",
@@ -37,20 +40,21 @@
     "@typescript-eslint/parser": "^4.25.0",
     "chai": "^4.3.4",
     "chai-as-promised": "^7.1.1",
+    "cross-env": "^7.0.3",
     "dotenv": "^9.0.2",
     "eslint": "^7.27.0",
     "ethereum-waffle": "^3.3.0",
     "ethers": "^5.1.4",
-    "hardhat": "^2.2.1",
+    "hardhat": "^2.4.1",
     "hardhat-gas-reporter": "^1.0.4",
     "hardhat-log-remover": "^2.0.2",
     "prettier": "^2.3.0",
     "prettier-plugin-solidity": "^1.0.0-beta.10",
+    "ts-command-line-args": "^2.1.0",
     "ts-generator": "^0.1.1",
     "ts-node": "^9.1.1",
     "typechain": "^5.0.0",
-    "typescript": "^4.2.4",
-    "ts-command-line-args": "^2.1.0"
+    "typescript": "^4.2.4"
   },
   "dependencies": {
     "@chainlink/contracts": "^0.1.7",

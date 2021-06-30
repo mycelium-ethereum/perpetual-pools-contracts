@@ -1,5 +1,8 @@
+#!/usr/bin/env node
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { ethers } from "hardhat";
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const hardhat = require("hardhat");
+const ethers = hardhat.ethers;
 import {
   PoolKeeper__factory,
   OracleWrapper,
@@ -36,7 +39,6 @@ export const deployPoolFactory = async (
     signer: deployer,
     libraries: { PoolSwapLibrary: libraryAddress },
   })) as PoolFactory__factory;
-
   return (await (await factory.deploy()).deployed()).address;
 };
 
@@ -88,4 +90,19 @@ export const deployPoolKeeper = async (
   await oracle.grantRole(operatorRole, poolKeeperAddress);
 
   return poolKeeperAddress;
+};
+
+/**
+ * Verifies a contract on etherscan
+ * @param address The address of the deployed contract
+ * @param constructorArguments The constructor arguments that the contract was deployed with
+ */
+export const verifyOnEtherscan = async (
+  address: string,
+  constructorArguments: any[]
+) => {
+  await hardhat.run("verify:verify", {
+    address,
+    constructorArguments,
+  });
 };

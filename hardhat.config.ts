@@ -5,6 +5,7 @@ import { HardhatUserConfig } from "hardhat/types";
 
 import "@nomiclabs/hardhat-waffle";
 import "@typechain/hardhat";
+import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-etherscan";
 import "@openzeppelin/hardhat-upgrades";
 import "hardhat-log-remover";
@@ -36,7 +37,7 @@ const config: HardhatUserConfig = {
       },
     },
 
-    goerli: {
+    kovan: {
       url: ALCHEMY_API_TESTNET_URL,
       accounts: [TESTNET_PRIVATE_KEY],
     },
