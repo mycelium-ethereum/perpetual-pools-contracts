@@ -166,7 +166,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
   function _executeCommitment(Commit memory _commit) internal {
     require(_commit.owner != address(0), "Invalid commit");
     require(
-      _commit.created.add(frontRunningInterval) < lastPriceTimestamp,
+      lastPriceTimestamp.sub(_commit.created) > frontRunningInterval,
       "Commit too new"
     );
     shadowPools[_commit.commitType] = shadowPools[_commit.commitType].sub(

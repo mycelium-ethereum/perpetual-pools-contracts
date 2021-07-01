@@ -50,19 +50,14 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
   bytes16 constant fixedPoint = 0x403abc16d674ec800000000000000000; // 1 ether
 
   // #### Roles
-  /**
-  @notice Use the Operator role to restrict access to the updateOracleWrapper function
-   */
-  bytes32 public constant OPERATOR = keccak256("OPERATOR");
   bytes32 public constant ADMIN = keccak256("ADMIN");
 
   // #### Functions
   constructor(address _oracleWrapper, address _factory) {
     require(_oracleWrapper != address(0), "Oracle cannot be 0 address");
+    require(_factory != address(0), "Factory cannot be 0 address");
     oracleWrapper = _oracleWrapper;
-    _setRoleAdmin(ADMIN, OPERATOR);
     _setupRole(ADMIN, msg.sender);
-    _setupRole(OPERATOR, msg.sender);
     factory = PoolFactory(_factory);
   }
 
