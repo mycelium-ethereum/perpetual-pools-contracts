@@ -16,6 +16,8 @@ The `PoolSwapLibrary` contains several methods for generating, converting, and u
 ## Environment variables
 The environment variables used in this project are documented in the `example.env` file at the root of the project. To configure, create a copy of `example.env`, rename to `.env`, and replace the placeholders with the correct values. 
 
+At a minimum you will need to configure the `ALCHEMY_API_MAINNET_URL`, and `COINMARKET_KEY` environment variables to run the test suite. The `ALCHEMY_API_TESTNET_URL`, `ETHERSCAN_API_KEY`, and `TESTNET_PRIVATE_KEY` variables are required as well if you wish to run the deployment script
+
 ## Using this Project
 
 Install the dependencies with `npm install`. 
@@ -29,6 +31,8 @@ You'll need to run this before running tests if typescript throws an error about
 `npm run compile`
 
 ### Run Contract Tests & Get Callstacks
+
+To run the test suite, you will need to configure the `ALCHEMY_API_MAINNET_URL`, and `COINMARKET_KEY` environment variables. See the `example.env` for details.
 
 In one terminal run `npx hardhat node`
 
