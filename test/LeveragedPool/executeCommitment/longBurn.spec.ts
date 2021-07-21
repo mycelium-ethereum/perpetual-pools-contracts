@@ -30,7 +30,6 @@ const updateInterval = 2;
 const frontRunningInterval = 1; // seconds
 const fee = "0x00000000000000000000000000000000";
 const leverage = 2;
-let imbalance: BytesLike;
 
 describe("LeveragedPool - executeCommitment: Long Burn", () => {
   let token: TestToken;
@@ -56,17 +55,13 @@ describe("LeveragedPool - executeCommitment: Long Burn", () => {
       token = result.token;
       library = result.library;
       longToken = result.longToken;
-      imbalance = await library.getRatio(
-        ethers.utils.parseEther("300"),
-        ethers.utils.parseEther("50")
-      );
       await token.approve(pool.address, amountMinted);
-      commit = await createCommit(pool, [2], imbalance, amountCommitted);
+      commit = await createCommit(pool, [2], amountCommitted);
       await timeout(2000);
       await pool.executePriceChange(9, 10);
       await pool.executeCommitment([commit.commitID]);
       await longToken.approve(pool.address, amountCommitted);
-      commit = await createCommit(pool, [3], imbalance, amountCommitted);
+      commit = await createCommit(pool, [3], amountCommitted);
     });
     it("should adjust the live long pool balance", async () => {
       expect(await pool.longBalance()).to.eq(amountCommitted);

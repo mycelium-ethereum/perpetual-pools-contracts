@@ -95,7 +95,6 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
 
   function commit(
     CommitType commitType,
-    bytes16 maxImbalance,
     uint112 amount
   ) external override {
     require(amount > 0, "Amount must not be zero");
@@ -103,7 +102,6 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
 
     commits[commitIDCounter] = Commit({
       commitType: commitType,
-      maxImbalance: maxImbalance,
       amount: amount,
       owner: msg.sender,
       created: uint40(block.timestamp)
@@ -111,7 +109,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
 
     shadowPools[commitType] = shadowPools[commitType].add(amount);
 
-    emit CreateCommit(commitIDCounter, amount, maxImbalance, commitType);
+    emit CreateCommit(commitIDCounter, amount, commitType);
 
     if (
       commitType == CommitType.LongMint || commitType == CommitType.ShortMint
@@ -226,13 +224,6 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
         "Transfer failed"
       );
     }
-    require(
-      PoolSwapLibrary.compareDecimals(
-        PoolSwapLibrary.getRatio(longBalance, shortBalance),
-        _commit.maxImbalance
-      ) <= 0,
-      "Imbalance tolerance exceeded"
-    );
   }
 
   /**

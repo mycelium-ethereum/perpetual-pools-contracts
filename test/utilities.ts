@@ -144,29 +144,25 @@ export const deployPoolAndTokenContracts = async (
 export interface CommitEventArgs {
   commitID: BigNumberish;
   amount: BigNumberish;
-  maxImbalance: BigNumberish;
   commitType: BigNumberish;
 }
 /**
  * Creates a commit and returns the event arguments for it
  * @param pool The pool contract instance
  * @param commitType The type of commit
- * @param imbalance The max imbalance for the commit
  * @param amount The amount to commit to
  */
 export const createCommit = async (
   pool: LeveragedPool,
   commitType: BigNumberish,
-  imbalance: BytesLike,
   amount: BigNumberish
 ): Promise<CommitEventArgs> => {
   const receipt = await (
-    await pool.commit(commitType, imbalance, amount)
+    await pool.commit(commitType, amount)
   ).wait();
   return {
     commitID: getEventArgs(receipt, "CreateCommit")?.commitID,
     amount: getEventArgs(receipt, "CreateCommit")?.amount,
-    maxImbalance: getEventArgs(receipt, "CreateCommit")?.maxImbalance,
     commitType: getEventArgs(receipt, "CreateCommit")?.commitType,
   };
 };

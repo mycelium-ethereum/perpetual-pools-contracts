@@ -226,14 +226,12 @@ Emitted when a newly deployed pool is initialized. A pool that isn't initialized
 event CreateCommit(
   uint128 indexed commitID,
   uint128 indexed amount,
-  bytes16 indexed maxImbalance,
   CommitType commitType
 );
 ```  
 Emitted when a commit is created. This forms the user's record of commits, as the commit details are not retrievable without the commit ID.
 - `commitID` The ID of the commit, to be used when withdrawing or executing the commit.
 - `amount` The amount that was committed
-- `maxImbalance` The difference between the pools that the user-specified. If the commit is executed and this is smaller than the resulting difference, the transaction will revert.
 - `commitType` The type of commit (long burn, short burn, long mint, short mint)
 
 #### RemoveCommit
@@ -288,12 +286,10 @@ Initializes a minimal clone of a pool contract. This can only be run once. Ordin
 ```
 function commit(
     CommitType commitType,
-    bytes16 maxImbalance,
     uint112 amount
   ) external;
 ```  
 Used to create a commitment to add or remove funds from one of the pool's pairs.
-- `maxImbalance` The maximum difference between the pools that the user will tolerate. This is the ratio between the long and the short live balances. The value should be generated using the `PoolSwapLibrary.getRatio` method.
 
 #### uncommit
 ```
