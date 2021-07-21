@@ -88,7 +88,7 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
     uint16 _leverageAmount,
     address _feeAddress,
     address _quoteToken
-  ) external override {
+  ) external override returns (address) {
     require(address(pools[_poolCode]) == address(0), "Pre-existing pool code");
     IOracleWrapper oracle = IOracleWrapper(oracleWrapper);
     require(
@@ -136,7 +136,8 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
       _updateInterval,
       _marketCode
     );
-    pools[_poolCode] = factory.deployPool(
+    
+    address poolAddress = factory.deployPool(
       address(this),
       _poolCode,
       _frontRunningInterval,
@@ -145,6 +146,10 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
       _feeAddress,
       _quoteToken
     );
+
+    pools[_poolCode] = poolAddress;
+
+    return poolAddress;
   }
 
   // Keeper network
