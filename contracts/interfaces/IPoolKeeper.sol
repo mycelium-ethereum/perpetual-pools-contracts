@@ -115,6 +115,7 @@ interface IPoolKeeper {
     @param leverageAmount The leverage that the pool will expose it's depositors to
     @param feeAddress The address that fees will be sent to on every price change
     @param quoteToken The address of the digital asset that this pool contains
+    @return The address of the newly-deployed pool contract
    */
   function createPool(
     string memory marketCode,
@@ -125,5 +126,5 @@ interface IPoolKeeper {
     uint16 leverageAmount,
     address feeAddress,
     address quoteToken
-  ) external;
+  ) external returns (address);
 }
