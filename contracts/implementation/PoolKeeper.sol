@@ -25,24 +25,19 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
 
   // #### Global variables
   /**
-    @notice Format: Pool code => pool address, where pool code looks like TSLA/USD^5+aDAI
-   */
-  mapping(string => address) public pools;
-
-  /**
   @notice Format: Pool Code => update interval => Market code. Used to prevent a pool from being updated with pricing from a market it doesn't belong to.
   */
-  mapping(string => mapping(uint32 => string)) public poolMarkets;
+  mapping(address => mapping(uint32 => string)) public poolMarkets;
 
   /**
   @notice Format: market code => updateInterval => Upkeep details
    */
-  mapping(string => mapping(uint32 => Upkeep)) public upkeep;
+  mapping(address => mapping(uint32 => Upkeep)) public upkeep;
   /**
   @notice Format: Pool code => timestamp of last price execution
   @dev Used to allow multiple upkeep registrations to use the same market/update interval price data.
    */
-  mapping(string => uint40) public lastExecutionTime;
+  mapping(address => uint40) public lastExecutionTime;
 
   address public oracleWrapper;
 
@@ -89,7 +84,6 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
     address _feeAddress,
     address _quoteToken
   ) external override returns (address) {
-    require(address(pools[_poolCode]) == address(0), "Pre-existing pool code");
     IOracleWrapper oracle = IOracleWrapper(oracleWrapper);
     require(
       oracle.assetOracles(_marketCode) != address(0),
@@ -146,8 +140,6 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
       _feeAddress,
       _quoteToken
     );
-
-    pools[_poolCode] = poolAddress;
 
     return poolAddress;
   }
