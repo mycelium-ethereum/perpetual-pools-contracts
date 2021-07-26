@@ -74,7 +74,8 @@ const setupHook = async () => {
     "0x00000000000000000000000000000000",
     1,
     generateRandomAddress(),
-    quoteToken
+    quoteToken,
+    generateRandomAddress() //todo replace with proper keeper oracle
   );
   await poolKeeper.createPool(
     MARKET,
@@ -84,7 +85,8 @@ const setupHook = async () => {
     "0x00000000000000000000000000000000",
     2,
     generateRandomAddress(),
-    quoteToken
+    quoteToken,
+    generateRandomAddress() //todo replace with proper keeper oracle
   );
 };
 const callData = ethers.utils.defaultAbiCoder.encode(

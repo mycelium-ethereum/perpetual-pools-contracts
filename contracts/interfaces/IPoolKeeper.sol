@@ -115,6 +115,7 @@ interface IPoolKeeper {
     @param leverageAmount The leverage that the pool will expose it's depositors to
     @param feeAddress The address that fees will be sent to on every price change
     @param quoteToken The address of the digital asset that this pool contains
+    @param keeperOracle the oracle used to get the quote token price in ETH (eg QUOTE/ETH oracle)
    */
   function createPool(
     string memory marketCode,
@@ -124,6 +125,7 @@ interface IPoolKeeper {
     bytes16 fee,
     uint16 leverageAmount,
     address feeAddress,
-    address quoteToken
+    address quoteToken,
+    address keeperOracle
   ) external;
 }

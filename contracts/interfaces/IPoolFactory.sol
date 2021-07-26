@@ -20,6 +20,7 @@ interface IPoolFactory {
     @param _leverageAmount The amount of exposure to price movements for the pool
     @param _feeAddress The address that the fund movement fee is sent to
     @param _quoteToken The digital asset that the pool accepts
+    @param _keeperOracle the oracle used to get the quote token price in ETH (eg QUOTE/ETH oracle)
     @return The address of the new pool
    */
   function deployPool(
@@ -29,6 +30,7 @@ interface IPoolFactory {
     bytes16 _fee,
     uint16 _leverageAmount,
     address _feeAddress,
-    address _quoteToken
+    address _quoteToken,
+    address _keeperOracle
   ) external returns (address);
 }

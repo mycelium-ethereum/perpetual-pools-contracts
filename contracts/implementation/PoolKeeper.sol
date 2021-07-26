@@ -87,7 +87,8 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
     bytes16 _fee,
     uint16 _leverageAmount,
     address _feeAddress,
-    address _quoteToken
+    address _quoteToken,
+    address _keeperOracle
   ) external override {
     require(address(pools[_poolCode]) == address(0), "Pre-existing pool code");
     IOracleWrapper oracle = IOracleWrapper(oracleWrapper);
@@ -143,7 +144,8 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
       _fee,
       _leverageAmount,
       _feeAddress,
-      _quoteToken
+      _quoteToken,
+      _keeperOracle
     );
   }
 

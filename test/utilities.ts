@@ -119,7 +119,8 @@ export const deployPoolAndTokenContracts = async (
       fee,
       leverage,
       feeAddress,
-      token.address
+      token.address,
+      feeAddress //todo change to a proper MARGIN/ETH oracle
     )
   ).wait();
 

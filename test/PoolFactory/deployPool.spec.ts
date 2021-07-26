@@ -42,6 +42,7 @@ describe("PoolFactory - deployPool", () => {
           [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
           5,
           generateRandomAddress(),
+          generateRandomAddress(),
           generateRandomAddress()
         )
       ).wait(),
@@ -67,6 +68,7 @@ describe("PoolFactory - deployPool", () => {
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
         5,
         generateRandomAddress(),
+        generateRandomAddress(),
         generateRandomAddress()
       )
     ).to.be.rejectedWith(Error);
@@ -80,6 +82,7 @@ describe("PoolFactory - deployPool", () => {
           5,
           [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
           5,
+          generateRandomAddress(),
           generateRandomAddress(),
           generateRandomAddress()
         )

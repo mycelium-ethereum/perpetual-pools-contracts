@@ -102,7 +102,8 @@ describe("LeveragedPool - initialize", () => {
           fee,
           leverage,
           feeAddress,
-          token.address
+          token.address,
+          feeAddress //todo change to a proper MARGIN/ETH oracle
         )
       ).wait();
       const testFactory = (await ethers.getContractFactory(
@@ -133,7 +134,8 @@ describe("LeveragedPool - initialize", () => {
           fee,
           leverage,
           feeAddress,
-          quoteToken
+          quoteToken,
+          feeAddress //todo change to a proper MARGIN/ETH oracle
         )
       ).wait();
     });
@@ -263,7 +265,8 @@ describe("LeveragedPool - initialize", () => {
           fee,
           leverage,
           feeAddress,
-          token.address
+          token.address,
+          feeAddress //todo change to a proper MARGIN/ETH oracle
         )
       ).wait();
       const testFactory = (await ethers.getContractFactory(
@@ -297,7 +300,8 @@ describe("LeveragedPool - initialize", () => {
         fee,
         leverage,
         feeAddress,
-        quoteToken
+        quoteToken,
+        feeAddress //todo change to a proper MARGIN/ETH oracle
       );
       await expect(
         leveragedPool.initialize(
@@ -310,7 +314,8 @@ describe("LeveragedPool - initialize", () => {
           fee,
           leverage,
           feeAddress,
-          quoteToken
+          quoteToken,
+          feeAddress //todo change to a proper MARGIN/ETH oracle
         )
       ).to.rejectedWith(Error);
     });
@@ -321,12 +326,12 @@ describe("LeveragedPool - initialize", () => {
           long.address,
           short.address,
           POOL_CODE,
-
           frontRunningInterval,
           fee,
           leverage,
           feeAddress,
-          ethers.constants.AddressZero
+          ethers.constants.AddressZero,
+          feeAddress //todo change to a proper MARGIN/ETH oracle
         )
       ).to.rejectedWith(Error);
     });
@@ -337,12 +342,12 @@ describe("LeveragedPool - initialize", () => {
           long.address,
           short.address,
           POOL_CODE,
-
           frontRunningInterval,
           fee,
           leverage,
           ethers.constants.AddressZero,
-          quoteToken
+          quoteToken,
+          feeAddress //todo change to a proper MARGIN/ETH oracle
         )
       ).to.rejectedWith(Error);
     });
@@ -366,19 +371,20 @@ describe("LeveragedPool - initialize", () => {
         fee,
         leverage,
         feeAddress,
-        quoteToken
+        quoteToken,
+        feeAddress //todo change to a proper MARGIN/ETH oracle
       );
       await leveragedPool.initialize(
         signers[0].address,
         long.address,
         short.address,
         POOL_CODE,
-
         frontRunningInterval,
         fee,
         leverage,
         feeAddress,
-        quoteToken
+        quoteToken,
+        feeAddress //todo change to a proper MARGIN/ETH oracle
       );
 
       expect(await secondPool.poolCode()).to.eq(POOL_CODE_2);

@@ -90,7 +90,8 @@ describe("PoolKeeper - createPool", () => {
         "0x00000000000000000000000000000000",
         5,
         generateRandomAddress(),
-        generateRandomAddress()
+        generateRandomAddress(),
+        generateRandomAddress() //todo replace with proper keeper oracle
       )
     ).wait();
     const event = receipt?.events?.find((el) => el.event === "CreatePool");
@@ -111,7 +112,8 @@ describe("PoolKeeper - createPool", () => {
         "0x00000000000000000000000000000000",
         5,
         generateRandomAddress(),
-        generateRandomAddress()
+        generateRandomAddress(),
+        generateRandomAddress() //todo replace with proper keeper oracle
       )
     ).wait();
     const event = receipt?.events?.find((el) => el.event === "CreatePool");
@@ -131,7 +133,8 @@ describe("PoolKeeper - createPool", () => {
         "0x00000000000000000000000000000000",
         5,
         generateRandomAddress(),
-        generateRandomAddress()
+        generateRandomAddress(),
+        generateRandomAddress() //todo replace with proper keeper oracle
       )
     ).wait();
     expect(await poolKeeper.pools(POOL_CODE)).to.eq(
@@ -150,7 +153,8 @@ describe("PoolKeeper - createPool", () => {
         "0x00000000000000000000000000000000",
         5,
         generateRandomAddress(),
-        generateRandomAddress()
+        generateRandomAddress(),
+        generateRandomAddress() //todo replace with proper keeper oracle
       )
     ).wait();
     await expect(
@@ -162,7 +166,8 @@ describe("PoolKeeper - createPool", () => {
         "0x00000000000000000000000000000000",
         5,
         generateRandomAddress(),
-        generateRandomAddress()
+        generateRandomAddress(),
+        generateRandomAddress() //todo replace with proper keeper oracle
       )
     ).to.be.rejectedWith(Error);
   });
@@ -176,7 +181,8 @@ describe("PoolKeeper - createPool", () => {
         "0x00000000000000000000000000000000",
         5,
         generateRandomAddress(),
-        generateRandomAddress()
+        generateRandomAddress(),
+        generateRandomAddress() //todo replace with proper keeper oracle
       )
     ).to.rejectedWith(Error);
   });

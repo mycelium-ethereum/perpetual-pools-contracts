@@ -31,6 +31,7 @@ contract PoolFactory is IPoolFactory {
       0,
       0,
       address(this),
+      address(this),
       address(this)
     );
 
@@ -44,7 +45,8 @@ contract PoolFactory is IPoolFactory {
     bytes16 _fee,
     uint16 _leverageAmount,
     address _feeAddress,
-    address _quoteToken
+    address _quoteToken,
+    address _keeperOracle
   ) external override returns (address) {
     LeveragedPool pool =
       LeveragedPool(
@@ -71,7 +73,8 @@ contract PoolFactory is IPoolFactory {
       _fee,
       _leverageAmount,
       _feeAddress,
-      _quoteToken
+      _quoteToken,
+      _keeperOracle
     );
     return address(pool);
   }

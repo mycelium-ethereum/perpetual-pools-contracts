@@ -83,6 +83,7 @@ interface ILeveragedPool {
   @param _leverageAmount The amount of exposure to price movements for the pool
   @param _feeAddress The address that the fund movement fee is sent to
   @param _quoteToken The digital asset that the pool accepts
+  @param _keeperOracle the oracle used to get the quote token price in ETH (eg QUOTE/ETH oracle)
  */
   function initialize(
     address _updater,
@@ -93,7 +94,8 @@ interface ILeveragedPool {
     bytes16 _fee,
     uint16 _leverageAmount,
     address _feeAddress,
-    address _quoteToken
+    address _quoteToken,
+    address _keeperOracle
   ) external;
 
   /**

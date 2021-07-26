@@ -69,7 +69,8 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     bytes16 _fee,
     uint16 _leverageAmount,
     address _feeAddress,
-    address _quoteToken
+    address _quoteToken,
+    address _keeperOracle
   ) external override initializer() {
     require(_feeAddress != address(0), "Fee address cannot be 0 address");
     require(_quoteToken != address(0), "Quote token cannot be 0 address");
