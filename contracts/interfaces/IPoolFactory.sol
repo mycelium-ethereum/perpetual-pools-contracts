@@ -6,12 +6,12 @@ pragma abicoder v2;
 @title The contract factory for the keeper and pool contracts. Utilizes minimal clones to keep gas costs low.
 */
 interface IPoolFactory {
-  // #### Events
+    // #### Events
 
-  event DeployPool(address indexed pool, string poolCode);
+    event DeployPool(address indexed pool, string poolCode);
 
-  // #### Functions
-  /**
+    // #### Functions
+    /**
     @notice Deploys a LeveragedPool contract
     @param owner The address of the pool keeper that will administer the pool
     @param _poolCode The pool identification code. This is unique per pool per pool keeper
@@ -22,13 +22,13 @@ interface IPoolFactory {
     @param _quoteToken The digital asset that the pool accepts
     @return The address of the new pool
    */
-  function deployPool(
-    address owner,
-    string memory _poolCode,
-    uint32 _frontRunningInterval,
-    bytes16 _fee,
-    uint16 _leverageAmount,
-    address _feeAddress,
-    address _quoteToken
-  ) external returns (address);
+    function deployPool(
+        address owner,
+        string memory _poolCode,
+        uint32 _frontRunningInterval,
+        bytes16 _fee,
+        uint16 _leverageAmount,
+        address _feeAddress,
+        address _quoteToken
+    ) external returns (address);
 }
