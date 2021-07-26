@@ -15,18 +15,6 @@ jobs:
             - name: Compile contracts
               run: yarn build
 
-    test:
-        name: Run tests
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v2
-
-            - name: Install dependencies
-              run: yarn install
-
-            - name: Run unit tests
-              run: yarn run test
-
     lint:
         name: Run lints
         runs-on: ubuntu-latest
