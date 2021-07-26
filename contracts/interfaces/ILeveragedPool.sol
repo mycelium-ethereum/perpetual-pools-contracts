@@ -10,7 +10,6 @@ interface ILeveragedPool {
   enum CommitType { ShortMint, ShortBurn, LongMint, LongBurn }
 
   struct Commit {
-    bytes16 maxImbalance;
     uint112 amount;
     CommitType commitType;
     uint40 created;
@@ -36,13 +35,11 @@ interface ILeveragedPool {
     @notice Creates a notification when a commit is created in the pool
     @param commitID The id of the new commit
     @param amount The amount of tokens committed
-    @param maxImbalance The max imbalance between the pairs that the commit will tolerate
     @param commitType The commitment type
    */
   event CreateCommit(
     uint128 indexed commitID,
     uint128 indexed amount,
-    bytes16 indexed maxImbalance,
     CommitType commitType
   );
 
@@ -102,12 +99,10 @@ interface ILeveragedPool {
   /**
     @notice Creates a commitment to mint or burn
     @param commitType Valid types are SB,SM, LB, LM. Each type contains position (Short, Long) and action (Mint, Burn).
-    @param maxImbalance The max imbalance between their target pool and its inverse. Imbalance is defined as longBalance / shortBalance
     @param amount the amount of the quote token that they wish to commit to a transaction
      */
   function commit(
     CommitType commitType,
-    bytes16 maxImbalance,
     uint112 amount
   ) external;
 

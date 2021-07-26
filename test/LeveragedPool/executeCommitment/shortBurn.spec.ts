@@ -30,7 +30,6 @@ const updateInterval = 2;
 const frontRunningInterval = 1; // seconds
 const fee = "0x00000000000000000000000000000000";
 const leverage = 2;
-let imbalance: BytesLike;
 
 describe("LeveragedPool - executeCommitment: Short Burn", () => {
   let token: TestToken;
@@ -56,18 +55,14 @@ describe("LeveragedPool - executeCommitment: Short Burn", () => {
       token = result.token;
       shortToken = result.shortToken;
       library = result.library;
-      imbalance = await library.getRatio(
-        ethers.utils.parseEther("10"),
-        ethers.utils.parseEther("5")
-      );
       await token.approve(pool.address, amountMinted);
-      commit = await createCommit(pool, [0], imbalance, amountCommitted);
+      commit = await createCommit(pool, [0], amountCommitted);
       await timeout(2000);
       await pool.executePriceChange(lastPrice, 10);
       await pool.executeCommitment([commit.commitID]);
 
       await shortToken.approve(pool.address, amountCommitted);
-      commit = await createCommit(pool, [1], imbalance, amountCommitted);
+      commit = await createCommit(pool, [1], amountCommitted);
     });
     it("should reduce the live short pool balance", async () => {
       expect(await pool.shortBalance()).to.eq(amountCommitted);

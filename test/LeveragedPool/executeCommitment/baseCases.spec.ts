@@ -31,7 +31,6 @@ const updateInterval = 2;
 const frontRunningInterval = 1; // seconds
 const fee = "0x00000000000000000000000000000000";
 const leverage = 2;
-let imbalance: BytesLike;
 const commitType = [2]; //long mint;
 
 describe("LeveragedPool - executeCommitment: Basic test cases", () => {
@@ -55,44 +54,19 @@ describe("LeveragedPool - executeCommitment: Basic test cases", () => {
       signers = result.signers;
       token = result.token;
       library = result.library;
-      imbalance = await library.getRatio(
-        ethers.utils.parseEther("50"),
-        ethers.utils.parseEther("10")
-      );
     });
     it("should revert if the commitment is too new", async () => {
       await token.approve(pool.address, amountCommitted);
       const commit = await createCommit(
         pool,
         commitType,
-        imbalance,
         amountCommitted
       );
       await expect(
         pool.executeCommitment([commit.commitID])
       ).to.be.rejectedWith(Error);
     });
-    it("should revert if the max imbalance is less than the current imbalance of the pairs", async () => {
-      await token.approve(pool.address, amountCommitted.mul(2));
-      const commit = await createCommit(
-        pool,
-        commitType,
-        imbalance,
-        amountCommitted
-      );
-      await timeout(6000); // wait six seconds
-      await pool.executePriceChange(5, 500);
-      await pool.executeCommitment([commit.commitID]);
-      const commit2 = await createCommit(
-        pool,
-        commitType,
-        imbalance,
-        amountCommitted
-      );
-      await expect(
-        pool.executeCommitment([commit2.commitID])
-      ).to.be.rejectedWith(Error);
-    });
+
     it("should revert if the commitment doesn't exist", async () => {
       await expect(pool.executeCommitment([9])).to.be.rejectedWith(Error);
     });
@@ -115,13 +89,8 @@ describe("LeveragedPool - executeCommitment: Basic test cases", () => {
       token = result.token;
       library = result.library;
 
-      imbalance = await library.getRatio(
-        ethers.utils.parseEther("5"),
-        ethers.utils.parseEther("2")
-      );
-
       await token.approve(pool.address, amountCommitted);
-      commit = await createCommit(pool, commitType, imbalance, amountCommitted);
+      commit = await createCommit(pool, commitType, amountCommitted);
     });
 
     it("should remove the commitment after execution", async () => {

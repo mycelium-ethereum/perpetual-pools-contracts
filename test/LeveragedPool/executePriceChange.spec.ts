@@ -23,7 +23,6 @@ const fee = "0x3ff947ae147ae147ae147ae147ae147a"; // 2% per execution. An IEEE 7
 const lastPrice = 77000000;
 const frontRunningInterval = 1;
 const leverage = 10;
-let imbalance: BytesLike;
 
 let library: PoolSwapLibrary;
 let pool: LeveragedPool;
@@ -54,11 +53,8 @@ const setupHook = async () => {
  * Adds 2000 quote tokens to each pool
  */
 const fundPools = async () => {
-  imbalance = await library.convertUIntToDecimal(
-    ethers.utils.parseEther("2001")
-  );
-  const shortMint = await createCommit(pool, [0], imbalance, amountCommitted);
-  const longMint = await createCommit(pool, [2], imbalance, amountCommitted);
+  const shortMint = await createCommit(pool, [0], amountCommitted);
+  const longMint = await createCommit(pool, [2], amountCommitted);
   await timeout(2000);
   await pool.executePriceChange(1, lastPrice);
   await pool.executeCommitment([shortMint.commitID, longMint.commitID]);

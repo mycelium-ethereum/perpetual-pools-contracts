@@ -31,7 +31,6 @@ const updateInterval = 2;
 const frontRunningInterval = 1; // seconds
 const fee = "0x00000000000000000000000000000000";
 const leverage = 1;
-let imbalance: BytesLike;
 
 describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
   let token: TestToken;
@@ -53,17 +52,13 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
       );
       pool = result.pool;
       library = result.library;
-      imbalance = await library.getRatio(
-        ethers.utils.parseEther("10"),
-        ethers.utils.parseEther("5")
-      );
 
       token = result.token;
       shortToken = result.shortToken;
 
       await token.approve(pool.address, amountMinted);
 
-      const commit = await createCommit(pool, [2], imbalance, amountCommitted);
+      const commit = await createCommit(pool, [2], amountCommitted);
 
       await shortToken.approve(pool.address, amountMinted);
       await timeout(2000);
@@ -71,9 +66,9 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
       await pool.executePriceChange(lastPrice, lastPrice + 10);
       await pool.executeCommitment([commit.commitID]);
 
-      commits.push(await createCommit(pool, [2], imbalance, amountCommitted));
+      commits.push(await createCommit(pool, [2], amountCommitted));
       commits.push(
-        await createCommit(pool, [3], imbalance, amountCommitted.div(2))
+        await createCommit(pool, [3], amountCommitted.div(2))
       );
     });
     it("should reduce the balances of the shadows pools involved", async () => {
@@ -116,17 +111,13 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
       );
       pool = result.pool;
       library = result.library;
-      imbalance = await library.getRatio(
-        ethers.utils.parseEther("10"),
-        ethers.utils.parseEther("5")
-      );
 
       token = result.token;
       shortToken = result.shortToken;
 
       await token.approve(pool.address, amountMinted);
 
-      const commit = await createCommit(pool, [0], imbalance, amountCommitted);
+      const commit = await createCommit(pool, [0], amountCommitted);
 
       await shortToken.approve(pool.address, amountMinted);
       await timeout(2000);
@@ -134,9 +125,9 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
       await pool.executePriceChange(lastPrice, 10);
       await pool.executeCommitment([commit.commitID]);
 
-      commits.push(await createCommit(pool, [0], imbalance, amountCommitted));
+      commits.push(await createCommit(pool, [0], amountCommitted));
       commits.push(
-        await createCommit(pool, [1], imbalance, amountCommitted.div(2))
+        await createCommit(pool, [1], amountCommitted.div(2))
       );
     });
     it("should reduce the balances of the shadows pools involved", async () => {

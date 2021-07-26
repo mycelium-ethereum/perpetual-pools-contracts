@@ -30,7 +30,6 @@ const updateInterval = 2;
 const frontRunningInterval = 1; // seconds
 const fee = "0x00000000000000000000000000000000";
 const leverage = 2;
-let imbalance: BytesLike;
 
 describe("LeveragedPool - executeCommitment: Long Mint", () => {
   let token: TestToken;
@@ -54,13 +53,9 @@ describe("LeveragedPool - executeCommitment: Long Mint", () => {
       signers = result.signers;
       token = result.token;
       library = result.library;
-      imbalance = await library.getRatio(
-        ethers.utils.parseEther("100"),
-        ethers.utils.parseEther("23")
-      );
       longToken = result.longToken;
       await token.approve(pool.address, amountMinted);
-      commit = await createCommit(pool, [2], imbalance, amountCommitted);
+      commit = await createCommit(pool, [2], amountCommitted);
     });
     it("should adjust the live long pool balance", async () => {
       expect(await pool.longBalance()).to.eq(0);
