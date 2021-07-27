@@ -8,14 +8,14 @@ import {
     OracleWrapper,
     PoolSwapLibrary__factory,
     PoolFactory__factory,
+    TestOracle__factory,
+    TestOracle
 } from "../../typechain"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import {
     MARKET,
-    ORACLE,
     OPERATOR_ROLE,
     MARKET_2,
-    ORACLE_2,
     ADMIN_ROLE,
 } from "../constants"
 
@@ -26,6 +26,8 @@ describe("PoolKeeper - createMarket", () => {
     let poolKeeper: PoolKeeper
     let oracleWrapper: OracleWrapper
     let signers: SignerWithAddress[]
+    let testOracle: TestOracle
+    let testOracle2: TestOracle
     beforeEach(async () => {
         // Deploy the contracts
         signers = await ethers.getSigners()
@@ -36,6 +38,18 @@ describe("PoolKeeper - createMarket", () => {
         )) as OracleWrapper__factory
         oracleWrapper = await oracleWrapperFactory.deploy()
         await oracleWrapper.deployed()
+
+        // Deploy the sample oracle
+        const oracleFactory = (await ethers.getContractFactory(
+            "TestOracle",
+            signers[0]
+        )) as TestOracle__factory
+
+        testOracle = await oracleFactory.deploy()
+        testOracle2 = await oracleFactory.deploy()
+        await testOracle.deployed()
+        await testOracle2.deployed()
+
         const libraryFactory = (await ethers.getContractFactory(
             "PoolSwapLibrary",
             signers[0]
@@ -84,37 +98,37 @@ describe("PoolKeeper - createMarket", () => {
         expect(await oracleWrapper.assetOracles(MARKET)).to.eq(
             ethers.constants.AddressZero
         )
-        await poolKeeper.createMarket(MARKET, ORACLE)
-        expect(await oracleWrapper.assetOracles(MARKET)).to.eq(ORACLE)
+        await poolKeeper.createMarket(MARKET, testOracle.address)
+        expect(await oracleWrapper.assetOracles(MARKET)).to.eq(testOracle.address)
     })
 
     it("should revert if the market already exists", async () => {
         expect(await oracleWrapper.assetOracles(MARKET)).to.eq(
             ethers.constants.AddressZero
         )
-        await poolKeeper.createMarket(MARKET, ORACLE)
-        expect(await oracleWrapper.assetOracles(MARKET)).to.eq(ORACLE)
+        await poolKeeper.createMarket(MARKET, testOracle.address)
+        expect(await oracleWrapper.assetOracles(MARKET)).to.eq(testOracle.address)
         await expect(
-            poolKeeper.createMarket(MARKET, ORACLE_2)
+            poolKeeper.createMarket(MARKET, testOracle2.address)
         ).to.be.rejectedWith(Error)
     })
     it("should allow multiple markets to exist", async () => {
         expect(await oracleWrapper.assetOracles(MARKET)).to.eq(
             ethers.constants.AddressZero
         )
-        await poolKeeper.createMarket(MARKET, ORACLE)
-        await poolKeeper.createMarket(MARKET_2, ORACLE_2)
+        await poolKeeper.createMarket(MARKET, testOracle.address)
+        await poolKeeper.createMarket(MARKET_2, testOracle2.address)
 
-        expect(await oracleWrapper.assetOracles(MARKET)).to.eq(ORACLE)
-        expect(await oracleWrapper.assetOracles(MARKET_2)).to.eq(ORACLE_2)
+        expect(await oracleWrapper.assetOracles(MARKET)).to.eq(testOracle.address)
+        expect(await oracleWrapper.assetOracles(MARKET_2)).to.eq(testOracle2.address)
     })
     it("should emit an event containing the details of the new market", async () => {
         const receipt = await (
-            await poolKeeper.createMarket(MARKET, ORACLE)
+            await poolKeeper.createMarket(MARKET, testOracle.address)
         ).wait()
         const event = receipt?.events?.find((el) => el.event === "CreateMarket")
         expect(!!event).to.eq(true)
         expect(event?.args?.marketCode).to.eq(MARKET)
-        expect(event?.args?.oracle).to.eq(ORACLE)
+        expect(event?.args?.oracle).to.eq(testOracle.address)
     })
 })
