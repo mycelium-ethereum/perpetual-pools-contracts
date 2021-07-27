@@ -1,29 +1,29 @@
-import { ethers } from "hardhat";
-import { BigNumberish, ContractReceipt, Event } from "ethers";
-import { BytesLike, Result } from "ethers/lib/utils";
+import { ethers } from "hardhat"
+import { BigNumberish, ContractReceipt, Event } from "ethers"
+import { BytesLike, Result } from "ethers/lib/utils"
 import {
-  ERC20,
-  LeveragedPool,
-  TestPoolFactory__factory,
-  TestToken,
-  TestToken__factory,
-  PoolSwapLibrary,
-  PoolSwapLibrary__factory,
-  LeveragedPool__factory,
-} from "../typechain";
+    ERC20,
+    LeveragedPool,
+    TestPoolFactory__factory,
+    TestToken,
+    TestToken__factory,
+    PoolSwapLibrary,
+    PoolSwapLibrary__factory,
+    LeveragedPool__factory,
+} from "../typechain"
 
-import { abi as ERC20Abi } from "../artifacts/@openzeppelin/contracts/token/ERC20/ERC20.sol/ERC20.json";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { abi as ERC20Abi } from "../artifacts/@openzeppelin/contracts/token/ERC20/ERC20.sol/ERC20.json"
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 
 /**
  * Generates a random ethereum address
  * @returns A valid ethereum address, generated randomly
  */
 export const generateRandomAddress = () => {
-  return ethers.utils.getAddress(
-    ethers.utils.hexlify(ethers.utils.randomBytes(20))
-  );
-};
+    return ethers.utils.getAddress(
+        ethers.utils.hexlify(ethers.utils.randomBytes(20))
+    )
+}
 
 /**
  * Generates a random integer between min and max, inclusive.
@@ -32,7 +32,7 @@ export const generateRandomAddress = () => {
  * @returns Number The random integer
  */
 export const getRandomInt = (min: number, max: number) =>
-  Math.floor(Math.random() * (max - min) + min);
+    Math.floor(Math.random() * (max - min) + min)
 
 /**
  * Extracts the arguments from the first event to match eventType.
@@ -41,11 +41,11 @@ export const getRandomInt = (min: number, max: number) =>
  * @returns Result the arguments
  */
 export const getEventArgs = (
-  txReceipt: ContractReceipt | undefined,
-  eventType: string | undefined
+    txReceipt: ContractReceipt | undefined,
+    eventType: string | undefined
 ): Result | undefined => {
-  return txReceipt?.events?.find((el: Event) => el.event === eventType)?.args;
-};
+    return txReceipt?.events?.find((el: Event) => el.event === eventType)?.args
+}
 
 /**
  * Deploys a new instance of a pool, as well as an ERC20 token to use as a quote token.
@@ -60,92 +60,92 @@ export const getEventArgs = (
  * @returns {signers, token, pool, library, shortToken, longToken} An object containing an array of ethers signers, a Contract instance for the token, and a Contract instance for the pool.
  */
 export const deployPoolAndTokenContracts = async (
-  POOL_CODE: string,
-  frontRunningInterval: number,
-  fee: BytesLike,
-  leverage: number,
-  feeAddress: string,
-  amountMinted: BigNumberish
+    POOL_CODE: string,
+    frontRunningInterval: number,
+    fee: BytesLike,
+    leverage: number,
+    feeAddress: string,
+    amountMinted: BigNumberish
 ): Promise<{
-  signers: SignerWithAddress[];
-  pool: LeveragedPool;
-  token: TestToken;
-  shortToken: ERC20;
-  longToken: ERC20;
-  library: PoolSwapLibrary;
+    signers: SignerWithAddress[]
+    pool: LeveragedPool
+    token: TestToken
+    shortToken: ERC20
+    longToken: ERC20
+    library: PoolSwapLibrary
 }> => {
-  const signers = await ethers.getSigners();
-  // Deploy test ERC20 token
-  const testToken = (await ethers.getContractFactory(
-    "TestToken",
-    signers[0]
-  )) as TestToken__factory;
-  const token = await testToken.deploy("TEST TOKEN", "TST1");
-  await token.deployed();
-  await token.mint(amountMinted, signers[0].address);
+    const signers = await ethers.getSigners()
+    // Deploy test ERC20 token
+    const testToken = (await ethers.getContractFactory(
+        "TestToken",
+        signers[0]
+    )) as TestToken__factory
+    const token = await testToken.deploy("TEST TOKEN", "TST1")
+    await token.deployed()
+    await token.mint(amountMinted, signers[0].address)
 
-  // Deploy tokens
-  const poolTokenFactory = (await ethers.getContractFactory(
-    "TestToken",
-    signers[0]
-  )) as TestToken__factory;
-  const short = await poolTokenFactory.deploy("Short token", "SHORT");
-  await short.deployed();
+    // Deploy tokens
+    const poolTokenFactory = (await ethers.getContractFactory(
+        "TestToken",
+        signers[0]
+    )) as TestToken__factory
+    const short = await poolTokenFactory.deploy("Short token", "SHORT")
+    await short.deployed()
 
-  const long = await poolTokenFactory.deploy("Long", "Long");
-  await long.deployed();
+    const long = await poolTokenFactory.deploy("Long", "Long")
+    await long.deployed()
 
-  // Deploy and initialise pool
-  const libraryFactory = (await ethers.getContractFactory(
-    "PoolSwapLibrary",
-    signers[0]
-  )) as PoolSwapLibrary__factory;
-  const library = await libraryFactory.deploy();
-  await library.deployed();
+    // Deploy and initialise pool
+    const libraryFactory = (await ethers.getContractFactory(
+        "PoolSwapLibrary",
+        signers[0]
+    )) as PoolSwapLibrary__factory
+    const library = await libraryFactory.deploy()
+    await library.deployed()
 
-  const leveragedPoolFactory = (await ethers.getContractFactory(
-    "LeveragedPool",
-    { signer: signers[0], libraries: { PoolSwapLibrary: library.address } }
-  )) as LeveragedPool__factory;
-  const pool = await leveragedPoolFactory.deploy();
-  await pool.deployed();
-  const poolReceipt = await (
-    await pool.initialize(
-      signers[0].address,
-      long.address,
-      short.address,
-      POOL_CODE,
-      frontRunningInterval,
-      fee,
-      leverage,
-      feeAddress,
-      token.address,
-      feeAddress //todo change to a proper MARGIN/ETH oracle
-    )
-  ).wait();
+    const leveragedPoolFactory = (await ethers.getContractFactory(
+        "LeveragedPool",
+        { signer: signers[0], libraries: { PoolSwapLibrary: library.address } }
+    )) as LeveragedPool__factory
+    const pool = await leveragedPoolFactory.deploy()
+    await pool.deployed()
+    const poolReceipt = await (
+        await pool.initialize(
+            signers[0].address,
+            long.address,
+            short.address,
+            POOL_CODE,
+            frontRunningInterval,
+            fee,
+            leverage,
+            feeAddress,
+            token.address,
+            feeAddress //todo change to a proper MARGIN/ETH oracle
+        )
+    ).wait()
 
-  return {
-    signers,
-    pool,
-    token,
-    library,
-    shortToken: new ethers.Contract(
-      getEventArgs(poolReceipt, "PoolInitialized")?.shortToken,
-      ERC20Abi,
-      signers[0]
-    ) as ERC20,
-    longToken: new ethers.Contract(
-      getEventArgs(poolReceipt, "PoolInitialized")?.longToken,
-      ERC20Abi,
-      signers[0]
-    ) as ERC20,
-  };
-};
+    return {
+        signers,
+        pool,
+        token,
+        library,
+        shortToken: new ethers.Contract(
+            getEventArgs(poolReceipt, "PoolInitialized")?.shortToken,
+            ERC20Abi,
+            signers[0]
+        ) as ERC20,
+        longToken: new ethers.Contract(
+            getEventArgs(poolReceipt, "PoolInitialized")?.longToken,
+            ERC20Abi,
+            signers[0]
+        ) as ERC20,
+    }
+}
 
 export interface CommitEventArgs {
-  commitID: BigNumberish;
-  amount: BigNumberish;
-  commitType: BigNumberish;
+    commitID: BigNumberish
+    amount: BigNumberish
+    commitType: BigNumberish
 }
 /**
  * Creates a commit and returns the event arguments for it
@@ -154,19 +154,17 @@ export interface CommitEventArgs {
  * @param amount The amount to commit to
  */
 export const createCommit = async (
-  pool: LeveragedPool,
-  commitType: BigNumberish,
-  amount: BigNumberish
+    pool: LeveragedPool,
+    commitType: BigNumberish,
+    amount: BigNumberish
 ): Promise<CommitEventArgs> => {
-  const receipt = await (
-    await pool.commit(commitType, amount)
-  ).wait();
-  return {
-    commitID: getEventArgs(receipt, "CreateCommit")?.commitID,
-    amount: getEventArgs(receipt, "CreateCommit")?.amount,
-    commitType: getEventArgs(receipt, "CreateCommit")?.commitType,
-  };
-};
+    const receipt = await (await pool.commit(commitType, amount)).wait()
+    return {
+        commitID: getEventArgs(receipt, "CreateCommit")?.commitID,
+        amount: getEventArgs(receipt, "CreateCommit")?.amount,
+        commitType: getEventArgs(receipt, "CreateCommit")?.commitType,
+    }
+}
 
 /**
  * Delays execution of a function by the amount specified
@@ -174,5 +172,5 @@ export const createCommit = async (
  * @returns nothing
  */
 export const timeout = async (milliseconds: number): Promise<void> => {
-  return new Promise((resolve) => setTimeout(resolve, milliseconds));
-};
+    return new Promise((resolve) => setTimeout(resolve, milliseconds))
+}
