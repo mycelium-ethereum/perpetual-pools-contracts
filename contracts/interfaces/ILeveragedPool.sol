@@ -121,4 +121,11 @@ interface ILeveragedPool {
   */
 
     function updateFeeAddress(address account) external;
+
+    /**
+    * @notice Pays a tip in the quoteToken to a set keeper
+    * @param keeper who to pay the tip too
+    * @param amount the amount to pay them
+    */
+    function tipKeeper(address keeper, uint256 amount) external;
 }

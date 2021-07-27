@@ -325,6 +325,19 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
         return (true, updateInterval, market, poolGroup);
     }
 
+    function calcKeeperTip(uint256 gasPrice, uint256 gasSpent, address pool) public view returns(uint256) {
+        // todo we will need safe math here
+        // calc total eth spent
+        uint ethSpent = gasPrice * gasSpent;
+
+        // get margin token price
+        // uint marginTokenPrice = IOracle(pool.keeperOracle()).latestAnswer();
+        // todo change from hardcoded 1:1 price
+        uint marginTokenPrice = 1;
+
+        return ethSpent * marginTokenPrice;
+    }
+
     // #### Modifiers
     modifier onlyAdmin {
         require(hasRole(ADMIN, msg.sender));

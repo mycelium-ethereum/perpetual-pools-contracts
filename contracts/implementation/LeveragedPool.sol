@@ -37,6 +37,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
 
     address public feeAddress;
     address public quoteToken;
+    address public keeperOracle;
     uint40 public lastPriceTimestamp;
 
     uint128 public commitIDCounter;
@@ -83,6 +84,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
 
         // Setup variables
         quoteToken = _quoteToken;
+        keeperOracle = _keeperOracle;
         frontRunningInterval = _frontRunningInterval;
         fee = _fee;
         leverageAmount = PoolSwapLibrary.convertUIntToDecimal(_leverageAmount);
@@ -275,6 +277,11 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     function updateFeeAddress(address account) external override onlyFeeHolder {
         require(account != address(0), "Invalid address");
         feeAddress = account;
+    }
+
+
+    function tipKeeper(address keeper, uint256 amount) external override onlyUpdater {
+        require(IERC20(quoteToken).transfer(keeper, amount), "Tip failed");
     }
 
     // #### Modifiers
