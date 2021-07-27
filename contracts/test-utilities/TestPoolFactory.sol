@@ -31,9 +31,8 @@ contract TestPoolFactory {
     @param _poolCode The pool code for the new pool. This is used as salt for the pool address
  */
     function createPool(string memory _poolCode) external {
-        LeveragedPool pool = LeveragedPool(
-            Clones.cloneDeterministic(address(poolBase), keccak256(abi.encode(_poolCode)))
-        );
+        LeveragedPool pool =
+            LeveragedPool(Clones.cloneDeterministic(address(poolBase), keccak256(abi.encode(_poolCode))));
         emit CreatePool(address(pool));
     }
 }
