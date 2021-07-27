@@ -1,0 +1,29 @@
+name: Actions
+on:
+    push
+
+jobs:
+    build:
+        name: Run build
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2
+
+            - name: Install dependencies
+              run: yarn install
+
+            - name: Compile contracts
+              run: yarn build
+
+    lint:
+        name: Run lints
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2
+
+            - name: Install dependencies
+              run: yarn install
+
+            - name: Run Prettier
+              run: yarn run lint
+
