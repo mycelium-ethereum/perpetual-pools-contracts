@@ -9,15 +9,10 @@ import {
     PoolSwapLibrary__factory,
     PoolFactory__factory,
     TestOracle__factory,
-    TestOracle
+    TestOracle,
 } from "../../typechain"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import {
-    MARKET,
-    OPERATOR_ROLE,
-    MARKET_2,
-    ADMIN_ROLE,
-} from "../constants"
+import { MARKET, OPERATOR_ROLE, MARKET_2, ADMIN_ROLE } from "../constants"
 
 chai.use(chaiAsPromised)
 const { expect } = chai
@@ -99,7 +94,9 @@ describe("PoolKeeper - createMarket", () => {
             ethers.constants.AddressZero
         )
         await poolKeeper.createMarket(MARKET, testOracle.address)
-        expect(await oracleWrapper.assetOracles(MARKET)).to.eq(testOracle.address)
+        expect(await oracleWrapper.assetOracles(MARKET)).to.eq(
+            testOracle.address
+        )
     })
 
     it("should revert if the market already exists", async () => {
@@ -107,7 +104,9 @@ describe("PoolKeeper - createMarket", () => {
             ethers.constants.AddressZero
         )
         await poolKeeper.createMarket(MARKET, testOracle.address)
-        expect(await oracleWrapper.assetOracles(MARKET)).to.eq(testOracle.address)
+        expect(await oracleWrapper.assetOracles(MARKET)).to.eq(
+            testOracle.address
+        )
         await expect(
             poolKeeper.createMarket(MARKET, testOracle2.address)
         ).to.be.rejectedWith(Error)
@@ -119,8 +118,12 @@ describe("PoolKeeper - createMarket", () => {
         await poolKeeper.createMarket(MARKET, testOracle.address)
         await poolKeeper.createMarket(MARKET_2, testOracle2.address)
 
-        expect(await oracleWrapper.assetOracles(MARKET)).to.eq(testOracle.address)
-        expect(await oracleWrapper.assetOracles(MARKET_2)).to.eq(testOracle2.address)
+        expect(await oracleWrapper.assetOracles(MARKET)).to.eq(
+            testOracle.address
+        )
+        expect(await oracleWrapper.assetOracles(MARKET_2)).to.eq(
+            testOracle2.address
+        )
     })
     it("should emit an event containing the details of the new market", async () => {
         const receipt = await (

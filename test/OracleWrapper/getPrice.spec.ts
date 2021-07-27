@@ -1,14 +1,14 @@
 import { ethers } from "hardhat"
 import chai from "chai"
 import chaiAsPromised from "chai-as-promised"
-import { OracleWrapper__factory, OracleWrapper, TestOracle__factory, TestOracle } from "../../typechain"
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import {
-    MARKET,
-    OPERATOR_ROLE,
-    ADMIN_ROLE,
-    MARKET_2,
-} from "../constants"
+    OracleWrapper__factory,
+    OracleWrapper,
+    TestOracle__factory,
+    TestOracle,
+} from "../../typechain"
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
+import { MARKET, OPERATOR_ROLE, ADMIN_ROLE, MARKET_2 } from "../constants"
 
 chai.use(chaiAsPromised)
 const { expect } = chai
@@ -64,8 +64,12 @@ describe("OracleWrapper - getPrice", () => {
                 signers[0].address
             )
         ).to.eq(true)
-        expect(await oracleWrapper.assetOracles(MARKET)).to.eq(testOracle.address)
-        expect(await oracleWrapper.assetOracles(MARKET_2)).to.eq(testOracle2.address)
+        expect(await oracleWrapper.assetOracles(MARKET)).to.eq(
+            testOracle.address
+        )
+        expect(await oracleWrapper.assetOracles(MARKET_2)).to.eq(
+            testOracle2.address
+        )
     })
     it("should return the current price for the requested market", async () => {
         expect((await oracleWrapper.getPrice(MARKET)).gte(0)).to.eq(true)

@@ -9,16 +9,11 @@ import {
     PoolSwapLibrary__factory,
     PoolFactory__factory,
     TestOracle__factory,
-    TestOracle
+    TestOracle,
 } from "../../typechain"
 
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import {
-    OPERATOR_ROLE,
-    ADMIN_ROLE,
-    POOL_CODE,
-    MARKET_CODE,
-} from "../constants"
+import { OPERATOR_ROLE, ADMIN_ROLE, POOL_CODE, MARKET_CODE } from "../constants"
 import { generateRandomAddress } from "../utilities"
 
 chai.use(chaiAsPromised)

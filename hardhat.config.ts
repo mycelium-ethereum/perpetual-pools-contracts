@@ -26,7 +26,6 @@ const config: HardhatUserConfig = {
         compilers: [{ version: "0.7.6", settings: {} }],
     },
     networks: {
-
         goerli: {
             url: ALCHEMY_API_TESTNET_URL,
             accounts: [TESTNET_PRIVATE_KEY],
