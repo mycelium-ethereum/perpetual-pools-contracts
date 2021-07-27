@@ -9,6 +9,8 @@ import "@nomiclabs/hardhat-etherscan"
 import "@openzeppelin/hardhat-upgrades"
 import "hardhat-log-remover"
 import "hardhat-gas-reporter"
+import "hardhat-deploy"
+import "hardhat-deploy-ethers"
 
 // TODO: reenable solidity-coverage when it works
 // import "solidity-coverage";
@@ -30,13 +32,15 @@ const config: HardhatUserConfig = {
             url: ALCHEMY_API_TESTNET_URL,
             accounts: [TESTNET_PRIVATE_KEY],
         },
+        kovan: {
+            url: ALCHEMY_API_TESTNET_URL,
+            accounts: [TESTNET_PRIVATE_KEY],
+        },
         coverage: {
             url: "http://127.0.0.1:8555", // Coverage launches its own ganache-cli client
         },
     },
     etherscan: {
-        // Your API key for Etherscan
-        // Obtain one at https://etherscan.io/
         apiKey: ETHERSCAN_API_KEY,
     },
     mocha: {
@@ -45,6 +49,11 @@ const config: HardhatUserConfig = {
     gasReporter: {
         currency: "AUD",
         coinmarketcap: process.env.COINMARKET_KEY,
+    },
+    namedAccounts: {
+        deployer: {
+            default: 0,
+        },
     },
 }
 
