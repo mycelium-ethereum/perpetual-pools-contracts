@@ -1,0 +1,11 @@
+typechain/*
+.git/*
+.github/*
+artifacts/*
+build/*
+test/build/*
+types/*
+cache/*
+*.md
+*.tmp
+coverage/*

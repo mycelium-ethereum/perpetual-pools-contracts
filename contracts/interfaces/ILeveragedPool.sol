@@ -6,75 +6,63 @@ pragma abicoder v2;
 @title The pool controller contract interface
 */
 interface ILeveragedPool {
-  // #### Struct & Enum definitions
-  enum CommitType { ShortMint, ShortBurn, LongMint, LongBurn }
+    // #### Struct & Enum definitions
+    enum CommitType {
+        ShortMint,
+        ShortBurn,
+        LongMint,
+        LongBurn
+    }
 
-  struct Commit {
-    uint112 amount;
-    CommitType commitType;
-    uint40 created;
-    address owner;
-  }
+    struct Commit {
+        uint112 amount;
+        CommitType commitType;
+        uint40 created;
+        address owner;
+    }
 
-  // #### Events
-  /**
+    // #### Events
+    /**
     @notice Creates a notification when the pool is setup and ready for use
     @param longToken The address of the LONG pair token
     @param shortToken The address of the SHORT pair token
     @param quoteToken The address of the digital asset that the pool accepts
     @param poolCode The pool code for the pool
    */
-  event PoolInitialized(
-    address indexed longToken,
-    address indexed shortToken,
-    address quoteToken,
-    string poolCode
-  );
+    event PoolInitialized(address indexed longToken, address indexed shortToken, address quoteToken, string poolCode);
 
-  /**
+    /**
     @notice Creates a notification when a commit is created in the pool
     @param commitID The id of the new commit
     @param amount The amount of tokens committed
     @param commitType The commitment type
    */
-  event CreateCommit(
-    uint128 indexed commitID,
-    uint128 indexed amount,
-    CommitType commitType
-  );
+    event CreateCommit(uint128 indexed commitID, uint128 indexed amount, CommitType commitType);
 
-  /**
+    /**
     @notice Creates a notification for the removal of a commit that hasn't yet been executed
     @param commitID The commit that was removed
     @param amount The amount that was removed from the shadow ool
     @param commitType The type of commit that was removed
    */
-  event RemoveCommit(
-    uint128 indexed commitID,
-    uint128 indexed amount,
-    CommitType indexed commitType
-  );
+    event RemoveCommit(uint128 indexed commitID, uint128 indexed amount, CommitType indexed commitType);
 
-  /**
+    /**
   @notice Creates a notification that a commit has been executed
   @param commitID The commit that was executed
  */
-  event ExecuteCommit(uint128 commitID);
+    event ExecuteCommit(uint128 commitID);
 
-  /**
+    /**
   @notice Creates a notification of a price execution
   @param startPrice The price from the last execution
   @param endPrice The price for this execution
   @param transferAmount The amount that was transferred between pools
  */
-  event PriceChange(
-    int256 indexed startPrice,
-    int256 indexed endPrice,
-    uint112 indexed transferAmount
-  );
+    event PriceChange(int256 indexed startPrice, int256 indexed endPrice, uint112 indexed transferAmount);
 
-  // #### Functions
-  /**
+    // #### Functions
+    /**
   @notice Configures the pool on deployment. The pools are EIP 1167 clones.
   @dev This should only be able to be run once to prevent abuse of the pool. Use of Openzeppelin Initializable or similar is recommended.
   @param _poolCode The pool identification code. This is unique per pool per pool keeper
@@ -84,54 +72,51 @@ interface ILeveragedPool {
   @param _feeAddress The address that the fund movement fee is sent to
   @param _quoteToken The digital asset that the pool accepts
  */
-  function initialize(
-    address _updater,
-    address _longToken,
-    address _shortToken,
-    string memory _poolCode,
-    uint32 _frontRunningInterval,
-    bytes16 _fee,
-    uint16 _leverageAmount,
-    address _feeAddress,
-    address _quoteToken
-  ) external;
+    function initialize(
+        address _updater,
+        address _longToken,
+        address _shortToken,
+        string memory _poolCode,
+        uint32 _frontRunningInterval,
+        bytes16 _fee,
+        uint16 _leverageAmount,
+        address _feeAddress,
+        address _quoteToken
+    ) external;
 
-  /**
+    /**
     @notice Creates a commitment to mint or burn
     @param commitType Valid types are SB,SM, LB, LM. Each type contains position (Short, Long) and action (Mint, Burn).
     @param amount the amount of the quote token that they wish to commit to a transaction
      */
-  function commit(
-    CommitType commitType,
-    uint112 amount
-  ) external;
+    function commit(CommitType commitType, uint112 amount) external;
 
-  /**
+    /**
     @notice Withdraws a user's existing commit. This cannot be used to remove another user's commits. The sender must own the commits they are withdrawing
     @param commitID the ID of the commit to be withdrawn
      */
-  function uncommit(uint128 commitID) external;
+    function uncommit(uint128 commitID) external;
 
-  /**
+    /**
     @notice Executes one or more commitments and effects the changes on the live and shadow pools respectively. This can be used to execute on any valid commits in the commit pool
     @param _commitIDs an array of commits to execute. These do not have to all belong to the sender, nor do they need to be in a specific order.
      */
-  function executeCommitment(uint128[] memory _commitIDs) external;
+    function executeCommitment(uint128[] memory _commitIDs) external;
 
-  /**
+    /**
     @notice Processes the effect of a price change. The effect of a price change on a pool is left to the implementer. The pool stores the last price, and is given the latest price on update. 
     @dev This function should be called by the Pool Keeper.
     @dev This function should be secured with some form of access control
     @param oldPrice The previously executed price
     @param newPrice The price for the latest interval. 
     */
-  function executePriceChange(int256 oldPrice, int256 newPrice) external;
+    function executePriceChange(int256 oldPrice, int256 newPrice) external;
 
-  /** 
+    /** 
     @notice Updates the fee address
     @dev This should be secured with some form of access control
     @param account The new account to send fees to
   */
 
-  function updateFeeAddress(address account) external;
+    function updateFeeAddress(address account) external;
 }
