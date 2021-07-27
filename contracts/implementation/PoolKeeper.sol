@@ -143,8 +143,9 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
         returns (bool upkeepNeeded, bytes memory performData)
     {
         // Validate checkData
-        (bool valid, uint32 updateInterval, string memory market, string[] memory poolCodes) =
-            _checkInputData(checkData);
+        (bool valid, uint32 updateInterval, string memory market, string[] memory poolCodes) = _checkInputData(
+            checkData
+        );
         if (!valid) {
             return (false, new bytes(0));
         }
@@ -169,8 +170,9 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
   @param performData The upkeep data (market code, update interval, pool codes) to perform the update for.
    */
     function performUpkeep(bytes calldata performData) external override {
-        (bool valid, uint32 updateInterval, string memory market, string[] memory poolCodes) =
-            _checkInputData(performData);
+        (bool valid, uint32 updateInterval, string memory market, string[] memory poolCodes) = _checkInputData(
+            performData
+        );
 
         if (!valid) {
             revert("Input data is invalid");
@@ -299,8 +301,10 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
             string[] memory
         )
     {
-        (uint32 updateInterval, string memory market, string[] memory poolGroup) =
-            abi.decode(checkData, (uint32, string, string[]));
+        (uint32 updateInterval, string memory market, string[] memory poolGroup) = abi.decode(
+            checkData,
+            (uint32, string, string[])
+        );
         IOracleWrapper oracle = IOracleWrapper(oracleWrapper);
         if (oracle.assetOracles(market) == address(0)) {
             return (false, updateInterval, market, poolGroup);

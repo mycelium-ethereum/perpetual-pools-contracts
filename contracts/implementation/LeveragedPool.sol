@@ -155,18 +155,17 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
                 _commit.owner
             );
         } else if (_commit.commitType == CommitType.LongBurn) {
-            uint112 amountOut =
-                PoolSwapLibrary.getAmountOut(
-                    PoolSwapLibrary.getRatio(
-                        longBalance,
-                        uint112(
-                            uint112(PoolToken(tokens[0]).totalSupply()).add(shadowPools[CommitType.LongBurn]).add(
-                                _commit.amount
-                            )
+            uint112 amountOut = PoolSwapLibrary.getAmountOut(
+                PoolSwapLibrary.getRatio(
+                    longBalance,
+                    uint112(
+                        uint112(PoolToken(tokens[0]).totalSupply()).add(shadowPools[CommitType.LongBurn]).add(
+                            _commit.amount
                         )
-                    ),
-                    _commit.amount
-                );
+                    )
+                ),
+                _commit.amount
+            );
             longBalance = longBalance.sub(amountOut);
             require(IERC20(quoteToken).transfer(_commit.owner, amountOut), "Transfer failed");
         } else if (_commit.commitType == CommitType.ShortMint) {
@@ -179,16 +178,15 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
                 _commit.owner
             );
         } else if (_commit.commitType == CommitType.ShortBurn) {
-            uint112 amountOut =
-                PoolSwapLibrary.getAmountOut(
-                    PoolSwapLibrary.getRatio(
-                        shortBalance,
-                        uint112(PoolToken(tokens[1]).totalSupply()).add(shadowPools[CommitType.ShortBurn]).add(
-                            _commit.amount
-                        )
-                    ),
-                    _commit.amount
-                );
+            uint112 amountOut = PoolSwapLibrary.getAmountOut(
+                PoolSwapLibrary.getRatio(
+                    shortBalance,
+                    uint112(PoolToken(tokens[1]).totalSupply()).add(shadowPools[CommitType.ShortBurn]).add(
+                        _commit.amount
+                    )
+                ),
+                _commit.amount
+            );
 
             shortBalance = shortBalance.sub(amountOut);
             require(IERC20(quoteToken).transfer(_commit.owner, amountOut), "Transfer failed");
@@ -236,10 +234,12 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     }
 
     function executePriceChange(int256 oldPrice, int256 newPrice) external override onlyUpdater {
-        uint112 longFeeAmount =
-            uint112(PoolSwapLibrary.convertDecimalToUInt(PoolSwapLibrary.multiplyDecimalByUInt(fee, longBalance)));
-        uint112 shortFeeAmount =
-            uint112(PoolSwapLibrary.convertDecimalToUInt(PoolSwapLibrary.multiplyDecimalByUInt(fee, shortBalance)));
+        uint112 longFeeAmount = uint112(
+            PoolSwapLibrary.convertDecimalToUInt(PoolSwapLibrary.multiplyDecimalByUInt(fee, longBalance))
+        );
+        uint112 shortFeeAmount = uint112(
+            PoolSwapLibrary.convertDecimalToUInt(PoolSwapLibrary.multiplyDecimalByUInt(fee, shortBalance))
+        );
         uint112 totalFeeAmount = 0;
         if (shortBalance >= shortFeeAmount) {
             shortBalance = shortBalance.sub(shortFeeAmount);

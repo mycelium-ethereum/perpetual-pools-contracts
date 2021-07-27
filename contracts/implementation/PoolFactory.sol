@@ -36,8 +36,9 @@ contract PoolFactory is IPoolFactory {
         address _feeAddress,
         address _quoteToken
     ) external override returns (address) {
-        LeveragedPool pool =
-            LeveragedPool(Clones.cloneDeterministic(address(poolBase), keccak256(abi.encode(_poolCode))));
+        LeveragedPool pool = LeveragedPool(
+            Clones.cloneDeterministic(address(poolBase), keccak256(abi.encode(_poolCode)))
+        );
         emit DeployPool(address(pool), _poolCode);
         pool.initialize(
             _owner,

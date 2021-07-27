@@ -7,7 +7,12 @@ pragma abicoder v2;
 */
 interface ILeveragedPool {
     // #### Struct & Enum definitions
-    enum CommitType {ShortMint, ShortBurn, LongMint, LongBurn}
+    enum CommitType {
+        ShortMint,
+        ShortBurn,
+        LongMint,
+        LongBurn
+    }
 
     struct Commit {
         uint112 amount;
