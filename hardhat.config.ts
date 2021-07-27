@@ -3,14 +3,14 @@ dotEnvConfig()
 
 import { HardhatUserConfig } from "hardhat/types"
 
-import "@nomiclabs/hardhat-waffle";
-import "@typechain/hardhat";
-import "@nomiclabs/hardhat-etherscan";
-import "@openzeppelin/hardhat-upgrades";
-import "hardhat-log-remover";
-import "hardhat-gas-reporter";
-import "hardhat-deploy";
-import "hardhat-deploy-ethers";
+import "@nomiclabs/hardhat-waffle"
+import "@typechain/hardhat"
+import "@nomiclabs/hardhat-etherscan"
+import "@openzeppelin/hardhat-upgrades"
+import "hardhat-log-remover"
+import "hardhat-gas-reporter"
+import "hardhat-deploy"
+import "hardhat-deploy-ethers"
 
 // TODO: reenable solidity-coverage when it works
 // import "solidity-coverage";
@@ -37,8 +37,11 @@ const config: HardhatUserConfig = {
                 blockNumber: 12474747,
             },
         },
-
         goerli: {
+            url: ALCHEMY_API_TESTNET_URL,
+            accounts: [TESTNET_PRIVATE_KEY],
+        },
+        kovan: {
             url: ALCHEMY_API_TESTNET_URL,
             accounts: [TESTNET_PRIVATE_KEY],
         },
@@ -46,29 +49,21 @@ const config: HardhatUserConfig = {
             url: "http://127.0.0.1:8555", // Coverage launches its own ganache-cli client
         },
     },
-    kovan: {
-        url: ALCHEMY_API_TESTNET_URL,
-        accounts: [TESTNET_PRIVATE_KEY],
+    etherscan: {
+        apiKey: ETHERSCAN_API_KEY,
     },
-    coverage: {
-      url: "http://127.0.0.1:8555", // Coverage launches its own ganache-cli client
+    mocha: {
+        timeout: 60000,
     },
-  },
-  etherscan: {
-    apiKey: ETHERSCAN_API_KEY,
-  },
-  mocha: {
-    timeout: 60000,
-  },
-  gasReporter: {
-    currency: "AUD",
-    coinmarketcap: process.env.COINMARKET_KEY,
-  },
-  namedAccounts: {
-      deployer: {
-        default: 0,
-      }
-  },
-};
+    gasReporter: {
+        currency: "AUD",
+        coinmarketcap: process.env.COINMARKET_KEY,
+    },
+    namedAccounts: {
+        deployer: {
+            default: 0,
+        },
+    },
+}
 
 export default config
