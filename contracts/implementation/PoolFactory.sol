@@ -23,10 +23,12 @@ contract PoolFactory is IPoolFactory {
 
     // Init bases
     poolBase.initialize(
+      address(0),
       address(this),
       address(0),
       address(0),
       "BASE_POOL",
+      2,
       2,
       0,
       0,
@@ -38,40 +40,36 @@ contract PoolFactory is IPoolFactory {
   }
 
   function deployPool(
-    address _owner,
-    string memory _poolCode,
-    uint32 _frontRunningInterval,
-    bytes16 _fee,
-    uint16 _leverageAmount,
-    address _feeAddress,
-    address _quoteToken
+    PoolDeployment memory deploymentParameters
   ) external override returns (address) {
     LeveragedPool pool =
       LeveragedPool(
         Clones.cloneDeterministic(
           address(poolBase),
-          keccak256(abi.encode(_poolCode))
+          keccak256(abi.encode(deploymentParameters.poolCode))
         )
       );
-    emit DeployPool(address(pool), _poolCode);
+    emit DeployPool(address(pool), deploymentParameters.poolCode);
     pool.initialize(
-      _owner,
+      deploymentParameters.owner,
+      deploymentParameters.oracleWrapper,
       deployPairToken(
         address(pool),
-        string(abi.encodePacked(_poolCode, "-LONG")),
-        string(abi.encodePacked("L-", _poolCode))
+        string(abi.encodePacked(deploymentParameters.poolCode, "-LONG")),
+        string(abi.encodePacked("L-", deploymentParameters.poolCode))
       ),
       deployPairToken(
         address(pool),
-        string(abi.encodePacked(_poolCode, "-SHORT")),
-        string(abi.encodePacked("S-", _poolCode))
+        string(abi.encodePacked(deploymentParameters.poolCode, "-SHORT")),
+        string(abi.encodePacked("S-", deploymentParameters.poolCode))
       ),
-      _poolCode,
-      _frontRunningInterval,
-      _fee,
-      _leverageAmount,
-      _feeAddress,
-      _quoteToken
+      deploymentParameters.poolCode,
+      deploymentParameters.frontRunningInterval,
+      deploymentParameters.updateInterval,
+      deploymentParameters.fee,
+      deploymentParameters.leverageAmount,
+      deploymentParameters.feeAddress,
+      deploymentParameters.quoteToken
     );
     return address(pool);
   }

@@ -73,6 +73,9 @@ interface ILeveragedPool {
     uint112 indexed transferAmount
   );
 
+  function updateInterval() external view returns (uint32);
+  function oracleWrapper() external view returns (address);
+
   // #### Functions
   /**
   @notice Configures the pool on deployment. The pools are EIP 1167 clones.
@@ -86,15 +89,19 @@ interface ILeveragedPool {
  */
   function initialize(
     address _updater,
+    address _oracleWrapper,
     address _longToken,
     address _shortToken,
     string memory _poolCode,
     uint32 _frontRunningInterval,
+    uint32 _updateInterval,
     bytes16 _fee,
     uint16 _leverageAmount,
     address _feeAddress,
     address _quoteToken
   ) external;
+
+  function getOraclePrice() external view returns (int256);
 
   /**
     @notice Creates a commitment to mint or burn
@@ -126,6 +133,11 @@ interface ILeveragedPool {
     @param newPrice The price for the latest interval. 
     */
   function executePriceChange(int256 oldPrice, int256 newPrice) external;
+
+  /**
+   * @return true if the price was last updated more than updateInterval seconds ago
+   */
+  function intervalPassed() external view returns (bool);
 
   /** 
     @notice Updates the fee address

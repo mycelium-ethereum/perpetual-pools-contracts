@@ -7,15 +7,14 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@chainlink/contracts/src/v0.7/interfaces/AggregatorV2V3Interface.sol";
 
 /*
-@title The oracle management contract
+@title The oracle management contract for chainlink V3 oracles
 */
-contract OracleWrapper is IOracleWrapper, AccessControl {
+contract ChainlinkOracleWrapper is IOracleWrapper, AccessControl {
   // #### Globals
   /**
-  @notice Format: Market code => oracle address. Market code looks like TSLA/USD+aDAI
-  @dev override in place for the getter function definition from the interface
+  @notice The address of the feed oracle
    */
-  mapping(string => address) public override assetOracles;
+  address public oracle;
 
   // #### Roles
   /**
@@ -25,28 +24,29 @@ contract OracleWrapper is IOracleWrapper, AccessControl {
   bytes32 public constant ADMIN = keccak256("ADMIN");
 
   // #### Functions
-  constructor() {
+  constructor(address _oracle) {
     _setupRole(ADMIN, msg.sender);
     _setRoleAdmin(OPERATOR, ADMIN);
+    setOracle(_oracle);
   }
 
-  function setOracle(string memory marketCode, address oracle)
-    external
+  function setOracle(address _oracle)
+    public
     override
     onlyOperator
   {
     require(oracle != address(0), "Oracle cannot be 0 address");
-    assetOracles[marketCode] = oracle;
+    oracle = _oracle;
   }
 
-  function getPrice(string memory marketCode)
+  function getPrice()
     external
     view
     override
     returns (int256)
   {
     (, int256 price, , uint256 timeStamp, ) =
-      AggregatorV2V3Interface(assetOracles[marketCode]).latestRoundData();
+      AggregatorV2V3Interface(oracle).latestRoundData();
     require(timeStamp > 0, "Round not complete");
     return price;
   }
