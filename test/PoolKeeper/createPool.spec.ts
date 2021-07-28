@@ -8,16 +8,12 @@ import {
     OracleWrapper,
     PoolSwapLibrary__factory,
     PoolFactory__factory,
+    TestOracle__factory,
+    TestOracle,
 } from "../../typechain"
 
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import {
-    ORACLE,
-    OPERATOR_ROLE,
-    ADMIN_ROLE,
-    POOL_CODE,
-    MARKET_CODE,
-} from "../constants"
+import { OPERATOR_ROLE, ADMIN_ROLE, POOL_CODE, MARKET_CODE } from "../constants"
 import { generateRandomAddress } from "../utilities"
 
 chai.use(chaiAsPromised)
@@ -27,6 +23,7 @@ describe("PoolKeeper - createPool", () => {
     let poolKeeper: PoolKeeper
     let oracleWrapper: OracleWrapper
     let signers: SignerWithAddress[]
+    let testOracle: TestOracle
     beforeEach(async () => {
         // Deploy the contracts
         signers = await ethers.getSigners()
@@ -37,6 +34,15 @@ describe("PoolKeeper - createPool", () => {
         )) as OracleWrapper__factory
         oracleWrapper = await oracleWrapperFactory.deploy()
         await oracleWrapper.deployed()
+
+        // Deploy the sample oracle
+        const oracleFactory = (await ethers.getContractFactory(
+            "TestOracle",
+            signers[0]
+        )) as TestOracle__factory
+
+        testOracle = await oracleFactory.deploy()
+        await testOracle.deployed()
 
         const libraryFactory = (await ethers.getContractFactory(
             "PoolSwapLibrary",
@@ -83,7 +89,7 @@ describe("PoolKeeper - createPool", () => {
     })
 
     it("should create a new pool in the given market", async () => {
-        await poolKeeper.createMarket(MARKET_CODE, ORACLE)
+        await poolKeeper.createMarket(MARKET_CODE, testOracle.address)
         const receipt = await (
             await poolKeeper.createPool(
                 MARKET_CODE,
@@ -104,7 +110,7 @@ describe("PoolKeeper - createPool", () => {
     })
 
     it("should emit an event containing the details of the new pool", async () => {
-        await poolKeeper.createMarket(MARKET_CODE, ORACLE)
+        await poolKeeper.createMarket(MARKET_CODE, testOracle.address)
         const receipt = await (
             await poolKeeper.createPool(
                 MARKET_CODE,
@@ -124,7 +130,7 @@ describe("PoolKeeper - createPool", () => {
     })
 
     it("should add the pool to the list of pools", async () => {
-        await poolKeeper.createMarket(MARKET_CODE, ORACLE)
+        await poolKeeper.createMarket(MARKET_CODE, testOracle.address)
         const receipt = await (
             await poolKeeper.createPool(
                 MARKET_CODE,
@@ -144,7 +150,7 @@ describe("PoolKeeper - createPool", () => {
     })
 
     it("should revert if the pool already exists", async () => {
-        await poolKeeper.createMarket(MARKET_CODE, ORACLE)
+        await poolKeeper.createMarket(MARKET_CODE, testOracle.address)
         await (
             await poolKeeper.createPool(
                 MARKET_CODE,

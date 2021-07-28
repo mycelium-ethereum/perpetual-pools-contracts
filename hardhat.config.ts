@@ -28,15 +28,6 @@ const config: HardhatUserConfig = {
         compilers: [{ version: "0.7.6", settings: {} }],
     },
     networks: {
-        hardhat: {
-            // gas: 15000000000,
-            // blockGasLimit: 0x1fffffffffffff,
-            // allowUnlimitedContractSize: true,
-            forking: {
-                url: ALCHEMY_API_MAINNET_URL,
-                blockNumber: 12474747,
-            },
-        },
         goerli: {
             url: ALCHEMY_API_TESTNET_URL,
             accounts: [TESTNET_PRIVATE_KEY],

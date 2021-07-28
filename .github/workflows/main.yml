@@ -27,3 +27,18 @@ jobs:
             - name: Run Prettier
               run: yarn run lint
 
+    test:
+        name: Run tests
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2
+
+            - name: Install dependencies
+              run: yarn install
+
+            - name: Compile contracts
+              run: yarn build
+            
+            - name: Test contracts
+              run: yarn test
+
