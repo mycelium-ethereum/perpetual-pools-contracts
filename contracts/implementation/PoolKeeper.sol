@@ -266,10 +266,11 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
 
     /**
   @notice Calculates the average price
-  @dev Calculates the price to 4 decimal places, round the last decimal place up or down before returning.
+  @dev Calculates an average to 18 decimal places
+  @dev Uses the constant "fixedPoint" to allow calculation to 18 decimal places
   @param cumulative The cumulative price
   @param count The number of samples
-  @return The average price to 3 decimal places
+  @return The average price to 18 decimal places
   */
     function _average(int256 cumulative, uint32 count) internal pure returns (int256) {
         require(count > 0, "Count < 1");
