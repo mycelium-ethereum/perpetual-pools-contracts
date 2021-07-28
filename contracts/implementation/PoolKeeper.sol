@@ -49,6 +49,10 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
     PoolFactory public immutable factory;
     bytes16 constant fixedPoint = 0x403abc16d674ec800000000000000000; // 1 ether
 
+    uint256 constant BASE_TIP = 1;
+    uint256 constant BLOCK_TIME = 15;
+    uint256 constant TIP_DELTA_PER_BLOCK = 1;
+
     // #### Roles
     bytes32 public constant ADMIN = keccak256("ADMIN");
 
@@ -325,17 +329,39 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
         return (true, updateInterval, market, poolGroup);
     }
 
-    function calcKeeperTip(uint256 gasPrice, uint256 gasSpent, address pool) public view returns(uint256) {
-        // todo we will need safe math here
-        // calc total eth spent
-        uint ethSpent = gasPrice * gasSpent;
+    /**
+     * @notice The total payment a keeper will receive for inducing a successful
+     *          price update
+     * @param gasPrice Current price (in ETH) per gas unit
+     * @param gasSpent Number of gas units spent
+     * @param pool Address of the relevant pool
+     * @returns payment Total quantity of settlement token to receive
+     */
+    function calcKeeperPayment(
+        uint256 gasPrice,
+        uint256 gasSpent,
+        address pool
+    ) public view returns (uint256) {
+        uint256 settlementTokenPrice = IOracleWrapper(LeveragedPool(pool).keeperOracle()).getPrice(pool);
 
-        // get margin token price
-        // uint marginTokenPrice = IOracle(pool.keeperOracle()).latestAnswer();
-        // todo change from hardcoded 1:1 price
-        uint marginTokenPrice = 1;
+        uint256 gas = gasPrice * gasSpent * settlementTokenPrice;
+        uint256 tip = calcKeeperTip(pool) * settlementTokenPrice;
+        uint256 payment = gas + tip;
 
-        return ethSpent * marginTokenPrice;
+        return payment;
+    }
+
+    /**
+     * @notice Reward paid to keepers for inducing successful price updates
+     * @param pool Address of relevant pool
+     * @dev Allows keepers to query their current premium for performing upkeep
+     * @returns tip Amount (in settlement token) to receive
+     */
+    function calcKeeperTip(address pool) public view returns(uint256) {
+        uint256 blocksSinceLastUpdate = (lastExecutionTime[pool] - block.timestamp) / BLOCK_TIME;
+        uint256 tip = BASE_TIP + TIP_DELTA_PER_BLOCK * blocksSinceLastUpdate;
+
+        return tip;
     }
 
     // #### Modifiers
