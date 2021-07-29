@@ -23,21 +23,21 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
     using SafeMath_32 for uint32;
     using SafeMath_40 for uint40;
 
-  // #### Global variables
-  /**
+    // #### Global variables
+    /**
   @notice Format: Pool Code => update interval => Market code. Used to prevent a pool from being updated with pricing from a market it doesn't belong to.
   */
-  mapping(address => mapping(uint32 => string)) public poolMarkets;
+    mapping(address => mapping(uint32 => string)) public poolMarkets;
 
     /**
   @notice Format: market code => updateInterval => Upkeep details
    */
-  mapping(address => mapping(uint32 => Upkeep)) public upkeep;
-  /**
+    mapping(address => mapping(uint32 => Upkeep)) public upkeep;
+    /**
   @notice Format: Pool code => timestamp of last price execution
   @dev Used to allow multiple upkeep registrations to use the same market/update interval price data.
    */
-  mapping(address => uint40) public lastExecutionTime;
+    mapping(address => uint40) public lastExecutionTime;
 
     address public oracleWrapper;
 
