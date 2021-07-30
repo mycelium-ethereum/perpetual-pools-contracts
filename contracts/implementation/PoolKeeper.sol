@@ -239,7 +239,7 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
   @param roundStart The start time of the round
   @param market The market the pools belong to 
   @param updateInterval The update interval of the pools
-  @param poolCodes The pools to update
+  @param _pools The pools to update
   @param oldPrice The previously executed price
   @param newPrice The price for the current interval
    */
@@ -313,12 +313,6 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
         }
 
         for (uint8 i = 0; i < poolGroup.length; i++) {
-            if (
-                keccak256(abi.encodePacked(poolMarkets[poolGroup[i]][updateInterval])) !=
-                keccak256(abi.encodePacked(market))
-            ) {
-                return (false, updateInterval, market, poolGroup);
-            }
             if (poolGroup[i] == address(0)) {
                 return (false, updateInterval, market, poolGroup);
             }

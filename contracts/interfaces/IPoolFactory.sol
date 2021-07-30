@@ -14,7 +14,7 @@ interface IPoolFactory {
     /**
     @notice Deploys a LeveragedPool contract
     @param owner The address of the pool keeper that will administer the pool
-    @param _poolCode The pool identification code. This is unique per pool per pool keeper
+    @param _ticker The pool identification code. This is unique per pool per pool keeper
     @param _frontRunningInterval The minimum number of seconds that must elapse before a commit can be executed. Must be smaller than the update interval to prevent deadlock. The difference must be greater than 15 seconds.
     @param _fee The fund movement fee. This amount is extracted from the deposited asset with every update and sent to the fee address.
     @param _leverageAmount The amount of exposure to price movements for the pool

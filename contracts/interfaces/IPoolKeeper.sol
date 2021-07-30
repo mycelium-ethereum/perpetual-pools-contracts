@@ -79,7 +79,7 @@ interface IPoolKeeper {
 
     /**
     @notice Creates a notification of a failed pool update
-    @param poolCode The pool that failed to update
+    @param pool The pool that failed to update
     @param reason The reason for the error
    */
     event PoolUpdateError(address pool, string reason);
@@ -103,7 +103,7 @@ interface IPoolKeeper {
     @notice Creates a new pool in a given market
     @dev Should throw an error if the market code is invalid/doesn't exist or if the pool code is already in use.
     @param marketCode The market to create the pool in. The current price will be read and used to set the pool's lastPrice field.
-    @param poolCode The pool's identifier
+    @param ticker The pool's identifier
     @param updateInterval The minimum amount of time that must elapse before a price update can occur. If the interval is 5 minutes, then the price cannot be updated until 5 minutes after the last update has elapsed.
     @param frontRunningInterval The amount of time that must elapse between a commit and the next update interval before a commit can be executed. Must be shorter than the update interval to prevent deadlock.
     @param fee The percentage fee that will be charged to the pool's capital on a successful price update
