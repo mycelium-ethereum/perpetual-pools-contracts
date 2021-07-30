@@ -42,7 +42,7 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
   @notice Format: Pool code => timestamp of last price execution
   @dev Used to allow multiple upkeep registrations to use the same market/update interval price data.
    */
-    mapping(string => uint40) public lastExecutionTime;
+    mapping(address => uint40) public lastExecutionTime;
 
     address public oracleWrapper;
 
@@ -75,15 +75,15 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
 
     function createPool(
         string memory _marketCode,
-        string memory _poolCode,
+        string memory _ticker,
         uint32 _updateInterval,
         uint32 _frontRunningInterval,
         bytes16 _fee,
         uint16 _leverageAmount,
         address _feeAddress,
         address _quoteToken
-    ) external override {
-        require(address(pools[_poolCode]) == address(0), "Pre-existing pool code");
+    ) external override returns (address) {
+        require(address(pools[_ticker]) == address(0), "Pre-existing pool code");
         IOracleWrapper oracle = IOracleWrapper(oracleWrapper);
         require(oracle.assetOracles(_marketCode) != address(0), "Market must exist first");
         require(_updateInterval > _frontRunningInterval, "Update interval <= FR interval");
@@ -106,26 +106,30 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
             upkeep[_marketCode][_updateInterval].count = uint32(upkeepData.count.add(1));
         }
 
-        poolMarkets[_poolCode][_updateInterval] = _marketCode;
+        poolMarkets[_ticker][_updateInterval] = _marketCode;
         emit CreatePool(
             Clones.predictDeterministicAddress(
                 address(factory.poolBase()),
-                keccak256(abi.encode(_poolCode)),
+                keccak256(abi.encode(_ticker)),
                 address(factory)
             ),
             firstPrice,
             _updateInterval,
             _marketCode
         );
-        pools[_poolCode] = factory.deployPool(
+        address poolAddress = factory.deployPool(
             address(this),
-            _poolCode,
+            _ticker,
             _frontRunningInterval,
             _fee,
             _leverageAmount,
             _feeAddress,
             _quoteToken
         );
+
+        pools[_ticker] = poolAddress;
+
+        return poolAddress;
     }
 
     // Keeper network
@@ -143,7 +147,7 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
         returns (bool upkeepNeeded, bytes memory performData)
     {
         // Validate checkData
-        (bool valid, uint32 updateInterval, string memory market, string[] memory poolCodes) = _checkInputData(
+        (bool valid, uint32 updateInterval, string memory market, address[] memory pools) = _checkInputData(
             checkData
         );
         if (!valid) {
@@ -156,9 +160,9 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
             // Upkeep required for price change or if the round hasn't been executed
             return (true, checkData);
         }
-        for (uint256 i = 0; i < poolCodes.length; i++) {
+        for (uint256 i = 0; i < pools.length; i++) {
             // At least one pool needs updating
-            if (lastExecutionTime[poolCodes[i]] < upkeepData.roundStart) {
+            if (lastExecutionTime[pools[i]] < upkeepData.roundStart) {
                 return (true, checkData);
             }
         }
@@ -170,7 +174,7 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
   @param performData The upkeep data (market code, update interval, pool codes) to perform the update for.
    */
     function performUpkeep(bytes calldata performData) external override {
-        (bool valid, uint32 updateInterval, string memory market, string[] memory poolCodes) = _checkInputData(
+        (bool valid, uint32 updateInterval, string memory market, address[] memory pools) = _checkInputData(
             performData
         );
 
@@ -201,7 +205,7 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
                 uint32(block.timestamp),
                 market,
                 upkeepData.updateInterval,
-                poolCodes,
+                pools,
                 upkeepData.executionPrice,
                 newPrice
             );
@@ -226,7 +230,7 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
             upkeepData.roundStart,
             market,
             upkeepData.updateInterval,
-            poolCodes,
+            pools,
             upkeepData.lastExecutionPrice,
             upkeepData.executionPrice
         );
@@ -245,19 +249,19 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
         uint40 roundStart,
         string memory market,
         uint32 updateInterval,
-        string[] memory poolCodes,
+        address[] memory _pools,
         int256 oldPrice,
         int256 newPrice
     ) internal {
         if (oldPrice > 0) {
-            for (uint8 i = 0; i < poolCodes.length; i++) {
-                if (lastExecutionTime[poolCodes[i]] < roundStart) {
-                    lastExecutionTime[poolCodes[i]] = uint40(block.timestamp);
-                    emit ExecutePriceChange(oldPrice, newPrice, updateInterval, market, poolCodes[i]);
-                    try LeveragedPool(pools[poolCodes[i]]).executePriceChange(oldPrice, newPrice) {} catch Error(
+            for (uint8 i = 0; i < _pools.length; i++) {
+                if (lastExecutionTime[_pools[i]] < roundStart) {
+                    lastExecutionTime[_pools[i]] = uint40(block.timestamp);
+                    emit ExecutePriceChange(oldPrice, newPrice, updateInterval, market, _pools[i]);
+                    try LeveragedPool(_pools[i]).executePriceChange(oldPrice, newPrice) {} catch Error(
                         string memory reason
                     ) {
-                        emit PoolUpdateError(poolCodes[i], reason);
+                        emit PoolUpdateError(_pools[i], reason);
                     }
                 }
             }
@@ -298,12 +302,12 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
             bool,
             uint32,
             string memory,
-            string[] memory
+            address[] memory
         )
     {
-        (uint32 updateInterval, string memory market, string[] memory poolGroup) = abi.decode(
+        (uint32 updateInterval, string memory market, address[] memory poolGroup) = abi.decode(
             checkData,
-            (uint32, string, string[])
+            (uint32, string, address[])
         );
         IOracleWrapper oracle = IOracleWrapper(oracleWrapper);
         if (oracle.assetOracles(market) == address(0)) {
@@ -317,7 +321,7 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
             ) {
                 return (false, updateInterval, market, poolGroup);
             }
-            if (pools[poolGroup[i]] == address(0)) {
+            if (poolGroup[i] == address(0)) {
                 return (false, updateInterval, market, poolGroup);
             }
         }

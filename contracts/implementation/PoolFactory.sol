@@ -29,7 +29,7 @@ contract PoolFactory is IPoolFactory {
 
     function deployPool(
         address _owner,
-        string memory _poolCode,
+        string memory _ticker,
         uint32 _frontRunningInterval,
         bytes16 _fee,
         uint16 _leverageAmount,
@@ -37,22 +37,22 @@ contract PoolFactory is IPoolFactory {
         address _quoteToken
     ) external override returns (address) {
         LeveragedPool pool = LeveragedPool(
-            Clones.cloneDeterministic(address(poolBase), keccak256(abi.encode(_poolCode)))
+            Clones.cloneDeterministic(address(poolBase), keccak256(abi.encode(_ticker)))
         );
-        emit DeployPool(address(pool), _poolCode);
+        emit DeployPool(address(pool), _ticker);
         pool.initialize(
             _owner,
             deployPairToken(
                 address(pool),
-                string(abi.encodePacked(_poolCode, "-LONG")),
-                string(abi.encodePacked("L-", _poolCode))
+                string(abi.encodePacked(_ticker, "-LONG")),
+                string(abi.encodePacked("L-", _ticker))
             ),
             deployPairToken(
                 address(pool),
-                string(abi.encodePacked(_poolCode, "-SHORT")),
-                string(abi.encodePacked("S-", _poolCode))
+                string(abi.encodePacked(_ticker, "-SHORT")),
+                string(abi.encodePacked("S-", _ticker))
             ),
-            _poolCode,
+            _ticker,
             _frontRunningInterval,
             _fee,
             _leverageAmount,

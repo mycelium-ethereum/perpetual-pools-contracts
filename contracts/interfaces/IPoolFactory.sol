@@ -8,7 +8,7 @@ pragma abicoder v2;
 interface IPoolFactory {
     // #### Events
 
-    event DeployPool(address indexed pool, string poolCode);
+    event DeployPool(address indexed pool, string ticker);
 
     // #### Functions
     /**
@@ -24,7 +24,7 @@ interface IPoolFactory {
    */
     function deployPool(
         address owner,
-        string memory _poolCode,
+        string memory _ticker,
         uint32 _frontRunningInterval,
         bytes16 _fee,
         uint16 _leverageAmount,

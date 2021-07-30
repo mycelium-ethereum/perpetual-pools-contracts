@@ -74,7 +74,7 @@ interface IPoolKeeper {
         int256 indexed newPrice,
         uint32 indexed updateInterval,
         string market,
-        string pool
+        address pool
     );
 
     /**
@@ -82,7 +82,7 @@ interface IPoolKeeper {
     @param poolCode The pool that failed to update
     @param reason The reason for the error
    */
-    event PoolUpdateError(string indexed poolCode, string reason);
+    event PoolUpdateError(address pool, string reason);
 
     // #### Functions
     /**
@@ -113,12 +113,12 @@ interface IPoolKeeper {
    */
     function createPool(
         string memory marketCode,
-        string memory poolCode,
+        string memory ticker,
         uint32 updateInterval,
         uint32 frontRunningInterval,
         bytes16 fee,
         uint16 leverageAmount,
         address feeAddress,
         address quoteToken
-    ) external;
+    ) external returns (address);
 }

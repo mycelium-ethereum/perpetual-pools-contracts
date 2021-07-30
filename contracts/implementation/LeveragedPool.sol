@@ -42,7 +42,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     uint128 public commitIDCounter;
     mapping(uint128 => Commit) public commits;
     mapping(CommitType => uint112) public shadowPools;
-    string public poolCode;
+    string public ticker;
     // #### Roles
     /**
   @notice The Updater role is for addresses that can update a pool's price
@@ -64,7 +64,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
         address _updater,
         address _longToken,
         address _shortToken,
-        string memory _poolCode,
+        string memory _ticker,
         uint32 _frontRunningInterval,
         bytes16 _fee,
         uint16 _leverageAmount,
@@ -87,10 +87,10 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
         leverageAmount = PoolSwapLibrary.convertUIntToDecimal(_leverageAmount);
         feeAddress = _feeAddress;
         lastPriceTimestamp = uint40(block.timestamp);
-        poolCode = _poolCode;
+        ticker = _ticker;
         tokens[0] = _longToken;
         tokens[1] = _shortToken;
-        emit PoolInitialized(tokens[0], tokens[1], _quoteToken, _poolCode);
+        emit PoolInitialized(tokens[0], tokens[1], _quoteToken, _ticker);
     }
 
     function commit(CommitType commitType, uint112 amount) external override {
