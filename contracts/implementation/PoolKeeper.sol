@@ -147,9 +147,7 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
         returns (bool upkeepNeeded, bytes memory performData)
     {
         // Validate checkData
-        (bool valid, uint32 updateInterval, string memory market, address[] memory pools) = _checkInputData(
-            checkData
-        );
+        (bool valid, uint32 updateInterval, string memory market, address[] memory pools) = _checkInputData(checkData);
         if (!valid) {
             return (false, new bytes(0));
         }
