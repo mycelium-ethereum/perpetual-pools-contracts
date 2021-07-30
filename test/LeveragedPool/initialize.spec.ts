@@ -169,7 +169,7 @@ describe("LeveragedPool - initialize", () => {
         })
 
         it("should set the pool code", async () => {
-            expect(await leveragedPool.poolCode()).to.eq(POOL_CODE)
+            expect(await leveragedPool.ticker()).to.eq(POOL_CODE)
         })
 
         it("should deploy two ERC20 tokens for the long/short pairs", async () => {
@@ -397,8 +397,8 @@ describe("LeveragedPool - initialize", () => {
                 quoteToken
             )
 
-            expect(await secondPool.poolCode()).to.eq(POOL_CODE_2)
-            expect(await leveragedPool.poolCode()).to.eq(POOL_CODE)
+            expect(await secondPool.ticker()).to.eq(POOL_CODE_2)
+            expect(await leveragedPool.ticker()).to.eq(POOL_CODE)
         })
     })
 })
