@@ -1,7 +1,12 @@
 import { ethers } from "hardhat"
 import chai from "chai"
 import chaiAsPromised from "chai-as-promised"
-import { generateRandomAddress, getEventArgs, timeout } from "../../utilities"
+import {
+    callData,
+    generateRandomAddress,
+    getEventArgs,
+    timeout,
+} from "../../utilities"
 
 import {
     PoolFactory__factory,
@@ -165,52 +170,6 @@ describe("PoolKeeper - performUpkeep: corner cases", () => {
             expect(upkeepOneEvent?.updateInterval).to.eq(
                 upkeepTwoEvent?.updateInterval
             )
-        })
-    })
-    describe("Malicious upkeep requests", () => {
-        beforeEach(setupHook)
-        it("should revert if the pools do not belong to the market", async () => {
-            // Setup a malicious market
-            await poolKeeper.createMarket(MARKET_2, oracleWrapper.address)
-            const badPool = POOL_CODE.concat("BAD")
-            await poolKeeper.createPool(
-                MARKET_2,
-                badPool,
-                updateInterval,
-                1,
-                "0x00000000000000000000000000000000",
-                1,
-                generateRandomAddress(),
-                quoteToken
-            )
-            await oracleWrapper.increasePrice()
-            const goodData = ethers.utils.defaultAbiCoder.encode(
-                [
-                    ethers.utils.ParamType.from("uint32"),
-                    ethers.utils.ParamType.from("string"),
-                    ethers.utils.ParamType.from("address[]"),
-                ],
-                [updateInterval, MARKET_2, [badPool]]
-            )
-
-            await poolKeeper.performUpkeep(goodData)
-
-            await timeout(updateInterval * 1000 + 1000)
-            await poolKeeper.performUpkeep(goodData)
-
-            // Update a pool not in the malicious market
-            await expect(
-                poolKeeper.performUpkeep(
-                    ethers.utils.defaultAbiCoder.encode(
-                        [
-                            ethers.utils.ParamType.from("uint32"),
-                            ethers.utils.ParamType.from("string"),
-                            ethers.utils.ParamType.from("address[]"),
-                        ],
-                        [updateInterval, MARKET_2, [POOL_CODE]]
-                    )
-                )
-            ).to.be.rejectedWith(Error)
         })
     })
 })

@@ -138,6 +138,8 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
             // Check starting conditions
             await setupHook()
 
+            console.log("HERE")
+
             await timeout(updateInterval * 1000 + 1000)
             await oracleWrapper.increasePrice()
             price = await oracleWrapper.getPrice(MARKET)

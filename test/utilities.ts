@@ -1,6 +1,7 @@
 import { ethers } from "hardhat"
 import { BigNumberish, ContractReceipt, Event } from "ethers"
 import { BytesLike, Result } from "ethers/lib/utils"
+import { MARKET } from "./constants"
 import {
     ERC20,
     LeveragedPool,
@@ -10,6 +11,7 @@ import {
     PoolSwapLibrary,
     PoolSwapLibrary__factory,
     LeveragedPool__factory,
+    PoolKeeper,
 } from "../typechain"
 
 import { abi as ERC20Abi } from "../artifacts/@openzeppelin/contracts/token/ERC20/ERC20.sol/ERC20.json"
@@ -172,4 +174,18 @@ export const createCommit = async (
  */
 export const timeout = async (milliseconds: number): Promise<void> => {
     return new Promise((resolve) => setTimeout(resolve, milliseconds))
+}
+
+export function callData(
+    poolKeeper: PoolKeeper,
+    poolNumbers: number[]
+): BytesLike {
+    return ethers.utils.defaultAbiCoder.encode(
+        [
+            ethers.utils.ParamType.from("uint32"),
+            ethers.utils.ParamType.from("string"),
+            ethers.utils.ParamType.from("address[]"),
+        ],
+        [2, MARKET, poolNumbers.map((x) => poolKeeper.pools(x))]
+    )
 }

@@ -143,7 +143,7 @@ describe("PoolKeeper - createPool", () => {
                 generateRandomAddress()
             )
         ).wait()
-        expect(await poolKeeper.pools(POOL_CODE)).to.eq(
+        expect(await poolKeeper.pools(0)).to.eq(
             receipt.events?.find((el) => el.event === "CreatePool")?.args
                 ?.poolAddress
         )

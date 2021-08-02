@@ -1,7 +1,8 @@
 import { ethers } from "hardhat"
 import chai from "chai"
+import { Bytes, BytesLike } from "ethers"
 import chaiAsPromised from "chai-as-promised"
-import { generateRandomAddress } from "../utilities"
+import { callData, generateRandomAddress } from "../utilities"
 
 import { MARKET_2, POOL_CODE } from "../constants"
 import {
@@ -87,28 +88,26 @@ const setupHook = async () => {
         quoteToken
     )
 }
-const callData = ethers.utils.defaultAbiCoder.encode(
-    [
-        ethers.utils.ParamType.from("uint32"),
-        ethers.utils.ParamType.from("string"),
-        ethers.utils.ParamType.from("address[]"),
-    ],
-    [2, MARKET, [POOL_CODE, POOL_CODE_2]]
-)
 describe("PoolKeeper - checkUpkeep", () => {
     beforeEach(async () => {
         await setupHook()
     })
     it("should return true if the trigger condition is met", async () => {
-        expect((await poolKeeper.checkUpkeep(callData))[0]).to.eq(true)
+        expect(
+            (await poolKeeper.checkUpkeep(callData(poolKeeper, [0, 1])))[0]
+        ).to.eq(true)
     })
     it("should return false if the trigger condition isn't met", async () => {
-        await poolKeeper.performUpkeep(callData)
-        expect((await poolKeeper.checkUpkeep(callData))[0]).to.eq(false)
+        await poolKeeper.performUpkeep(callData(poolKeeper, [0, 1]))
+        expect(
+            (await poolKeeper.checkUpkeep(callData(poolKeeper, [0, 1])))[0]
+        ).to.eq(false)
     })
     it("should return the correct perform data to call for upkeep with", async () => {
         // Should be market code [pool codes]
-        expect((await poolKeeper.checkUpkeep(callData))[1]).to.eq(callData)
+        expect(
+            (await poolKeeper.checkUpkeep(callData(poolKeeper, [0, 1])))[1]
+        ).to.eq(callData)
     })
     it("should return false if the check data provided is invalid", async () => {
         const falseCallData = ethers.utils.defaultAbiCoder.encode(
