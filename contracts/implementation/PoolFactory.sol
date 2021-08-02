@@ -5,21 +5,33 @@ pragma abicoder v2;
 import "../interfaces/IPoolFactory.sol";
 import "./LeveragedPool.sol";
 import "./PoolToken.sol";
+import "./PoolKeeper.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 
 /*
 @title The oracle management contract
 */
-contract PoolFactory is IPoolFactory {
+contract PoolFactory is IPoolFactory, AccessControl {
   // #### Globals
   PoolToken public pairTokenBase;
   LeveragedPool public poolBase;
+  IPoolKeeper public poolKeeper;
+
+  // #### Roles
+  /**
+  @notice Use the Operator role to restrict access to the setPoolKeeper function
+   */
+  bytes32 public constant OPERATOR = keccak256("OPERATOR");
+  bytes32 public constant ADMIN = keccak256("ADMIN");
 
   // #### Functions
   constructor() {
     // Deploy base contracts
     pairTokenBase = new PoolToken();
     poolBase = new LeveragedPool();
+    _setupRole(ADMIN, msg.sender);
+    _setRoleAdmin(OPERATOR, ADMIN);
 
     // Init bases
     poolBase.initialize(
@@ -71,6 +83,7 @@ contract PoolFactory is IPoolFactory {
       deploymentParameters.feeAddress,
       deploymentParameters.quoteToken
     );
+    
     return address(pool);
   }
 
@@ -88,5 +101,20 @@ contract PoolFactory is IPoolFactory {
       );
     pairToken.initialize(owner, name, symbol);
     return address(pairToken);
+  }
+
+  function setPoolKeeper(address _poolKeeper) external onlyOperator {
+    poolKeeper = IPoolKeeper(_poolKeeper);
+  }
+
+  function setOperator(address _operator) external onlyOperator {
+    revokeRole(ADMIN, msg.sender);
+    grantRole(ADMIN, _operator);
+  }
+
+  // #### Modifiers
+  modifier onlyOperator {
+    require(hasRole(OPERATOR, msg.sender));
+    _;
   }
 }

@@ -12,12 +12,15 @@ describe("PoolSwapLibrary - getRatio", () => {
   let library: PoolSwapLibrary;
   beforeEach(async () => {
     // Deploy the contracts
+    console.log(1)
     signers = await ethers.getSigners();
 
+    console.log(2)
     const libraryFactory = (await ethers.getContractFactory(
       "PoolSwapLibrary",
       signers[0]
     )) as PoolSwapLibrary__factory;
+    console.log(3)
 
     library = await libraryFactory.deploy();
     await library.deployed();

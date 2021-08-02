@@ -33,16 +33,21 @@ describe("PoolFactory - deployPool", () => {
       libraries: { PoolSwapLibrary: library.address },
     })) as PoolFactory__factory;
     factory = await (await PoolFactory.deploy()).deployed();
+    const deploymentData = {
+      owner: generateRandomAddress(),
+      poolCode: POOL_CODE,
+      frontRunningInterval: 5,
+      updateInterval: 10,
+      fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+      leverageAmount: 5,
+      feeAddress: generateRandomAddress(),
+      quoteToken: generateRandomAddress(),
+      oracleWrapper: generateRandomAddress()
+    }
     poolTx = getEventArgs(
       await (
         await factory.deployPool(
-          generateRandomAddress(),
-          POOL_CODE,
-          5,
-          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
-          5,
-          generateRandomAddress(),
-          generateRandomAddress()
+          deploymentData
         )
       ).wait(),
       "DeployPool"
@@ -62,8 +67,10 @@ describe("PoolFactory - deployPool", () => {
         generateRandomAddress(),
         generateRandomAddress(),
         generateRandomAddress(),
+        generateRandomAddress(),
         POOL_CODE,
         5,
+        3,
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
         5,
         generateRandomAddress(),
@@ -72,16 +79,21 @@ describe("PoolFactory - deployPool", () => {
     ).to.be.rejectedWith(Error);
   });
   it("should allow multiple clones to exist", async () => {
+    const deploymentData = {
+      owner: generateRandomAddress(),
+      poolCode: POOL_CODE_2,
+      frontRunningInterval: 5,
+      updateInterval: 3,
+      fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+      leverageAmount: 5,
+      feeAddress: generateRandomAddress(),
+      quoteToken: generateRandomAddress(),
+      oracleWrapper: generateRandomAddress()
+    }
     const secondPool = getEventArgs(
       await (
         await factory.deployPool(
-          generateRandomAddress(),
-          POOL_CODE_2,
-          5,
-          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
-          5,
-          generateRandomAddress(),
-          generateRandomAddress()
+          deploymentData
         )
       ).wait(),
       "DeployPool"

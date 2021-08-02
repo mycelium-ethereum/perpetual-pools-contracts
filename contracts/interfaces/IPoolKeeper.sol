@@ -19,13 +19,11 @@ interface IPoolKeeper {
   @notice Creates a notification when a pool is created
   @param poolAddress The pool address of the newly created pool. This is deterministic and utilizes create2 and the pool code as the salt.
   @param firstPrice The price of the market oracle when the pool was created. 
-  @param updateInterval The pool's update interval. This is used for upkeep
   @param poolCode The code of the pool. This combined with the updateInterval provide the upkeep details.
    */
-  event CreatePool(
+  event PoolAdded(
     address indexed poolAddress,
     int256 indexed firstPrice,
-    uint32 indexed updateInterval,
     string poolCode
   );
 
@@ -88,24 +86,12 @@ interface IPoolKeeper {
   // #### Functions
 
   /**
-    @notice Creates a new pool in a given market
-    @dev Should throw an error if the market code is invalid/doesn't exist or if the pool code is already in use.
-    @param poolCode The pool's identifier
-    @param updateInterval The minimum amount of time that must elapse before a price update can occur. If the interval is 5 minutes, then the price cannot be updated until 5 minutes after the last update has elapsed.
-    @param frontRunningInterval The amount of time that must elapse between a commit and the next update interval before a commit can be executed. Must be shorter than the update interval to prevent deadlock.
-    @param fee The percentage fee that will be charged to the pool's capital on a successful price update
-    @param leverageAmount The leverage that the pool will expose it's depositors to
-    @param feeAddress The address that fees will be sent to on every price change
-    @param quoteToken The address of the digital asset that this pool contains
+   * @notice When a pool is created, this function is called by the factory to initiate price tracking.
+   * @param _poolCode The code associated with this pool.
+   * @param _poolAddress The address of the newly-created pool.
    */
-  function createPool(
-    address _oracleWrapper,
-    string memory poolCode,
-    uint32 updateInterval,
-    uint32 frontRunningInterval,
-    bytes16 fee,
-    uint16 leverageAmount,
-    address feeAddress,
-    address quoteToken
+  function newPool(
+    string memory _poolCode,
+    address _poolAddress
   ) external;
 }

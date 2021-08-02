@@ -58,34 +58,36 @@ const setupHook = async () => {
   })) as PoolFactory__factory;
   const factory = await (await PoolFactory.deploy()).deployed();
   poolKeeper = await poolKeeperFactory.deploy(
-    oracleWrapper.address,
     factory.address
   );
   await poolKeeper.deployed();
 
   // Create pool
   await oracleWrapper.increasePrice();
-  await poolKeeper.createMarket(MARKET, oracleWrapper.address);
-  await poolKeeper.createPool(
-    MARKET,
-    POOL_CODE,
-    2,
-    1,
-    "0x00000000000000000000000000000000",
-    1,
-    generateRandomAddress(),
-    quoteToken
-  );
-  await poolKeeper.createPool(
-    MARKET,
-    POOL_CODE_2,
-    2,
-    1,
-    "0x00000000000000000000000000000000",
-    2,
-    generateRandomAddress(),
-    quoteToken
-  );
+  const deploymentData = {
+    owner: generateRandomAddress(),
+    poolCode: POOL_CODE,
+    frontRunningInterval: 1,
+    updateInterval: 2,
+    fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    leverageAmount: 1,
+    feeAddress: generateRandomAddress(),
+    quoteToken: quoteToken,
+    oracleWrapper: oracleWrapper.address
+  }
+  await factory.deployPool(deploymentData)
+
+  const deploymentData2 = {
+    owner: generateRandomAddress(),
+    poolCode: POOL_CODE_2,
+    frontRunningInterval: 1,
+    updateInterval: 2,
+    fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    leverageAmount: 2,
+    feeAddress: generateRandomAddress(),
+    quoteToken: quoteToken,
+    oracleWrapper: oracleWrapper.address
+  }
 };
 const callData = ethers.utils.defaultAbiCoder.encode(
   [

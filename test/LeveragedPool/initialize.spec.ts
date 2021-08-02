@@ -10,6 +10,9 @@ import {
   PoolSwapLibrary__factory,
   PoolSwapLibrary,
   ERC20,
+  ChainlinkOracle__factory,
+  ChainlinkOracleWrapper__factory,
+  ChainlinkOracleWrapper,
 } from "../../typechain";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import {
@@ -42,6 +45,7 @@ describe("LeveragedPool - initialize", () => {
   let quoteToken: string;
   let short: ERC20;
   let long: ERC20;
+  let oracleWrapper: ChainlinkOracleWrapper
   before(async () => {
     signers = await ethers.getSigners();
   });
@@ -83,6 +87,19 @@ describe("LeveragedPool - initialize", () => {
       library = await libraryFactory.deploy();
       await library.deployed();
 
+      const chainlinkOracleFactory = (await ethers.getContractFactory(
+        "ChainlinkOracle",
+        signers[0]
+      )) as ChainlinkOracle__factory;
+      const chainlinkOracle = await chainlinkOracleFactory.deploy();
+
+      // Deploy tokens
+      const chainlinkOracleWrapperFactory = (await ethers.getContractFactory(
+        "ChainlinkOracleWrapper",
+        signers[0]
+      )) as ChainlinkOracleWrapper__factory;
+      const oracleWrapper = await chainlinkOracleWrapperFactory.deploy(chainlinkOracle.address);
+
       const leveragedPoolFactory = (await ethers.getContractFactory(
         "LeveragedPool",
         {
@@ -95,10 +112,12 @@ describe("LeveragedPool - initialize", () => {
       await (
         await pool.initialize(
           signers[0].address,
+          oracleWrapper.address,
           long.address,
           short.address,
           POOL_CODE,
           frontRunningInterval,
+          updateInterval,
           fee,
           leverage,
           feeAddress,
@@ -117,7 +136,7 @@ describe("LeveragedPool - initialize", () => {
 
       leveragedPool = new ethers.Contract(
         factoryReceipt?.events?.find(
-          (el: Event) => el.event === "CreatePool"
+          (el: Event) => el.event === "DeployPool"
         )?.args?.pool,
         Pool,
         signers[0]
@@ -126,10 +145,12 @@ describe("LeveragedPool - initialize", () => {
       receipt = await (
         await leveragedPool.initialize(
           signers[0].address,
+          oracleWrapper.address,
           long.address,
           short.address,
           POOL_CODE,
           frontRunningInterval,
+          updateInterval,
           fee,
           leverage,
           feeAddress,
@@ -244,6 +265,19 @@ describe("LeveragedPool - initialize", () => {
       const library = await libraryFactory.deploy();
       await library.deployed();
 
+      const chainlinkOracleFactory = (await ethers.getContractFactory(
+        "ChainlinkOracle",
+        signers[0]
+      )) as ChainlinkOracle__factory;
+      const chainlinkOracle = await chainlinkOracleFactory.deploy();
+
+      // Deploy tokens
+      const chainlinkOracleWrapperFactory = (await ethers.getContractFactory(
+        "ChainlinkOracleWrapper",
+        signers[0]
+      )) as ChainlinkOracleWrapper__factory;
+      oracleWrapper = await chainlinkOracleWrapperFactory.deploy(chainlinkOracle.address);
+
       const leveragedPoolFactory = (await ethers.getContractFactory(
         "LeveragedPool",
         {
@@ -256,10 +290,12 @@ describe("LeveragedPool - initialize", () => {
       await (
         await pool.initialize(
           signers[0].address,
+          oracleWrapper.address,
           long.address,
           short.address,
           POOL_CODE,
           frontRunningInterval,
+          updateInterval,
           fee,
           leverage,
           feeAddress,
@@ -290,10 +326,12 @@ describe("LeveragedPool - initialize", () => {
     it("should revert if an attempt is made to run it a second time", async () => {
       await leveragedPool.initialize(
         signers[0].address,
+        oracleWrapper.address,
         long.address,
         short.address,
         POOL_CODE,
         frontRunningInterval,
+        updateInterval,
         fee,
         leverage,
         feeAddress,
@@ -302,11 +340,12 @@ describe("LeveragedPool - initialize", () => {
       await expect(
         leveragedPool.initialize(
           signers[0].address,
+          oracleWrapper.address,
           long.address,
           short.address,
           POOL_CODE,
-
           frontRunningInterval,
+          updateInterval,
           fee,
           leverage,
           feeAddress,
@@ -318,11 +357,12 @@ describe("LeveragedPool - initialize", () => {
       await expect(
         leveragedPool.initialize(
           signers[0].address,
+          oracleWrapper.address,
           long.address,
           short.address,
           POOL_CODE,
-
           frontRunningInterval,
+          updateInterval,
           fee,
           leverage,
           feeAddress,
@@ -334,11 +374,12 @@ describe("LeveragedPool - initialize", () => {
       await expect(
         leveragedPool.initialize(
           signers[0].address,
+          oracleWrapper.address,
           long.address,
           short.address,
           POOL_CODE,
-
           frontRunningInterval,
+          updateInterval,
           fee,
           leverage,
           ethers.constants.AddressZero,
@@ -359,10 +400,12 @@ describe("LeveragedPool - initialize", () => {
       ) as LeveragedPool;
       await secondPool.initialize(
         signers[0].address,
+        oracleWrapper.address,
         long.address,
         short.address,
         POOL_CODE_2,
         frontRunningInterval,
+        updateInterval,
         fee,
         leverage,
         feeAddress,
@@ -370,11 +413,12 @@ describe("LeveragedPool - initialize", () => {
       );
       await leveragedPool.initialize(
         signers[0].address,
+        oracleWrapper.address,
         long.address,
         short.address,
         POOL_CODE,
-
         frontRunningInterval,
+        updateInterval,
         fee,
         leverage,
         feeAddress,

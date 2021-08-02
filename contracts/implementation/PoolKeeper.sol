@@ -66,55 +66,31 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
     factory = PoolFactory(_factory);
   }
 
-  function createPool(
-    address _oracleWrapper,
+  /**
+   * @notice When a pool is created, this function is called by the factory to initiate price tracking.
+   * @param _poolCode The code associated with this pool.
+   * @param _poolAddress The address of the newly-created pool.
+   */
+  function newPool(
     string memory _poolCode,
-    uint32 _updateInterval,
-    uint32 _frontRunningInterval,
-    bytes16 _fee,
-    uint16 _leverageAmount,
-    address _feeAddress,
-    address _quoteToken
-  ) external override {
+    address _poolAddress
+  ) external override onlyFactory {
     require(address(pools[_poolCode]) == address(0), "Pre-existing pool code");
-    IOracleWrapper oracleWrapper = IOracleWrapper(_oracleWrapper);
-    require(
-      _updateInterval >= _frontRunningInterval,
-      "Update interval < FR interval"
-    );
+    IOracleWrapper oracleWrapper = IOracleWrapper(ILeveragedPool(_poolAddress).oracleWrapper());
 
     int256 firstPrice = oracleWrapper.getPrice();
     int256 startingPrice =
       ABDKMathQuad.toInt(
         ABDKMathQuad.mul(ABDKMathQuad.fromInt(firstPrice), fixedPoint)
       );
+    emit PoolAdded(
+      _poolAddress,
+      firstPrice,
+      _poolCode
+    );
     poolRoundStart[_poolCode] = uint40(block.timestamp);
     executionPrice[_poolCode] = startingPrice;
     lastExecutionPrice[_poolCode] = startingPrice;
-
-    emit CreatePool(
-      Clones.predictDeterministicAddress(
-        address(factory.poolBase()),
-        keccak256(abi.encode(_poolCode)),
-        address(factory)
-      ),
-      firstPrice,
-      _updateInterval,
-      _poolCode
-    );
-    pools[_poolCode] = factory.deployPool(
-      IPoolFactory.PoolDeployment(
-        address(this),
-        _poolCode,
-        _frontRunningInterval,
-        _updateInterval,
-        _fee,
-        _leverageAmount,
-        _feeAddress,
-        _quoteToken,
-        _oracleWrapper
-      )
-    );
   }
 
   // Keeper network
@@ -322,6 +298,11 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
   // #### Modifiers
   modifier onlyAdmin {
     require(hasRole(ADMIN, msg.sender));
+    _;
+  }
+
+  modifier onlyFactory {
+    require(msg.sender == address(factory), "Caller not factory");
     _;
   }
 }

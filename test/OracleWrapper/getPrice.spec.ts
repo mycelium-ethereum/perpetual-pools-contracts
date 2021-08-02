@@ -1,7 +1,7 @@
 import { ethers } from "hardhat";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
-import { OracleWrapper__factory, OracleWrapper } from "../../typechain";
+import { ChainlinkOracleWrapper__factory, ChainlinkOracleWrapper, ChainlinkOracle__factory } from "../../typechain";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import {
   MARKET,
@@ -16,16 +16,23 @@ chai.use(chaiAsPromised);
 const { expect } = chai;
 
 describe("OracleWrapper - getPrice", () => {
-  let oracleWrapper: OracleWrapper;
+  let oracleWrapper: ChainlinkOracleWrapper;
   let signers: SignerWithAddress[];
   beforeEach(async () => {
     // Deploy the contract
     signers = await ethers.getSigners();
-    const factory = (await ethers.getContractFactory(
-      "OracleWrapper",
-      signers[0]
-    )) as OracleWrapper__factory;
-    oracleWrapper = await factory.deploy();
+      const chainlinkOracleFactory = (await ethers.getContractFactory(
+        "ChainlinkOracle",
+        signers[0]
+      )) as ChainlinkOracle__factory;
+      const chainlinkOracle = await chainlinkOracleFactory.deploy();
+
+      // Deploy tokens
+      const chainlinkOracleWrapperFactory = (await ethers.getContractFactory(
+        "ChainlinkOracleWrapper",
+        signers[0]
+      )) as ChainlinkOracleWrapper__factory;
+      const oracleWrapper = await chainlinkOracleWrapperFactory.deploy(chainlinkOracle.address);
     await oracleWrapper.deployed();
 
     // Setup for tests
@@ -34,8 +41,7 @@ describe("OracleWrapper - getPrice", () => {
       signers[0].address
     );
 
-    await oracleWrapper.setOracle(MARKET, ORACLE);
-    await oracleWrapper.setOracle(MARKET_2, ORACLE_2);
+    await oracleWrapper.setOracle(ORACLE);
 
     // Sanity check the deployment
     expect(
@@ -50,16 +56,9 @@ describe("OracleWrapper - getPrice", () => {
         signers[0].address
       )
     ).to.eq(true);
-    expect(await oracleWrapper.assetOracles(MARKET)).to.eq(ORACLE);
-    expect(await oracleWrapper.assetOracles(MARKET_2)).to.eq(ORACLE_2);
+    expect(await oracleWrapper.oracle()).to.eq(ORACLE);
   });
   it("should return the current price for the requested market", async () => {
-    expect((await oracleWrapper.getPrice(MARKET)).gte(0)).to.eq(true);
-  });
-
-  it("should return a different price for a different market", async () => {
-    const price1 = await oracleWrapper.getPrice(MARKET);
-    const price2 = await oracleWrapper.getPrice(MARKET_2);
-    expect(!price1.eq(price2)).to.eq(true);
+    expect((await oracleWrapper.getPrice()).gte(0)).to.eq(true);
   });
 });

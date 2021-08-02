@@ -44,8 +44,8 @@ describe("LeveragedPool - commit", () => {
     before(async () => {
       const result = await deployPoolAndTokenContracts(
         POOL_CODE,
-
         frontRunningInterval,
+        updateInterval,
         fee,
         leverage,
         feeAddress,
@@ -128,6 +128,7 @@ describe("LeveragedPool - commit", () => {
       const result = await deployPoolAndTokenContracts(
         POOL_CODE,
         frontRunningInterval,
+        updateInterval,
         fee,
         leverage,
         feeAddress,
@@ -191,6 +192,7 @@ describe("LeveragedPool - commit", () => {
       const result = await deployPoolAndTokenContracts(
         POOL_CODE,
         frontRunningInterval,
+        updateInterval,
         fee,
         leverage,
         feeAddress,

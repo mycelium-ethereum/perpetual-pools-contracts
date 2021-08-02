@@ -4,18 +4,15 @@ import chaiAsPromised from "chai-as-promised";
 import {
   PoolKeeper__factory,
   PoolKeeper,
-  OracleWrapper__factory,
-  OracleWrapper,
+  ChainlinkOracleWrapper__factory,
+  ChainlinkOracleWrapper,
   PoolSwapLibrary__factory,
   PoolFactory__factory,
+  ChainlinkOracle__factory,
 } from "../../typechain";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import {
-  MARKET,
-  ORACLE,
   OPERATOR_ROLE,
-  MARKET_2,
-  ORACLE_2,
   ADMIN_ROLE,
 } from "../constants";
 
@@ -24,18 +21,26 @@ const { expect } = chai;
 
 describe("PoolKeeper - createMarket", () => {
   let poolKeeper: PoolKeeper;
-  let oracleWrapper: OracleWrapper;
+  let oracleWrapper: ChainlinkOracleWrapper;
   let signers: SignerWithAddress[];
   beforeEach(async () => {
     // Deploy the contracts
     signers = await ethers.getSigners();
 
-    const oracleWrapperFactory = (await ethers.getContractFactory(
-      "OracleWrapper",
+    const chainlinkOracleFactory = (await ethers.getContractFactory(
+      "ChainlinkOracle",
       signers[0]
-    )) as OracleWrapper__factory;
-    oracleWrapper = await oracleWrapperFactory.deploy();
+    )) as ChainlinkOracle__factory;
+    const chainlinkOracle = await chainlinkOracleFactory.deploy();
+
+    // Deploy tokens
+    const chainlinkOracleWrapperFactory = (await ethers.getContractFactory(
+      "ChainlinkOracleWrapper",
+      signers[0]
+    )) as ChainlinkOracleWrapper__factory;
+    const oracleWrapper = await chainlinkOracleWrapperFactory.deploy(chainlinkOracle.address);
     await oracleWrapper.deployed();
+
     const libraryFactory = (await ethers.getContractFactory(
       "PoolSwapLibrary",
       signers[0]
@@ -51,7 +56,6 @@ describe("PoolKeeper - createMarket", () => {
     })) as PoolFactory__factory;
     const factory = await (await PoolFactory.deploy()).deployed();
     poolKeeper = await poolKeeperFactory.deploy(
-      oracleWrapper.address,
       factory.address
     );
     await poolKeeper.deployed();
@@ -75,43 +79,5 @@ describe("PoolKeeper - createMarket", () => {
         signers[0].address
       )
     ).to.eq(true);
-  });
-
-  it("should create a new market with the given oracle", async () => {
-    expect(await oracleWrapper.assetOracles(MARKET)).to.eq(
-      ethers.constants.AddressZero
-    );
-    await poolKeeper.createMarket(MARKET, ORACLE);
-    expect(await oracleWrapper.assetOracles(MARKET)).to.eq(ORACLE);
-  });
-
-  it("should revert if the market already exists", async () => {
-    expect(await oracleWrapper.assetOracles(MARKET)).to.eq(
-      ethers.constants.AddressZero
-    );
-    await poolKeeper.createMarket(MARKET, ORACLE);
-    expect(await oracleWrapper.assetOracles(MARKET)).to.eq(ORACLE);
-    await expect(poolKeeper.createMarket(MARKET, ORACLE_2)).to.be.rejectedWith(
-      Error
-    );
-  });
-  it("should allow multiple markets to exist", async () => {
-    expect(await oracleWrapper.assetOracles(MARKET)).to.eq(
-      ethers.constants.AddressZero
-    );
-    await poolKeeper.createMarket(MARKET, ORACLE);
-    await poolKeeper.createMarket(MARKET_2, ORACLE_2);
-
-    expect(await oracleWrapper.assetOracles(MARKET)).to.eq(ORACLE);
-    expect(await oracleWrapper.assetOracles(MARKET_2)).to.eq(ORACLE_2);
-  });
-  it("should emit an event containing the details of the new market", async () => {
-    const receipt = await (
-      await poolKeeper.createMarket(MARKET, ORACLE)
-    ).wait();
-    const event = receipt?.events?.find((el) => el.event === "CreateMarket");
-    expect(!!event).to.eq(true);
-    expect(event?.args?.marketCode).to.eq(MARKET);
-    expect(event?.args?.oracle).to.eq(ORACLE);
   });
 });

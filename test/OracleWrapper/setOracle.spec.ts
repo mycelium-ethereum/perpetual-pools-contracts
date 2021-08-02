@@ -1,7 +1,7 @@
 import { ethers } from "hardhat";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
-import { OracleWrapper__factory, OracleWrapper } from "../../typechain";
+import { ChainlinkOracleWrapper__factory, ChainlinkOracleWrapper, ChainlinkOracle__factory } from "../../typechain";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import {
   MARKET,
@@ -16,16 +16,23 @@ chai.use(chaiAsPromised);
 const { expect } = chai;
 
 describe("OracleWrapper - setOracle", () => {
-  let oracleWrapper: OracleWrapper;
+  let oracleWrapper: ChainlinkOracleWrapper;
   let signers: SignerWithAddress[];
   beforeEach(async () => {
     // Deploy the contract
     signers = await ethers.getSigners();
-    const factory = (await ethers.getContractFactory(
-      "OracleWrapper",
+    const chainlinkOracleFactory = (await ethers.getContractFactory(
+      "ChainlinkOracle",
       signers[0]
-    )) as OracleWrapper__factory;
-    oracleWrapper = await factory.deploy();
+    )) as ChainlinkOracle__factory;
+    const chainlinkOracle = await chainlinkOracleFactory.deploy();
+
+    // Deploy tokens
+    const chainlinkOracleWrapperFactory = (await ethers.getContractFactory(
+      "ChainlinkOracleWrapper",
+      signers[0]
+    )) as ChainlinkOracleWrapper__factory;
+    const oracleWrapper = await chainlinkOracleWrapperFactory.deploy(chainlinkOracle.address);
     await oracleWrapper.deployed();
 
     // Sanity check the deployment
@@ -41,7 +48,7 @@ describe("OracleWrapper - setOracle", () => {
       ethers.utils.keccak256(ethers.utils.toUtf8Bytes(OPERATOR_ROLE)),
       signers[1].address
     );
-    await oracleWrapper.connect(signers[1]).setOracle(MARKET, ORACLE);
+    await oracleWrapper.connect(signers[1]).setOracle(ORACLE);
 
     expect(
       await oracleWrapper.hasRole(
@@ -49,11 +56,11 @@ describe("OracleWrapper - setOracle", () => {
         signers[1].address
       )
     ).to.eq(true);
-    expect(await oracleWrapper.assetOracles(MARKET)).to.eq(ORACLE);
+    expect(await oracleWrapper.oracle()).to.eq(ORACLE);
   });
   it("should prevent unauthorized operators from setting an oracle", async () => {
     await expect(
-      oracleWrapper.connect(signers[2]).setOracle(MARKET, ORACLE)
+      oracleWrapper.connect(signers[2]).setOracle(ORACLE)
     ).to.be.rejectedWith(Error);
   });
   it("should allow multiple operators to set oracles", async () => {
@@ -65,11 +72,10 @@ describe("OracleWrapper - setOracle", () => {
       ethers.utils.keccak256(ethers.utils.toUtf8Bytes(OPERATOR_ROLE)),
       signers[2].address
     );
-    await oracleWrapper.connect(signers[1]).setOracle(MARKET, ORACLE);
-    await oracleWrapper.connect(signers[2]).setOracle(MARKET_2, ORACLE_2);
-
-    expect(await oracleWrapper.assetOracles(MARKET)).to.eq(ORACLE);
-    expect(await oracleWrapper.assetOracles(MARKET_2)).to.eq(ORACLE_2);
+    await oracleWrapper.connect(signers[1]).setOracle(ORACLE);
+    expect(await oracleWrapper.oracle()).to.eq(ORACLE);
+    await oracleWrapper.connect(signers[2]).setOracle(ORACLE_2);
+    expect(await oracleWrapper.oracle()).to.eq(ORACLE_2);
   });
   it("should prevent setting an oracle to the null address", async () => {
     await oracleWrapper.grantRole(
@@ -80,7 +86,7 @@ describe("OracleWrapper - setOracle", () => {
     await expect(
       oracleWrapper
         .connect(signers[1])
-        .setOracle(MARKET, ethers.constants.AddressZero)
+        .setOracle(ethers.constants.AddressZero)
     ).to.be.rejectedWith(Error);
   });
 });
