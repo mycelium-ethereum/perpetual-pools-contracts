@@ -1,60 +1,67 @@
 {
-  "name": "tracer-pool-swaps",
-  "version": "0.0.1",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "build": "npm run clean && npm run compile",
-    "clean": "npx hardhat clean",
-    "compile": "npx hardhat compile",
-    "test": "npx hardhat test",
-    "coverage": "npm run build && npx hardhat coverage --temp artifacts --network coverage",
-    "slither": "npm run build && slither . --filter-path node_modules --exclude-dependencies --exclude-optimization --exclude-informational",
-    "removeLogs": "npx hardhat remove-logs"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/lions-mane/tracer-pool-swaps.git"
-  },
-  "author": "rhlsthrm",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/lions-mane/tracer-pool-swaps/issues"
-  },
-  "homepage": "https://github.com/lions-mane/tracer-pool-swaps#readme",
-  "devDependencies": {
-    "@nomiclabs/hardhat-ethers": "^2.0.2",
-    "@nomiclabs/hardhat-etherscan": "^2.1.2",
-    "@nomiclabs/hardhat-waffle": "^2.0.1",
-    "@openzeppelin/hardhat-upgrades": "^1.8.2",
-    "@typechain/ethers-v5": "^7.0.0",
-    "@typechain/hardhat": "^2.0.0",
-    "@types/chai": "^4.2.18",
-    "@types/chai-as-promised": "^7.1.4",
-    "@types/mocha": "^8.2.2",
-    "@types/node": "^15.0.3",
-    "@typescript-eslint/eslint-plugin": "^4.25.0",
-    "@typescript-eslint/parser": "^4.25.0",
-    "chai": "^4.3.4",
-    "chai-as-promised": "^7.1.1",
-    "dotenv": "^9.0.2",
-    "eslint": "^7.27.0",
-    "ethereum-waffle": "^3.3.0",
-    "ethers": "^5.1.4",
-    "hardhat": "^2.2.1",
-    "hardhat-gas-reporter": "^1.0.4",
-    "hardhat-log-remover": "^2.0.2",
-    "prettier": "^2.3.0",
-    "prettier-plugin-solidity": "^1.0.0-beta.10",
-    "ts-generator": "^0.1.1",
-    "ts-node": "^9.1.1",
-    "typechain": "^5.0.0",
-    "typescript": "^4.2.4"
-  },
-  "dependencies": {
-    "@chainlink/contracts": "^0.1.7",
-    "@openzeppelin/contracts": "^3.4.1-solc-0.7-2",
-    "abdk-libraries-solidity": "^2.5.0",
-    "hardhat-log-remover": "^2.0.2"
-  }
+    "name": "tracer-pool-swaps",
+    "version": "0.0.1",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "build": "npm run clean && npm run compile",
+        "clean": "npx hardhat clean",
+        "compile": "npx hardhat compile",
+        "test": "npx hardhat test",
+        "coverage": "npm run build && npx hardhat coverage --temp artifacts --network coverage",
+        "slither": "npm run build && slither . --filter-path node_modules --exclude-dependencies --exclude-optimization --exclude-informational",
+        "removeLogs": "npx hardhat remove-logs",
+        "lint": "prettier --check .",
+        "lint:fix": "prettier . --write"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/lions-mane/tracer-pool-swaps.git"
+    },
+    "author": "rhlsthrm",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/lions-mane/tracer-pool-swaps/issues"
+    },
+    "homepage": "https://github.com/lions-mane/tracer-pool-swaps#readme",
+    "devDependencies": {
+        "@nomiclabs/hardhat-ethers": "^2.0.2",
+        "@nomiclabs/hardhat-etherscan": "^2.1.2",
+        "@nomiclabs/hardhat-waffle": "^2.0.1",
+        "@openzeppelin/hardhat-upgrades": "^1.8.2",
+        "@typechain/ethers-v5": "^7.0.0",
+        "@typechain/hardhat": "^2.0.0",
+        "@types/chai": "^4.2.21",
+        "@types/chai-as-promised": "^7.1.4",
+        "@types/mocha": "^9.0.0",
+        "@types/node": "^16.4.3",
+        "@typescript-eslint/eslint-plugin": "^4.25.0",
+        "@typescript-eslint/parser": "^4.25.0",
+        "chai": "^4.3.4",
+        "chai-as-promised": "^7.1.1",
+        "chai-ethers": "^0.0.1",
+        "dotenv": "^10.0.0",
+        "eslint": "^7.27.0",
+        "ethereum-waffle": "^3.3.0",
+        "ethers": "^5.4.0",
+        "hardhat": "^2.2.1",
+        "hardhat-deploy": "^0.8.11",
+        "hardhat-deploy-ethers": "^0.3.0-beta.10",
+        "hardhat-gas-reporter": "^1.0.4",
+        "hardhat-log-remover": "^2.0.2",
+        "mocha": "^9.0.3",
+        "prettier": "^2.3.0",
+        "prettier-plugin-solidity": "^1.0.0-beta.10",
+        "ts-generator": "^0.1.1",
+        "ts-node": "^10.1.0",
+        "typechain": "^5.0.0",
+        "typescript": "^4.3.5"
+    },
+    "dependencies": {
+        "@chainlink/contracts": "^0.1.7",
+        "@openzeppelin/contracts": "^3.4.0",
+        "abdk-libraries-solidity": "^2.5.0",
+        "hardhat-log-remover": "^2.0.2",
+        "ts-command-line-args": "^2.1.0"
+    }
 }

@@ -6,19 +6,19 @@ pragma abicoder v2;
 @title A mockup oracle wrapper. Don't use for production.
 */
 contract TestOracleWrapper {
-  int256 internal price;
-  address public oracle;
+    int256 internal price;
+    address public oracle;
 
-  function setOracle(address _oracle) external {
-    require(oracle != address(0), "Oracle cannot be 0 address");
-    oracle = _oracle;
-  }
+    function setOracle(address _oracle) external {
+        require(oracle != address(0), "Oracle cannot be 0 address");
+        oracle = _oracle;
+    }
 
-  function increasePrice() external {
-    price += 1;
-  }
+    function increasePrice() external {
+        price += 1;
+    }
 
-  function getPrice() external view returns (int256) {
-    return price;
-  }
+    function getPrice() external view returns (int256) {
+        return price;
+    }
 }

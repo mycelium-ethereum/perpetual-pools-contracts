@@ -1,21 +1,17 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.7.6;
-
-import "./IChainlinkOracle.sol";
 
 /**
  * @dev The following is a mock Chainlink Price Feed Implementation.
  *      It is used purely for the purpose of testing.
- *      All Chainlink price feeds should be wrapped in a Tracer Chainlink Adapter
- *      to ensure answers are returned in WAD format.
- *      see contracts/oracle/ChainlinkOracleAdapter.sol.
+ *      DO NOT USE IN PRODUCTION
  */
-contract ChainlinkOracle is IChainlinkOracle {
+contract TestChainlinkOracle {
     int256 public price = 100000000;
-    uint8 public override decimals = 8; // default of 8 decimals for USD price feeds in the Chainlink ecosystem
-    string public override description = "A mock Chainlink V3 Aggregator";
-    uint256 public override version = 3; // Aggregator V3;
-    uint80 private constant ROUND_ID = 1; // A mock round Id
+    uint8 public decimals = 8; // default of 8 decimals for USD price feeds in the Chainlink ecosystem
+    string public description = "A mock Chainlink V3 Aggregator";
+    uint256 public version = 3; // Aggregator V3;
+    uint80 private ROUND_ID = 1; // A mock round Id
 
     /**
      * @notice Returns round data with the set price as the answer.
@@ -25,7 +21,6 @@ contract ChainlinkOracle is IChainlinkOracle {
     function latestRoundData()
         external
         view
-        override
         returns (
             uint80 roundId,
             int256 answer,
