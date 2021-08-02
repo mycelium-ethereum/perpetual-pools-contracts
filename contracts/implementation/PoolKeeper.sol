@@ -24,15 +24,18 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
     using SafeMath_40 for uint40;
 
     // #### Global variables
+
+    uint256 public numPools;
+
     /**
     @notice Format: Pool code => pool address, where pool code looks like TSLA/USD^5+aDAI
    */
-    mapping(string => address) public pools;
+    mapping(uint256 => address) public pools;
 
     /**
   @notice Format: Pool Code => update interval => Market code. Used to prevent a pool from being updated with pricing from a market it doesn't belong to.
   */
-    mapping(string => mapping(uint32 => string)) public poolMarkets;
+    mapping(address => mapping(uint32 => string)) public poolMarkets;
 
     /**
   @notice Format: market code => updateInterval => Upkeep details
@@ -83,7 +86,6 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
         address _feeAddress,
         address _quoteToken
     ) external override returns (address) {
-        require(address(pools[_ticker]) == address(0), "Pre-existing pool code");
         IOracleWrapper oracle = IOracleWrapper(oracleWrapper);
         require(oracle.assetOracles(_marketCode) != address(0), "Market must exist first");
         require(_updateInterval > _frontRunningInterval, "Update interval <= FR interval");
@@ -106,7 +108,6 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
             upkeep[_marketCode][_updateInterval].count = uint32(upkeepData.count.add(1));
         }
 
-        poolMarkets[_ticker][_updateInterval] = _marketCode;
         emit CreatePool(
             Clones.predictDeterministicAddress(
                 address(factory.poolBase()),
@@ -127,7 +128,8 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
             _quoteToken
         );
 
-        pools[_ticker] = poolAddress;
+        pools[numPools] = poolAddress;
+        numPools += 1;
 
         return poolAddress;
     }
