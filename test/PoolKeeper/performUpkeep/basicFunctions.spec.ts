@@ -99,7 +99,7 @@ const callData = ethers.utils.defaultAbiCoder.encode(
     [
         ethers.utils.ParamType.from("uint32"),
         ethers.utils.ParamType.from("string"),
-        ethers.utils.ParamType.from("string[]"),
+        ethers.utils.ParamType.from("address[]"),
     ],
     [updateInterval, MARKET, [POOL_CODE, POOL_CODE_2]]
 )
@@ -124,7 +124,7 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
                     ethers.utils.defaultAbiCoder.encode(
                         [
                             ethers.utils.ParamType.from("string"),
-                            ethers.utils.ParamType.from("string[]"),
+                            ethers.utils.ParamType.from("address[]"),
                         ],
                         [MARKET_2, [POOL_CODE, POOL_CODE_2]]
                     )

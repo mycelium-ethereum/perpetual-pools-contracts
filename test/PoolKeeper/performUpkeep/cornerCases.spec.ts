@@ -96,7 +96,7 @@ const upkeepOne = ethers.utils.defaultAbiCoder.encode(
     [
         ethers.utils.ParamType.from("uint32"),
         ethers.utils.ParamType.from("string"),
-        ethers.utils.ParamType.from("string[]"),
+        ethers.utils.ParamType.from("address[]"),
     ],
     [updateInterval, MARKET, [POOL_CODE]]
 )
@@ -104,7 +104,7 @@ const upkeepTwo = ethers.utils.defaultAbiCoder.encode(
     [
         ethers.utils.ParamType.from("uint32"),
         ethers.utils.ParamType.from("string"),
-        ethers.utils.ParamType.from("string[]"),
+        ethers.utils.ParamType.from("address[]"),
     ],
     [updateInterval, MARKET, [POOL_CODE_2]]
 )
@@ -188,7 +188,7 @@ describe("PoolKeeper - performUpkeep: corner cases", () => {
                 [
                     ethers.utils.ParamType.from("uint32"),
                     ethers.utils.ParamType.from("string"),
-                    ethers.utils.ParamType.from("string[]"),
+                    ethers.utils.ParamType.from("address[]"),
                 ],
                 [updateInterval, MARKET_2, [badPool]]
             )
@@ -205,7 +205,7 @@ describe("PoolKeeper - performUpkeep: corner cases", () => {
                         [
                             ethers.utils.ParamType.from("uint32"),
                             ethers.utils.ParamType.from("string"),
-                            ethers.utils.ParamType.from("string[]"),
+                            ethers.utils.ParamType.from("address[]"),
                         ],
                         [updateInterval, MARKET_2, [POOL_CODE]]
                     )
