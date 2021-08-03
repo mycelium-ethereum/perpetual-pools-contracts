@@ -249,7 +249,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     }
 
     function executePriceChange(int256 oldPrice, int256 newPrice) external override onlyUpdater {
-        require(intervalPassed(), "Update interval hasn't passsed");
+        require(intervalPassed(), "Update interval hasn't passed");
         uint112 longFeeAmount = uint112(
             PoolSwapLibrary.convertDecimalToUInt(PoolSwapLibrary.multiplyDecimalByUInt(fee, longBalance))
         );
