@@ -11,8 +11,8 @@ import {
     PoolSwapLibrary,
     ERC20,
     TestChainlinkOracle__factory,
-    TestChainlinkOracleWrapper__factory,
-    TestChainlinkOracleWrapper,
+    TestOracleWrapper__factory,
+    TestOracleWrapper,
 } from "../../typechain"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import {
@@ -45,7 +45,7 @@ describe("LeveragedPool - initialize", () => {
     let quoteToken: string
     let short: ERC20
     let long: ERC20
-    let oracleWrapper: TestChainlinkOracleWrapper
+    let oracleWrapper: TestOracleWrapper
     before(async () => {
         signers = await ethers.getSigners()
     })
@@ -96,9 +96,9 @@ describe("LeveragedPool - initialize", () => {
             // Deploy tokens
             const chainlinkOracleWrapperFactory =
                 (await ethers.getContractFactory(
-                    "TestChainlinkOracleWrapper",
+                    "TestOracleWrapper",
                     signers[0]
-                )) as TestChainlinkOracleWrapper__factory
+                )) as TestOracleWrapper__factory
             const oracleWrapper = await chainlinkOracleWrapperFactory.deploy(
                 chainlinkOracle.address
             )
@@ -293,9 +293,9 @@ describe("LeveragedPool - initialize", () => {
             // Deploy tokens
             const chainlinkOracleWrapperFactory =
                 (await ethers.getContractFactory(
-                    "TestChainlinkOracleWrapper",
+                    "TestOracleWrapper",
                     signers[0]
-                )) as TestChainlinkOracleWrapper__factory
+                )) as TestOracleWrapper__factory
             oracleWrapper = await chainlinkOracleWrapperFactory.deploy(
                 chainlinkOracle.address
             )

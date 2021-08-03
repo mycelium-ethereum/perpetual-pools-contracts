@@ -16,8 +16,6 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "abdk-libraries-solidity/ABDKMathQuad.sol";
 
-import "hardhat/console.sol";
-
 /*
  * @title The manager contract for multiple markets and the pools in them
  */
@@ -32,10 +30,6 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
      */
     mapping(string => address) public pools;
 
-    /**
-     * @notice Format: pool code => updateInterval => Upkeep details
-     */
-    mapping(string => mapping(uint32 => Upkeep)) public upkeep;
     /**
      * @notice Format: Pool code => roundStart
      */
@@ -219,25 +213,6 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
                 }
             }
         }
-    }
-
-    /**
-     * @notice Calculates the average price
-     * @dev Calculates an average to 18 decimal places
-     * @dev Uses the constant "fixedPoint" to allow calculation to 18 decimal places
-     * @param cumulative The cumulative price
-     * @param count The number of samples
-     * @return The average price to 18 decimal places
-     */
-    function _average(int256 cumulative, uint32 count) internal pure returns (int256) {
-        require(count > 0, "Count < 1");
-        return
-            ABDKMathQuad.toInt(
-                ABDKMathQuad.div(
-                    ABDKMathQuad.mul(ABDKMathQuad.fromInt(cumulative), fixedPoint),
-                    ABDKMathQuad.fromInt(count)
-                )
-            );
     }
 
     // #### Modifiers

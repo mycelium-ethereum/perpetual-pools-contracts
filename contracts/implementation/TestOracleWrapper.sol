@@ -11,7 +11,7 @@ import "hardhat/console.sol";
 /*
 @title The oracle management contract for chainlink V3 oracles
 */
-contract TestChainlinkOracleWrapper is IOracleWrapper, AccessControl {
+contract TestOracleWrapper is IOracleWrapper, AccessControl {
     // #### Globals
     /**
   @notice The address of the feed oracle

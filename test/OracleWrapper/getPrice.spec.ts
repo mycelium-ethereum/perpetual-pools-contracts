@@ -2,8 +2,8 @@ import { ethers } from "hardhat"
 import chai from "chai"
 import chaiAsPromised from "chai-as-promised"
 import {
-    TestChainlinkOracleWrapper__factory,
-    TestChainlinkOracleWrapper,
+    TestOracleWrapper__factory,
+    TestOracleWrapper,
     TestChainlinkOracle__factory,
     TestChainlinkOracle,
 } from "../../typechain"
@@ -14,7 +14,7 @@ chai.use(chaiAsPromised)
 const { expect } = chai
 
 describe("OracleWrapper - getPrice", () => {
-    let oracleWrapper: TestChainlinkOracleWrapper
+    let oracleWrapper: TestOracleWrapper
     let testOracle: TestChainlinkOracle
     let testOracle2: TestChainlinkOracle
     let signers: SignerWithAddress[]
@@ -29,9 +29,9 @@ describe("OracleWrapper - getPrice", () => {
 
         // Deploy tokens
         const chainlinkOracleWrapperFactory = (await ethers.getContractFactory(
-            "TestChainlinkOracleWrapper",
+            "TestOracleWrapper",
             signers[0]
-        )) as TestChainlinkOracleWrapper__factory
+        )) as TestOracleWrapper__factory
         oracleWrapper = await chainlinkOracleWrapperFactory.deploy(
             chainlinkOracle.address
         )

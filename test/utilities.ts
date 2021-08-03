@@ -5,7 +5,7 @@ import {
     ERC20,
     LeveragedPool,
     TestPoolFactory__factory,
-    TestChainlinkOracleWrapper__factory,
+    TestOracleWrapper__factory,
     TestToken,
     TestToken__factory,
     PoolSwapLibrary,
@@ -106,9 +106,9 @@ export const deployPoolAndTokenContracts = async (
 
     // Deploy tokens
     const chainlinkOracleWrapperFactory = (await ethers.getContractFactory(
-        "TestChainlinkOracleWrapper",
+        "TestOracleWrapper",
         signers[0]
-    )) as TestChainlinkOracleWrapper__factory
+    )) as TestOracleWrapper__factory
     const oracleWrapper = await chainlinkOracleWrapperFactory.deploy(
         chainlinkOracle.address
     )

@@ -6,9 +6,9 @@ import {
     PoolKeeper,
     PoolSwapLibrary__factory,
     PoolFactory__factory,
-    TestChainlinkOracleWrapper__factory,
+    TestOracleWrapper__factory,
     TestChainlinkOracle__factory,
-    TestChainlinkOracleWrapper,
+    TestOracleWrapper,
     PoolFactory,
 } from "../../typechain"
 
@@ -37,9 +37,9 @@ describe("PoolKeeper - createPool", () => {
 
         // Deploy tokens
         const chainlinkOracleWrapperFactory = (await ethers.getContractFactory(
-            "TestChainlinkOracleWrapper",
+            "TestOracleWrapper",
             signers[0]
-        )) as TestChainlinkOracleWrapper__factory
+        )) as TestOracleWrapper__factory
         const oracleWrapper = await chainlinkOracleWrapperFactory.deploy(
             chainlinkOracle.address
         )

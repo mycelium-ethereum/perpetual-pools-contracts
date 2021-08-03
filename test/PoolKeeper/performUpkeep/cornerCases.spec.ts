@@ -10,7 +10,7 @@ import {
     PoolKeeper__factory,
     PoolSwapLibrary__factory,
     TestChainlinkOracle,
-    TestChainlinkOracleWrapper__factory,
+    TestOracleWrapper__factory,
     TestChainlinkOracle__factory,
     TestOracleWrapper,
     TestOracleWrapper__factory,
@@ -51,9 +51,9 @@ const setupHook = async () => {
     oracle = await oracleFactory.deploy()
     await oracle.deployed()
     const oracleWrapperFactory = (await ethers.getContractFactory(
-        "TestChainlinkOracleWrapper",
+        "TestOracleWrapper",
         signers[0]
-    )) as TestChainlinkOracleWrapper__factory
+    )) as TestOracleWrapper__factory
     oracleWrapper = await oracleWrapperFactory.deploy(oracle.address)
     await oracleWrapper.deployed()
 
