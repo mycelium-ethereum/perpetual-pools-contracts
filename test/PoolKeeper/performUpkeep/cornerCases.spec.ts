@@ -10,7 +10,6 @@ import {
     PoolKeeper__factory,
     PoolSwapLibrary__factory,
     TestChainlinkOracle,
-    TestOracleWrapper__factory,
     TestChainlinkOracle__factory,
     TestOracleWrapper,
     TestOracleWrapper__factory,

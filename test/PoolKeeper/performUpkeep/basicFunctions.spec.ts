@@ -9,6 +9,7 @@ import {
     PoolKeeper,
     PoolKeeper__factory,
     PoolSwapLibrary__factory,
+    TestChainlinkOracle__factory,
     TestOracleWrapper,
     TestOracleWrapper__factory,
     TestToken__factory,
@@ -40,12 +41,18 @@ const setupHook = async () => {
     await token.mint(10000, signers[0].address)
     quoteToken = token.address
 
+    const chainlinkOracleFactory = (await ethers.getContractFactory(
+        "TestChainlinkOracle",
+        signers[0]
+    )) as TestChainlinkOracle__factory
+    const chainlinkOracle = await chainlinkOracleFactory.deploy()
+
     // Deploy oracle. Using a test oracle for predictability
     const oracleWrapperFactory = (await ethers.getContractFactory(
         "TestOracleWrapper",
         signers[0]
     )) as TestOracleWrapper__factory
-    oracleWrapper = await oracleWrapperFactory.deploy()
+    oracleWrapper = await oracleWrapperFactory.deploy(chainlinkOracle.address)
     await oracleWrapper.deployed()
 
     // Deploy pool keeper

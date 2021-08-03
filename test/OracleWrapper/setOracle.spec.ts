@@ -33,11 +33,11 @@ describe("OracleWrapper - setOracle", () => {
         await testOracle2.deployed()
 
         // Deploy tokens
-        const chainlinkOracleWrapperFactory = (await ethers.getContractFactory(
+        const oracleWrapperFactory = (await ethers.getContractFactory(
             "TestOracleWrapper",
             signers[0]
         )) as TestOracleWrapper__factory
-        oracleWrapper = await chainlinkOracleWrapperFactory.deploy(
+        oracleWrapper = await oracleWrapperFactory.deploy(
             chainlinkOracle.address
         )
         await oracleWrapper.deployed()

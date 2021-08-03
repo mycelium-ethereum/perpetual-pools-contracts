@@ -94,12 +94,11 @@ describe("LeveragedPool - initialize", () => {
             const chainlinkOracle = await chainlinkOracleFactory.deploy()
 
             // Deploy tokens
-            const chainlinkOracleWrapperFactory =
-                (await ethers.getContractFactory(
-                    "TestOracleWrapper",
-                    signers[0]
-                )) as TestOracleWrapper__factory
-            const oracleWrapper = await chainlinkOracleWrapperFactory.deploy(
+            const oracleWrapperFactory = (await ethers.getContractFactory(
+                "TestOracleWrapper",
+                signers[0]
+            )) as TestOracleWrapper__factory
+            const oracleWrapper = await oracleWrapperFactory.deploy(
                 chainlinkOracle.address
             )
 
@@ -291,12 +290,11 @@ describe("LeveragedPool - initialize", () => {
             const chainlinkOracle = await chainlinkOracleFactory.deploy()
 
             // Deploy tokens
-            const chainlinkOracleWrapperFactory =
-                (await ethers.getContractFactory(
-                    "TestOracleWrapper",
-                    signers[0]
-                )) as TestOracleWrapper__factory
-            oracleWrapper = await chainlinkOracleWrapperFactory.deploy(
+            const oracleWrapperFactory = (await ethers.getContractFactory(
+                "TestOracleWrapper",
+                signers[0]
+            )) as TestOracleWrapper__factory
+            oracleWrapper = await oracleWrapperFactory.deploy(
                 chainlinkOracle.address
             )
 

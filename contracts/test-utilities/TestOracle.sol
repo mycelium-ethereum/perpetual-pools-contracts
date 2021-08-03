@@ -5,7 +5,7 @@ pragma abicoder v2;
 /*
 @title A mockup oracle wrapper. Don't use for production.
 */
-contract TestOracleWrapper {
+contract TestOracle {
     int256 internal price;
     address public oracle;
 
