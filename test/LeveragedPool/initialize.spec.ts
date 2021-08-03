@@ -307,6 +307,21 @@ describe("LeveragedPool - initialize", () => {
                     libraries: { PoolSwapLibrary: library.address },
                 }
             )) as LeveragedPool__factory
+            const poolTokenFactory = (await ethers.getContractFactory(
+                "TestToken",
+                signers[0]
+            )) as TestToken__factory
+            short = await poolTokenFactory.deploy(
+                POOL_CODE.concat("-SHORT"),
+                "S-".concat(POOL_CODE)
+            )
+            await short.deployed()
+
+            long = await poolTokenFactory.deploy(
+                POOL_CODE.concat("-LONG"),
+                "L-".concat(POOL_CODE)
+            )
+            await long.deployed()
             const pool = await leveragedPoolFactory.deploy()
             await pool.deployed()
             await (
@@ -336,7 +351,7 @@ describe("LeveragedPool - initialize", () => {
 
             leveragedPool = new ethers.Contract(
                 factoryReceipt?.events?.find(
-                    (el: Event) => el.event === "CreatePool"
+                    (el: Event) => el.event === "DeployPool"
                 )?.args?.pool,
                 Pool,
                 signers[0]
@@ -415,7 +430,7 @@ describe("LeveragedPool - initialize", () => {
             ).wait()
             const secondPool = new ethers.Contract(
                 secondPoolReceipt?.events?.find(
-                    (el: Event) => el.event === "CreatePool"
+                    (el: Event) => el.event === "DeployPool"
                 )?.args?.pool,
                 Pool,
                 signers[0]

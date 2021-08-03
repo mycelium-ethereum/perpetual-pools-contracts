@@ -11,6 +11,7 @@ import "hardhat-log-remover"
 import "hardhat-gas-reporter"
 import "hardhat-deploy"
 import "hardhat-deploy-ethers"
+import "hardhat-contract-sizer"
 
 // TODO: reenable solidity-coverage when it works
 // import "solidity-coverage";

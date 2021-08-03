@@ -6,7 +6,6 @@ pragma abicoder v2;
 @title The oracle management contract interface
 */
 interface IOracleWrapper {
-
     function oracle() external view returns (address);
 
     // #### Functions
@@ -16,6 +15,10 @@ interface IOracleWrapper {
     @param _oracle The oracle to set for the market
    */
     function setOracle(address _oracle) external;
+
+    function switchAdmin(address _admin) external;
+
+    function isAdmin(address account) external view returns (bool);
 
     /**
     @notice Returns the current price for the asset in question

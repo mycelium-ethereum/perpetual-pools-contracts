@@ -65,6 +65,7 @@ const setupHook = async () => {
     const factory = await (await PoolFactory.deploy()).deployed()
     poolKeeper = await poolKeeperFactory.deploy(factory.address)
     await poolKeeper.deployed()
+    await factory.setPoolKeeper(poolKeeper.address)
 
     await oracleWrapper.increasePrice()
     // Create pool
@@ -96,12 +97,8 @@ const setupHook = async () => {
     await (await factory.deployPool(deploymentData2)).wait()
 }
 const callData = ethers.utils.defaultAbiCoder.encode(
-    [
-        ethers.utils.ParamType.from("uint32"),
-        ethers.utils.ParamType.from("string"),
-        ethers.utils.ParamType.from("string[]"),
-    ],
-    [updateInterval, MARKET, [POOL_CODE, POOL_CODE_2]]
+    [ethers.utils.ParamType.from("string[]")],
+    [[POOL_CODE, POOL_CODE_2]]
 )
 
 interface Upkeep {
@@ -165,8 +162,10 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
         })
         it("should set last execution time", async () => {
             expect(
-                await poolKeeper.lastExecutionTime(POOL_CODE)
-            ).to.be.greaterThan(lastTime)
+                (await poolKeeper.lastExecutionTime(POOL_CODE)).gt(
+                    BigNumber.from(lastTime)
+                )
+            ).to.equal(true)
         })
     })
 
@@ -191,13 +190,16 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
             newRoundStart = await poolKeeper.poolRoundStart(POOL_CODE)
         })
         it("should clear the old round data", async () => {
-            const price = await oracleWrapper.getPrice()
-            expect(newRoundStart).to.be.greaterThan(oldRoundStart)
-            expect(newExecutionPrice).to.be.greaterThan(oldExecutionPrice)
+            const price = ethers.utils.parseEther(
+                (await oracleWrapper.getPrice()).toString()
+            )
+            expect(newRoundStart.gt(oldRoundStart)).to.equal(true)
+            expect(newExecutionPrice.gt(oldExecutionPrice)).to.equal(true)
             expect(newExecutionPrice).to.equal(price)
         })
         it("should calculate a new execution price", async () => {
-            expect(newLastExecutionPrice).to.eq(oldRound.executionPrice)
+            expect(newLastExecutionPrice).to.eq(oldExecutionPrice)
+            expect(newExecutionPrice.gt(oldExecutionPrice)).to.equal(true)
         })
     })
 })

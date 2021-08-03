@@ -36,8 +36,8 @@ const setupHook = async () => {
     // Deploy leveraged pool
     const result = await deployPoolAndTokenContracts(
         POOL_CODE,
-        updateInterval,
         frontRunningInterval,
+        updateInterval,
         fee,
         leverage,
         feeAddress,

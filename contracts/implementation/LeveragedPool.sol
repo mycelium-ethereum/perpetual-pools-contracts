@@ -285,8 +285,6 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
         }
         lastPriceTimestamp = uint40(block.timestamp);
         require(IERC20(quoteToken).transfer(feeAddress, totalFeeAmount), "Fee transfer failed");
-        lastPriceTimestamp = uint40(block.timestamp);
-        require(IERC20(quoteToken).transfer(feeAddress, totalFeeAmount), "Fee transfer failed");
     }
 
     /**

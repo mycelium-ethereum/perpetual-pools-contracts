@@ -9,6 +9,9 @@ import {
     PoolKeeper,
     PoolKeeper__factory,
     PoolSwapLibrary__factory,
+    TestChainlinkOracle,
+    TestChainlinkOracleWrapper__factory,
+    TestChainlinkOracle__factory,
     TestOracleWrapper,
     TestOracleWrapper__factory,
     TestToken__factory,
@@ -24,6 +27,7 @@ let quoteToken: string
 let oracleWrapper: TestOracleWrapper
 let poolKeeper: PoolKeeper
 let factory: PoolFactory
+let oracle: TestChainlinkOracle
 const updateInterval = 10
 
 const setupHook = async () => {
@@ -40,11 +44,17 @@ const setupHook = async () => {
     quoteToken = token.address
 
     // Deploy oracle. Using a test oracle for predictability
-    const oracleWrapperFactory = (await ethers.getContractFactory(
-        "TestOracleWrapper",
+    const oracleFactory = (await ethers.getContractFactory(
+        "TestChainlinkOracle",
         signers[0]
-    )) as TestOracleWrapper__factory
-    oracleWrapper = await oracleWrapperFactory.deploy()
+    )) as TestChainlinkOracle__factory
+    oracle = await oracleFactory.deploy()
+    await oracle.deployed()
+    const oracleWrapperFactory = (await ethers.getContractFactory(
+        "TestChainlinkOracleWrapper",
+        signers[0]
+    )) as TestChainlinkOracleWrapper__factory
+    oracleWrapper = await oracleWrapperFactory.deploy(oracle.address)
     await oracleWrapper.deployed()
 
     // Deploy pool keeper
@@ -64,6 +74,7 @@ const setupHook = async () => {
     factory = await (await PoolFactory.deploy()).deployed()
     poolKeeper = await poolKeeperFactory.deploy(factory.address)
     await poolKeeper.deployed()
+    await factory.setPoolKeeper(poolKeeper.address)
 
     // Create pool
     const deploymentData = {
@@ -78,7 +89,6 @@ const setupHook = async () => {
         oracleWrapper: oracleWrapper.address,
     }
     await (await factory.deployPool(deploymentData)).wait()
-    await oracleWrapper.increasePrice()
 
     const deploymentData2 = {
         owner: poolKeeper.address,
@@ -94,20 +104,12 @@ const setupHook = async () => {
     await (await factory.deployPool(deploymentData2)).wait()
 }
 const upkeepOne = ethers.utils.defaultAbiCoder.encode(
-    [
-        ethers.utils.ParamType.from("uint32"),
-        ethers.utils.ParamType.from("string"),
-        ethers.utils.ParamType.from("string[]"),
-    ],
-    [updateInterval, MARKET, [POOL_CODE]]
+    [ethers.utils.ParamType.from("string[]")],
+    [[POOL_CODE]]
 )
 const upkeepTwo = ethers.utils.defaultAbiCoder.encode(
-    [
-        ethers.utils.ParamType.from("uint32"),
-        ethers.utils.ParamType.from("string"),
-        ethers.utils.ParamType.from("string[]"),
-    ],
-    [updateInterval, MARKET, [POOL_CODE_2]]
+    [ethers.utils.ParamType.from("string[]")],
+    [[POOL_CODE_2]]
 )
 interface Upkeep {
     cumulativePrice: BigNumber
@@ -128,10 +130,10 @@ describe("PoolKeeper - performUpkeep: corner cases", () => {
             await setupHook()
 
             // Sample and execute the first upkeep group
-            await oracleWrapper.increasePrice()
+            await (await oracleWrapper.increasePrice()).wait()
             await poolKeeper.performUpkeep(upkeepOne)
             await poolKeeper.performUpkeep(upkeepTwo)
-            await timeout(updateInterval * 1000 + 1000)
+            await timeout(updateInterval * 1000 + 1000) // TODO why this <- ?
 
             const upOne = await (
                 await poolKeeper.performUpkeep(upkeepOne)
@@ -167,7 +169,6 @@ describe("PoolKeeper - performUpkeep: corner cases", () => {
             upkeepTwoEvent = getEventArgs(upTwo, "ExecutePriceChange")
             expect(upkeepOneEvent?.newPrice).to.eq(upkeepTwoEvent?.newPrice)
             expect(upkeepOneEvent?.oldPrice).to.eq(upkeepTwoEvent?.oldPrice)
-            expect(upkeepOneEvent?.market).to.eq(upkeepTwoEvent?.market)
             expect(upkeepOneEvent?.updateInterval).to.eq(
                 upkeepTwoEvent?.updateInterval
             )

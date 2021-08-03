@@ -32,7 +32,7 @@ describe("OracleWrapper - getPrice", () => {
             "TestChainlinkOracleWrapper",
             signers[0]
         )) as TestChainlinkOracleWrapper__factory
-        const oracleWrapper = await chainlinkOracleWrapperFactory.deploy(
+        oracleWrapper = await chainlinkOracleWrapperFactory.deploy(
             chainlinkOracle.address
         )
         await oracleWrapper.deployed()
@@ -59,12 +59,7 @@ describe("OracleWrapper - getPrice", () => {
                 signers[0].address
             )
         ).to.eq(true)
-        expect(
-            await oracleWrapper.hasRole(
-                ethers.utils.keccak256(ethers.utils.toUtf8Bytes(ADMIN_ROLE)),
-                signers[0].address
-            )
-        ).to.eq(true)
+        expect(await oracleWrapper.isAdmin(signers[0].address)).to.eq(true)
         expect(await oracleWrapper.oracle()).to.eq(testOracle.address)
     })
     it("should return the current price for the requested market", async () => {

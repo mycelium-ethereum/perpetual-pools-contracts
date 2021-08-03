@@ -30,12 +30,8 @@ contract PoolFactory is IPoolFactory, AccessControl {
         // Deploy base contracts
         pairTokenBase = new PoolToken();
         poolBase = new LeveragedPool();
-        console.log(msg.sender);
         _setupRole(ADMIN, msg.sender);
-        console.log("---");
-        console.log(hasRole(ADMIN, msg.sender));
         _setRoleAdmin(OPERATOR, ADMIN);
-        console.log(hasRole(OPERATOR, msg.sender));
 
         // Init bases
         poolBase.initialize(
@@ -83,8 +79,6 @@ contract PoolFactory is IPoolFactory, AccessControl {
             deploymentParameters.quoteToken
         );
 
-        console.log("Calling newpool with");
-        console.log(deploymentParameters.poolCode);
         poolKeeper.newPool(deploymentParameters.poolCode, address(pool));
         return address(pool);
     }
@@ -100,7 +94,6 @@ contract PoolFactory is IPoolFactory, AccessControl {
     }
 
     function setPoolKeeper(address _poolKeeper) external onlyOperator {
-        console.log("HI");
         poolKeeper = IPoolKeeper(_poolKeeper);
     }
 
