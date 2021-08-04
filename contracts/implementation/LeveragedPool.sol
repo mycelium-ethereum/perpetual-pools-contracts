@@ -44,7 +44,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     uint128 public commitIDCounter;
     mapping(uint128 => Commit) public commits;
     mapping(CommitType => uint112) public shadowPools;
-    string public poolCode;
+    string public ticker;
     address public override oracleWrapper;
     // #### Roles
     /**

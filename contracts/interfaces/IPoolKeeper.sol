@@ -21,7 +21,7 @@ interface IPoolKeeper {
   @param firstPrice The price of the market oracle when the pool was created. 
   @param poolCode The code of the pool. This combined with the updateInterval provide the upkeep details.
    */
-    event PoolAdded(address indexed poolAddress, int256 indexed firstPrice, string poolCode);
+    event PoolAdded(address indexed poolAddress, int256 indexed firstPrice, address poolCode);
 
     /**
   @notice Creates a notification when a market is created
@@ -37,7 +37,7 @@ interface IPoolKeeper {
     @param updateInterval The length of the round
     @param poolCode The code for the pool being updated
    */
-    event NewRound(int256 indexed oldPrice, int256 indexed newPrice, uint32 indexed updateInterval, string poolCode);
+    event NewRound(int256 indexed oldPrice, int256 indexed newPrice, uint32 indexed updateInterval, address poolCode);
 
     /**
     @notice Creates a notification of a price sample being taken
@@ -64,7 +64,7 @@ interface IPoolKeeper {
         int256 indexed oldPrice,
         int256 indexed newPrice,
         uint32 indexed updateInterval,
-        string pool
+        address pool
     );
 
     /**
