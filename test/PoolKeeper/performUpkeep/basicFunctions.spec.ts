@@ -103,10 +103,7 @@ const setupHook = async () => {
     }
     await (await factory.deployPool(deploymentData2)).wait()
 }
-const callData = ethers.utils.defaultAbiCoder.encode(
-    [ethers.utils.ParamType.from("string[]")],
-    [[POOL_CODE, POOL_CODE_2]]
-)
+const callData = [POOL_CODE, POOL_CODE_2]
 
 interface Upkeep {
     cumulativePrice: BigNumber
@@ -128,18 +125,12 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
     let newRoundStart: BigNumber
     describe("Base cases", () => {
         beforeEach(setupHook)
-        it("should revert if performData is invalid", async () => {
-            await expect(
-                poolKeeper.performUpkeep(
-                    ethers.utils.defaultAbiCoder.encode(
-                        [
-                            ethers.utils.ParamType.from("string"),
-                            ethers.utils.ParamType.from("string[]"),
-                        ],
-                        [MARKET_2, [POOL_CODE, POOL_CODE_2]]
-                    )
-                )
-            ).to.be.rejectedWith(Error)
+        it("should not revert if performData is invalid", async () => {
+            await poolKeeper.performUpkeepMultiplePools([
+                "INVALID",
+                POOL_CODE,
+                POOL_CODE_2,
+            ])
         })
     })
 
@@ -153,7 +144,7 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
             await oracleWrapper.incrementPrice()
             await timeout(updateInterval * 1000 + 1000)
             const result = await (
-                await poolKeeper.performUpkeep(callData)
+                await poolKeeper.performUpkeepMultiplePools(callData)
             ).wait()
             oldExecutionPrice = await poolKeeper.executionPrice(POOL_CODE)
             oldLastExecutionPrice = await poolKeeper.lastExecutionPrice(
@@ -182,14 +173,13 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
             await setupHook()
             // process a few upkeeps
             await oracleWrapper.incrementPrice()
-            // await poolKeeper.performUpkeep(callData);
 
             oldRoundStart = await poolKeeper.poolRoundStart(POOL_CODE)
             oldExecutionPrice = await poolKeeper.executionPrice(POOL_CODE)
             // delay and upkeep again
             await timeout(updateInterval * 1000 + 1000)
 
-            await poolKeeper.performUpkeep(callData)
+            await poolKeeper.performUpkeepMultiplePools(callData)
             newExecutionPrice = await poolKeeper.executionPrice(POOL_CODE)
             newLastExecutionPrice = await poolKeeper.lastExecutionPrice(
                 POOL_CODE
