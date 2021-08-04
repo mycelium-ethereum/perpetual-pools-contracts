@@ -102,14 +102,9 @@ const setupHook = async () => {
     }
     await (await factory.deployPool(deploymentData2)).wait()
 }
-const upkeepOne = ethers.utils.defaultAbiCoder.encode(
-    [ethers.utils.ParamType.from("string[]")],
-    [[POOL_CODE]]
-)
-const upkeepTwo = ethers.utils.defaultAbiCoder.encode(
-    [ethers.utils.ParamType.from("string[]")],
-    [[POOL_CODE_2]]
-)
+const upkeepOne = [POOL_CODE]
+const upkeepTwo = [POOL_CODE_2]
+
 interface Upkeep {
     cumulativePrice: BigNumber
     lastSamplePrice: BigNumber

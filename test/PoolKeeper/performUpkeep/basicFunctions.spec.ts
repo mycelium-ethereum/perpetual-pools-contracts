@@ -103,10 +103,7 @@ const setupHook = async () => {
     }
     await (await factory.deployPool(deploymentData2)).wait()
 }
-const callData = ethers.utils.defaultAbiCoder.encode(
-    [ethers.utils.ParamType.from("string[]")],
-    [[POOL_CODE, POOL_CODE_2]]
-)
+const callData = [POOL_CODE, POOL_CODE_2]
 
 interface Upkeep {
     cumulativePrice: BigNumber
@@ -128,18 +125,8 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
     let newRoundStart: BigNumber
     describe("Base cases", () => {
         beforeEach(setupHook)
-        it("should revert if performData is invalid", async () => {
-            await expect(
-                poolKeeper.performUpkeep(
-                    ethers.utils.defaultAbiCoder.encode(
-                        [
-                            ethers.utils.ParamType.from("string"),
-                            ethers.utils.ParamType.from("string[]"),
-                        ],
-                        [MARKET_2, [POOL_CODE, POOL_CODE_2]]
-                    )
-                )
-            ).to.be.rejectedWith(Error)
+        it("should not revert if performData is invalid", async () => {
+            await poolKeeper.performUpkeep(["INVALID", POOL_CODE, POOL_CODE_2])
         })
     })
 

@@ -82,4 +82,25 @@ interface IPoolKeeper {
      * @param _poolAddress The address of the newly-created pool.
      */
     function newPool(string memory _poolCode, address _poolAddress) external;
+
+    /**
+     * @notice Check if upkeep is required
+     * @dev This should not be called or executed.
+     * @param poolCode The poolCode of the pool to upkeep
+     * @return upkeepNeeded Whether or not upkeep is needed for this single pool
+     */
+    function checkUpkeepSinglePool(string calldata poolCode) external view returns (bool upkeepNeeded);
+
+    /**
+     * @notice Checks multiple pools if any of them need updating
+     * @param poolCodes The array of pool codes to check
+     * @return upkeepNeeded Whether or not at least one pool needs upkeeping
+     */
+    function checkUpkeepMultiplePools(string[] calldata poolCodes) external view returns (bool upkeepNeeded);
+
+    /**
+     * @notice Called by keepers to perform an update
+     * @param poolCodes pool codes to perform the update for.
+     */
+    function performUpkeep(string[] calldata poolCodes) external;
 }
