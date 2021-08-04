@@ -15,6 +15,25 @@ module.exports = async (hre) => {
         log: true
     })
 
+    /* deploy testToken */
+    const token = await deploy("TestToken", {
+        args: ["Test Token", "TST"], 
+        from: deployer,
+        log: true,
+        contract: "TestToken",
+    })
+    // mint some dollar bills
+    await execute(
+        "TestToken", 
+        {
+            from: deployer,
+            log: true,
+        },
+        "mint",
+        ethers.utils.parseEther("10000000"), // 10 mil supply
+        deployer
+    )
+
     /* deploy TestOracleWrapper */
     const oracleWrapper = await deploy("TestOracleWrapper",
         {
@@ -77,8 +96,8 @@ module.exports = async (hre) => {
         updateInterval: 10,
         fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
         leverageAmount: 5,
-        feeAddress: generateRandomAddress(),
-        quoteToken: generateRandomAddress(),
+        feeAddress: deployer,
+        quoteToken: token.address,
         oracleWrapper: oracleWrapper.address,
     }
 
@@ -96,6 +115,7 @@ module.exports = async (hre) => {
     console.log(`Deployed PoolFactory: ${factory.address}`)
     console.log(`Deployed LeveragedPool: ${event.address}`)
     console.log(`Deploy Poolkeeper: ${poolKeeper.address}`)
+    console.log(`Deployed TestToken: ${token.address}`)
     console.log(`Deployed TestOracle: ${chainlinkOracle.address}`)
     console.log(`Deployed OracleWrapper: ${oracleWrapper.address}`)
 }
