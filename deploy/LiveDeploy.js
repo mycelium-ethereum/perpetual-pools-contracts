@@ -13,7 +13,7 @@ module.exports = async (hre) => {
     })
 
     /* deploy PoolFactory */
-    let poolFactory = await deploy("TestOracle", {
+    let testOracle = await deploy("TestOracle", {
         from: deployer,
         log: true,
     })
@@ -28,10 +28,10 @@ module.exports = async (hre) => {
     })
 
     /* deploy OracleWrapper */
-    let oracleWrapper = await deploy("OracleWrapper", {
+    let oracleWrapper = await deploy("TestOracleWrapper", {
         from: deployer,
         log: true,
-        args: [poolFactory.address],
+        args: [testOracle.address],
         libraries: {
             PoolSwapLibrary: poolSwapLibrary.address,
         },
