@@ -1,5 +1,5 @@
-const { OPERATOR_ROLE, POOL_CODE } = require("../test/constants");
-const { generateRandomAddress } = require("../test/utilities");
+const { OPERATOR_ROLE, POOL_CODE } = require("../test/constants")
+const { generateRandomAddress } = require("../test/utilities")
 
 module.exports = async (hre) => {
     const { getNamedAccounts, ethers } = hre
@@ -12,19 +12,19 @@ module.exports = async (hre) => {
     /* deploy TestOracle */
     const chainlinkOracle = await deploy("TestChainlinkOracle", {
         from: deployer,
-        log: true
+        log: true,
     })
 
     /* deploy testToken */
     const token = await deploy("TestToken", {
-        args: ["Test Token", "TST"], 
+        args: ["Test Token", "TST"],
         from: deployer,
         log: true,
         contract: "TestToken",
     })
     // mint some dollar bills
     await execute(
-        "TestToken", 
+        "TestToken",
         {
             from: deployer,
             log: true,
@@ -35,18 +35,16 @@ module.exports = async (hre) => {
     )
 
     /* deploy TestOracleWrapper */
-    const oracleWrapper = await deploy("TestOracleWrapper",
-        {
-            from: deployer,
-            log: true,
-            args: [chainlinkOracle.address]
-        }
-    )
+    const oracleWrapper = await deploy("TestOracleWrapper", {
+        from: deployer,
+        log: true,
+        args: [chainlinkOracle.address],
+    })
 
     /* deploy PoolSwapLibrary */
     const library = await deploy("PoolSwapLibrary", {
         from: deployer,
-        log: true
+        log: true,
     })
 
     /* deploy PoolFactory */
@@ -57,13 +55,11 @@ module.exports = async (hre) => {
     })
 
     /* deploy PoolKeeper */
-    const poolKeeper = await deploy("PoolKeeper", 
-        {
-            from: deployer,
-            log: true,
-            args: [factory.address]
-        }
-    )
+    const poolKeeper = await deploy("PoolKeeper", {
+        from: deployer,
+        log: true,
+        args: [factory.address],
+    })
 
     /* Grant roles to oracleWrapper */
     await execute(
@@ -101,15 +97,15 @@ module.exports = async (hre) => {
         oracleWrapper: oracleWrapper.address,
     }
 
-	const receipt = await execute(
-		"PoolFactory",
-		{
-			from: deployer,
-			log: true,
-		},
-		"deployPool",
-		deploymentData
-	)
+    const receipt = await execute(
+        "PoolFactory",
+        {
+            from: deployer,
+            log: true,
+        },
+        "deployPool",
+        deploymentData
+    )
     const event = receipt?.events?.find((el) => el.event === "DeployPool")
 
     console.log(`Deployed PoolFactory: ${factory.address}`)
