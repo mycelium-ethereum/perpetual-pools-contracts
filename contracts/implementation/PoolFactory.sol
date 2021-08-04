@@ -104,9 +104,9 @@ contract PoolFactory is IPoolFactory, AccessControl {
 
     // #### Modifiers
     modifier onlyOperator() {
-        require(hasRole(ADMIN, msg.sender), "msg sender not ADMIN");
+        require(hasRole(ADMIN, msg.sender), "msg.sender not ADMIN");
         // TODO check this
-        // require(hasRole(OPERATOR, msg.sender), "msg sender not OPERATOR");
+        // require(hasRole(OPERATOR, msg.sender), "msg.sender not OPERATOR");
         _;
     }
 }

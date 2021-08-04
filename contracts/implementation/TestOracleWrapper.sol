@@ -6,8 +6,6 @@ import "../interfaces/IOracleWrapper.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@chainlink/contracts/src/v0.7/interfaces/AggregatorV2V3Interface.sol";
 
-import "hardhat/console.sol";
-
 /*
 @title The oracle management contract for chainlink V3 oracles
 */
