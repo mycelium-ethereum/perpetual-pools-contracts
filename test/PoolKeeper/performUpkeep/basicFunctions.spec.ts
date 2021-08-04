@@ -74,7 +74,7 @@ const setupHook = async () => {
     await poolKeeper.deployed()
     await factory.setPoolKeeper(poolKeeper.address)
 
-    await oracleWrapper.increasePrice()
+    await oracleWrapper.incrementPrice()
     // Create pool
     const deploymentData = {
         owner: poolKeeper.address,
@@ -89,7 +89,7 @@ const setupHook = async () => {
     }
     await (await factory.deployPool(deploymentData)).wait()
 
-    await oracleWrapper.increasePrice()
+    await oracleWrapper.incrementPrice()
     const deploymentData2 = {
         owner: poolKeeper.address,
         poolCode: POOL_CODE_2,
@@ -150,7 +150,7 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
             await setupHook()
             // process a few upkeeps
             lastTime = await poolKeeper.lastExecutionTime(POOL_CODE)
-            await oracleWrapper.increasePrice()
+            await oracleWrapper.incrementPrice()
             await timeout(updateInterval * 1000 + 1000)
             const result = await (
                 await poolKeeper.performUpkeep(callData)
@@ -181,7 +181,7 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
             // Check starting conditions
             await setupHook()
             // process a few upkeeps
-            await oracleWrapper.increasePrice()
+            await oracleWrapper.incrementPrice()
             // await poolKeeper.performUpkeep(callData);
 
             oldRoundStart = await poolKeeper.poolRoundStart(POOL_CODE)

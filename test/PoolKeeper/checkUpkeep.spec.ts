@@ -70,7 +70,7 @@ const setupHook = async () => {
     await factory.connect(signers[0]).setPoolKeeper(poolKeeper.address)
 
     // Create pool
-    await oracleWrapper.increasePrice()
+    await oracleWrapper.incrementPrice()
     const deploymentData = {
         owner: generateRandomAddress(),
         poolCode: POOL_CODE,

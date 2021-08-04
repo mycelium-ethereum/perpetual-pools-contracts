@@ -129,7 +129,7 @@ describe("PoolKeeper - performUpkeep: corner cases", () => {
             await setupHook()
 
             // Sample and execute the first upkeep group
-            await (await oracleWrapper.increasePrice()).wait()
+            await (await oracleWrapper.incrementPrice()).wait()
             await poolKeeper.performUpkeep(upkeepOne)
             await poolKeeper.performUpkeep(upkeepTwo)
             await timeout(updateInterval * 1000 + 1000) // TODO why this <- ?

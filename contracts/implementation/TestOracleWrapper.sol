@@ -14,15 +14,17 @@ import "hardhat/console.sol";
 contract TestOracleWrapper is IOracleWrapper, AccessControl {
     // #### Globals
     /**
-  @notice The address of the feed oracle
-   */
+     * @notice The address of the feed oracle
+     */
     address public override oracle;
     int256 public price;
+    int256 public constant INITIAL_PRICE = 1;
+    int256 public constant PRICE_INCREMENT = 1;
 
     // #### Roles
     /**
-  @notice Use the Operator role to restrict access to the setOracle function
-   */
+     * @notice Use the Operator role to restrict access to the setOracle function
+     */
     bytes32 public constant OPERATOR = keccak256("OPERATOR");
     bytes32 public constant ADMIN = keccak256("ADMIN");
     string public constant OPERATOR_STRING = "OPERATOR";
@@ -30,12 +32,13 @@ contract TestOracleWrapper is IOracleWrapper, AccessControl {
 
     // #### Functions
     constructor(address _oracle) {
+        // TODO AccessControl is changing to Ownable model
         // _setupRole(abi.encodePacked(ADMIN, msg.sender), msg.sender);
         bytes32 newAdminRole = keccak256(abi.encodePacked(ADMIN_STRING, msg.sender));
         _setupRole(newAdminRole, msg.sender);
         _setRoleAdmin(OPERATOR, newAdminRole);
         setOracle(_oracle);
-        price = 1;
+        price = INITIAL_PRICE;
     }
 
     function setOracle(address _oracle) public override onlyOperator {
@@ -47,8 +50,8 @@ contract TestOracleWrapper is IOracleWrapper, AccessControl {
         return price;
     }
 
-    function increasePrice() external {
-        price += 1;
+    function incrementPrice() external {
+        price += PRICE_INCREMENT;
     }
 
     function switchAdmin(address _admin) external override onlyOperator {
