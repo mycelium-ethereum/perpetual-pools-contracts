@@ -4,12 +4,12 @@ import chaiAsPromised from "chai-as-promised"
 import {
     PoolKeeper__factory,
     PoolKeeper,
-    OracleWrapper__factory,
-    OracleWrapper,
     PoolSwapLibrary__factory,
     PoolFactory__factory,
-    TestOracle__factory,
-    TestOracle,
+    TestOracleWrapper__factory,
+    TestChainlinkOracle__factory,
+    TestOracleWrapper,
+    PoolFactory,
 } from "../../typechain"
 
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
@@ -19,30 +19,31 @@ import { generateRandomAddress } from "../utilities"
 chai.use(chaiAsPromised)
 const { expect } = chai
 
+let deploymentData: any
+
 describe("PoolKeeper - createPool", () => {
     let poolKeeper: PoolKeeper
-    let oracleWrapper: OracleWrapper
+    let factory: PoolFactory
     let signers: SignerWithAddress[]
-    let testOracle: TestOracle
     beforeEach(async () => {
         // Deploy the contracts
         signers = await ethers.getSigners()
 
+        const chainlinkOracleFactory = (await ethers.getContractFactory(
+            "TestChainlinkOracle",
+            signers[0]
+        )) as TestChainlinkOracle__factory
+        const chainlinkOracle = await chainlinkOracleFactory.deploy()
+
+        // Deploy tokens
         const oracleWrapperFactory = (await ethers.getContractFactory(
-            "OracleWrapper",
+            "TestOracleWrapper",
             signers[0]
-        )) as OracleWrapper__factory
-        oracleWrapper = await oracleWrapperFactory.deploy()
+        )) as TestOracleWrapper__factory
+        const oracleWrapper = await oracleWrapperFactory.deploy(
+            chainlinkOracle.address
+        )
         await oracleWrapper.deployed()
-
-        // Deploy the sample oracle
-        const oracleFactory = (await ethers.getContractFactory(
-            "TestOracle",
-            signers[0]
-        )) as TestOracle__factory
-
-        testOracle = await oracleFactory.deploy()
-        await testOracle.deployed()
 
         const libraryFactory = (await ethers.getContractFactory(
             "PoolSwapLibrary",
@@ -60,17 +61,15 @@ describe("PoolKeeper - createPool", () => {
             signer: signers[0],
             libraries: { PoolSwapLibrary: library.address },
         })) as PoolFactory__factory
-        const factory = await (await PoolFactory.deploy()).deployed()
-        poolKeeper = await poolKeeperFactory.deploy(
-            oracleWrapper.address,
-            factory.address
-        )
+        factory = await (await PoolFactory.deploy()).deployed()
+        poolKeeper = await poolKeeperFactory.deploy(factory.address)
         await poolKeeper.deployed()
-
         await oracleWrapper.grantRole(
             ethers.utils.keccak256(ethers.utils.toUtf8Bytes(OPERATOR_ROLE)),
             poolKeeper.address
         )
+
+        await factory.setPoolKeeper(poolKeeper.address)
 
         // Sanity check the deployment
         expect(
@@ -80,114 +79,47 @@ describe("PoolKeeper - createPool", () => {
             )
         ).to.eq(true)
 
-        expect(
-            await oracleWrapper.hasRole(
-                ethers.utils.keccak256(ethers.utils.toUtf8Bytes(ADMIN_ROLE)),
-                signers[0].address
-            )
-        ).to.eq(true)
+        expect(await oracleWrapper.isAdmin(signers[0].address)).to.eq(true)
+        deploymentData = {
+            owner: poolKeeper.address,
+            poolCode: POOL_CODE,
+            frontRunningInterval: 5,
+            updateInterval: 10,
+            fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+            leverageAmount: 5,
+            feeAddress: generateRandomAddress(),
+            quoteToken: generateRandomAddress(),
+            oracleWrapper: oracleWrapper.address,
+        }
     })
 
     it("should create a new pool in the given market", async () => {
-        await poolKeeper.createMarket(MARKET_CODE, testOracle.address)
-        const receipt = await (
-            await poolKeeper.createPool(
-                MARKET_CODE,
-                POOL_CODE,
-                5,
-                2,
-                "0x00000000000000000000000000000000",
-                5,
-                generateRandomAddress(),
-                generateRandomAddress()
-            )
-        ).wait()
-        const event = receipt?.events?.find((el) => el.event === "CreatePool")
-
-        expect(
-            !!(await signers[0].provider?.getCode(event?.args?.poolAddress))
-        ).to.eq(true)
+        const receipt = await (await factory.deployPool(deploymentData)).wait()
+        const event = receipt?.events?.find((el) => el.event === "DeployPool")
+        expect(!!(await signers[0].provider?.getCode(event?.args?.pool))).to.eq(
+            true
+        )
     })
 
     it("should emit an event containing the details of the new pool", async () => {
-        await poolKeeper.createMarket(MARKET_CODE, testOracle.address)
-        const receipt = await (
-            await poolKeeper.createPool(
-                MARKET_CODE,
-                POOL_CODE,
-                5,
-                2,
-                "0x00000000000000000000000000000000",
-                5,
-                generateRandomAddress(),
-                generateRandomAddress()
-            )
-        ).wait()
-        const event = receipt?.events?.find((el) => el.event === "CreatePool")
+        const receipt = await (await factory.deployPool(deploymentData)).wait()
+        const event = receipt?.events?.find((el) => el.event === "DeployPool")
         expect(!!event).to.eq(true)
-        expect(!!event?.args?.poolAddress).to.eq(true)
-        expect(!!event?.args?.firstPrice).to.eq(true)
+        expect(!!event?.args?.pool).to.eq(true)
+        expect(!!event?.args?.poolCode).to.eq(true)
     })
 
     it("should add the pool to the list of pools", async () => {
-        await poolKeeper.createMarket(MARKET_CODE, testOracle.address)
-        const receipt = await (
-            await poolKeeper.createPool(
-                MARKET_CODE,
-                POOL_CODE,
-                5,
-                2,
-                "0x00000000000000000000000000000000",
-                5,
-                generateRandomAddress(),
-                generateRandomAddress()
-            )
-        ).wait()
-        expect(await poolKeeper.pools(0)).to.eq(
-            receipt.events?.find((el) => el.event === "CreatePool")?.args
-                ?.poolAddress
+        const receipt = await (await factory.deployPool(deploymentData)).wait()
+        expect(await poolKeeper.pools(POOL_CODE)).to.eq(
+            receipt.events?.find((el) => el.event === "DeployPool")?.args?.pool
         )
     })
 
     it("should revert if the pool already exists", async () => {
-        await poolKeeper.createMarket(MARKET_CODE, testOracle.address)
-        await (
-            await poolKeeper.createPool(
-                MARKET_CODE,
-                POOL_CODE,
-                5,
-                2,
-                "0x00000000000000000000000000000000",
-                5,
-                generateRandomAddress(),
-                generateRandomAddress()
-            )
-        ).wait()
-        await expect(
-            poolKeeper.createPool(
-                MARKET_CODE,
-                POOL_CODE,
-                5,
-                2,
-                "0x00000000000000000000000000000000",
-                5,
-                generateRandomAddress(),
-                generateRandomAddress()
-            )
-        ).to.be.rejectedWith(Error)
-    })
-    it("should revert if the front running interval is larger than the update interval", async () => {
-        await expect(
-            poolKeeper.createPool(
-                MARKET_CODE,
-                POOL_CODE,
-                5,
-                7,
-                "0x00000000000000000000000000000000",
-                5,
-                generateRandomAddress(),
-                generateRandomAddress()
-            )
-        ).to.rejectedWith(Error)
+        await (await factory.deployPool(deploymentData)).wait()
+        await expect(factory.deployPool(deploymentData)).to.be.rejectedWith(
+            Error
+        )
     })
 })
