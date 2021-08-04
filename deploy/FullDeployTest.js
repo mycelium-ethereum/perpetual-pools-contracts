@@ -92,7 +92,6 @@ module.exports = async (hre) => {
 		deploymentData
 	)
     const event = receipt?.events?.find((el) => el.event === "DeployPool")
-    console.log(event.address)
 
     console.log(`Deployed PoolFactory: ${factory.address}`)
     console.log(`Deployed LeveragedPool: ${event.address}`)
