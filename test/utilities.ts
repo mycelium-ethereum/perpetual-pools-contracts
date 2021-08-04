@@ -13,6 +13,8 @@ import {
     PoolSwapLibrary__factory,
     LeveragedPool__factory,
     TestChainlinkOracle__factory,
+    PoolKeeper,
+    PoolKeeper__factory,
 } from "../typechain"
 
 import { abi as ERC20Abi } from "../artifacts/@openzeppelin/contracts/token/ERC20/ERC20.sol/ERC20.json"

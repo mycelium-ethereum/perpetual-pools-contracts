@@ -2,7 +2,7 @@ import { ethers } from "hardhat"
 import chai from "chai"
 import { Bytes, BytesLike } from "ethers"
 import chaiAsPromised from "chai-as-promised"
-import { callData, generateRandomAddress } from "../utilities"
+import { generateRandomAddress } from "../utilities"
 
 import { MARKET_2, POOL_CODE, POOL_CODE_2 } from "../constants"
 import {
