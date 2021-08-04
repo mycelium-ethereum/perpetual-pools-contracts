@@ -99,8 +99,14 @@ interface IPoolKeeper {
     function checkUpkeepMultiplePools(string[] calldata poolCodes) external view returns (bool upkeepNeeded);
 
     /**
-     * @notice Called by keepers to perform an update
+     * @notice Called by keepers to perform an update on a single pool
+     * @param poolCode The pool code to perform the update for.
+     */
+    function performUpkeepSinglePool(string calldata poolCode) external;
+
+    /**
+     * @notice Called by keepers to perform an update on multiple pools
      * @param poolCodes pool codes to perform the update for.
      */
-    function performUpkeep(string[] calldata poolCodes) external;
+    function performUpkeepMultiplePools(string[] calldata poolCodes) external;
 }

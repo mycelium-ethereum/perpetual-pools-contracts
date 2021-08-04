@@ -126,7 +126,11 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
     describe("Base cases", () => {
         beforeEach(setupHook)
         it("should not revert if performData is invalid", async () => {
-            await poolKeeper.performUpkeep(["INVALID", POOL_CODE, POOL_CODE_2])
+            await poolKeeper.performUpkeepMultiplePools([
+                "INVALID",
+                POOL_CODE,
+                POOL_CODE_2,
+            ])
         })
     })
 
@@ -140,7 +144,7 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
             await oracleWrapper.incrementPrice()
             await timeout(updateInterval * 1000 + 1000)
             const result = await (
-                await poolKeeper.performUpkeep(callData)
+                await poolKeeper.performUpkeepMultiplePools(callData)
             ).wait()
             oldExecutionPrice = await poolKeeper.executionPrice(POOL_CODE)
             oldLastExecutionPrice = await poolKeeper.lastExecutionPrice(
@@ -169,14 +173,13 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
             await setupHook()
             // process a few upkeeps
             await oracleWrapper.incrementPrice()
-            // await poolKeeper.performUpkeep(callData);
 
             oldRoundStart = await poolKeeper.poolRoundStart(POOL_CODE)
             oldExecutionPrice = await poolKeeper.executionPrice(POOL_CODE)
             // delay and upkeep again
             await timeout(updateInterval * 1000 + 1000)
 
-            await poolKeeper.performUpkeep(callData)
+            await poolKeeper.performUpkeepMultiplePools(callData)
             newExecutionPrice = await poolKeeper.executionPrice(POOL_CODE)
             newLastExecutionPrice = await poolKeeper.lastExecutionPrice(
                 POOL_CODE

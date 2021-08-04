@@ -101,7 +101,6 @@ const setupHook = async () => {
     }
     await factory.deployPool(deploymentData2)
 }
-// TODO undo the skip as part of TPOOL-28
 describe("PoolKeeper - checkUpkeepSinglePool", () => {
     beforeEach(async () => {
         await setupHook()
@@ -114,7 +113,7 @@ describe("PoolKeeper - checkUpkeepSinglePool", () => {
     it("should return false if the trigger condition isn't met", async () => {
         await forwardTime(5)
         await oracleWrapper.incrementPrice()
-        await poolKeeper.performUpkeep([POOL_CODE])
+        await poolKeeper.performUpkeepSinglePool(POOL_CODE)
         expect(await poolKeeper.checkUpkeepSinglePool(POOL_CODE)).to.eq(false)
     })
     it("should return false if the check data provided is invalid", async () => {

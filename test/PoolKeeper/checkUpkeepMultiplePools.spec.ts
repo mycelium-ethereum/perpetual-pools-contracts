@@ -101,7 +101,6 @@ const setupHook = async () => {
     }
     await factory.deployPool(deploymentData2)
 }
-// TODO undo the skip as part of TPOOL-28
 describe("PoolKeeper - checkUpkeepMultiplePools", () => {
     beforeEach(async () => {
         await setupHook()
@@ -116,7 +115,7 @@ describe("PoolKeeper - checkUpkeepMultiplePools", () => {
     it("should return true if the trigger condition is met on only one", async () => {
         await forwardTime(5)
         await oracleWrapper.incrementPrice()
-        await poolKeeper.performUpkeep([POOL_CODE])
+        await poolKeeper.performUpkeepSinglePool(POOL_CODE)
         expect(
             await poolKeeper.checkUpkeepMultiplePools([POOL_CODE, POOL_CODE_2])
         ).to.eq(true)
@@ -124,7 +123,7 @@ describe("PoolKeeper - checkUpkeepMultiplePools", () => {
     it("should return false if the trigger condition isn't met", async () => {
         await forwardTime(5)
         await oracleWrapper.incrementPrice()
-        await poolKeeper.performUpkeep([POOL_CODE, POOL_CODE_2])
+        await poolKeeper.performUpkeepMultiplePools([POOL_CODE, POOL_CODE_2])
         expect(
             await poolKeeper.checkUpkeepMultiplePools([POOL_CODE, POOL_CODE_2])
         ).to.eq(false)

@@ -120,32 +120,38 @@ contract PoolKeeper is IPoolKeeper, AccessControl {
     }
 
     /**
-     * @notice Called by keepers to perform an update
+     * @notice Called by keepers to perform an update on a single pool
+     * @param poolCode The pool code to perform the update for.
+     */
+    function performUpkeepSinglePool(string calldata poolCode) public override {
+        if (!checkUpkeepSinglePool(poolCode)) {
+            return;
+        }
+        ILeveragedPool pool = ILeveragedPool(pools[poolCode]);
+        int256 latestPrice = IOracleWrapper(pool.oracleWrapper()).getPrice();
+        // Start a new round
+        lastExecutionPrice[poolCode] = executionPrice[poolCode];
+        executionPrice[poolCode] = ABDKMathQuad.toInt(ABDKMathQuad.mul(ABDKMathQuad.fromInt(latestPrice), fixedPoint));
+        poolRoundStart[poolCode] = block.timestamp;
+
+        emit NewRound(lastExecutionPrice[poolCode], latestPrice, pool.updateInterval(), poolCode);
+
+        _executePriceChange(
+            uint32(block.timestamp),
+            pool.updateInterval(),
+            poolCode,
+            lastExecutionPrice[poolCode],
+            executionPrice[poolCode]
+        );
+    }
+
+    /**
+     * @notice Called by keepers to perform an update on multiple pools
      * @param poolCodes pool codes to perform the update for.
      */
-    function performUpkeep(string[] calldata poolCodes) external override {
+    function performUpkeepMultiplePools(string[] calldata poolCodes) external override {
         for (uint256 i = 0; i < poolCodes.length; i++) {
-            if (!checkUpkeepSinglePool(poolCodes[i])) {
-                continue;
-            }
-            ILeveragedPool pool = ILeveragedPool(pools[poolCodes[i]]);
-            int256 latestPrice = IOracleWrapper(pool.oracleWrapper()).getPrice();
-            // Start a new round
-            lastExecutionPrice[poolCodes[i]] = executionPrice[poolCodes[i]];
-            executionPrice[poolCodes[i]] = ABDKMathQuad.toInt(
-                ABDKMathQuad.mul(ABDKMathQuad.fromInt(latestPrice), fixedPoint)
-            );
-            poolRoundStart[poolCodes[i]] = block.timestamp;
-
-            emit NewRound(lastExecutionPrice[poolCodes[i]], latestPrice, pool.updateInterval(), poolCodes[i]);
-
-            _executePriceChange(
-                uint32(block.timestamp),
-                pool.updateInterval(),
-                poolCodes[i],
-                lastExecutionPrice[poolCodes[i]],
-                executionPrice[poolCodes[i]]
-            );
+            performUpkeepSinglePool(poolCodes[i]);
         }
     }
 
