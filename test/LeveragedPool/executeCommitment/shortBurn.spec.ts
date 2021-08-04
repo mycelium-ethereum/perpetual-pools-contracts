@@ -43,8 +43,8 @@ describe("LeveragedPool - executeCommitment: Short Burn", () => {
         beforeEach(async () => {
             const result = await deployPoolAndTokenContracts(
                 POOL_CODE,
-
                 frontRunningInterval,
+                updateInterval,
                 fee,
                 leverage,
                 feeAddress,

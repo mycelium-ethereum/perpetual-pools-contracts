@@ -5,11 +5,13 @@ import {
     ERC20,
     LeveragedPool,
     TestPoolFactory__factory,
+    TestOracleWrapper__factory,
     TestToken,
     TestToken__factory,
     PoolSwapLibrary,
     PoolSwapLibrary__factory,
     LeveragedPool__factory,
+    TestChainlinkOracle__factory,
 } from "../typechain"
 
 import { abi as ERC20Abi } from "../artifacts/@openzeppelin/contracts/token/ERC20/ERC20.sol/ERC20.json"
@@ -62,6 +64,7 @@ export const getEventArgs = (
 export const deployPoolAndTokenContracts = async (
     POOL_CODE: string,
     frontRunningInterval: number,
+    updateInterval: number,
     fee: BytesLike,
     leverage: number,
     feeAddress: string,
@@ -95,6 +98,22 @@ export const deployPoolAndTokenContracts = async (
     const long = await poolTokenFactory.deploy("Long", "Long")
     await long.deployed()
 
+    const chainlinkOracleFactory = (await ethers.getContractFactory(
+        "TestChainlinkOracle",
+        signers[0]
+    )) as TestChainlinkOracle__factory
+    const chainlinkOracle = await chainlinkOracleFactory.deploy()
+
+    // Deploy tokens
+    const oracleWrapperFactory = (await ethers.getContractFactory(
+        "TestOracleWrapper",
+        signers[0]
+    )) as TestOracleWrapper__factory
+
+    const oracleWrapper = await oracleWrapperFactory.deploy(
+        chainlinkOracle.address
+    )
+
     // Deploy and initialise pool
     const libraryFactory = (await ethers.getContractFactory(
         "PoolSwapLibrary",
@@ -112,10 +131,12 @@ export const deployPoolAndTokenContracts = async (
     const poolReceipt = await (
         await pool.initialize(
             signers[0].address,
+            oracleWrapper.address,
             long.address,
             short.address,
             POOL_CODE,
             frontRunningInterval,
+            updateInterval,
             fee,
             leverage,
             feeAddress,

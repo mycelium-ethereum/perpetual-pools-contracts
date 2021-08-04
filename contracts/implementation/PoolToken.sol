@@ -24,7 +24,7 @@ contract PoolToken is ERC20_Cloneable {
         return true;
     }
 
-    modifier onlyPool {
+    modifier onlyPool() {
         require(hasRole(POOL, msg.sender));
         _;
     }

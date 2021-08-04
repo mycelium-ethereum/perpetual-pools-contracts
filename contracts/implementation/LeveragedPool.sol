@@ -13,6 +13,7 @@ import "../vendors/SafeMath_112.sol";
 import "../vendors/SafeMath_128.sol";
 
 import "./PoolSwapLibrary.sol";
+import "../interfaces/IOracleWrapper.sol";
 
 /*
 @title The pool controller contract
@@ -28,6 +29,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     uint112 public shortBalance;
     uint112 public longBalance;
     uint32 public frontRunningInterval;
+    uint32 public override updateInterval;
 
     bytes16 public fee;
     bytes16 public leverageAmount;
@@ -43,6 +45,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     mapping(uint128 => Commit) public commits;
     mapping(CommitType => uint112) public shadowPools;
     string public poolCode;
+    address public override oracleWrapper;
     // #### Roles
     /**
   @notice The Updater role is for addresses that can update a pool's price
@@ -62,17 +65,20 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
 
     function initialize(
         address _updater,
+        address _oracleWrapper,
         address _longToken,
         address _shortToken,
         string memory _poolCode,
         uint32 _frontRunningInterval,
+        uint32 _updateInterval,
         bytes16 _fee,
         uint16 _leverageAmount,
         address _feeAddress,
         address _quoteToken
-    ) external override initializer() {
+    ) external override initializer {
         require(_feeAddress != address(0), "Fee address cannot be 0 address");
         require(_quoteToken != address(0), "Quote token cannot be 0 address");
+        require(_oracleWrapper != address(0), "Oracle wrapper cannot be 0 address");
         // Setup roles
         _setRoleAdmin(UPDATER, ADMIN);
         _setRoleAdmin(FEE_HOLDER, ADMIN);
@@ -81,8 +87,10 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
         _setupRole(FEE_HOLDER, _feeAddress);
 
         // Setup variables
+        oracleWrapper = _oracleWrapper;
         quoteToken = _quoteToken;
         frontRunningInterval = _frontRunningInterval;
+        updateInterval = _updateInterval;
         fee = _fee;
         leverageAmount = PoolSwapLibrary.convertUIntToDecimal(_leverageAmount);
         feeAddress = _feeAddress;
@@ -134,6 +142,16 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
             require(PoolToken(tokens[0]).mint(_commit.amount, msg.sender), "Transfer failed");
         } else if (_commit.commitType == CommitType.ShortBurn) {
             require(PoolToken(tokens[1]).mint(_commit.amount, msg.sender), "Transfer failed");
+        }
+    }
+
+    function executeCommitment(uint128[] memory _commitIDs) external override {
+        Commit memory _commit;
+        for (uint128 i = 0; i < _commitIDs.length; i++) {
+            _commit = commits[_commitIDs[i]];
+            delete commits[_commitIDs[i]];
+            emit ExecuteCommit(_commitIDs[i]);
+            _executeCommitment(_commit);
         }
     }
 
@@ -194,6 +212,13 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     }
 
     /**
+     * @return The price of the pool's feed oracle
+     */
+    function getOraclePrice() public view override returns (int256) {
+        return IOracleWrapper(oracleWrapper).getPrice();
+    }
+
+    /**
       @notice Mints new tokens
       @param token The token to mint
       @param amountIn The amount the user has committed to minting
@@ -223,17 +248,8 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
         );
     }
 
-    function executeCommitment(uint128[] memory _commitIDs) external override {
-        Commit memory _commit;
-        for (uint128 i = 0; i < _commitIDs.length; i++) {
-            _commit = commits[_commitIDs[i]];
-            delete commits[_commitIDs[i]];
-            emit ExecuteCommit(_commitIDs[i]);
-            _executeCommitment(_commit);
-        }
-    }
-
     function executePriceChange(int256 oldPrice, int256 newPrice) external override onlyUpdater {
+        require(intervalPassed(), "Update interval hasn't passed");
         uint112 longFeeAmount = uint112(
             PoolSwapLibrary.convertDecimalToUInt(PoolSwapLibrary.multiplyDecimalByUInt(fee, longBalance))
         );
@@ -271,6 +287,13 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
         require(IERC20(quoteToken).transfer(feeAddress, totalFeeAmount), "Fee transfer failed");
     }
 
+    /**
+     * @return true if the price was last updated more than updateInterval seconds ago
+     */
+    function intervalPassed() public view override returns (bool) {
+        return block.timestamp >= lastPriceTimestamp.add(updateInterval);
+    }
+
     function updateFeeAddress(address account) external override onlyFeeHolder {
         require(account != address(0), "Invalid address");
         feeAddress = account;
@@ -280,7 +303,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     /**
     @notice Requires caller to have been granted the UPDATER role. Use this for functions that should be restricted to the PoolKeeper
      */
-    modifier onlyUpdater {
+    modifier onlyUpdater() {
         require(hasRole(UPDATER, msg.sender));
         _;
     }
@@ -288,7 +311,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     /** 
   @notice Requires caller to have been granted the FEE_HOLDER role.
   */
-    modifier onlyFeeHolder {
+    modifier onlyFeeHolder() {
         require(hasRole(FEE_HOLDER, msg.sender));
         _;
     }

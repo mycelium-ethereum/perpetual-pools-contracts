@@ -6,7 +6,7 @@ pragma solidity ^0.7.6;
  *      It is used purely for the purpose of testing.
  *      DO NOT USE IN PRODUCTION
  */
-contract TestOracle {
+contract TestChainlinkOracle {
     int256 public price = 100000000;
     uint8 public decimals = 8; // default of 8 decimals for USD price feeds in the Chainlink ecosystem
     string public description = "A mock Chainlink V3 Aggregator";

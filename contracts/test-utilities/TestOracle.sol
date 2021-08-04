@@ -5,21 +5,20 @@ pragma abicoder v2;
 /*
 @title A mockup oracle wrapper. Don't use for production.
 */
-contract TestOracleWrapper {
-    mapping(string => address) public assetOracles;
-    bool public priceFreeze = false;
+contract TestOracle {
     int256 internal price;
+    address public oracle;
 
-    function setOracle(string memory marketCode, address oracle) external {
+    function setOracle(address _oracle) external {
         require(oracle != address(0), "Oracle cannot be 0 address");
-        assetOracles[marketCode] = oracle;
+        oracle = _oracle;
     }
 
-    function increasePrice() external {
+    function incrementPrice() external {
         price += 1;
     }
 
-    function getPrice(string memory marketCode) external view returns (int256) {
+    function getPrice() external view returns (int256) {
         return price;
     }
 }

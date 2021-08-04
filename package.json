@@ -43,8 +43,9 @@
         "dotenv": "^10.0.0",
         "eslint": "^7.27.0",
         "ethereum-waffle": "^3.3.0",
-        "ethers": "^5.4.2",
+        "ethers": "^5.4.0",
         "hardhat": "^2.2.1",
+        "hardhat-contract-sizer": "^2.0.3",
         "hardhat-deploy": "^0.8.11",
         "hardhat-deploy-ethers": "^0.3.0-beta.10",
         "hardhat-gas-reporter": "^1.0.4",
@@ -59,7 +60,7 @@
     },
     "dependencies": {
         "@chainlink/contracts": "^0.1.7",
-        "@openzeppelin/contracts": "^3.4.1-solc-0.7-2",
+        "@openzeppelin/contracts": "^3.4.0",
         "abdk-libraries-solidity": "^2.5.0",
         "hardhat-log-remover": "^2.0.2",
         "ts-command-line-args": "^2.1.0"
