@@ -15,8 +15,6 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "abdk-libraries-solidity/ABDKMathQuad.sol";
 
-import "hardhat/console.sol";
-
 /*
  * @title The manager contract for multiple markets and the pools in them
  */
