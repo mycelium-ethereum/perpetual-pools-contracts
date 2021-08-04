@@ -14,7 +14,7 @@ contract TestOracle {
         oracle = _oracle;
     }
 
-    function increasePrice() external {
+    function incrementPrice() external {
         price += 1;
     }
 
