@@ -6,20 +6,19 @@ import "../interfaces/IPoolKeeper.sol";
 import "../interfaces/IOracleWrapper.sol";
 import "../interfaces/IPoolFactory.sol";
 import "../implementation/LeveragedPool.sol";
-import "../implementation/PoolFactory.sol";
 import "../vendors/SafeMath_40.sol";
 import "../vendors/SafeMath_32.sol";
 
 import "@chainlink/contracts/src/v0.7/interfaces/UpkeepInterface.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/math/SignedSafeMath.sol";
-import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "abdk-libraries-solidity/ABDKMathQuad.sol";
 
 /*
  * @title The manager contract for multiple markets and the pools in them
  */
-contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
+contract PoolKeeper is IPoolKeeper, Ownable, UpkeepInterface {
     using SignedSafeMath for int256;
     using SafeMath_32 for uint32;
     using SafeMath_40 for uint40;
@@ -49,17 +48,13 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
      */
     mapping(string => uint256) public lastExecutionTime;
 
-    PoolFactory public immutable factory;
+    IPoolFactory public factory;
     bytes16 constant fixedPoint = 0x403abc16d674ec800000000000000000; // 1 ether
-
-    // #### Roles
-    bytes32 public constant ADMIN = keccak256("ADMIN");
 
     // #### Functions
     constructor(address _factory) {
         require(_factory != address(0), "Factory cannot be 0 address");
-        _setupRole(ADMIN, msg.sender);
-        factory = PoolFactory(_factory);
+        factory = IPoolFactory(_factory);
     }
 
     /**
@@ -215,10 +210,8 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
         }
     }
 
-    // #### Modifiers
-    modifier onlyAdmin() {
-        require(hasRole(ADMIN, msg.sender));
-        _;
+    function setFactory(address _factory) external override onlyOwner {
+        factory = IPoolFactory(_factory);
     }
 
     modifier onlyFactory() {

@@ -51,6 +51,7 @@ describe("LeveragedPool - executeCommitment: Short Mint", () => {
             )
             pool = result.pool
             signers = result.signers
+            await pool.setKeeper(signers[0].address)
             token = result.token
             shortToken = result.shortToken
             library = result.library

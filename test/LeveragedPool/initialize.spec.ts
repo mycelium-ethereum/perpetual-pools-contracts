@@ -111,19 +111,24 @@ describe("LeveragedPool - initialize", () => {
             )) as LeveragedPool__factory
             const pool = await leveragedPoolFactory.deploy()
             await pool.deployed()
+            const initialization = 
+                {
+                    _owner: signers[0].address,
+                    _keeper: generateRandomAddress(),
+                    _oracleWrapper: oracleWrapper.address,
+                    _longToken: long.address,
+                    _shortToken: short.address,
+                    _poolCode: POOL_CODE,
+                    _frontRunningInterval: frontRunningInterval,
+                    _updateInterval: updateInterval,
+                    _fee: fee,
+                    _leverageAmount: leverage,
+                    _feeAddress: feeAddress,
+                    _quoteToken: token.address
+                }
             await (
                 await pool.initialize(
-                    signers[0].address,
-                    oracleWrapper.address,
-                    long.address,
-                    short.address,
-                    POOL_CODE,
-                    frontRunningInterval,
-                    updateInterval,
-                    fee,
-                    leverage,
-                    feeAddress,
-                    token.address
+                    initialization
                 )
             ).wait()
             const testFactory = (await ethers.getContractFactory(
@@ -146,17 +151,20 @@ describe("LeveragedPool - initialize", () => {
 
             receipt = await (
                 await leveragedPool.initialize(
-                    signers[0].address,
-                    oracleWrapper.address,
-                    long.address,
-                    short.address,
-                    POOL_CODE,
-                    frontRunningInterval,
-                    updateInterval,
-                    fee,
-                    leverage,
-                    feeAddress,
-                    quoteToken
+                    {
+                        _owner: signers[0].address,
+                        _keeper: generateRandomAddress(),
+                        _oracleWrapper: oracleWrapper.address,
+                        _longToken: long.address,
+                        _shortToken: short.address,
+                        _poolCode: POOL_CODE,
+                        _frontRunningInterval: frontRunningInterval,
+                        _updateInterval: updateInterval,
+                        _fee: fee,
+                        _leverageAmount: leverage,
+                        _feeAddress: feeAddress,
+                        _quoteToken: quoteToken
+                    }
                 )
             ).wait()
         })
@@ -230,38 +238,6 @@ describe("LeveragedPool - initialize", () => {
             expect(event?.args?.poolCode).to.eq(POOL_CODE)
         })
 
-        it("should grant the FEE_HOLDER role to the fee address", async () => {
-            expect(
-                await leveragedPool.hasRole(
-                    ethers.utils.keccak256(
-                        ethers.utils.toUtf8Bytes(FEE_HOLDER_ROLE)
-                    ),
-                    feeAddress
-                )
-            ).to.eq(true)
-        })
-
-        it("should grant the UPDATER role to the deployer", async () => {
-            expect(
-                await leveragedPool.hasRole(
-                    ethers.utils.keccak256(
-                        ethers.utils.toUtf8Bytes(UPDATER_ROLE)
-                    ),
-                    signers[0].address
-                )
-            ).to.eq(true)
-        })
-
-        it("should grant the ADMIN role to the deployer", async () => {
-            expect(
-                await leveragedPool.hasRole(
-                    ethers.utils.keccak256(
-                        ethers.utils.toUtf8Bytes(ADMIN_ROLE)
-                    ),
-                    signers[0].address
-                )
-            ).to.eq(true)
-        })
     })
     describe("Performs safety checks", () => {
         let leveragedPool: LeveragedPool
@@ -324,17 +300,20 @@ describe("LeveragedPool - initialize", () => {
             await pool.deployed()
             await (
                 await pool.initialize(
-                    signers[0].address,
-                    oracleWrapper.address,
-                    long.address,
-                    short.address,
-                    POOL_CODE,
-                    frontRunningInterval,
-                    updateInterval,
-                    fee,
-                    leverage,
-                    feeAddress,
-                    token.address
+                    {
+                        _owner: signers[0].address,
+                        _keeper: generateRandomAddress(),
+                        _oracleWrapper: oracleWrapper.address,
+                        _longToken: long.address,
+                        _shortToken: short.address,
+                        _poolCode: POOL_CODE,
+                        _frontRunningInterval: frontRunningInterval,
+                        _updateInterval: updateInterval,
+                        _fee: fee,
+                        _leverageAmount: leverage,
+                        _feeAddress: feeAddress,
+                        _quoteToken: token.address
+                    }
                 )
             ).wait()
             const testFactory = (await ethers.getContractFactory(
@@ -360,65 +339,77 @@ describe("LeveragedPool - initialize", () => {
 
         it("should revert if an attempt is made to run it a second time", async () => {
             await leveragedPool.initialize(
-                signers[0].address,
-                oracleWrapper.address,
-                long.address,
-                short.address,
-                POOL_CODE,
-                frontRunningInterval,
-                updateInterval,
-                fee,
-                leverage,
-                feeAddress,
-                quoteToken
+                    {
+                    _owner: signers[0].address,
+                        _keeper: generateRandomAddress(),
+                    _oracleWrapper: oracleWrapper.address,
+                    _longToken: long.address,
+                    _shortToken: short.address,
+                    _poolCode: POOL_CODE,
+                    _frontRunningInterval: frontRunningInterval,
+                    _updateInterval: updateInterval,
+                    _fee: fee,
+                    _leverageAmount: leverage,
+                    _feeAddress: feeAddress,
+                    _quoteToken: quoteToken
+                    }
             )
             await expect(
                 leveragedPool.initialize(
-                    signers[0].address,
-                    oracleWrapper.address,
-                    long.address,
-                    short.address,
-                    POOL_CODE,
-                    frontRunningInterval,
-                    updateInterval,
-                    fee,
-                    leverage,
-                    feeAddress,
-                    quoteToken
+                    {
+                        _owner: signers[0].address,
+                        _keeper: generateRandomAddress(),
+                        _oracleWrapper: oracleWrapper.address,
+                        _longToken: long.address,
+                        _shortToken: short.address,
+                        _poolCode: POOL_CODE,
+                        _frontRunningInterval: frontRunningInterval,
+                        _updateInterval: updateInterval,
+                        _fee: fee,
+                        _leverageAmount: leverage,
+                        _feeAddress: feeAddress,
+                        _quoteToken: quoteToken
+                    }
                 )
             ).to.rejectedWith(Error)
         })
         it("should revert if quoteToken address is the zero address", async () => {
             await expect(
                 leveragedPool.initialize(
-                    signers[0].address,
-                    oracleWrapper.address,
-                    long.address,
-                    short.address,
-                    POOL_CODE,
-                    frontRunningInterval,
-                    updateInterval,
-                    fee,
-                    leverage,
-                    feeAddress,
-                    ethers.constants.AddressZero
+                    {
+                        _owner: signers[0].address,
+                        _keeper: generateRandomAddress(),
+                        _oracleWrapper: oracleWrapper.address,
+                        _longToken: long.address,
+                        _shortToken: short.address,
+                        _poolCode: POOL_CODE,
+                        _frontRunningInterval: frontRunningInterval,
+                        _updateInterval: updateInterval,
+                        _fee: fee,
+                        _leverageAmount: leverage,
+                        _feeAddress: feeAddress,
+                        _quoteToken: ethers.constants.AddressZero
+                    }
                 )
             ).to.rejectedWith(Error)
         })
         it("should revert if the fee address is the zero address", async () => {
             await expect(
                 leveragedPool.initialize(
-                    signers[0].address,
-                    oracleWrapper.address,
-                    long.address,
-                    short.address,
-                    POOL_CODE,
-                    frontRunningInterval,
-                    updateInterval,
-                    fee,
-                    leverage,
-                    ethers.constants.AddressZero,
-                    quoteToken
+                    {
+                        _owner: signers[0].address,
+                        _keeper: generateRandomAddress(),
+                        _oracleWrapper: oracleWrapper.address,
+                        _longToken: long.address,
+                        _shortToken: short.address,
+                        _poolCode: POOL_CODE,
+                        _frontRunningInterval: frontRunningInterval,
+                        _updateInterval: updateInterval,
+                        _fee: fee,
+                        _leverageAmount: leverage,
+                        _feeAddress: ethers.constants.AddressZero,
+                        _quoteToken: quoteToken
+                    }
                 )
             ).to.rejectedWith(Error)
         })
@@ -434,30 +425,36 @@ describe("LeveragedPool - initialize", () => {
                 signers[0]
             ) as LeveragedPool
             await secondPool.initialize(
-                signers[0].address,
-                oracleWrapper.address,
-                long.address,
-                short.address,
-                POOL_CODE_2,
-                frontRunningInterval,
-                updateInterval,
-                fee,
-                leverage,
-                feeAddress,
-                quoteToken
+                    {
+                    _owner: signers[0].address,
+                        _keeper: generateRandomAddress(),
+                    _oracleWrapper: oracleWrapper.address,
+                    _longToken: long.address,
+                    _shortToken: short.address,
+                    _poolCode: POOL_CODE_2,
+                    _frontRunningInterval: frontRunningInterval,
+                    _updateInterval: updateInterval,
+                    _fee: fee,
+                    _leverageAmount: leverage,
+                    _feeAddress: feeAddress,
+                    _quoteToken: quoteToken
+                    }
             )
             await leveragedPool.initialize(
-                signers[0].address,
-                oracleWrapper.address,
-                long.address,
-                short.address,
-                POOL_CODE,
-                frontRunningInterval,
-                updateInterval,
-                fee,
-                leverage,
-                feeAddress,
-                quoteToken
+                    {
+                    _owner: signers[0].address,
+                        _keeper: generateRandomAddress(),
+                    _oracleWrapper: oracleWrapper.address,
+                    _longToken: long.address,
+                    _shortToken: short.address,
+                    _poolCode: POOL_CODE,
+                    _frontRunningInterval: frontRunningInterval,
+                    _updateInterval: updateInterval,
+                    _fee: fee,
+                    _leverageAmount: leverage,
+                    _feeAddress: feeAddress,
+                    _quoteToken: quoteToken
+                    }
             )
 
             expect(await secondPool.poolCode()).to.eq(POOL_CODE_2)

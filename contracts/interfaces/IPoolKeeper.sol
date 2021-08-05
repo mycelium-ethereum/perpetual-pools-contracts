@@ -82,4 +82,6 @@ interface IPoolKeeper {
      * @param _poolAddress The address of the newly-created pool.
      */
     function newPool(string memory _poolCode, address _poolAddress) external;
+
+    function setFactory(address _factory) external;
 }

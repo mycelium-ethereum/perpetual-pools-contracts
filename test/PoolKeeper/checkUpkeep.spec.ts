@@ -73,6 +73,7 @@ const setupHook = async () => {
     await oracleWrapper.incrementPrice()
     const deploymentData = {
         owner: generateRandomAddress(),
+        keeper: generateRandomAddress(),
         poolCode: POOL_CODE,
         frontRunningInterval: 1,
         updateInterval: 2,
@@ -83,18 +84,6 @@ const setupHook = async () => {
         oracleWrapper: oracleWrapper.address,
     }
     await factory.deployPool(deploymentData)
-
-    const deploymentData2 = {
-        owner: generateRandomAddress(),
-        poolCode: POOL_CODE_2,
-        frontRunningInterval: 1,
-        updateInterval: 2,
-        fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        leverageAmount: 2,
-        feeAddress: generateRandomAddress(),
-        quoteToken: quoteToken,
-        oracleWrapper: oracleWrapper.address,
-    }
 }
 const callData = ethers.utils.defaultAbiCoder.encode(
     [ethers.utils.ParamType.from("string[]")],

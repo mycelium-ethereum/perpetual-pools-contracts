@@ -78,6 +78,7 @@ const setupHook = async () => {
     // Create pool
     const deploymentData = {
         owner: poolKeeper.address,
+        keeper: poolKeeper.address,
         poolCode: POOL_CODE,
         frontRunningInterval: 1,
         updateInterval: updateInterval,
@@ -92,6 +93,7 @@ const setupHook = async () => {
     await oracleWrapper.incrementPrice()
     const deploymentData2 = {
         owner: poolKeeper.address,
+        keeper: poolKeeper.address,
         poolCode: POOL_CODE_2,
         frontRunningInterval: 1,
         updateInterval: updateInterval,

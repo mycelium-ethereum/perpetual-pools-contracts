@@ -87,6 +87,7 @@ describe("LeveragedPool - executeCommitment: Basic test cases", () => {
 
             await token.approve(pool.address, amountCommitted)
             commit = await createCommit(pool, commitType, amountCommitted)
+            await pool.setKeeper(signers[0].address)
         })
 
         it("should remove the commitment after execution", async () => {
