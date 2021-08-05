@@ -3,7 +3,7 @@ import chai from "chai"
 import chaiAsPromised from "chai-as-promised"
 import { generateRandomAddress, getEventArgs, timeout } from "../../utilities"
 
-import { MARKET_2, POOL_CODE, POOL_CODE_2} from "../../constants"
+import { MARKET_2, POOL_CODE, POOL_CODE_2 } from "../../constants"
 import {
     PoolFactory__factory,
     PoolKeeper,
@@ -109,8 +109,8 @@ const setupHook = async () => {
     POOL2_ADDR = await poolKeeper.pools(1)
 
     callData = ethers.utils.defaultAbiCoder.encode(
-            [ethers.utils.ParamType.from("address[]")],
-            [[POOL1_ADDR, POOL2_ADDR]]
+        [ethers.utils.ParamType.from("address[]")],
+        [[POOL1_ADDR, POOL2_ADDR]]
     )
 }
 

@@ -210,9 +210,7 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
                 emit ExecutePriceChange(oldPrice, latestPrice, updateInterval, pool);
                 // This allows us to still batch multiple calls to executePriceChange, even if some are invalid
                 // Without reverting the entire transaction
-                try LeveragedPool(pool).executePriceChange(oldPrice, latestPrice) {} catch Error(
-                    string memory reason
-                ) {
+                try LeveragedPool(pool).executePriceChange(oldPrice, latestPrice) {} catch Error(string memory reason) {
                     emit PoolUpdateError(pool, reason);
                 }
             }
