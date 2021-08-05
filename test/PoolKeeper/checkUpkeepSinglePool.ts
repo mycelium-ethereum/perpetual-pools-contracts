@@ -1,4 +1,4 @@
-import { ethers } from "hardhat"
+import { ethers, network } from "hardhat"
 import chai from "chai"
 import chaiAsPromised from "chai-as-promised"
 import { generateRandomAddress } from "../utilities"
@@ -23,6 +23,11 @@ let quoteToken: string
 let oracleWrapper: TestOracleWrapper
 let oracle: TestChainlinkOracle
 let poolKeeper: PoolKeeper
+
+const forwardTime = async (seconds: number) => {
+    await network.provider.send("evm_increaseTime", [seconds])
+    await network.provider.send("evm_mine", [])
+}
 
 const setupHook = async () => {
     const signers = await ethers.getSigners()
@@ -70,7 +75,6 @@ const setupHook = async () => {
     await factory.connect(signers[0]).setPoolKeeper(poolKeeper.address)
 
     // Create pool
-    await oracleWrapper.incrementPrice()
     const deploymentData = {
         owner: generateRandomAddress(),
         keeper: generateRandomAddress(),
@@ -84,44 +88,41 @@ const setupHook = async () => {
         oracleWrapper: oracleWrapper.address,
     }
     await factory.deployPool(deploymentData)
+
+    const deploymentData2 = {
+        owner: generateRandomAddress(),
+        keeper: generateRandomAddress(),
+        poolCode: POOL_CODE_2,
+        frontRunningInterval: 1,
+        updateInterval: 2,
+        fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        leverageAmount: 2,
+        feeAddress: generateRandomAddress(),
+        quoteToken: quoteToken,
+        oracleWrapper: oracleWrapper.address,
+    }
+    await factory.deployPool(deploymentData2)
 }
-const callData = ethers.utils.defaultAbiCoder.encode(
-    [ethers.utils.ParamType.from("string[]")],
-    [[POOL_CODE, POOL_CODE_2]]
-)
-// TODO undo the skip as part of TPOOL-28
-describe.skip("PoolKeeper - checkUpkeep", () => {
+describe("PoolKeeper - checkUpkeepSinglePool", () => {
     beforeEach(async () => {
         await setupHook()
     })
     it("should return true if the trigger condition is met", async () => {
-        expect((await poolKeeper.callStatic.checkUpkeep(callData))[0]).to.eq(
-            true
-        )
+        await forwardTime(5)
+        await oracleWrapper.incrementPrice()
+        expect(await poolKeeper.checkUpkeepSinglePool(POOL_CODE)).to.eq(true)
     })
     it("should return false if the trigger condition isn't met", async () => {
-        await poolKeeper.performUpkeep(callData)
-        expect((await poolKeeper.callStatic.checkUpkeep(callData))[0]).to.eq(
-            false
-        )
-    })
-    it("should return the correct perform data to call for upkeep with", async () => {
-        // Should be market code [pool codes]
-        expect((await poolKeeper.callStatic.checkUpkeep(callData))[1]).to.eq(
-            callData
-        )
+        await forwardTime(5)
+        await oracleWrapper.incrementPrice()
+        await poolKeeper.performUpkeepSinglePool(POOL_CODE)
+        expect(await poolKeeper.checkUpkeepSinglePool(POOL_CODE)).to.eq(false)
     })
     it("should return false if the check data provided is invalid", async () => {
-        const falseCallData = ethers.utils.defaultAbiCoder.encode(
-            [
-                ethers.utils.ParamType.from("uint32"),
-                ethers.utils.ParamType.from("string"),
-                ethers.utils.ParamType.from("string[]"),
-            ],
-            [2, MARKET_2, [POOL_CODE, POOL_CODE_2]]
+        const RANDOM_POOL_CODE = "Hello"
+        await forwardTime(5)
+        expect(await poolKeeper.checkUpkeepSinglePool(RANDOM_POOL_CODE)).to.eq(
+            false
         )
-        expect(
-            (await poolKeeper.callStatic.checkUpkeep(falseCallData))[0]
-        ).to.eq(false)
     })
 })
