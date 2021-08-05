@@ -52,9 +52,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
 
     // #### Functions
 
-    function initialize(
-        ILeveragedPool.Initialization memory initialization
-    ) external override initializer {
+    function initialize(ILeveragedPool.Initialization memory initialization) external override initializer {
         require(initialization._feeAddress != address(0), "Fee address cannot be 0 address");
         require(initialization._quoteToken != address(0), "Quote token cannot be 0 address");
         require(initialization._oracleWrapper != address(0), "Oracle wrapper cannot be 0 address");
@@ -296,5 +294,4 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         require(msg.sender == owner, "msg.sender not owner");
         _;
     }
-
 }

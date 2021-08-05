@@ -40,9 +40,7 @@ contract PoolFactory is IPoolFactory, Ownable {
             address(this)
         );
         // Init bases
-        poolBase.initialize(
-            baseInitialization
-        );
+        poolBase.initialize(baseInitialization);
 
         pairTokenBase.initialize(address(this), "BASE_TOKEN", "BASE");
     }
@@ -76,9 +74,7 @@ contract PoolFactory is IPoolFactory, Ownable {
             deploymentParameters.feeAddress,
             deploymentParameters.quoteToken
         );
-        pool.initialize(
-            initialization
-        );
+        pool.initialize(initialization);
 
         poolKeeper.newPool(deploymentParameters.poolCode, address(pool));
         return address(pool);

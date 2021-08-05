@@ -86,9 +86,7 @@ interface ILeveragedPool {
      * @dev This should only be able to be run once to prevent abuse of the pool. Use of Openzeppelin Initializable or similar is recommended.
      * @param initialization The struct Initialization containing initialization data
      */
-    function initialize(
-        Initialization memory initialization
-    ) external;
+    function initialize(Initialization memory initialization) external;
 
     function getOraclePrice() external view returns (int256);
 
@@ -112,19 +110,18 @@ interface ILeveragedPool {
     function executeCommitment(uint128[] memory _commitIDs) external;
 
     /**
-     * @notice Processes the effect of a price change. The effect of a price change on a pool is left to the implementer. The pool stores the last price, and is given the latest price on update. 
+     * @notice Processes the effect of a price change. The effect of a price change on a pool is left to the implementer. The pool stores the last price, and is given the latest price on update.
      * @dev This function should be called by the Pool Keeper.
      * @dev This function should be secured with some form of access control
      * @param oldPrice The previously executed price
-     * @param newPrice The price for the latest interval. 
-    */
+     * @param newPrice The price for the latest interval.
+     */
     function executePriceChange(int256 oldPrice, int256 newPrice) external;
 
     /**
      * @return true if the price was last updated more than updateInterval seconds ago
      */
     function intervalPassed() external view returns (bool);
-
 
     function setKeeper(address _keeper) external;
 
@@ -133,7 +130,7 @@ interface ILeveragedPool {
      */
     function transferOwnership(address _owner) external;
 
-    /** 
+    /**
      * @notice Updates the fee address
      * @dev This should be secured with some form of access control
      * @param account The new account to send fees to

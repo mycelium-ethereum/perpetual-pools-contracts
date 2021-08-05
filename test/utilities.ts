@@ -131,12 +131,9 @@ export const deployPoolAndTokenContracts = async (
     })) as PoolFactory__factory
     const factory = await (await PoolFactory.deploy()).deployed()
 
-    const poolKeeperFactory = (await ethers.getContractFactory(
-        "PoolKeeper",
-        {
-            signer: signers[0],
-        }
-    )) as PoolKeeper__factory
+    const poolKeeperFactory = (await ethers.getContractFactory("PoolKeeper", {
+        signer: signers[0],
+    })) as PoolKeeper__factory
     const poolKeeper = await poolKeeperFactory.deploy(factory.address)
     await poolKeeper.deployed()
 
@@ -160,11 +157,7 @@ export const deployPoolAndTokenContracts = async (
         _feeAddress: feeAddress,
         _quoteToken: token.address,
     }
-    const poolReceipt = await (
-        await pool.initialize(
-            initialization
-        )
-    ).wait()
+    const poolReceipt = await (await pool.initialize(initialization)).wait()
 
     return {
         signers,

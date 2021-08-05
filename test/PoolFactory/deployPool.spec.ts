@@ -105,11 +105,7 @@ describe("PoolFactory - deployPool", () => {
             _feeAddress: generateRandomAddress(),
             _quoteToken: generateRandomAddress(),
         }
-        await expect(
-            pool.initialize(
-                initialization
-            )
-        ).to.be.rejectedWith(Error)
+        await expect(pool.initialize(initialization)).to.be.rejectedWith(Error)
     })
     it("should allow multiple clones to exist", async () => {
         const deploymentData = {

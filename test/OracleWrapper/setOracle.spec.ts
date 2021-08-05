@@ -58,8 +58,7 @@ describe("OracleWrapper - setOracle", () => {
     })
     it("should prevent setting an oracle to the null address", async () => {
         await expect(
-            oracleWrapper
-                .setOracle(ethers.constants.AddressZero)
+            oracleWrapper.setOracle(ethers.constants.AddressZero)
         ).to.be.rejectedWith(Error)
     })
 })
