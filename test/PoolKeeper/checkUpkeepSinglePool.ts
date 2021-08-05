@@ -122,8 +122,6 @@ describe("PoolKeeper - checkUpkeepSinglePool", () => {
     it("should return false if the check data provided is invalid", async () => {
         await forwardTime(5)
         let poolAddress = await poolKeeper.pools(0)
-        expect(await poolKeeper.checkUpkeepSinglePool(poolAddress)).to.eq(
-            false
-        )
+        expect(await poolKeeper.checkUpkeepSinglePool(poolAddress)).to.eq(false)
     })
 })

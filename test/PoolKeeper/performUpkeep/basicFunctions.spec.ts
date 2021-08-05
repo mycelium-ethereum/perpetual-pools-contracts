@@ -114,7 +114,6 @@ const setupHook = async () => {
     )
 }
 
-
 interface Upkeep {
     cumulativePrice: BigNumber
     lastSamplePrice: BigNumber
@@ -137,7 +136,8 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
         beforeEach(setupHook)
         it("should not revert if performData is invalid", async () => {
             await poolKeeper.performUpkeepMultiplePools([
-                POOL1_ADDR, POOL2_ADDR
+                POOL1_ADDR,
+                POOL2_ADDR,
             ])
         })
     })
@@ -152,7 +152,10 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
             await oracleWrapper.incrementPrice()
             await timeout(updateInterval * 1000 + 1000)
             const result = await (
-                await poolKeeper.performUpkeepMultiplePools([POOL1_ADDR, POOL2_ADDR])
+                await poolKeeper.performUpkeepMultiplePools([
+                    POOL1_ADDR,
+                    POOL2_ADDR,
+                ])
             ).wait()
             oldExecutionPrice = await poolKeeper.executionPrice(POOL1_ADDR)
             oldLastExecutionPrice = await poolKeeper.lastExecutionPrice(
@@ -187,7 +190,10 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
             // delay and upkeep again
             await timeout(updateInterval * 1000 + 1000)
 
-            await poolKeeper.performUpkeepMultiplePools([POOL1_ADDR, POOL2_ADDR])
+            await poolKeeper.performUpkeepMultiplePools([
+                POOL1_ADDR,
+                POOL2_ADDR,
+            ])
             newExecutionPrice = await poolKeeper.executionPrice(POOL1_ADDR)
             newLastExecutionPrice = await poolKeeper.lastExecutionPrice(
                 POOL1_ADDR

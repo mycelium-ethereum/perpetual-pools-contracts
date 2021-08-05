@@ -38,7 +38,7 @@ let upkeepTwo: any
 let POOL1_ADDR: string
 let POOL2_ADDR: string
 
-let bothUpkeeps: any;
+let bothUpkeeps: any
 
 const setupHook = async () => {
     const signers = await ethers.getSigners()
@@ -123,7 +123,7 @@ const setupHook = async () => {
         [ethers.utils.ParamType.from("address[]")],
         [[POOL2_ADDR]]
     )
-    
+
     bothUpkeeps = [await poolKeeper.pools(0), await poolKeeper.pools(1)]
 }
 
