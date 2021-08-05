@@ -38,6 +38,8 @@ let upkeepTwo: any
 let POOL1_ADDR: string
 let POOL2_ADDR: string
 
+let bothUpkeeps: any;
+
 const setupHook = async () => {
     const signers = await ethers.getSigners()
 
@@ -121,7 +123,10 @@ const setupHook = async () => {
         [ethers.utils.ParamType.from("address[]")],
         [[POOL2_ADDR]]
     )
+    
+    bothUpkeeps = [await poolKeeper.pools(0), await poolKeeper.pools(1)]
 }
+
 interface Upkeep {
     cumulativePrice: BigNumber
     lastSamplePrice: BigNumber
@@ -131,7 +136,7 @@ interface Upkeep {
     updateInterval: number
     roundStart: number
 }
-describe("PoolKeeper - performUpkeep: corner cases", () => {
+describe("PoolKeeper - performUpkeepMultiplePools: corner cases", () => {
     let oldLastExecutionPrice: BigNumber
     let oldExecutionPrice: BigNumber
     let upkeepOneEvent: Result | undefined
@@ -142,16 +147,15 @@ describe("PoolKeeper - performUpkeep: corner cases", () => {
 
             // Sample and execute the first upkeep group
             await (await oracleWrapper.incrementPrice()).wait()
-            await poolKeeper.performUpkeep(upkeepOne)
-            await poolKeeper.performUpkeep(upkeepTwo)
+            await poolKeeper.performUpkeepMultiplePools(bothUpkeeps)
             await timeout(updateInterval * 1000 + 1000) // TODO why this <- ?
 
             const upOne = await (
-                await poolKeeper.performUpkeep(upkeepOne)
+                await poolKeeper.performUpkeepSinglePool(POOL1_ADDR)
             ).wait()
 
             const upTwo = await (
-                await poolKeeper.performUpkeep(upkeepTwo)
+                await poolKeeper.performUpkeepSinglePool(POOL2_ADDR)
             ).wait()
 
             upkeepOneEvent = getEventArgs(upOne, "ExecutePriceChange")
@@ -171,10 +175,10 @@ describe("PoolKeeper - performUpkeep: corner cases", () => {
             await timeout(updateInterval * 1000 + 1000)
 
             const upOne = await (
-                await poolKeeper.performUpkeep(upkeepOne)
+                await poolKeeper.performUpkeepSinglePool(POOL1_ADDR)
             ).wait()
             const upTwo = await (
-                await poolKeeper.performUpkeep(upkeepTwo)
+                await poolKeeper.performUpkeepSinglePool(POOL2_ADDR)
             ).wait()
             upkeepOneEvent = getEventArgs(upOne, "ExecutePriceChange")
             upkeepTwoEvent = getEventArgs(upTwo, "ExecutePriceChange")
