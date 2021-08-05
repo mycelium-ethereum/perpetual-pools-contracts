@@ -14,8 +14,6 @@ import "../vendors/SafeMath_128.sol";
 import "./PoolSwapLibrary.sol";
 import "../interfaces/IOracleWrapper.sol";
 
-import "hardhat/console.sol";
-
 /*
 @title The pool controller contract
 */
