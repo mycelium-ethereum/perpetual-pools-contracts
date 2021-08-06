@@ -121,7 +121,7 @@ module.exports = async (hre) => {
 
     /* deploy LeveragePool */
     const deploymentData = {
-        owner: poolKeeper.address,
+        owner: deployer,
         poolCode: POOL_CODE,
         frontRunningInterval: 0,
         updateInterval: TEN_MINS,

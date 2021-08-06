@@ -29,50 +29,52 @@ async function main() {
     console.log(`Account ${accounts[0].address} committing 100 short`)
     quoteTokenInstance = quoteTokenInstance.connect(accounts[0])
     pool = pool.connect(accounts[0])
-    await  quoteTokenInstance.approve(pool.address, ethers.utils.parseEther("1000000"))
+    await quoteTokenInstance.approve(pool.address, ethers.utils.parseEther("1000000"))
     await pool.commit(shortMint, ethers.utils.parseEther("100"))
 
     console.log(`Account ${accounts[1].address} committing 75 long`)
     quoteTokenInstance = quoteTokenInstance.connect(accounts[1])
     pool = pool.connect(accounts[1])
-    await  quoteTokenInstance.approve(pool.address, ethers.utils.parseEther("1000000"))
+    await quoteTokenInstance.approve(pool.address, ethers.utils.parseEther("1000000"))
     await pool.commit(longMint, ethers.utils.parseEther("75"))
 
     console.log(`Account ${accounts[2].address} committing 50 long`)
     quoteTokenInstance = quoteTokenInstance.connect(accounts[2])
     pool = pool.connect(accounts[2])
-    await  quoteTokenInstance.approve(pool.address, ethers.utils.parseEther("1000000"))
+    await quoteTokenInstance.approve(pool.address, ethers.utils.parseEther("1000000"))
     await pool.commit(longMint, ethers.utils.parseEther("50"))
 
     /* Get pool commits and execute them */
-    // const createdCommits = pool.filters.CreateCommit();
-    // const allCommits = await pool?.queryFilter(createdCommits);
-    // let commitIds = allCommits.map((event) => (event.args.commitID))
-
-    /* Get pool code */
-    // const code = await pool.poolCode();
+    const createdCommits = pool.filters.CreateCommit();
+    const allCommits = await pool?.queryFilter(createdCommits);
+    let commitIds = allCommits.map((event) => (event.args.commitID))
 
     /* Setting keeper */
+    // TODO add keeper back and do this with the keeper
     // const keeper = await deployments.get('PoolFactory')
     // const keeperInstance = new ethers.Contract(keeper.address, PoolKeeper__factory.abi).connect(deployer) as PoolKeeper
 
+    const TEN_MINS = 10 * 60;
+    console.log("Fast forward 10 mins")
+    await ethers.provider.send("evm_increaseTime", [TEN_MINS + 1], { from: deployer.address })
+    await ethers.provider.send("evm_mine", [], { from: deployer.address })
+
     /* Granting access */
-    // pool = pool.connect(deployer);
-    // /* Changing price */
-    // console.log("Changing price")
-    // await pool.executePriceChange(1, 2)
-    // console.log("Executing commitments")
-    // await pool.executeCommitment(commitIds)
+    pool = pool.connect(deployer);
 
-    // // updateInterval should be 10 minutes
-    // const TEN_MINS = 10 * 60;
-    // console.log("Incrementing price")
+    /* Changing price */
+    console.log("Changing price")
+    await pool.executePriceChange(1, 2)
 
-    // console.log("Fast forward 10 mins")
-    // await ethers.provider.send("evm_increaseTime", [TEN_MINS + 1], { from: deployer.address })
-    // await ethers.provider.send("evm_mine", [], { from: deployer.address })
-    // console.log(`Performing upkeep on ${code}`)
-    // await pool.executePriceChange(1, 1.5)
+    console.log("Executing commitments")
+    await pool.executeCommitment(commitIds)
+
+    console.log("Fast forward 10 mins")
+    await ethers.provider.send("evm_increaseTime", [TEN_MINS + 1], { from: deployer.address })
+    await ethers.provider.send("evm_mine", [], { from: deployer.address })
+
+    console.log(`Changing price`)
+    await pool.executePriceChange(2, 1)
 }
 
 main()
