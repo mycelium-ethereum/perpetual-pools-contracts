@@ -23,7 +23,7 @@ contract TestPoolFactory {
     /**
     @notice Creates a notification for the test suite so it knows where the new pool is located
  */
-    event CreatePool(address indexed pool);
+    event DeployPool(address indexed pool);
 
     /**
     @notice Clones the base pool and leaves it in an uninitialised state
@@ -34,6 +34,6 @@ contract TestPoolFactory {
         LeveragedPool pool = LeveragedPool(
             Clones.cloneDeterministic(address(poolBase), keccak256(abi.encode(_poolCode)))
         );
-        emit CreatePool(address(pool));
+        emit DeployPool(address(pool));
     }
 }

@@ -4,47 +4,52 @@ pragma abicoder v2;
 
 import "../interfaces/IPoolKeeper.sol";
 import "../interfaces/IOracleWrapper.sol";
+import "../interfaces/IPoolFactory.sol";
 import "../implementation/LeveragedPool.sol";
 import "../implementation/PoolFactory.sol";
 import "../vendors/SafeMath_40.sol";
 import "../vendors/SafeMath_32.sol";
 
-import "@chainlink/contracts/src/v0.7/interfaces/UpkeepInterface.sol";
 import "@openzeppelin/contracts/math/SignedSafeMath.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "abdk-libraries-solidity/ABDKMathQuad.sol";
 
 /*
-@title The manager contract for multiple markets and the pools in them
-*/
-contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
+ * @title The manager contract for multiple markets and the pools in them
+ */
+contract PoolKeeper is IPoolKeeper, AccessControl {
     using SignedSafeMath for int256;
     using SafeMath_32 for uint32;
     using SafeMath_40 for uint40;
 
     // #### Global variables
-    /**
-    @notice Format: Pool code => pool address, where pool code looks like TSLA/USD^5+aDAI
-   */
-    mapping(string => address) public pools;
+
+    uint256 public numPools;
 
     /**
-  @notice Format: Pool Code => update interval => Market code. Used to prevent a pool from being updated with pricing from a market it doesn't belong to.
-  */
-    mapping(string => mapping(uint32 => string)) public poolMarkets;
+     * @notice Format: Pool counter => pool address, where pool code looks like TSLA/USD^5+aDAI
+     */
+    mapping(uint256 => address) public pools;
 
     /**
-  @notice Format: market code => updateInterval => Upkeep details
-   */
-    mapping(string => mapping(uint32 => Upkeep)) public upkeep;
+     * @notice Format: Pool code => roundStart
+     */
+    mapping(address => uint256) public poolRoundStart;
     /**
-  @notice Format: Pool code => timestamp of last price execution
-  @dev Used to allow multiple upkeep registrations to use the same market/update interval price data.
-   */
-    mapping(string => uint40) public lastExecutionTime;
+     * @notice Format: Pool code => executionPrice
+     */
+    mapping(address => int256) public executionPrice;
+    /**
+     * @notice Format: Pool code => lastExecutionPrice
+     */
+    mapping(address => int256) public lastExecutionPrice;
 
-    address public oracleWrapper;
+    /**
+     * @notice Format: Pool code => timestamp of last price execution
+     * @dev Used to allow multiple upkeep registrations to use the same market/update interval price data.
+     */
+    mapping(address => uint256) public lastExecutionTime;
 
     PoolFactory public immutable factory;
     bytes16 constant fixedPoint = 0x403abc16d674ec800000000000000000; // 1 ether
@@ -57,316 +62,145 @@ contract PoolKeeper is IPoolKeeper, AccessControl, UpkeepInterface {
     bytes32 public constant ADMIN = keccak256("ADMIN");
 
     // #### Functions
-    constructor(address _oracleWrapper, address _factory) {
-        require(_oracleWrapper != address(0), "Oracle cannot be 0 address");
+    constructor(address _factory) {
         require(_factory != address(0), "Factory cannot be 0 address");
-        oracleWrapper = _oracleWrapper;
         _setupRole(ADMIN, msg.sender);
         factory = PoolFactory(_factory);
     }
 
-    function updateOracleWrapper(address oracle) external override onlyAdmin {
-        require(oracle != address(0), "Oracle cannot be 0 address");
-        oracleWrapper = oracle;
-    }
+    /**
+     * @notice When a pool is created, this function is called by the factory to initiate price tracking.
+     * @param _poolCode The code associated with this pool.
+     * @param _poolAddress The address of the newly-created pool.
+     */
+    function newPool(string memory _poolCode, address _poolAddress) external override onlyFactory {
+        IOracleWrapper oracleWrapper = IOracleWrapper(ILeveragedPool(_poolAddress).oracleWrapper());
 
-    function createMarket(string memory marketCode, address oracle) external override {
-        IOracleWrapper wrapper = IOracleWrapper(oracleWrapper);
-        require(wrapper.assetOracles(marketCode) == address(0), "Pre-existing market code");
-        emit CreateMarket(marketCode, oracle);
-        wrapper.setOracle(marketCode, oracle);
-    }
+        pools[numPools] = _poolAddress;
+        numPools += 1;
 
-    function createPool(
-        string memory _marketCode,
-        string memory _poolCode,
-        uint32 _updateInterval,
-        uint32 _frontRunningInterval,
-        bytes16 _fee,
-        uint16 _leverageAmount,
-        address _feeAddress,
-        address _quoteToken,
-        address _keeperOracle
-    ) external override {
-        require(address(pools[_poolCode]) == address(0), "Pre-existing pool code");
-        IOracleWrapper oracle = IOracleWrapper(oracleWrapper);
-        require(oracle.assetOracles(_marketCode) != address(0), "Market must exist first");
-        require(_updateInterval > _frontRunningInterval, "Update interval <= FR interval");
-
-        int256 firstPrice = oracle.getPrice(_marketCode);
-        Upkeep memory upkeepData = upkeep[_marketCode][_updateInterval];
-        if (upkeepData.lastExecutionPrice == 0) {
-            int256 startingPrice = ABDKMathQuad.toInt(ABDKMathQuad.mul(ABDKMathQuad.fromInt(firstPrice), fixedPoint));
-            upkeep[_marketCode][_updateInterval] = Upkeep(
-                firstPrice,
-                firstPrice,
-                startingPrice,
-                startingPrice,
-                1,
-                _updateInterval,
-                uint40(block.timestamp)
-            );
-        } else if (firstPrice != upkeepData.lastSamplePrice) {
-            upkeep[_marketCode][_updateInterval].cumulativePrice = upkeepData.cumulativePrice.add(firstPrice);
-            upkeep[_marketCode][_updateInterval].count = uint32(upkeepData.count.add(1));
-        }
-
-        poolMarkets[_poolCode][_updateInterval] = _marketCode;
-        emit CreatePool(
-            Clones.predictDeterministicAddress(
-                address(factory.poolBase()),
-                keccak256(abi.encode(_poolCode)),
-                address(factory)
-            ),
-            firstPrice,
-            _updateInterval,
-            _marketCode
-        );
-        pools[_poolCode] = factory.deployPool(
-            address(this),
-            _poolCode,
-            _frontRunningInterval,
-            _fee,
-            _leverageAmount,
-            _feeAddress,
-            _quoteToken,
-            _keeperOracle
-        );
+        int256 firstPrice = oracleWrapper.getPrice();
+        int256 startingPrice = ABDKMathQuad.toInt(ABDKMathQuad.mul(ABDKMathQuad.fromInt(firstPrice), fixedPoint));
+        emit PoolAdded(_poolAddress, firstPrice, _poolAddress);
+        poolRoundStart[_poolAddress] = uint40(block.timestamp);
+        executionPrice[_poolAddress] = startingPrice;
+        lastExecutionPrice[_poolAddress] = startingPrice;
     }
 
     // Keeper network
     /**
-  @notice Simulated by chainlink keeper nodes to check if upkeep is required
-  @dev This should not be called or executed.
-  @param checkData ABI encoded market code, pool codes, and update interval. There are two types of upkeep: market and pool. Market updates will manage the average price calculations, and pool updates will execute a price change in one or more pools
-  @return upkeepNeeded Whether or not upkeep is needed
-  @return performData The data to pass to the performUpkeep method when updating
-   */
-    function checkUpkeep(bytes calldata checkData)
-        external
-        view
-        override
-        returns (bool upkeepNeeded, bytes memory performData)
-    {
-        // Validate checkData
-        (bool valid, uint32 updateInterval, string memory market, string[] memory poolCodes) = _checkInputData(
-            checkData
+     * @notice Check if upkeep is required
+     * @dev This should not be called or executed.
+     * @param _pool The poolCode of the pool to upkeep
+     * @return upkeepNeeded Whether or not upkeep is needed for this single pool
+     */
+    function checkUpkeepSinglePool(address _pool) public view override returns (bool upkeepNeeded) {
+        ILeveragedPool pool = ILeveragedPool(_pool);
+        if (_pool == address(0)) {
+            return false;
+        }
+
+        IOracleWrapper oracleWrapper = IOracleWrapper(pool.oracleWrapper());
+        if (oracleWrapper.oracle() == address(0)) {
+            return false;
+        }
+        int256 latestPrice = ABDKMathQuad.toInt(
+            ABDKMathQuad.mul(ABDKMathQuad.fromInt(oracleWrapper.getPrice()), fixedPoint)
         );
-        if (!valid) {
-            return (false, new bytes(0));
-        }
-        // Check trigger state
-        Upkeep memory upkeepData = upkeep[market][updateInterval];
-        int256 latestPrice = IOracleWrapper(oracleWrapper).getPrice(market);
-        if (latestPrice != upkeepData.lastSamplePrice) {
-            // Upkeep required for price change or if the round hasn't been executed
-            return (true, checkData);
-        }
-        for (uint256 i = 0; i < poolCodes.length; i++) {
-            // At least one pool needs updating
-            if (lastExecutionTime[poolCodes[i]] < upkeepData.roundStart) {
-                return (true, checkData);
+
+        // The update interval has passed and the price has changed
+        return (pool.intervalPassed() && latestPrice != executionPrice[_pool]);
+    }
+
+    /**
+     * @notice Checks multiple pools if any of them need updating
+     * @param _pools The array of pool codes to check
+     * @return upkeepNeeded Whether or not at least one pool needs upkeeping
+     */
+    function checkUpkeepMultiplePools(address[] calldata _pools) external view override returns (bool upkeepNeeded) {
+        for (uint8 i = 0; i < _pools.length; i++) {
+            if (checkUpkeepSinglePool(_pools[i])) {
+                // One has been found that requires upkeeping
+                return true;
             }
         }
-        return (false, checkData);
+        return false;
     }
 
     /**
-  @notice Called by keepers to perform an update
-  @param performData The upkeep data (market code, update interval, pool codes) to perform the update for.
-   */
-    function performUpkeep(bytes calldata performData) external override {
-        (bool valid, uint32 updateInterval, string memory market, string[] memory poolCodes) = _checkInputData(
-            performData
-        );
-
-        if (!valid) {
-            revert("Input data is invalid");
-        }
-
-        Upkeep memory upkeepData = upkeep[market][updateInterval];
-
-        int256 latestPrice = IOracleWrapper(oracleWrapper).getPrice(market);
-        if (block.timestamp >= upkeepData.roundStart.add(uint40(upkeepData.updateInterval))) {
-            // Start new round
-            int256 newPrice = _average(upkeepData.cumulativePrice, upkeepData.count);
-
-            upkeep[market][updateInterval] = Upkeep(
-                latestPrice,
-                latestPrice,
-                newPrice,
-                upkeepData.executionPrice,
-                1,
-                upkeepData.updateInterval,
-                uint40(block.timestamp)
-            );
-
-            emit NewRound(upkeepData.executionPrice, newPrice, upkeepData.updateInterval, market);
-
-            _executePriceChange(
-                uint32(block.timestamp),
-                market,
-                upkeepData.updateInterval,
-                poolCodes,
-                upkeepData.executionPrice,
-                newPrice
-            );
+     * @notice Called by keepers to perform an update on a single pool
+     * @param _pool The pool code to perform the update for.
+     */
+    function performUpkeepSinglePool(address _pool) public override {
+        if (!checkUpkeepSinglePool(_pool)) {
             return;
-        } else if (latestPrice != upkeepData.lastSamplePrice) {
-            // Add a sample
-            int256 cumulative = upkeepData.cumulativePrice.add(latestPrice);
-            uint32 count = uint32(upkeepData.count.add(1));
-            upkeep[market][updateInterval] = Upkeep(
-                cumulative,
-                latestPrice,
-                upkeepData.executionPrice,
-                upkeepData.lastExecutionPrice,
-                count,
-                upkeepData.updateInterval,
-                upkeepData.roundStart
-            );
-
-            emit PriceSample(cumulative, count, upkeepData.updateInterval, market);
         }
+        ILeveragedPool pool = ILeveragedPool(_pool);
+        int256 latestPrice = IOracleWrapper(pool.oracleWrapper()).getPrice();
+        // Start a new round
+        lastExecutionPrice[_pool] = executionPrice[_pool];
+        executionPrice[_pool] = ABDKMathQuad.toInt(ABDKMathQuad.mul(ABDKMathQuad.fromInt(latestPrice), fixedPoint));
+        poolRoundStart[_pool] = block.timestamp;
+
+        emit NewRound(lastExecutionPrice[_pool], latestPrice, pool.updateInterval(), _pool);
+
         _executePriceChange(
-            upkeepData.roundStart,
-            market,
-            upkeepData.updateInterval,
-            poolCodes,
-            upkeepData.lastExecutionPrice,
-            upkeepData.executionPrice
+            uint32(block.timestamp),
+            pool.updateInterval(),
+            _pool,
+            lastExecutionPrice[_pool],
+            executionPrice[_pool]
         );
     }
 
     /**
-  @notice Executes a price change
-  @param roundStart The start time of the round
-  @param market The market the pools belong to 
-  @param updateInterval The update interval of the pools
-  @param poolCodes The pools to update
-  @param oldPrice The previously executed price
-  @param newPrice The price for the current interval
-   */
+     * @notice Called by keepers to perform an update on multiple pools
+     * @param poolCodes pool codes to perform the update for.
+     */
+    function performUpkeepMultiplePools(address[] calldata poolCodes) external override {
+        for (uint256 i = 0; i < poolCodes.length; i++) {
+            performUpkeepSinglePool(poolCodes[i]);
+        }
+    }
+
+    /**
+     * @notice Executes a price change
+     * @param roundStart The start time of the round
+     * @param updateInterval The update interval of the pools
+     * @param pool The pool to update
+     * @param oldPrice The previously executed price
+     * @param latestPrice The price for the current interval
+     */
     function _executePriceChange(
-        uint40 roundStart,
-        string memory market,
+        uint256 roundStart,
         uint32 updateInterval,
-        string[] memory poolCodes,
+        address pool,
         int256 oldPrice,
-        int256 newPrice
+        int256 latestPrice
     ) internal {
         if (oldPrice > 0) {
-            for (uint8 i = 0; i < poolCodes.length; i++) {
-                if (lastExecutionTime[poolCodes[i]] < roundStart) {
-                    lastExecutionTime[poolCodes[i]] = uint40(block.timestamp);
-                    emit ExecutePriceChange(oldPrice, newPrice, updateInterval, market, poolCodes[i]);
-                    try LeveragedPool(pools[poolCodes[i]]).executePriceChange(oldPrice, newPrice) {} catch Error(
-                        string memory reason
-                    ) {
-                        emit PoolUpdateError(poolCodes[i], reason);
-                    }
+            // TODO why is this check here?
+            if (lastExecutionTime[pool] < roundStart) {
+                // Make sure this round is after last execution time
+                lastExecutionTime[pool] = uint40(block.timestamp);
+                emit ExecutePriceChange(oldPrice, latestPrice, updateInterval, pool);
+                // This allows us to still batch multiple calls to executePriceChange, even if some are invalid
+                // Without reverting the entire transaction
+                try LeveragedPool(pool).executePriceChange(oldPrice, latestPrice) {} catch Error(string memory reason) {
+                    emit PoolUpdateError(pool, reason);
                 }
             }
         }
     }
 
-    /**
-  @notice Calculates the average price
-  @dev Calculates the price to 4 decimal places, round the last decimal place up or down before returning.
-  @param cumulative The cumulative price
-  @param count The number of samples
-  @return The average price to 3 decimal places
-  */
-    function _average(int256 cumulative, uint32 count) internal pure returns (int256) {
-        require(count > 0, "Count < 1");
-        return
-            ABDKMathQuad.toInt(
-                ABDKMathQuad.div(
-                    ABDKMathQuad.mul(ABDKMathQuad.fromInt(cumulative), fixedPoint),
-                    ABDKMathQuad.fromInt(count)
-                )
-            );
-    }
-
-    /**
-  @notice Checks input data for validity, making sure the market and pools are correct.
-  @param checkData The input data to check. Should follow the same format as the checkUpkeep/performUpkeep methods.
-  @return valid Whether the data is valid or not
-  @return updateInterval The update interval for the pools
-  @return market The market the pools belong to
-  @return poolCodes The list of pools to upkeep.
-   */
-    function _checkInputData(bytes calldata checkData)
-        internal
-        view
-        returns (
-            bool,
-            uint32,
-            string memory,
-            string[] memory
-        )
-    {
-        (uint32 updateInterval, string memory market, string[] memory poolGroup) = abi.decode(
-            checkData,
-            (uint32, string, string[])
-        );
-        IOracleWrapper oracle = IOracleWrapper(oracleWrapper);
-        if (oracle.assetOracles(market) == address(0)) {
-            return (false, updateInterval, market, poolGroup);
-        }
-
-        for (uint8 i = 0; i < poolGroup.length; i++) {
-            if (
-                keccak256(abi.encodePacked(poolMarkets[poolGroup[i]][updateInterval])) !=
-                keccak256(abi.encodePacked(market))
-            ) {
-                return (false, updateInterval, market, poolGroup);
-            }
-            if (pools[poolGroup[i]] == address(0)) {
-                return (false, updateInterval, market, poolGroup);
-            }
-        }
-        return (true, updateInterval, market, poolGroup);
-    }
-
-    /**
-     * @notice The total payment a keeper will receive for inducing a successful
-     *          price update
-     * @param gasPrice Current price (in ETH) per gas unit
-     * @param gasSpent Number of gas units spent
-     * @param pool Address of the relevant pool
-     * @returns payment Total quantity of settlement token to receive
-     */
-    function calcKeeperPayment(
-        uint256 gasPrice,
-        uint256 gasSpent,
-        address pool
-    ) public view returns (uint256) {
-        uint256 settlementTokenPrice = IOracleWrapper(LeveragedPool(pool).keeperOracle()).getPrice(pool);
-
-        uint256 gas = gasPrice * gasSpent * settlementTokenPrice;
-        uint256 tip = calcKeeperTip(pool) * settlementTokenPrice;
-        uint256 payment = gas + tip;
-
-        return payment;
-    }
-
-    /**
-     * @notice Reward paid to keepers for inducing successful price updates
-     * @param pool Address of relevant pool
-     * @dev Allows keepers to query their current premium for performing upkeep
-     * @returns tip Amount (in settlement token) to receive
-     */
-    function calcKeeperTip(address pool) public view returns(uint256) {
-        uint256 blocksSinceLastUpdate = (lastExecutionTime[pool] - block.timestamp) / BLOCK_TIME;
-        uint256 tip = BASE_TIP + TIP_DELTA_PER_BLOCK * blocksSinceLastUpdate;
-
-        return tip;
-    }
-
     // #### Modifiers
-    modifier onlyAdmin {
+    modifier onlyAdmin() {
         require(hasRole(ADMIN, msg.sender));
+        _;
+    }
+
+    modifier onlyFactory() {
+        require(msg.sender == address(factory), "Caller not factory");
         _;
     }
 }

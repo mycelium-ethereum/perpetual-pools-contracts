@@ -17,6 +17,7 @@ describe("LeveragedPool - updateFeeAddress", () => {
         const result = await deployPoolAndTokenContracts(
             POOL_CODE,
             5,
+            2,
             "0x00000000000000000000000000000000",
             1,
             signers[0].address,

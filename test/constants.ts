@@ -8,5 +8,5 @@ export const UPDATER_ROLE = "UPDATER"
 export const FEE_HOLDER_ROLE = "FEE_HOLDER"
 
 export const MARKET_CODE = "TEST/MARKET"
-export const POOL_CODE = "TEST/MARKET+POOL"
-export const POOL_CODE_2 = "SECOND/MARKET+POOL"
+export const POOL_CODE = "CODE1"
+export const POOL_CODE_2 = "CODE2"

@@ -1,13 +1,21 @@
 import { ethers } from "hardhat"
 import chai from "chai"
 import chaiAsPromised from "chai-as-promised"
-import { generateRandomAddress, getEventArgs, timeout } from "../../utilities"
+import {
+    callData,
+    generateRandomAddress,
+    getEventArgs,
+    timeout,
+} from "../../utilities"
 
 import {
+    PoolFactory,
     PoolFactory__factory,
     PoolKeeper,
     PoolKeeper__factory,
     PoolSwapLibrary__factory,
+    TestChainlinkOracle,
+    TestChainlinkOracle__factory,
     TestOracleWrapper,
     TestOracleWrapper__factory,
     TestToken__factory,
@@ -22,7 +30,15 @@ const { expect } = chai
 let quoteToken: string
 let oracleWrapper: TestOracleWrapper
 let poolKeeper: PoolKeeper
+let factory: PoolFactory
+let oracle: TestChainlinkOracle
 const updateInterval = 10
+let upkeepOne: any
+let upkeepTwo: any
+let POOL1_ADDR: string
+let POOL2_ADDR: string
+
+let bothUpkeeps: any
 
 const setupHook = async () => {
     const signers = await ethers.getSigners()
@@ -38,11 +54,17 @@ const setupHook = async () => {
     quoteToken = token.address
 
     // Deploy oracle. Using a test oracle for predictability
+    const oracleFactory = (await ethers.getContractFactory(
+        "TestChainlinkOracle",
+        signers[0]
+    )) as TestChainlinkOracle__factory
+    oracle = await oracleFactory.deploy()
+    await oracle.deployed()
     const oracleWrapperFactory = (await ethers.getContractFactory(
         "TestOracleWrapper",
         signers[0]
     )) as TestOracleWrapper__factory
-    oracleWrapper = await oracleWrapperFactory.deploy()
+    oracleWrapper = await oracleWrapperFactory.deploy(oracle.address)
     await oracleWrapper.deployed()
 
     // Deploy pool keeper
@@ -59,57 +81,52 @@ const setupHook = async () => {
         signer: signers[0],
         libraries: { PoolSwapLibrary: library.address },
     })) as PoolFactory__factory
-    const factory = await (await PoolFactory.deploy()).deployed()
-    poolKeeper = await poolKeeperFactory.deploy(
-        oracleWrapper.address,
-        factory.address
-    )
+    factory = await (await PoolFactory.deploy()).deployed()
+    poolKeeper = await poolKeeperFactory.deploy(factory.address)
     await poolKeeper.deployed()
+    await factory.setPoolKeeper(poolKeeper.address)
 
     // Create pool
-    await poolKeeper.createMarket(MARKET, oracleWrapper.address)
-    await oracleWrapper.increasePrice()
+    const deploymentData = {
+        owner: poolKeeper.address,
+        poolCode: POOL_CODE,
+        frontRunningInterval: 1,
+        updateInterval: updateInterval,
+        fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        leverageAmount: 1,
+        feeAddress: generateRandomAddress(),
+        quoteToken: quoteToken,
+        oracleWrapper: oracleWrapper.address,
+    }
+    await (await factory.deployPool(deploymentData)).wait()
 
-    await poolKeeper.createPool(
-        MARKET,
-        POOL_CODE,
-        updateInterval,
-        1,
-        "0x00000000000000000000000000000000",
-        1,
-        generateRandomAddress(),
-        quoteToken,
-        generateRandomAddress() //todo replace with proper keeper oracle
+    const deploymentData2 = {
+        owner: poolKeeper.address,
+        poolCode: POOL_CODE_2,
+        frontRunningInterval: 1,
+        updateInterval: updateInterval,
+        fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        leverageAmount: 2,
+        feeAddress: generateRandomAddress(),
+        quoteToken: quoteToken,
+        oracleWrapper: oracleWrapper.address,
+    }
+    await (await factory.deployPool(deploymentData2)).wait()
+    POOL1_ADDR = await poolKeeper.pools(0)
+    POOL2_ADDR = await poolKeeper.pools(1)
+
+    upkeepOne = ethers.utils.defaultAbiCoder.encode(
+        [ethers.utils.ParamType.from("address[]")],
+        [[POOL1_ADDR]]
     )
-    await oracleWrapper.increasePrice()
-    await poolKeeper.createPool(
-        MARKET,
-        POOL_CODE_2,
-        updateInterval,
-        1,
-        "0x00000000000000000000000000000000",
-        2,
-        generateRandomAddress(),
-        quoteToken,
-        generateRandomAddress() //todo replace with proper keeper oracle
+    upkeepTwo = ethers.utils.defaultAbiCoder.encode(
+        [ethers.utils.ParamType.from("address[]")],
+        [[POOL2_ADDR]]
     )
+
+    bothUpkeeps = [await poolKeeper.pools(0), await poolKeeper.pools(1)]
 }
-const upkeepOne = ethers.utils.defaultAbiCoder.encode(
-    [
-        ethers.utils.ParamType.from("uint32"),
-        ethers.utils.ParamType.from("string"),
-        ethers.utils.ParamType.from("string[]"),
-    ],
-    [updateInterval, MARKET, [POOL_CODE]]
-)
-const upkeepTwo = ethers.utils.defaultAbiCoder.encode(
-    [
-        ethers.utils.ParamType.from("uint32"),
-        ethers.utils.ParamType.from("string"),
-        ethers.utils.ParamType.from("string[]"),
-    ],
-    [updateInterval, MARKET, [POOL_CODE_2]]
-)
+
 interface Upkeep {
     cumulativePrice: BigNumber
     lastSamplePrice: BigNumber
@@ -119,8 +136,9 @@ interface Upkeep {
     updateInterval: number
     roundStart: number
 }
-describe("PoolKeeper - performUpkeep: corner cases", () => {
-    let oldRound: Upkeep
+describe("PoolKeeper - performUpkeepMultiplePools: corner cases", () => {
+    let oldLastExecutionPrice: BigNumber
+    let oldExecutionPrice: BigNumber
     let upkeepOneEvent: Result | undefined
     let upkeepTwoEvent: Result | undefined
     describe("Multiple upkeep groups for the same market", () => {
@@ -128,92 +146,47 @@ describe("PoolKeeper - performUpkeep: corner cases", () => {
             await setupHook()
 
             // Sample and execute the first upkeep group
-            await oracleWrapper.increasePrice()
-            await poolKeeper.performUpkeep(upkeepOne)
-            await poolKeeper.performUpkeep(upkeepTwo)
-            await timeout(updateInterval * 1000 + 1000)
+            await (await oracleWrapper.incrementPrice()).wait()
+            await poolKeeper.performUpkeepMultiplePools(bothUpkeeps)
+            await timeout(updateInterval * 1000 + 1000) // TODO why this <- ?
 
             const upOne = await (
-                await poolKeeper.performUpkeep(upkeepOne)
+                await poolKeeper.performUpkeepSinglePool(POOL1_ADDR)
             ).wait()
 
             const upTwo = await (
-                await poolKeeper.performUpkeep(upkeepTwo)
+                await poolKeeper.performUpkeepSinglePool(POOL2_ADDR)
             ).wait()
+
             upkeepOneEvent = getEventArgs(upOne, "ExecutePriceChange")
             upkeepTwoEvent = getEventArgs(upTwo, "ExecutePriceChange")
-            oldRound = await poolKeeper.upkeep(MARKET, updateInterval)
+            oldLastExecutionPrice = await poolKeeper.lastExecutionPrice(
+                POOL1_ADDR
+            )
+            oldExecutionPrice = await poolKeeper.executionPrice(POOL1_ADDR)
         })
         it("should use the same price data for a second upkeep group in the same market", async () => {
-            expect(upkeepOneEvent?.oldPrice).to.eq(oldRound.lastExecutionPrice)
-            expect(upkeepTwoEvent?.oldPrice).to.eq(oldRound.lastExecutionPrice)
-            expect(upkeepOneEvent?.newPrice).to.eq(oldRound.executionPrice)
-            expect(upkeepTwoEvent?.newPrice).to.eq(oldRound.executionPrice)
+            expect(upkeepOneEvent?.oldPrice).to.eq(oldLastExecutionPrice)
+            expect(upkeepTwoEvent?.oldPrice).to.eq(oldLastExecutionPrice)
+            expect(upkeepOneEvent?.newPrice).to.eq(oldExecutionPrice)
+            expect(upkeepTwoEvent?.newPrice).to.eq(oldExecutionPrice)
         })
         it("should use the same price for a new round + execute transaction and an execution transaction that follows for a second upkeep group", async () => {
             await timeout(updateInterval * 1000 + 1000)
 
             const upOne = await (
-                await poolKeeper.performUpkeep(upkeepOne)
+                await poolKeeper.performUpkeepSinglePool(POOL1_ADDR)
             ).wait()
             const upTwo = await (
-                await poolKeeper.performUpkeep(upkeepTwo)
+                await poolKeeper.performUpkeepSinglePool(POOL2_ADDR)
             ).wait()
             upkeepOneEvent = getEventArgs(upOne, "ExecutePriceChange")
             upkeepTwoEvent = getEventArgs(upTwo, "ExecutePriceChange")
             expect(upkeepOneEvent?.newPrice).to.eq(upkeepTwoEvent?.newPrice)
             expect(upkeepOneEvent?.oldPrice).to.eq(upkeepTwoEvent?.oldPrice)
-            expect(upkeepOneEvent?.market).to.eq(upkeepTwoEvent?.market)
             expect(upkeepOneEvent?.updateInterval).to.eq(
                 upkeepTwoEvent?.updateInterval
             )
-        })
-    })
-    describe("Malicious upkeep requests", () => {
-        beforeEach(setupHook)
-        it("should revert if the pools do not belong to the market", async () => {
-            // Setup a malicious market
-            await poolKeeper.createMarket(MARKET_2, oracleWrapper.address)
-            const badPool = POOL_CODE.concat("BAD")
-            await poolKeeper.createPool(
-                MARKET_2,
-                badPool,
-                updateInterval,
-                1,
-                "0x00000000000000000000000000000000",
-                1,
-                generateRandomAddress(),
-                quoteToken,
-                generateRandomAddress() //todo replace with proper keeper oracle
-            )
-            await oracleWrapper.increasePrice()
-            const goodData = ethers.utils.defaultAbiCoder.encode(
-                [
-                    ethers.utils.ParamType.from("uint32"),
-                    ethers.utils.ParamType.from("string"),
-                    ethers.utils.ParamType.from("string[]"),
-                ],
-                [updateInterval, MARKET_2, [badPool]]
-            )
-
-            await poolKeeper.performUpkeep(goodData)
-
-            await timeout(updateInterval * 1000 + 1000)
-            await poolKeeper.performUpkeep(goodData)
-
-            // Update a pool not in the malicious market
-            await expect(
-                poolKeeper.performUpkeep(
-                    ethers.utils.defaultAbiCoder.encode(
-                        [
-                            ethers.utils.ParamType.from("uint32"),
-                            ethers.utils.ParamType.from("string"),
-                            ethers.utils.ParamType.from("string[]"),
-                        ],
-                        [updateInterval, MARKET_2, [POOL_CODE]]
-                    )
-                )
-            ).to.be.rejectedWith(Error)
         })
     })
 })

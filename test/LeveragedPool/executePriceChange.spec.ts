@@ -22,6 +22,7 @@ const feeAddress = generateRandomAddress()
 const fee = "0x3ff947ae147ae147ae147ae147ae147a" // 2% per execution. An IEEE 754 quadruple precision number
 const lastPrice = 77000000
 const frontRunningInterval = 1
+const updateInterval = 2
 const leverage = 10
 
 let library: PoolSwapLibrary
@@ -35,8 +36,8 @@ const setupHook = async () => {
     // Deploy leveraged pool
     const result = await deployPoolAndTokenContracts(
         POOL_CODE,
-
         frontRunningInterval,
+        updateInterval,
         fee,
         leverage,
         feeAddress,

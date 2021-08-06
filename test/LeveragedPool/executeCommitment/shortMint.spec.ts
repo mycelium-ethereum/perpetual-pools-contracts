@@ -42,8 +42,8 @@ describe("LeveragedPool - executeCommitment: Short Mint", () => {
         beforeEach(async () => {
             const result = await deployPoolAndTokenContracts(
                 POOL_CODE,
-
                 frontRunningInterval,
+                updateInterval,
                 fee,
                 leverage,
                 feeAddress,
