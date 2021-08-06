@@ -1,7 +1,12 @@
 import { ethers } from "hardhat"
 import chai from "chai"
 import chaiAsPromised from "chai-as-promised"
-import { generateRandomAddress, getEventArgs, timeout } from "../../utilities"
+import {
+    callData,
+    generateRandomAddress,
+    getEventArgs,
+    timeout,
+} from "../../utilities"
 
 import {
     PoolFactory,
@@ -28,6 +33,12 @@ let poolKeeper: PoolKeeper
 let factory: PoolFactory
 let oracle: TestChainlinkOracle
 const updateInterval = 10
+let upkeepOne: any
+let upkeepTwo: any
+let POOL1_ADDR: string
+let POOL2_ADDR: string
+
+let bothUpkeeps: any
 
 const setupHook = async () => {
     const signers = await ethers.getSigners()
@@ -103,8 +114,20 @@ const setupHook = async () => {
         oracleWrapper: oracleWrapper.address,
     }
     await (await factory.deployPool(deploymentData2)).wait()
+    POOL1_ADDR = await poolKeeper.pools(0)
+    POOL2_ADDR = await poolKeeper.pools(1)
+
+    upkeepOne = ethers.utils.defaultAbiCoder.encode(
+        [ethers.utils.ParamType.from("address[]")],
+        [[POOL1_ADDR]]
+    )
+    upkeepTwo = ethers.utils.defaultAbiCoder.encode(
+        [ethers.utils.ParamType.from("address[]")],
+        [[POOL2_ADDR]]
+    )
+
+    bothUpkeeps = [await poolKeeper.pools(0), await poolKeeper.pools(1)]
 }
-const bothUpkeeps = [POOL_CODE, POOL_CODE_2]
 
 interface Upkeep {
     cumulativePrice: BigNumber
@@ -130,19 +153,19 @@ describe("PoolKeeper - performUpkeepMultiplePools: corner cases", () => {
             await timeout(updateInterval * 1000 + 1000) // TODO why this <- ?
 
             const upOne = await (
-                await poolKeeper.performUpkeepSinglePool(POOL_CODE)
+                await poolKeeper.performUpkeepSinglePool(POOL1_ADDR)
             ).wait()
 
             const upTwo = await (
-                await poolKeeper.performUpkeepSinglePool(POOL_CODE_2)
+                await poolKeeper.performUpkeepSinglePool(POOL2_ADDR)
             ).wait()
 
             upkeepOneEvent = getEventArgs(upOne, "ExecutePriceChange")
             upkeepTwoEvent = getEventArgs(upTwo, "ExecutePriceChange")
             oldLastExecutionPrice = await poolKeeper.lastExecutionPrice(
-                POOL_CODE
+                POOL1_ADDR
             )
-            oldExecutionPrice = await poolKeeper.executionPrice(POOL_CODE)
+            oldExecutionPrice = await poolKeeper.executionPrice(POOL1_ADDR)
         })
         it("should use the same price data for a second upkeep group in the same market", async () => {
             expect(upkeepOneEvent?.oldPrice).to.eq(oldLastExecutionPrice)
@@ -154,10 +177,10 @@ describe("PoolKeeper - performUpkeepMultiplePools: corner cases", () => {
             await timeout(updateInterval * 1000 + 1000)
 
             const upOne = await (
-                await poolKeeper.performUpkeepSinglePool(POOL_CODE)
+                await poolKeeper.performUpkeepSinglePool(POOL1_ADDR)
             ).wait()
             const upTwo = await (
-                await poolKeeper.performUpkeepSinglePool(POOL_CODE_2)
+                await poolKeeper.performUpkeepSinglePool(POOL2_ADDR)
             ).wait()
             upkeepOneEvent = getEventArgs(upOne, "ExecutePriceChange")
             upkeepTwoEvent = getEventArgs(upTwo, "ExecutePriceChange")
