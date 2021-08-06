@@ -110,12 +110,12 @@ contract PoolKeeper is IPoolKeeper, AccessControl {
 
     /**
      * @notice Checks multiple pools if any of them need updating
-     * @param poolCodes The array of pool codes to check
+     * @param _pools The array of pool codes to check
      * @return upkeepNeeded Whether or not at least one pool needs upkeeping
      */
-    function checkUpkeepMultiplePools(address[] calldata poolCodes) external view override returns (bool upkeepNeeded) {
-        for (uint8 i = 0; i < poolCodes.length; i++) {
-            if (checkUpkeepSinglePool(poolCodes[i])) {
+    function checkUpkeepMultiplePools(address[] calldata _pools) external view override returns (bool upkeepNeeded) {
+        for (uint8 i = 0; i < _pools.length; i++) {
+            if (checkUpkeepSinglePool(_pools[i])) {
                 // One has been found that requires upkeeping
                 return true;
             }
@@ -125,27 +125,27 @@ contract PoolKeeper is IPoolKeeper, AccessControl {
 
     /**
      * @notice Called by keepers to perform an update on a single pool
-     * @param poolCode The pool code to perform the update for.
+     * @param _pool The pool code to perform the update for.
      */
-    function performUpkeepSinglePool(address poolCode) public override {
-        if (!checkUpkeepSinglePool(poolCode)) {
+    function performUpkeepSinglePool(address _pool) public override {
+        if (!checkUpkeepSinglePool(_pool)) {
             return;
         }
-        ILeveragedPool pool = ILeveragedPool(poolCode);
+        ILeveragedPool pool = ILeveragedPool(_pool);
         int256 latestPrice = IOracleWrapper(pool.oracleWrapper()).getPrice();
         // Start a new round
-        lastExecutionPrice[poolCode] = executionPrice[poolCode];
-        executionPrice[poolCode] = ABDKMathQuad.toInt(ABDKMathQuad.mul(ABDKMathQuad.fromInt(latestPrice), fixedPoint));
-        poolRoundStart[poolCode] = block.timestamp;
+        lastExecutionPrice[_pool] = executionPrice[_pool];
+        executionPrice[_pool] = ABDKMathQuad.toInt(ABDKMathQuad.mul(ABDKMathQuad.fromInt(latestPrice), fixedPoint));
+        poolRoundStart[_pool] = block.timestamp;
 
-        emit NewRound(lastExecutionPrice[poolCode], latestPrice, pool.updateInterval(), poolCode);
+        emit NewRound(lastExecutionPrice[_pool], latestPrice, pool.updateInterval(), _pool);
 
         _executePriceChange(
             uint32(block.timestamp),
             pool.updateInterval(),
-            poolCode,
-            lastExecutionPrice[poolCode],
-            executionPrice[poolCode]
+            _pool,
+            lastExecutionPrice[_pool],
+            executionPrice[_pool]
         );
     }
 
