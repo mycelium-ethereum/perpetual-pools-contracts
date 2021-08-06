@@ -34,52 +34,48 @@ contract PoolFactory is IPoolFactory, AccessControl {
         _setRoleAdmin(OPERATOR, ADMIN);
 
         // Init bases
-        poolBase.initialize(
+        PoolSwapLibrary.PoolDeployment memory nullDeployParameters = PoolSwapLibrary.PoolDeployment(
             address(0),
             address(this),
-            address(0),
-            address(0),
             "BASE_POOL",
             2,
             2,
             0,
             0,
             address(this),
-            address(this)
-        );
+            address(0),
+            address(0),
+            address(0),
+            address(0)
+            );
+        poolBase.initialize(nullDeployParameters);
 
         pairTokenBase.initialize(address(this), "BASE_TOKEN", "BASE");
     }
 
-    function deployPool(PoolDeployment memory deploymentParameters) external override returns (address) {
+    function deployPool(PoolSwapLibrary.PoolDeployment memory deploymentParameters) external override returns (address) {
         require(address(poolKeeper) != address(0), "PoolKeeper not set");
         LeveragedPool pool = LeveragedPool(
             Clones.cloneDeterministic(address(poolBase), keccak256(abi.encode(deploymentParameters.poolCode)))
         );
         emit DeployPool(address(pool), deploymentParameters.poolCode);
-        pool.initialize(
-            deploymentParameters.owner,
-            deploymentParameters.oracleWrapper,
-            deployPairToken(
+
+        /* deploy long and short tokens */
+        deploymentParameters.longToken = deployPairToken(
                 address(pool),
                 string(abi.encodePacked(deploymentParameters.poolCode, "-LONG")),
                 string(abi.encodePacked("L-", deploymentParameters.poolCode))
-            ),
-            deployPairToken(
+            );
+        deploymentParameters.shortToken = deployPairToken(
                 address(pool),
                 string(abi.encodePacked(deploymentParameters.poolCode, "-SHORT")),
                 string(abi.encodePacked("S-", deploymentParameters.poolCode))
-            ),
-            deploymentParameters.poolCode,
-            deploymentParameters.frontRunningInterval,
-            deploymentParameters.updateInterval,
-            deploymentParameters.fee,
-            deploymentParameters.leverageAmount,
-            deploymentParameters.feeAddress,
-            deploymentParameters.quoteToken
-        );
+            );
 
+        /* initialise pool */
+        pool.initialize(deploymentParameters);
         poolKeeper.newPool(deploymentParameters.poolCode, address(pool));
+
         return address(pool);
     }
 

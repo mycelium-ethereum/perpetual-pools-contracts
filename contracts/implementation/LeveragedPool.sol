@@ -64,41 +64,31 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     // #### Functions
 
     function initialize(
-        address _updater,
-        address _oracleWrapper,
-        address _longToken,
-        address _shortToken,
-        string memory _poolCode,
-        uint32 _frontRunningInterval,
-        uint32 _updateInterval,
-        bytes16 _fee,
-        uint16 _leverageAmount,
-        address _feeAddress,
-        address _quoteToken
+        PoolSwapLibrary.PoolDeployment memory params
     ) external override initializer {
-        require(_feeAddress != address(0), "Fee address cannot be 0 address");
-        require(_quoteToken != address(0), "Quote token cannot be 0 address");
-        require(_oracleWrapper != address(0), "Oracle wrapper cannot be 0 address");
+        require(params.feeAddress != address(0), "Fee address cannot be 0 address");
+        require(params.quoteToken != address(0), "Quote token cannot be 0 address");
+        require(params.oracleWrapper != address(0), "Oracle wrapper cannot be 0 address");
         // Setup roles
         _setRoleAdmin(UPDATER, ADMIN);
         _setRoleAdmin(FEE_HOLDER, ADMIN);
-        _setupRole(UPDATER, _updater);
-        _setupRole(ADMIN, _updater);
-        _setupRole(FEE_HOLDER, _feeAddress);
+        _setupRole(UPDATER, params.updater);
+        _setupRole(ADMIN, params.updater);
+        _setupRole(FEE_HOLDER, params.feeAddress);
 
         // Setup variables
-        oracleWrapper = _oracleWrapper;
-        quoteToken = _quoteToken;
-        frontRunningInterval = _frontRunningInterval;
-        updateInterval = _updateInterval;
-        fee = _fee;
-        leverageAmount = PoolSwapLibrary.convertUIntToDecimal(_leverageAmount);
-        feeAddress = _feeAddress;
+        oracleWrapper = params.oracleWrapper;
+        quoteToken = params.quoteToken;
+        frontRunningInterval = params.frontRunningInterval;
+        updateInterval = params.updateInterval;
+        fee = params.fee;
+        leverageAmount = PoolSwapLibrary.convertUIntToDecimal(params.leverageAmount);
+        feeAddress = params.feeAddress;
         lastPriceTimestamp = uint40(block.timestamp);
-        poolCode = _poolCode;
-        tokens[0] = _longToken;
-        tokens[1] = _shortToken;
-        emit PoolInitialized(tokens[0], tokens[1], _quoteToken, _poolCode);
+        poolCode = params.poolCode;
+        tokens[0] = params.longToken;
+        tokens[1] = params.shortToken;
+        emit PoolInitialized(tokens[0], tokens[1], params.quoteToken, params.poolCode);
     }
 
     function commit(CommitType commitType, uint112 amount) external override {

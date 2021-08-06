@@ -2,6 +2,8 @@
 pragma solidity ^0.7.6;
 pragma abicoder v2;
 
+import "../implementation/PoolSwapLibrary.sol";
+
 /*
 @title The pool controller contract interface
 */
@@ -69,26 +71,9 @@ interface ILeveragedPool {
     /**
   @notice Configures the pool on deployment. The pools are EIP 1167 clones.
   @dev This should only be able to be run once to prevent abuse of the pool. Use of Openzeppelin Initializable or similar is recommended.
-  @param _poolCode The pool identification code. This is unique per pool per pool keeper
-  @param _frontRunningInterval The minimum number of seconds that must elapse before a commit can be executed. Must be smaller than the update interval to prevent deadlock. The difference must be greater than 15 seconds.
-  @param _fee The fund movement fee. This amount is extracted from the deposited asset with every update and sent to the fee address.
-  @param _leverageAmount The amount of exposure to price movements for the pool
-  @param _feeAddress The address that the fund movement fee is sent to
-  @param _quoteToken The digital asset that the pool accepts
+  @param params Pool deployment parameters
  */
-    function initialize(
-        address _updater,
-        address _oracleWrapper,
-        address _longToken,
-        address _shortToken,
-        string memory _poolCode,
-        uint32 _frontRunningInterval,
-        uint32 _updateInterval,
-        bytes16 _fee,
-        uint16 _leverageAmount,
-        address _feeAddress,
-        address _quoteToken
-    ) external;
+    function initialize(PoolSwapLibrary.PoolDeployment memory params) external;
 
     function getOraclePrice() external view returns (int256);
 
