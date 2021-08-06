@@ -23,6 +23,11 @@ contract PoolKeeper is IPoolKeeper, AccessControl {
     using SafeMath_32 for uint32;
     using SafeMath_40 for uint40;
 
+    /* Constants */
+    uint256 public constant BASE_TIP = 1;
+    uint256 public constant TIP_DELTA_PER_BLOCK = 1;
+    uint256 public constant BLOCK_TIME = 14; /* in seconds */
+
     // #### Global variables
 
     uint256 public numPools;
@@ -187,6 +192,18 @@ contract PoolKeeper is IPoolKeeper, AccessControl {
                 }
             }
         }
+    }
+
+    /**
+     * @notice Tip a keeper will receive for successfully updating the specified pool
+     * @param _pool Address of the given pool
+     * @return Keeper's tip
+     */
+    function keeperTip(address _pool) public view returns (uint256) {
+        /* the number of blocks that have elapsed since the given pool was last updated */
+        uint256 elapsedBlocks = (lastExecutionTime[_pool] - block.timestamp) / BLOCK_TIME;
+
+        return BASE_TIP + TIP_DELTA_PER_BLOCK * elapsedBlocks;
     }
 
     // #### Modifiers
