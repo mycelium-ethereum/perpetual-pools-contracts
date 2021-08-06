@@ -87,12 +87,12 @@ contract PoolKeeper is IPoolKeeper, AccessControl {
     /**
      * @notice Check if upkeep is required
      * @dev This should not be called or executed.
-     * @param poolCode The poolCode of the pool to upkeep
+     * @param _pool The poolCode of the pool to upkeep
      * @return upkeepNeeded Whether or not upkeep is needed for this single pool
      */
-    function checkUpkeepSinglePool(address poolCode) public view override returns (bool upkeepNeeded) {
-        ILeveragedPool pool = ILeveragedPool(poolCode);
-        if (poolCode == address(0)) {
+    function checkUpkeepSinglePool(address _pool) public view override returns (bool upkeepNeeded) {
+        ILeveragedPool pool = ILeveragedPool(_pool);
+        if (_pool == address(0)) {
             return false;
         }
 
@@ -105,7 +105,7 @@ contract PoolKeeper is IPoolKeeper, AccessControl {
         );
 
         // The update interval has passed and the price has changed
-        return (pool.intervalPassed() && latestPrice != executionPrice[poolCode]);
+        return (pool.intervalPassed() && latestPrice != executionPrice[_pool]);
     }
 
     /**
