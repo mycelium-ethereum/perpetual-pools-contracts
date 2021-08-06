@@ -5,7 +5,7 @@ module.exports = async (hre) => {
     const { getNamedAccounts, ethers } = hre
     const { deploy, execute } = deployments
     const { deployer } = await getNamedAccounts()
-    const [_deployer, ...accounts] = await ethers.getSigners();
+    const [_deployer, ...accounts] = await ethers.getSigners()
 
     console.log("Using deployer: " + deployer)
 
@@ -42,7 +42,7 @@ module.exports = async (hre) => {
         },
         "transfer",
         accounts[0].address,
-        ethers.utils.parseEther("1000"), 
+        ethers.utils.parseEther("1000")
     )
     await execute(
         "TestToken",
@@ -52,7 +52,7 @@ module.exports = async (hre) => {
         },
         "transfer",
         accounts[1].address,
-        ethers.utils.parseEther("1000"), 
+        ethers.utils.parseEther("1000")
     )
     await execute(
         "TestToken",
@@ -62,9 +62,9 @@ module.exports = async (hre) => {
         },
         "transfer",
         accounts[2].address,
-        ethers.utils.parseEther("1000"), 
+        ethers.utils.parseEther("1000")
     )
-    
+
     /* deploy TestOracleWrapper */
     const oracleWrapper = await deploy("TestOracleWrapper", {
         from: deployer,
@@ -115,9 +115,9 @@ module.exports = async (hre) => {
         poolKeeper.address
     )
 
-    const POOL_CODE = '5-TEST/MARKET+POOL'
+    const POOL_CODE = "5-TEST/MARKET+POOL"
 
-    const TEN_MINS = 10 * 60;
+    const TEN_MINS = 10 * 60
 
     /* deploy LeveragePool */
     const deploymentData = {
