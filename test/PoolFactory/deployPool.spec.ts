@@ -87,7 +87,7 @@ describe("PoolFactory - deployPool", () => {
         ) as LeveragedPool
     })
     it("should deploy a minimal clone", async () => {
-        expect(await pool.ticker()).to.eq(POOL_CODE)
+        expect(await pool.poolCode()).to.eq(POOL_CODE)
     })
     it("should initialize the clone", async () => {
         await expect(
@@ -127,7 +127,7 @@ describe("PoolFactory - deployPool", () => {
             LeveragedPoolInterface.abi,
             (await ethers.getSigners())[0]
         ) as LeveragedPool
-        expect(await pool2.ticker()).to.eq(POOL_CODE_2)
-        expect(await pool.ticker()).to.eq(POOL_CODE)
+        expect(await pool2.poolCode()).to.eq(POOL_CODE_2)
+        expect(await pool.poolCode()).to.eq(POOL_CODE)
     })
 })
