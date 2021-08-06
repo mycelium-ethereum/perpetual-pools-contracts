@@ -8,7 +8,7 @@ pragma abicoder v2;
 interface IPoolFactory {
     // #### Events
 
-    event DeployPool(address indexed pool, string poolCode);
+    event DeployPool(address indexed pool, string ticker);
 
     struct PoolDeployment {
         address owner; // The address of the pool keeper that will administer the pool

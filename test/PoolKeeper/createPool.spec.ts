@@ -106,14 +106,6 @@ describe("PoolKeeper - createPool", () => {
         const event = receipt?.events?.find((el) => el.event === "DeployPool")
         expect(!!event).to.eq(true)
         expect(!!event?.args?.pool).to.eq(true)
-        expect(!!event?.args?.poolCode).to.eq(true)
-    })
-
-    it("should add the pool to the list of pools", async () => {
-        const receipt = await (await factory.deployPool(deploymentData)).wait()
-        expect(await poolKeeper.pools(POOL_CODE)).to.eq(
-            receipt.events?.find((el) => el.event === "DeployPool")?.args?.pool
-        )
     })
 
     it("should revert if the pool already exists", async () => {
