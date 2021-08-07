@@ -219,8 +219,17 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         );
     }
 
+    /**
+     * @notice Processes the effect of a price change. This involves transferring funds from the losing pool to the other.
+     * @dev This function should be called by the Pool Keeper.
+     * @dev This function should be secured with some form of access control
+     * @param oldPrice The previously executed price
+     * @param newPrice The price for the latest interval.
+     */
     function executePriceChange(int256 oldPrice, int256 newPrice) external override onlyKeeper {
         require(intervalPassed(), "Update interval hasn't passed");
+
+        // Calculate fees from long and short sides
         uint112 longFeeAmount = uint112(
             PoolSwapLibrary.convertDecimalToUInt(PoolSwapLibrary.multiplyDecimalByUInt(fee, longBalance))
         );
@@ -237,8 +246,11 @@ contract LeveragedPool is ILeveragedPool, Initializable {
             totalFeeAmount = totalFeeAmount.add(longFeeAmount);
         }
 
+        // Use the ratio to determine if the price increased or decreased and therefore which direction
+        // the funds should be transferred towards.
         bytes16 ratio = PoolSwapLibrary.divInt(newPrice, oldPrice);
         int8 direction = PoolSwapLibrary.compareDecimals(ratio, PoolSwapLibrary.one);
+        // Take into account the leverage
         bytes16 lossMultiplier = PoolSwapLibrary.getLossMultiplier(ratio, direction, leverageAmount);
 
         if (direction >= 0 && shortBalance > 0) {
