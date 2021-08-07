@@ -48,6 +48,8 @@ const setupHook = async () => {
     quoteToken = result.token
 
     await quoteToken.approve(pool.address, amountMinted)
+    const signers = await ethers.getSigners()
+    await pool.setKeeper(signers[0].address)
 }
 
 /**

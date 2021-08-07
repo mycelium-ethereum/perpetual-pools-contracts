@@ -166,6 +166,7 @@ describe("LeveragedPool - commit", () => {
                 await pool.commit([0], amountCommitted)
             ).wait()
             await timeout(2000)
+            await pool.setKeeper(signers[0].address)
             await pool.executePriceChange(1, 2)
             await pool.executeCommitment([
                 getEventArgs(receipt, "CreateCommit")?.commitID,
@@ -190,6 +191,7 @@ describe("LeveragedPool - commit", () => {
                 await pool.commit([2], amountCommitted)
             ).wait()
             await timeout(2000)
+            await pool.setKeeper(signers[0].address)
             await pool.executePriceChange(1, 2)
             await pool.executeCommitment([
                 getEventArgs(receipt, "CreateCommit")?.commitID,
@@ -227,6 +229,7 @@ describe("LeveragedPool - commit", () => {
                 await pool.commit([0], amountCommitted)
             ).wait()
             await timeout(2000)
+            await pool.setKeeper(signers[0].address)
             await pool.executePriceChange(1, 2)
             await pool.executeCommitment([
                 getEventArgs(receipt, "CreateCommit")?.commitID,
@@ -246,6 +249,7 @@ describe("LeveragedPool - commit", () => {
                 await pool.commit([2], amountCommitted)
             ).wait()
             await timeout(2000)
+            await pool.setKeeper(signers[0].address)
             await pool.executePriceChange(1, 2)
             await pool.executeCommitment([
                 getEventArgs(receipt, "CreateCommit")?.commitID,
@@ -264,6 +268,7 @@ describe("LeveragedPool - commit", () => {
                 await pool.commit([0], amountCommitted)
             ).wait()
             await timeout(2000)
+            await pool.setKeeper(signers[0].address)
             await pool.executePriceChange(1, 2)
             await pool.executeCommitment([
                 getEventArgs(receipt, "CreateCommit")?.commitID,
@@ -281,6 +286,7 @@ describe("LeveragedPool - commit", () => {
                 await pool.commit([2], amountCommitted)
             ).wait()
             await timeout(2000)
+            await pool.setKeeper(signers[0].address)
             await pool.executePriceChange(1, 2)
             await pool.executeCommitment([
                 getEventArgs(receipt, "CreateCommit")?.commitID,
