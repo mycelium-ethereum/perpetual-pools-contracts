@@ -24,7 +24,7 @@ contract SMAOracle is Ownable, IOracleWrapper {
     }
 
     function getPrice() external view override returns (int256) {
-        return price;    
+        return price;
     }
 
     function update(int256 _observation) external {
@@ -46,4 +46,3 @@ contract SMAOracle is Ownable, IOracleWrapper {
         /* TODO: implement */
     }
 }
-
