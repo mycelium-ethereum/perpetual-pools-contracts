@@ -77,6 +77,7 @@ const setupHook = async () => {
     // Create pool
     const deploymentData = {
         owner: generateRandomAddress(),
+        keeper: generateRandomAddress(),
         poolCode: POOL_CODE,
         frontRunningInterval: 1,
         updateInterval: 2,
@@ -90,6 +91,7 @@ const setupHook = async () => {
 
     const deploymentData2 = {
         owner: generateRandomAddress(),
+        keeper: generateRandomAddress(),
         poolCode: POOL_CODE_2,
         frontRunningInterval: 1,
         updateInterval: 2,
@@ -106,33 +108,48 @@ describe("PoolKeeper - checkUpkeepMultiplePools", () => {
         await setupHook()
     })
     it("should return true if the trigger condition is met", async () => {
+        let poolAddresses = [
+            await poolKeeper.pools(0),
+            await poolKeeper.pools(1),
+        ]
         await forwardTime(5)
         await oracleWrapper.incrementPrice()
-        expect(
-            await poolKeeper.checkUpkeepMultiplePools([POOL_CODE, POOL_CODE_2])
-        ).to.eq(true)
+        expect(await poolKeeper.checkUpkeepMultiplePools(poolAddresses)).to.eq(
+            true
+        )
     })
     it("should return true if the trigger condition is met on only one", async () => {
+        let poolAddresses = [
+            await poolKeeper.pools(0),
+            await poolKeeper.pools(1),
+        ]
         await forwardTime(5)
         await oracleWrapper.incrementPrice()
-        await poolKeeper.performUpkeepSinglePool(POOL_CODE)
-        expect(
-            await poolKeeper.checkUpkeepMultiplePools([POOL_CODE, POOL_CODE_2])
-        ).to.eq(true)
+        await poolKeeper.performUpkeepSinglePool(poolAddresses[0])
+        expect(await poolKeeper.checkUpkeepMultiplePools(poolAddresses)).to.eq(
+            true
+        )
     })
     it("should return false if the trigger condition isn't met", async () => {
+        let poolAddresses = [
+            await poolKeeper.pools(0),
+            await poolKeeper.pools(1),
+        ]
         await forwardTime(5)
         await oracleWrapper.incrementPrice()
-        await poolKeeper.performUpkeepMultiplePools([POOL_CODE, POOL_CODE_2])
-        expect(
-            await poolKeeper.checkUpkeepMultiplePools([POOL_CODE, POOL_CODE_2])
-        ).to.eq(false)
+        await poolKeeper.performUpkeepMultiplePools(poolAddresses)
+        expect(await poolKeeper.checkUpkeepMultiplePools(poolAddresses)).to.eq(
+            false
+        )
     })
     it("should return false if the check data provided is invalid", async () => {
-        const RANDOM_POOL_CODE = "Hello"
+        let poolAddresses = [
+            await poolKeeper.pools(0),
+            await poolKeeper.pools(1),
+        ]
         await forwardTime(5)
-        expect(
-            await poolKeeper.checkUpkeepMultiplePools([RANDOM_POOL_CODE])
-        ).to.eq(false)
+        expect(await poolKeeper.checkUpkeepMultiplePools(poolAddresses)).to.eq(
+            false
+        )
     })
 })

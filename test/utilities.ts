@@ -1,6 +1,7 @@
 import { ethers } from "hardhat"
 import { BigNumberish, ContractReceipt, Event } from "ethers"
 import { BytesLike, Result } from "ethers/lib/utils"
+import { MARKET } from "./constants"
 import {
     ERC20,
     LeveragedPool,
@@ -12,6 +13,9 @@ import {
     PoolSwapLibrary__factory,
     LeveragedPool__factory,
     TestChainlinkOracle__factory,
+    PoolKeeper,
+    PoolFactory__factory,
+    PoolKeeper__factory,
 } from "../typechain"
 
 import { abi as ERC20Abi } from "../artifacts/@openzeppelin/contracts/token/ERC20/ERC20.sol/ERC20.json"
@@ -122,27 +126,39 @@ export const deployPoolAndTokenContracts = async (
     const library = await libraryFactory.deploy()
     await library.deployed()
 
+    const PoolFactory = (await ethers.getContractFactory("PoolFactory", {
+        signer: signers[0],
+        libraries: { PoolSwapLibrary: library.address },
+    })) as PoolFactory__factory
+    const factory = await (await PoolFactory.deploy()).deployed()
+
+    const poolKeeperFactory = (await ethers.getContractFactory("PoolKeeper", {
+        signer: signers[0],
+    })) as PoolKeeper__factory
+    const poolKeeper = await poolKeeperFactory.deploy(factory.address)
+    await poolKeeper.deployed()
+
     const leveragedPoolFactory = (await ethers.getContractFactory(
         "LeveragedPool",
         { signer: signers[0], libraries: { PoolSwapLibrary: library.address } }
     )) as LeveragedPool__factory
     const pool = await leveragedPoolFactory.deploy()
     await pool.deployed()
-    const poolReceipt = await (
-        await pool.initialize(
-            signers[0].address,
-            oracleWrapper.address,
-            long.address,
-            short.address,
-            POOL_CODE,
-            frontRunningInterval,
-            updateInterval,
-            fee,
-            leverage,
-            feeAddress,
-            token.address
-        )
-    ).wait()
+    const initialization = {
+        _owner: signers[0].address,
+        _keeper: poolKeeper.address,
+        _oracleWrapper: oracleWrapper.address,
+        _longToken: long.address,
+        _shortToken: short.address,
+        _poolCode: POOL_CODE,
+        _frontRunningInterval: frontRunningInterval,
+        _updateInterval: updateInterval,
+        _fee: fee,
+        _leverageAmount: leverage,
+        _feeAddress: feeAddress,
+        _quoteToken: token.address,
+    }
+    const poolReceipt = await (await pool.initialize(initialization)).wait()
 
     return {
         signers,
@@ -193,4 +209,18 @@ export const createCommit = async (
  */
 export const timeout = async (milliseconds: number): Promise<void> => {
     return new Promise((resolve) => setTimeout(resolve, milliseconds))
+}
+
+export function callData(
+    poolKeeper: PoolKeeper,
+    poolNumbers: number[]
+): BytesLike {
+    return ethers.utils.defaultAbiCoder.encode(
+        [
+            ethers.utils.ParamType.from("uint32"),
+            ethers.utils.ParamType.from("string"),
+            ethers.utils.ParamType.from("address[]"),
+        ],
+        [2, MARKET, poolNumbers.map((x) => poolKeeper.pools(x))]
+    )
 }

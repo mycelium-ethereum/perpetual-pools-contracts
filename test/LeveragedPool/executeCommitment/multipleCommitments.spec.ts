@@ -62,6 +62,8 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
 
             await shortToken.approve(pool.address, amountMinted)
             await timeout(2000)
+            const signers = await ethers.getSigners()
+            await pool.setKeeper(signers[0].address)
 
             await pool.executePriceChange(lastPrice, lastPrice + 10)
             await pool.executeCommitment([commit.commitID])
@@ -118,6 +120,7 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
 
             token = result.token
             shortToken = result.shortToken
+            await pool.setKeeper(result.signers[0].address)
 
             await token.approve(pool.address, amountMinted)
 

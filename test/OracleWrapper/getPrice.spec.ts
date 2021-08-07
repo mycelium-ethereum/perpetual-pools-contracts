@@ -45,21 +45,9 @@ describe("OracleWrapper - getPrice", () => {
         testOracle = await oracleFactory.deploy()
         testOracle2 = await oracleFactory.deploy()
 
-        await oracleWrapper.grantRole(
-            ethers.utils.keccak256(ethers.utils.toUtf8Bytes(OPERATOR_ROLE)),
-            signers[0].address
-        )
-
         await oracleWrapper.setOracle(testOracle.address)
 
         // Sanity check the deployment
-        expect(
-            await oracleWrapper.hasRole(
-                ethers.utils.keccak256(ethers.utils.toUtf8Bytes(OPERATOR_ROLE)),
-                signers[0].address
-            )
-        ).to.eq(true)
-        expect(await oracleWrapper.isAdmin(signers[0].address)).to.eq(true)
         expect(await oracleWrapper.oracle()).to.eq(testOracle.address)
     })
     it("should return the current price for the requested market", async () => {

@@ -64,24 +64,11 @@ describe("PoolKeeper - createPool", () => {
         factory = await (await PoolFactory.deploy()).deployed()
         poolKeeper = await poolKeeperFactory.deploy(factory.address)
         await poolKeeper.deployed()
-        await oracleWrapper.grantRole(
-            ethers.utils.keccak256(ethers.utils.toUtf8Bytes(OPERATOR_ROLE)),
-            poolKeeper.address
-        )
 
         await factory.setPoolKeeper(poolKeeper.address)
-
-        // Sanity check the deployment
-        expect(
-            await poolKeeper.hasRole(
-                ethers.utils.keccak256(ethers.utils.toUtf8Bytes(ADMIN_ROLE)),
-                signers[0].address
-            )
-        ).to.eq(true)
-
-        expect(await oracleWrapper.isAdmin(signers[0].address)).to.eq(true)
         deploymentData = {
             owner: poolKeeper.address,
+            keeper: poolKeeper.address,
             poolCode: POOL_CODE,
             frontRunningInterval: 5,
             updateInterval: 10,
@@ -106,14 +93,6 @@ describe("PoolKeeper - createPool", () => {
         const event = receipt?.events?.find((el) => el.event === "DeployPool")
         expect(!!event).to.eq(true)
         expect(!!event?.args?.pool).to.eq(true)
-        expect(!!event?.args?.poolCode).to.eq(true)
-    })
-
-    it("should add the pool to the list of pools", async () => {
-        const receipt = await (await factory.deployPool(deploymentData)).wait()
-        expect(await poolKeeper.pools(POOL_CODE)).to.eq(
-            receipt.events?.find((el) => el.event === "DeployPool")?.args?.pool
-        )
     })
 
     it("should revert if the pool already exists", async () => {

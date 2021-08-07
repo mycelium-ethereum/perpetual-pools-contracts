@@ -1,5 +1,6 @@
 import { ethers, network } from "hardhat"
 import chai from "chai"
+import { Bytes, BytesLike } from "ethers"
 import chaiAsPromised from "chai-as-promised"
 import { generateRandomAddress } from "../utilities"
 
@@ -77,6 +78,7 @@ const setupHook = async () => {
     // Create pool
     const deploymentData = {
         owner: generateRandomAddress(),
+        keeper: generateRandomAddress(),
         poolCode: POOL_CODE,
         frontRunningInterval: 1,
         updateInterval: 2,
@@ -90,6 +92,7 @@ const setupHook = async () => {
 
     const deploymentData2 = {
         owner: generateRandomAddress(),
+        keeper: generateRandomAddress(),
         poolCode: POOL_CODE_2,
         frontRunningInterval: 1,
         updateInterval: 2,
@@ -108,19 +111,19 @@ describe("PoolKeeper - checkUpkeepSinglePool", () => {
     it("should return true if the trigger condition is met", async () => {
         await forwardTime(5)
         await oracleWrapper.incrementPrice()
-        expect(await poolKeeper.checkUpkeepSinglePool(POOL_CODE)).to.eq(true)
+        let poolAddress = await poolKeeper.pools(0)
+        expect(await poolKeeper.checkUpkeepSinglePool(poolAddress)).to.eq(true)
     })
     it("should return false if the trigger condition isn't met", async () => {
         await forwardTime(5)
         await oracleWrapper.incrementPrice()
-        await poolKeeper.performUpkeepSinglePool(POOL_CODE)
-        expect(await poolKeeper.checkUpkeepSinglePool(POOL_CODE)).to.eq(false)
+        let poolAddress = await poolKeeper.pools(0)
+        await poolKeeper.performUpkeepSinglePool(poolAddress)
+        expect(await poolKeeper.checkUpkeepSinglePool(poolAddress)).to.eq(false)
     })
     it("should return false if the check data provided is invalid", async () => {
-        const RANDOM_POOL_CODE = "Hello"
         await forwardTime(5)
-        expect(await poolKeeper.checkUpkeepSinglePool(RANDOM_POOL_CODE)).to.eq(
-            false
-        )
+        let poolAddress = await poolKeeper.pools(0)
+        expect(await poolKeeper.checkUpkeepSinglePool(poolAddress)).to.eq(false)
     })
 })
