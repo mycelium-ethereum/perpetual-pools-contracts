@@ -97,11 +97,11 @@ library PoolSwapLibrary {
         int8 direction,
         bytes16 leverage
     ) external pure returns (bytes16) {
-        // If decreased:  (leverage * log2[(1 * new/old) + [(0 * 1) / new/old]]) ^ 2
-        //              = (leverage * log2[(new/old)])^ 2
-        // If increased:  (leverage * log2[(0 * new/old) + [(1 * 1) / new/old]]) ^ 2
-        //              = (leverage * log2([1 / new/old])) ^ 2
-        //              = (leverage * log2([old/new])) ^ 2
+        // If decreased:  2 ^ (leverage * log2[(1 * new/old) + [(0 * 1) / new/old]])
+        //              = 2 ^ (leverage * log2[(new/old)])
+        // If increased:  2 ^ (leverage * log2[(0 * new/old) + [(1 * 1) / new/old]])
+        //              = 2 ^ (leverage * log2([1 / new/old]))
+        //              = 2 ^ (leverage * log2([old/new]))
         return
             ABDKMathQuad.pow_2(
                 ABDKMathQuad.mul(
