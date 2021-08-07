@@ -249,7 +249,7 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     }
 
     /**
-     * @notice Processes the effect of a price change. The effect of a price change on a pool is left to the implementer. The pool stores the last price, and is given the latest price on update.
+     * @notice Processes the effect of a price change. This involves transferring funds from the losing pool to the other.
      * @dev This function should be called by the Pool Keeper.
      * @dev This function should be secured with some form of access control
      * @param oldPrice The previously executed price
