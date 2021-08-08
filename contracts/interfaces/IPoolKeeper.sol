@@ -17,7 +17,7 @@ interface IPoolKeeper {
     /**
      * @notice Creates a notification when a pool is created
      * @param poolAddress The pool address of the newly created pool. This is deterministic and utilizes create2 and the pool code as the salt.
-     * @param firstPrice The price of the market oracle when the pool was created. 
+     * @param firstPrice The price of the market oracle when the pool was created.
      * @param poolCode The code of the pool. This combined with the updateInterval provide the upkeep details.
      */
     event PoolAdded(address indexed poolAddress, int256 indexed firstPrice, address poolCode);
@@ -67,14 +67,13 @@ interface IPoolKeeper {
     );
 
     /**
-    @notice Creates a notification of a failed pool update
-    @param pool The pool that failed to update
-    @param reason The reason for the error
-   */
+     * @notice Creates a notification of a failed pool update
+     * @param pool The pool that failed to update
+     * @param reason The reason for the error
+     */
     event PoolUpdateError(address pool, string reason);
 
     // #### Functions
-
     /**
      * @notice When a pool is created, this function is called by the factory to initiate price tracking.
      * @param _poolCode The code associated with this pool.
@@ -82,8 +81,8 @@ interface IPoolKeeper {
      */
     function newPool(string calldata _poolCode, address _poolAddress) external;
 
-    /*
-     * 
+    /**
+     * @notice Sets the factory of the keeper contract
      * @param _factory Address of the new factory contract
      */
     function setFactory(address _factory) external;
