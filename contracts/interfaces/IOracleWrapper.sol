@@ -16,10 +16,6 @@ interface IOracleWrapper {
    */
     function setOracle(address _oracle) external;
 
-    function switchAdmin(address _admin) external;
-
-    function isAdmin(address account) external view returns (bool);
-
     /**
     @notice Returns the current price for the asset in question
     @return The latest price

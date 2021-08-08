@@ -119,6 +119,7 @@ describe("LeveragedPool - uncommit", () => {
             signers = elements.signers
             pool = elements.pool
             token = elements.token
+            await pool.setKeeper(signers[0].address)
             await token.approve(pool.address, amountCommitted)
         })
         it("should update the shadow short mint balance", async () => {
@@ -212,6 +213,7 @@ describe("LeveragedPool - uncommit", () => {
             )
             signers = elements.signers
             pool = elements.pool
+            await pool.setKeeper(signers[0].address)
             token = elements.token
             shortToken = elements.shortToken
             longToken = elements.longToken

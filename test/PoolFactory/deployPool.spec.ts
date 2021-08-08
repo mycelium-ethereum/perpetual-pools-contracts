@@ -67,6 +67,7 @@ describe("PoolFactory - deployPool", () => {
         await factory.setPoolKeeper(poolKeeper.address)
         const deploymentData = {
             owner: generateRandomAddress(),
+            keeper: poolKeeper.address,
             poolCode: POOL_CODE,
             frontRunningInterval: 5,
             updateInterval: 10,
@@ -90,25 +91,26 @@ describe("PoolFactory - deployPool", () => {
         expect(await pool.poolCode()).to.eq(POOL_CODE)
     })
     it("should initialize the clone", async () => {
-        await expect(
-            pool.initialize(
-                generateRandomAddress(),
-                generateRandomAddress(),
-                generateRandomAddress(),
-                generateRandomAddress(),
-                POOL_CODE,
-                5,
-                3,
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
-                5,
-                generateRandomAddress(),
-                generateRandomAddress()
-            )
-        ).to.be.rejectedWith(Error)
+        const initialization = {
+            _owner: generateRandomAddress(),
+            _keeper: generateRandomAddress(),
+            _oracleWrapper: generateRandomAddress(),
+            _longToken: generateRandomAddress(),
+            _shortToken: generateRandomAddress(),
+            _poolCode: POOL_CODE,
+            _frontRunningInterval: 5,
+            _updateInterval: 3,
+            _fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+            _leverageAmount: 5,
+            _feeAddress: generateRandomAddress(),
+            _quoteToken: generateRandomAddress(),
+        }
+        await expect(pool.initialize(initialization)).to.be.rejectedWith(Error)
     })
     it("should allow multiple clones to exist", async () => {
         const deploymentData = {
             owner: generateRandomAddress(),
+            keeper: poolKeeper.address,
             poolCode: POOL_CODE_2,
             frontRunningInterval: 5,
             updateInterval: 3,

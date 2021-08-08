@@ -58,6 +58,7 @@ describe("LeveragedPool - executeCommitment: Short Burn", () => {
             await token.approve(pool.address, amountMinted)
             commit = await createCommit(pool, [0], amountCommitted)
             await timeout(2000)
+            await pool.setKeeper(signers[0].address)
             await pool.executePriceChange(lastPrice, 10)
             await pool.executeCommitment([commit.commitID])
 

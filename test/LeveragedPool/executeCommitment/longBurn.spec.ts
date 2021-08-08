@@ -55,6 +55,7 @@ describe("LeveragedPool - executeCommitment: Long Burn", () => {
             token = result.token
             library = result.library
             longToken = result.longToken
+            await pool.setKeeper(signers[0].address)
             await token.approve(pool.address, amountMinted)
             commit = await createCommit(pool, [2], amountCommitted)
             await timeout(2000)

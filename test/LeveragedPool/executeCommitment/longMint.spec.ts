@@ -51,6 +51,7 @@ describe("LeveragedPool - executeCommitment: Long Mint", () => {
             )
             pool = result.pool
             signers = result.signers
+            await pool.setKeeper(signers[0].address)
             token = result.token
             library = result.library
             longToken = result.longToken
