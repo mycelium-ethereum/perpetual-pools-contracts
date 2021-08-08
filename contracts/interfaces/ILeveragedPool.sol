@@ -87,7 +87,7 @@ interface ILeveragedPool {
      * @dev This should only be able to be run once to prevent abuse of the pool. Use of Openzeppelin Initializable or similar is recommended.
      * @param initialization The struct Initialization containing initialization data
      */
-    function initialize(Initialization memory initialization) external;
+    function initialize(Initialization calldata initialization) external;
 
     /**
      * @notice Wrapper function to get the latest oracle price (using getPrice)
@@ -112,7 +112,7 @@ interface ILeveragedPool {
      * @notice Executes one or more commitments and effects the changes on the live and shadow pools respectively. This can be used to execute on any valid commits in the commit pool
      * @param _commitIDs an array of commits to execute. These do not have to all belong to the sender, nor do they need to be in a specific order.
      */
-    function executeCommitment(uint128[] memory _commitIDs) external;
+    function executeCommitment(uint128[] calldata _commitIDs) external;
 
     /**
      * @notice Processes the effect of a price change. This involves transferring funds from the losing pool to the other.

@@ -80,7 +80,7 @@ interface IPoolKeeper {
      * @param _poolCode The code associated with this pool.
      * @param _poolAddress The address of the newly-created pool.
      */
-    function newPool(string memory _poolCode, address _poolAddress) external;
+    function newPool(string calldata _poolCode, address _poolAddress) external;
 
     /*
      * 

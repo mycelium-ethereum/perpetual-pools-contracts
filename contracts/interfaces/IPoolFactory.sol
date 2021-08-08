@@ -28,5 +28,5 @@ interface IPoolFactory {
      * @param deploymentParameters Parameters for the new market deployment
      * @return The address of the new pool
      */
-    function deployPool(PoolDeployment memory deploymentParameters) external returns (address);
+    function deployPool(PoolDeployment calldata deploymentParameters) external returns (address);
 }
