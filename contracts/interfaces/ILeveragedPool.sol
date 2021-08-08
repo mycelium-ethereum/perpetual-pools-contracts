@@ -6,7 +6,7 @@ pragma abicoder v2;
 @title The pool controller contract interface
 */
 interface ILeveragedPool {
-    // #### Struct & Enum definitions
+    // #### Enum & Struct definitions
     enum CommitType {
         ShortMint,
         ShortBurn,
@@ -76,6 +76,7 @@ interface ILeveragedPool {
      */
     event PriceChange(int256 indexed startPrice, int256 indexed endPrice, uint112 indexed transferAmount);
 
+    // ### Getters for public variables
     function updateInterval() external view returns (uint32);
 
     function oracleWrapper() external view returns (address);
@@ -88,6 +89,10 @@ interface ILeveragedPool {
      */
     function initialize(Initialization memory initialization) external;
 
+    /**
+     * @notice Wrapper function to get the latest oracle price (using getPrice)
+     * @return Latest price from the oracle
+     */
     function getOraclePrice() external view returns (int256);
 
     /**
@@ -123,6 +128,10 @@ interface ILeveragedPool {
      */
     function intervalPassed() external view returns (bool);
 
+    /**
+     * @notice Changes the address of the keeper contract
+     * @param _keeper Address of the new keeper contract
+     */
     function setKeeper(address _keeper) external;
 
     /**
