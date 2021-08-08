@@ -67,8 +67,10 @@ async function main() {
         token,
         PoolToken__factory.abi
     ).connect(deployer) as PoolToken 
-    console.log(pool.address)
-    console.log(await tokenInstance.owner())
+
+
+    console.log(`Pool address should own token: ${pool.address}`) // owners are different here
+    console.log(`Owner for ${await tokenInstance.name()}`, await tokenInstance.owner()) // no owner :(
 
     /* Commit to pool */
     console.log(`Account ${accounts[0].address} committing 100 short`)
