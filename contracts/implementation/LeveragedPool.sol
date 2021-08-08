@@ -13,6 +13,7 @@ import "../vendors/SafeMath_128.sol";
 
 import "./PoolSwapLibrary.sol";
 import "../interfaces/IOracleWrapper.sol";
+import "hardhat/console.sol";
 
 /*
 @title The pool controller contract
@@ -62,6 +63,11 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         quoteToken = initialization._quoteToken;
         frontRunningInterval = initialization._frontRunningInterval;
         updateInterval = initialization._updateInterval;
+
+        console.logUint(frontRunningInterval);
+        console.logUint(updateInterval);
+        require(frontRunningInterval < updateInterval, "frontRunning > updateInterval");
+
         fee = initialization._fee;
         leverageAmount = PoolSwapLibrary.convertUIntToDecimal(initialization._leverageAmount);
         feeAddress = initialization._feeAddress;
