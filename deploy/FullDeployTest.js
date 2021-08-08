@@ -92,18 +92,6 @@ module.exports = async (hre) => {
         args: [factory.address],
     })
 
-    /* Grant roles to oracleWrapper */
-    await execute(
-        "TestOracleWrapper",
-        {
-            from: deployer,
-            log: true,
-        },
-        "grantRole",
-        ethers.utils.keccak256(ethers.utils.toUtf8Bytes(OPERATOR_ROLE)),
-        poolKeeper.address
-    )
-
     /* Set PoolKeeper*/
     await execute(
         "PoolFactory",
@@ -121,8 +109,8 @@ module.exports = async (hre) => {
 
     /* deploy LeveragePool */
     const deploymentData = {
-        // TODO this should be poolKeeper.address
         owner: deployer,
+        keeper: poolKeeper.address,
         poolCode: POOL_CODE,
         frontRunningInterval: 0,
         updateInterval: TEN_MINS,
@@ -142,6 +130,7 @@ module.exports = async (hre) => {
         "deployPool",
         deploymentData
     )
+
     const event = receipt?.events?.find((el) => el.event === "DeployPool")
 
     console.log(`Deployed PoolFactory: ${factory.address}`)
