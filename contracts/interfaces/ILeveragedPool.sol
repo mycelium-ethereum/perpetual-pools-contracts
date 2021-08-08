@@ -104,6 +104,12 @@ interface ILeveragedPool {
     function uncommit(uint128 commitID) external;
 
     /**
+     * @notice
+     * @param
+     */
+    function executeAllCommitments() external;
+
+    /**
      * @notice Executes one or more commitments and effects the changes on the live and shadow pools respectively. This can be used to execute on any valid commits in the commit pool
      * @param _commitIDs an array of commits to execute. These do not have to all belong to the sender, nor do they need to be in a specific order.
      */
@@ -117,6 +123,14 @@ interface ILeveragedPool {
      * @param newPrice The price for the latest interval.
      */
     function executePriceChange(int256 oldPrice, int256 newPrice) external;
+
+    /**
+     * @notice
+     * @dev
+     * @param oldPrice The previously executed price
+     * @param newPrice The price for the latest interval.
+     */
+    function executeUpkeep(int256 oldPrice, int256 newPrice) external;
 
     /**
      * @return true if the price was last updated more than updateInterval seconds ago

@@ -2,10 +2,12 @@
 pragma solidity ^0.7.6;
 pragma abicoder v2;
 import "abdk-libraries-solidity/ABDKMathQuad.sol";
+import "../vendors/SafeMath_112.sol";
 
 library PoolSwapLibrary {
     bytes16 public constant one = 0x3fff0000000000000000000000000000;
     bytes16 public constant zero = 0x00000000000000000000000000000000;
+    using SafeMath_112 for uint112;
 
     /**
     @notice Calculates the ratio between two numbers
@@ -13,8 +15,8 @@ library PoolSwapLibrary {
     @param _numerator The "parts per" side of the equation. If this is zero, the ratio is zero
     @param _denominator The "per part" side of the equation. If this is zero, the ratio is zero
     @return the ratio, as an ABDKMathQuad number (IEEE 754 quadruple precision floating point)
-   */
-    function getRatio(uint112 _numerator, uint112 _denominator) external pure returns (bytes16) {
+    */
+    function getRatio(uint112 _numerator, uint112 _denominator) internal pure returns (bytes16) {
         // Catch the divide by zero error.
         if (_denominator == 0) {
             return 0;
@@ -29,7 +31,7 @@ library PoolSwapLibrary {
     @param amountIn The amount of tokens the user is providing. This can be quote tokens or pool tokens.
     @return The amount of tokens to mint/remit to the user.
    */
-    function getAmountOut(bytes16 ratio, uint112 amountIn) external pure returns (uint112) {
+    function getAmountOut(bytes16 ratio, uint112 amountIn) internal pure returns (uint112) {
         require(amountIn > 0, "Invalid amount");
         if (ABDKMathQuad.cmp(ratio, 0) == 0 || ABDKMathQuad.cmp(ratio, bytes16("0x1")) == 0) {
             return amountIn;
@@ -43,7 +45,7 @@ library PoolSwapLibrary {
     @param y The second number to compare
     @return -1 if x < y, 0 if x = y, or 1 if x > y
    */
-    function compareDecimals(bytes16 x, bytes16 y) external pure returns (int8) {
+    function compareDecimals(bytes16 x, bytes16 y) internal pure returns (int8) {
         return ABDKMathQuad.cmp(x, y);
     }
 
@@ -52,7 +54,7 @@ library PoolSwapLibrary {
     @param amount The amount to convert
     @return The amount as a IEEE754 quadruple precision number
   */
-    function convertUIntToDecimal(uint112 amount) external pure returns (bytes16) {
+    function convertUIntToDecimal(uint112 amount) internal pure returns (bytes16) {
         return ABDKMathQuad.fromUInt(uint256(amount));
     }
 
@@ -61,7 +63,7 @@ library PoolSwapLibrary {
     @param ratio The value to convert
     @return The converted value
   */
-    function convertDecimalToUInt(bytes16 ratio) external pure returns (uint256) {
+    function convertDecimalToUInt(bytes16 ratio) internal pure returns (uint256) {
         return ABDKMathQuad.toUInt(ratio);
     }
 
@@ -71,7 +73,7 @@ library PoolSwapLibrary {
     @param b The second term
     @return The product of a*b as a decimal
   */
-    function multiplyDecimalByUInt(bytes16 a, uint256 b) external pure returns (bytes16) {
+    function multiplyDecimalByUInt(bytes16 a, uint256 b) internal pure returns (bytes16) {
         return ABDKMathQuad.mul(a, ABDKMathQuad.fromUInt(b));
     }
 
@@ -81,7 +83,7 @@ library PoolSwapLibrary {
     @param b The divisor
     @return The qotient 
   */
-    function divInt(int256 a, int256 b) external pure returns (bytes16) {
+    function divInt(int256 a, int256 b) internal pure returns (bytes16) {
         return ABDKMathQuad.div(ABDKMathQuad.fromInt(a), ABDKMathQuad.fromInt(b));
     }
 
@@ -96,7 +98,7 @@ library PoolSwapLibrary {
         bytes16 ratio,
         int8 direction,
         bytes16 leverage
-    ) external pure returns (bytes16) {
+    ) internal pure returns (bytes16) {
         // If decreased:  2 ^ (leverage * log2[(1 * new/old) + [(0 * 1) / new/old]])
         //              = 2 ^ (leverage * log2[(new/old)])
         // If increased:  2 ^ (leverage * log2[(0 * new/old) + [(1 * 1) / new/old]])
@@ -121,10 +123,47 @@ library PoolSwapLibrary {
     @param lossMultiplier The multiplier to use
     @param balance The balance of the losing pool
   */
-    function getLossAmount(bytes16 lossMultiplier, uint112 balance) external pure returns (uint256) {
+    function getLossAmount(bytes16 lossMultiplier, uint112 balance) internal pure returns (uint256) {
         return
             ABDKMathQuad.toUInt(
                 ABDKMathQuad.mul(ABDKMathQuad.sub(one, lossMultiplier), ABDKMathQuad.fromUInt(balance))
             );
+    }
+
+    function calculatePriceChangeParameters(
+        int256 oldPrice,
+        int256 newPrice,
+        bytes16 fee,
+        uint112 longBalance,
+        uint112 shortBalance,
+        bytes16 leverageAmount
+    )
+        internal
+        pure
+        returns (
+            int8 direction,
+            bytes16 lossMultiplier,
+            uint112 totalFeeAmount
+        )
+    {
+        // Calculate fees from long and short sides
+        uint112 longFeeAmount = uint112(convertDecimalToUInt(multiplyDecimalByUInt(fee, longBalance)));
+        uint112 shortFeeAmount = uint112(convertDecimalToUInt(multiplyDecimalByUInt(fee, shortBalance)));
+        totalFeeAmount = 0;
+        if (shortBalance >= shortFeeAmount) {
+            shortBalance = shortBalance.sub(shortFeeAmount);
+            totalFeeAmount = totalFeeAmount.add(shortFeeAmount);
+        }
+        if (longBalance >= longFeeAmount) {
+            longBalance = longBalance.sub(longFeeAmount);
+            totalFeeAmount = totalFeeAmount.add(longFeeAmount);
+        }
+
+        // Use the ratio to determine if the price increased or decreased and therefore which direction
+        // the funds should be transferred towards.
+        bytes16 ratio = divInt(newPrice, oldPrice);
+        direction = compareDecimals(ratio, one);
+        // Take into account the leverage
+        lossMultiplier = getLossMultiplier(ratio, direction, leverageAmount);
     }
 }

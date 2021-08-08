@@ -14,6 +14,8 @@ import "../vendors/SafeMath_128.sol";
 import "./PoolSwapLibrary.sol";
 import "../interfaces/IOracleWrapper.sol";
 
+import "hardhat/console.sol";
+
 /*
 @title The pool controller contract
 */
@@ -42,6 +44,11 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     address public quoteToken;
     uint40 public lastPriceTimestamp;
 
+    // MAX_INT = 2**128 - 1 = 3.4028 * 10 ^ 38;
+    //         = 340282366920938463463374607431768211455;
+    uint128 public constant NO_COMMITS_REMAINING = 340282366920938463463374607431768211455;
+    uint128 public earliestCommitUnexecuted;
+    uint128 public latestCommitUnexecuted;
     uint128 public commitIDCounter;
     mapping(uint128 => Commit) public commits;
     mapping(CommitType => uint112) public shadowPools;
@@ -51,6 +58,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     // #### Functions
 
     function initialize(ILeveragedPool.Initialization memory initialization) external override initializer {
+        console.log(2**128 - 1);
         require(initialization._feeAddress != address(0), "Fee address cannot be 0 address");
         require(initialization._quoteToken != address(0), "Quote token cannot be 0 address");
         require(initialization._oracleWrapper != address(0), "Oracle wrapper cannot be 0 address");
@@ -85,6 +93,11 @@ contract LeveragedPool is ILeveragedPool, Initializable {
 
         shadowPools[commitType] = shadowPools[commitType].add(amount);
 
+        if (earliestCommitUnexecuted == NO_COMMITS_REMAINING) {
+            earliestCommitUnexecuted = commitIDCounter;
+        }
+        latestCommitUnexecuted = commitIDCounter;
+
         emit CreateCommit(commitIDCounter, amount, commitType);
 
         if (commitType == CommitType.LongMint || commitType == CommitType.ShortMint) {
@@ -107,6 +120,16 @@ contract LeveragedPool is ILeveragedPool, Initializable {
 
         delete commits[_commitID];
 
+        if (earliestCommitUnexecuted == _commitID) {
+            earliestCommitUnexecuted += 1;
+        }
+        if (earliestCommitUnexecuted > latestCommitUnexecuted) {
+            earliestCommitUnexecuted = NO_COMMITS_REMAINING;
+        }
+        if (latestCommitUnexecuted == _commitID && earliestCommitUnexecuted != NO_COMMITS_REMAINING) {
+            latestCommitUnexecuted -= 1;
+        }
+
         if (_commit.commitType == CommitType.LongMint || _commit.commitType == CommitType.ShortMint) {
             require(IERC20(quoteToken).transfer(msg.sender, _commit.amount), "Transfer failed");
         } else if (_commit.commitType == CommitType.LongBurn) {
@@ -114,6 +137,36 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         } else if (_commit.commitType == CommitType.ShortBurn) {
             require(PoolToken(tokens[1]).mint(_commit.amount, msg.sender), "Transfer failed");
         }
+    }
+
+    /**
+     * @dev Iterate from earliestCommitUnexecuted to latestCommitUnexecuted, attempting to execute all of the commits
+     */
+    function executeAllCommitments() external override {
+        require(earliestCommitUnexecuted != NO_COMMITS_REMAINING, "No commits remaining");
+        uint128 nextEarliestCommitUnexecuted;
+        for (uint128 i = earliestCommitUnexecuted; i <= latestCommitUnexecuted; i++) {
+            Commit memory _commit = commits[i];
+            nextEarliestCommitUnexecuted = i;
+
+            // These two checks are so a given call to _executeCommitment won't revert,
+            // allowing us to continue iterations.
+            if (_commit.owner != address(0)) {
+                // Commit deleted (uncommitted) or already executed
+                nextEarliestCommitUnexecuted += 1; // It makes sense to set the next unexecuted to the next number
+                continue;
+            }
+            if (lastPriceTimestamp.sub(_commit.created) > frontRunningInterval) {
+                // This commit is the first that was too late.
+                break;
+            }
+            _executeCommitment(_commit);
+            if (i == latestCommitUnexecuted) {
+                earliestCommitUnexecuted = NO_COMMITS_REMAINING;
+                return;
+            }
+        }
+        earliestCommitUnexecuted = nextEarliestCommitUnexecuted;
     }
 
     function executeCommitment(uint128[] memory _commitIDs) external override {
@@ -228,30 +281,8 @@ contract LeveragedPool is ILeveragedPool, Initializable {
      */
     function executePriceChange(int256 oldPrice, int256 newPrice) external override onlyKeeper {
         require(intervalPassed(), "Update interval hasn't passed");
-
-        // Calculate fees from long and short sides
-        uint112 longFeeAmount = uint112(
-            PoolSwapLibrary.convertDecimalToUInt(PoolSwapLibrary.multiplyDecimalByUInt(fee, longBalance))
-        );
-        uint112 shortFeeAmount = uint112(
-            PoolSwapLibrary.convertDecimalToUInt(PoolSwapLibrary.multiplyDecimalByUInt(fee, shortBalance))
-        );
-        uint112 totalFeeAmount = 0;
-        if (shortBalance >= shortFeeAmount) {
-            shortBalance = shortBalance.sub(shortFeeAmount);
-            totalFeeAmount = totalFeeAmount.add(shortFeeAmount);
-        }
-        if (longBalance >= longFeeAmount) {
-            longBalance = longBalance.sub(longFeeAmount);
-            totalFeeAmount = totalFeeAmount.add(longFeeAmount);
-        }
-
-        // Use the ratio to determine if the price increased or decreased and therefore which direction
-        // the funds should be transferred towards.
-        bytes16 ratio = PoolSwapLibrary.divInt(newPrice, oldPrice);
-        int8 direction = PoolSwapLibrary.compareDecimals(ratio, PoolSwapLibrary.one);
-        // Take into account the leverage
-        bytes16 lossMultiplier = PoolSwapLibrary.getLossMultiplier(ratio, direction, leverageAmount);
+        (int8 direction, bytes16 lossMultiplier, uint112 totalFeeAmount) = PoolSwapLibrary
+            .calculatePriceChangeParameters(oldPrice, newPrice, fee, longBalance, shortBalance, leverageAmount);
 
         if (direction >= 0 && shortBalance > 0) {
             // Move funds from short to long pair
@@ -269,6 +300,8 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         lastPriceTimestamp = uint40(block.timestamp);
         require(IERC20(quoteToken).transfer(feeAddress, totalFeeAmount), "Fee transfer failed");
     }
+
+    function executeUpkeep(int256 oldPrice, int256 newPrice) external override onlyKeeper {}
 
     /**
      * @return true if the price was last updated more than updateInterval seconds ago
