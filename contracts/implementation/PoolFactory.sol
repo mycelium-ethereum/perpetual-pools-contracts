@@ -3,38 +3,30 @@ pragma solidity ^0.7.6;
 pragma abicoder v2;
 
 import "../interfaces/IPoolFactory.sol";
+import "../interfaces/ILeveragedPool.sol";
 import "./LeveragedPool.sol";
 import "./PoolToken.sol";
 import "./PoolKeeper.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
-import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 /*
 @title The oracle management contract
 */
-contract PoolFactory is IPoolFactory, AccessControl {
+contract PoolFactory is IPoolFactory, Ownable {
     // #### Globals
     PoolToken public pairTokenBase;
     LeveragedPool public poolBase;
     IPoolKeeper public poolKeeper;
-
-    // #### Roles
-    /**
-  @notice Use the Operator role to restrict access to the setPoolKeeper function
-   */
-    bytes32 public constant OPERATOR = keccak256("OPERATOR");
-    bytes32 public constant ADMIN = keccak256("ADMIN");
 
     // #### Functions
     constructor() {
         // Deploy base contracts
         pairTokenBase = new PoolToken();
         poolBase = new LeveragedPool();
-        _setupRole(ADMIN, msg.sender);
-        _setRoleAdmin(OPERATOR, ADMIN);
 
-        // Init bases
-        poolBase.initialize(
+        ILeveragedPool.Initialization memory baseInitialization = ILeveragedPool.Initialization(
+            address(this),
             address(0),
             address(this),
             address(0),
@@ -47,6 +39,8 @@ contract PoolFactory is IPoolFactory, AccessControl {
             address(this),
             address(this)
         );
+        // Init bases
+        poolBase.initialize(baseInitialization);
 
         pairTokenBase.initialize(address(this), "BASE_TOKEN", "BASE");
     }
@@ -57,8 +51,10 @@ contract PoolFactory is IPoolFactory, AccessControl {
             Clones.cloneDeterministic(address(poolBase), keccak256(abi.encode(deploymentParameters.poolCode)))
         );
         emit DeployPool(address(pool), deploymentParameters.poolCode);
-        pool.initialize(
+
+        ILeveragedPool.Initialization memory initialization = ILeveragedPool.Initialization(
             deploymentParameters.owner,
+            deploymentParameters.keeper,
             deploymentParameters.oracleWrapper,
             deployPairToken(
                 address(pool),
@@ -78,6 +74,7 @@ contract PoolFactory is IPoolFactory, AccessControl {
             deploymentParameters.feeAddress,
             deploymentParameters.quoteToken
         );
+        pool.initialize(initialization);
 
         poolKeeper.newPool(deploymentParameters.poolCode, address(pool));
         return address(pool);
@@ -93,20 +90,7 @@ contract PoolFactory is IPoolFactory, AccessControl {
         return address(pairToken);
     }
 
-    function setPoolKeeper(address _poolKeeper) external onlyOperator {
+    function setPoolKeeper(address _poolKeeper) external onlyOwner {
         poolKeeper = IPoolKeeper(_poolKeeper);
-    }
-
-    function setOperator(address _operator) external onlyOperator {
-        revokeRole(ADMIN, msg.sender);
-        grantRole(ADMIN, _operator);
-    }
-
-    // #### Modifiers
-    modifier onlyOperator() {
-        require(hasRole(ADMIN, msg.sender), "msg.sender not ADMIN");
-        // TODO check this
-        // require(hasRole(OPERATOR, msg.sender), "msg.sender not OPERATOR");
-        _;
     }
 }
