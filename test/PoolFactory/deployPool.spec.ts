@@ -11,6 +11,7 @@ import {
     TestOracleWrapper,
     TestOracleWrapper__factory,
     TestChainlinkOracle__factory,
+    PoolToken__factory,
 } from "../../typechain"
 import { POOL_CODE, POOL_CODE_2 } from "../constants"
 import { generateRandomAddress, getEventArgs } from "../utilities"
@@ -131,5 +132,18 @@ describe("PoolFactory - deployPool", () => {
         ) as LeveragedPool
         expect(await pool2.poolCode()).to.eq(POOL_CODE_2)
         expect(await pool.poolCode()).to.eq(POOL_CODE)
+    })
+
+    it("pool should own tokens", async () => {
+        const longToken = await pool.tokens(0)
+        const shortToken = await pool.tokens(1)
+        let tokenInstance = new ethers.Contract(
+            longToken,
+            PoolToken__factory.abi
+        ).connect((await ethers.getSigners())[0])
+        expect(await tokenInstance.owner()).to.eq(pool.address)
+
+        tokenInstance = tokenInstance.attach(shortToken)
+        expect(await tokenInstance.owner()).to.eq(pool.address)
     })
 })
