@@ -68,21 +68,22 @@ contract PoolFactory is IPoolFactory, Ownable {
                 )
             )
         );
-        emit DeployPool(address(pool), deploymentParameters.poolCode);
+        address _pool = address(pool);
+        emit DeployPool(_pool, deploymentParameters.poolCode);
 
         ILeveragedPool.Initialization memory initialization = ILeveragedPool.Initialization(
             deploymentParameters.owner,
             deploymentParameters.keeper,
             deploymentParameters.oracleWrapper,
             deployPairToken(
-                address(pool),
+                _pool,
                 string(abi.encodePacked(deploymentParameters.poolCode, "-LONG")),
                 string(abi.encodePacked("L-", deploymentParameters.poolCode)),
                 deploymentParameters.quoteToken,
                 deploymentParameters.oracleWrapper
             ),
             deployPairToken(
-                address(pool),
+                _pool,
                 string(abi.encodePacked(deploymentParameters.poolCode, "-SHORT")),
                 string(abi.encodePacked("S-", deploymentParameters.poolCode)),
                 deploymentParameters.quoteToken,

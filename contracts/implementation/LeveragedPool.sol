@@ -76,22 +76,26 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         require(amount > 0, "Amount must not be zero");
         commitIDCounter = commitIDCounter.add(1);
 
+        // create commitment
         commits[commitIDCounter] = Commit({
             commitType: commitType,
             amount: amount,
             owner: msg.sender,
             created: uint40(block.timestamp)
         });
-
         shadowPools[commitType] = shadowPools[commitType].add(amount);
 
         emit CreateCommit(commitIDCounter, amount, commitType);
 
+        // pull in tokens
         if (commitType == CommitType.LongMint || commitType == CommitType.ShortMint) {
+            // minting: pull in the quote token from the commiter
             require(IERC20(quoteToken).transferFrom(msg.sender, address(this), amount), "Transfer failed");
         } else if (commitType == CommitType.LongBurn) {
+            // long burning: pull in long pool tokens from commiter
             require(PoolToken(tokens[0]).burn(amount, msg.sender), "Transfer failed");
         } else if (commitType == CommitType.ShortBurn) {
+            // short burning: pull in short pool tokens from commiter
             require(PoolToken(tokens[1]).burn(amount, msg.sender), "Transfer failed");
         }
     }
@@ -101,17 +105,20 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         require(msg.sender == _commit.owner, "Unauthorized");
         require(_commit.owner != address(0), "Invalid commit");
 
-        shadowPools[_commit.commitType] -= _commit.amount;
-
+        // reduce pool commitment amount
+        shadowPools[_commit.commitType] = shadowPools[_commit.commitType].sub(_commit.amount);
         emit RemoveCommit(_commitID, _commit.amount, _commit.commitType);
-
         delete commits[_commitID];
 
+        // release tokens
         if (_commit.commitType == CommitType.LongMint || _commit.commitType == CommitType.ShortMint) {
+            // minting: return quote tokens to the commit owner
             require(IERC20(quoteToken).transfer(msg.sender, _commit.amount), "Transfer failed");
         } else if (_commit.commitType == CommitType.LongBurn) {
+            // long burning: return long pool tokens to commit owner
             require(PoolToken(tokens[0]).mint(_commit.amount, msg.sender), "Transfer failed");
         } else if (_commit.commitType == CommitType.ShortBurn) {
+            // short burning: return short pool tokens to the commit owner
             require(PoolToken(tokens[1]).mint(_commit.amount, msg.sender), "Transfer failed");
         }
     }
@@ -138,9 +145,9 @@ contract LeveragedPool is ILeveragedPool, Initializable {
             longBalance = longBalance.add(_commit.amount);
             _mintTokens(
                 tokens[0],
-                _commit.amount,
-                longBalance.sub(_commit.amount),
-                shadowPools[CommitType.LongBurn],
+                _commit.amount, // amount of quote tokens commited to enter
+                longBalance.sub(_commit.amount), // total quote tokens in the long pull, excluding this mint
+                shadowPools[CommitType.LongBurn], // total pool tokens commited to be burned
                 _commit.owner
             );
         } else if (_commit.commitType == CommitType.LongBurn) {
@@ -206,7 +213,9 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     ) internal {
         require(
             PoolToken(token).mint(
+                // amount out = ratio * amount in
                 PoolSwapLibrary.getAmountOut(
+                    // ratio = (totalSupply + inverseShadowBalance) / balance
                     PoolSwapLibrary.getRatio(
                         uint112(PoolToken(token).totalSupply()).add(inverseShadowbalance),
                         balance

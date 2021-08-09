@@ -76,7 +76,6 @@ interface IPoolKeeper {
     // #### Functions
     /**
      * @notice When a pool is created, this function is called by the factory to initiate price tracking.
-     * @param _poolCode The code associated with this pool.
      * @param _poolAddress The address of the newly-created pool.
      */
     function newPool(
