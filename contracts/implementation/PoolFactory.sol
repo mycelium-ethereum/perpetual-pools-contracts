@@ -45,7 +45,7 @@ contract PoolFactory is IPoolFactory, Ownable {
         pairTokenBase.initialize(address(this), "BASE_TOKEN", "BASE");
     }
 
-    function deployPool(PoolDeployment memory deploymentParameters) external override returns (address) {
+    function deployPool(PoolDeployment calldata deploymentParameters) external override returns (address) {
         require(address(poolKeeper) != address(0), "PoolKeeper not set");
         LeveragedPool pool = LeveragedPool(
             Clones.cloneDeterministic(address(poolBase), keccak256(abi.encode(deploymentParameters.poolCode)))
