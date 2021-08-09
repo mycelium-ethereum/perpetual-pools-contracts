@@ -190,6 +190,21 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     }
 
     /**
+     * @notice Payment keeper receives for performing upkeep on a given pool
+     * @param _pool Address of the given pool
+     * @param _gasPrice Price of a single gas unit (in ETH)
+     * @param _gasSpent Number of gas units spent
+     * @return Keeper's reward
+     */
+    function keeperReward(
+        address _pool,
+        uint256 _gasPrice,
+        uint256 _gasSpent
+    ) public view returns (uint256) {
+        return keeperGas(_pool, _gasPrice, _gasSpent) + keeperTip(_pool);
+    }
+
+    /**
      * @notice Compensation a keeper will receive for their gas expenditure
      * @param _pool Address of the given pool
      * @param _gasPrice Price of a single gas unit (in ETH)
