@@ -190,6 +190,18 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     }
 
     /**
+     * @notice Compensation a keeper will receive for their gas expenditure
+     * @param _pool Address of the given pool
+     * @param _gasPrice Price of a single gas unit (in ETH)
+     * @param _gasSpent Number of gas units spent
+     * @return Keeper's gas compensation
+     */
+    function keeperGas(address _pool, uint256 _gasPrice, uint256 _gasSpent) public view returns (uint256) {
+        uint256 settlementTokenPrice = LeveragedPool(_pool).keeperOracle().getPrice();
+        return _gasPrice * _gasSpent * settlementTokenPrice;
+    }
+
+    /**
      * @notice Tip a keeper will receive for successfully updating the specified pool
      * @param _pool Address of the given pool
      * @return Keeper's tip
