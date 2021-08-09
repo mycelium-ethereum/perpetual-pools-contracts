@@ -11,6 +11,7 @@ import {
     TestOracleWrapper,
     TestOracleWrapper__factory,
     TestChainlinkOracle__factory,
+    PoolToken__factory,
 } from "../../typechain"
 import { POOL_CODE, POOL_CODE_2 } from "../constants"
 import { generateRandomAddress, getEventArgs } from "../utilities"
@@ -67,6 +68,7 @@ describe("PoolFactory - deployPool", () => {
         await factory.setPoolKeeper(poolKeeper.address)
         const deploymentData = {
             owner: generateRandomAddress(),
+            keeper: poolKeeper.address,
             poolCode: POOL_CODE,
             frontRunningInterval: 5,
             updateInterval: 10,
@@ -90,26 +92,27 @@ describe("PoolFactory - deployPool", () => {
         expect(await pool.poolCode()).to.eq(POOL_CODE)
     })
     it("should initialize the clone", async () => {
-        await expect(
-            pool.initialize(
-                generateRandomAddress(),
-                generateRandomAddress(),
-                generateRandomAddress(),
-                generateRandomAddress(),
-                POOL_CODE,
-                5,
-                3,
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
-                5,
-                generateRandomAddress(),
-                generateRandomAddress(),
-                generateRandomAddress()
-            )
-        ).to.be.rejectedWith(Error)
+        const initialization = {
+            _owner: generateRandomAddress(),
+            _keeper: generateRandomAddress(),
+            _oracleWrapper: generateRandomAddress(),
+            _keeperOracle: generateRandomAddress(),
+            _longToken: generateRandomAddress(),
+            _shortToken: generateRandomAddress(),
+            _poolCode: POOL_CODE,
+            _frontRunningInterval: 5,
+            _updateInterval: 3,
+            _fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+            _leverageAmount: 5,
+            _feeAddress: generateRandomAddress(),
+            _quoteToken: generateRandomAddress(),
+        }
+        await expect(pool.initialize(initialization)).to.be.rejectedWith(Error)
     })
     it("should allow multiple clones to exist", async () => {
         const deploymentData = {
             owner: generateRandomAddress(),
+            keeper: poolKeeper.address,
             poolCode: POOL_CODE_2,
             frontRunningInterval: 5,
             updateInterval: 3,
@@ -130,5 +133,18 @@ describe("PoolFactory - deployPool", () => {
         ) as LeveragedPool
         expect(await pool2.poolCode()).to.eq(POOL_CODE_2)
         expect(await pool.poolCode()).to.eq(POOL_CODE)
+    })
+
+    it("pool should own tokens", async () => {
+        const longToken = await pool.tokens(0)
+        const shortToken = await pool.tokens(1)
+        let tokenInstance = new ethers.Contract(
+            longToken,
+            PoolToken__factory.abi
+        ).connect((await ethers.getSigners())[0])
+        expect(await tokenInstance.owner()).to.eq(pool.address)
+
+        tokenInstance = tokenInstance.attach(shortToken)
+        expect(await tokenInstance.owner()).to.eq(pool.address)
     })
 })

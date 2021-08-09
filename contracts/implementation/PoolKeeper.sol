@@ -6,19 +6,18 @@ import "../interfaces/IPoolKeeper.sol";
 import "../interfaces/IOracleWrapper.sol";
 import "../interfaces/IPoolFactory.sol";
 import "../implementation/LeveragedPool.sol";
-import "../implementation/PoolFactory.sol";
 import "../vendors/SafeMath_40.sol";
 import "../vendors/SafeMath_32.sol";
 
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/math/SignedSafeMath.sol";
-import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "abdk-libraries-solidity/ABDKMathQuad.sol";
 
 /*
  * @title The manager contract for multiple markets and the pools in them
  */
-contract PoolKeeper is IPoolKeeper, AccessControl {
+contract PoolKeeper is IPoolKeeper, Ownable {
     using SignedSafeMath for int256;
     using SafeMath_32 for uint32;
     using SafeMath_40 for uint40;
@@ -46,12 +45,18 @@ contract PoolKeeper is IPoolKeeper, AccessControl {
     mapping(address => int256) public lastExecutionPrice;
 
     /**
+     * @notice Format: Pool code => quote token => oracle wrapper => bool
+     * @dev ensures that the factory does not deterministicly deploy pools that already exist
+     */
+    mapping(string => mapping(address => mapping(address => bool))) public override poolIdTaken;
+
+    /**
      * @notice Format: Pool code => timestamp of last price execution
      * @dev Used to allow multiple upkeep registrations to use the same market/update interval price data.
      */
     mapping(address => uint256) public lastExecutionTime;
 
-    PoolFactory public immutable factory;
+    IPoolFactory public factory;
     bytes16 constant fixedPoint = 0x403abc16d674ec800000000000000000; // 1 ether
 
     uint256 constant BASE_TIP = 1;
@@ -64,27 +69,29 @@ contract PoolKeeper is IPoolKeeper, AccessControl {
     // #### Functions
     constructor(address _factory) {
         require(_factory != address(0), "Factory cannot be 0 address");
-        _setupRole(ADMIN, msg.sender);
-        factory = PoolFactory(_factory);
+        factory = IPoolFactory(_factory);
     }
 
     /**
      * @notice When a pool is created, this function is called by the factory to initiate price tracking.
-     * @param _poolCode The code associated with this pool.
      * @param _poolAddress The address of the newly-created pool.
      */
-    function newPool(string memory _poolCode, address _poolAddress) external override onlyFactory {
-        IOracleWrapper oracleWrapper = IOracleWrapper(ILeveragedPool(_poolAddress).oracleWrapper());
-
+    function newPool(
+        string memory _poolCode,
+        address _poolAddress,
+        address _quoteToken,
+        address _oracleWrapper
+    ) external override onlyFactory {
         pools[numPools] = _poolAddress;
         numPools += 1;
 
-        int256 firstPrice = oracleWrapper.getPrice();
+        int256 firstPrice = IOracleWrapper(_oracleWrapper).getPrice();
         int256 startingPrice = ABDKMathQuad.toInt(ABDKMathQuad.mul(ABDKMathQuad.fromInt(firstPrice), fixedPoint));
         emit PoolAdded(_poolAddress, firstPrice, _poolAddress);
         poolRoundStart[_poolAddress] = uint40(block.timestamp);
         executionPrice[_poolAddress] = startingPrice;
         lastExecutionPrice[_poolAddress] = startingPrice;
+        poolIdTaken[_poolCode][_quoteToken][_oracleWrapper] = true;
     }
 
     // Keeper network
@@ -193,10 +200,8 @@ contract PoolKeeper is IPoolKeeper, AccessControl {
         }
     }
 
-    // #### Modifiers
-    modifier onlyAdmin() {
-        require(hasRole(ADMIN, msg.sender));
-        _;
+    function setFactory(address _factory) external override onlyOwner {
+        factory = IPoolFactory(_factory);
     }
 
     modifier onlyFactory() {

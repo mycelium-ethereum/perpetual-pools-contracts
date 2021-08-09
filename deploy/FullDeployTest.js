@@ -1,11 +1,8 @@
-const { OPERATOR_ROLE, POOL_CODE } = require("../test/constants")
-const { generateRandomAddress } = require("../test/utilities")
-
 module.exports = async (hre) => {
     const { getNamedAccounts, ethers } = hre
     const { deploy, execute } = deployments
     const { deployer } = await getNamedAccounts()
-    const signers = await ethers.getSigners()
+    const [_deployer, ...accounts] = await ethers.getSigners()
 
     console.log("Using deployer: " + deployer)
 
@@ -32,6 +29,37 @@ module.exports = async (hre) => {
         "mint",
         ethers.utils.parseEther("10000000"), // 10 mil supply
         deployer
+    )
+    // send 1000 to first 3 accounts
+    await execute(
+        "TestToken",
+        {
+            from: deployer,
+            log: true,
+        },
+        "transfer",
+        accounts[0].address,
+        ethers.utils.parseEther("1000")
+    )
+    await execute(
+        "TestToken",
+        {
+            from: deployer,
+            log: true,
+        },
+        "transfer",
+        accounts[1].address,
+        ethers.utils.parseEther("1000")
+    )
+    await execute(
+        "TestToken",
+        {
+            from: deployer,
+            log: true,
+        },
+        "transfer",
+        accounts[2].address,
+        ethers.utils.parseEther("1000")
     )
 
     /* deploy TestOracleWrapper */
@@ -61,18 +89,6 @@ module.exports = async (hre) => {
         args: [factory.address],
     })
 
-    /* Grant roles to oracleWrapper */
-    await execute(
-        "TestOracleWrapper",
-        {
-            from: deployer,
-            log: true,
-        },
-        "grantRole",
-        ethers.utils.keccak256(ethers.utils.toUtf8Bytes(OPERATOR_ROLE)),
-        poolKeeper.address
-    )
-
     /* Set PoolKeeper*/
     await execute(
         "PoolFactory",
@@ -84,12 +100,17 @@ module.exports = async (hre) => {
         poolKeeper.address
     )
 
+    const POOL_CODE = "5-TEST/MARKET+POOL"
+
+    const TEN_MINS = 10 * 60
+
     /* deploy LeveragePool */
     const deploymentData = {
-        owner: poolKeeper.address,
+        owner: deployer,
+        keeper: poolKeeper.address,
         poolCode: POOL_CODE,
-        frontRunningInterval: 5,
-        updateInterval: 10,
+        frontRunningInterval: 0,
+        updateInterval: TEN_MINS,
         fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
         leverageAmount: 5,
         feeAddress: deployer,
@@ -106,10 +127,11 @@ module.exports = async (hre) => {
         "deployPool",
         deploymentData
     )
+
     const event = receipt?.events?.find((el) => el.event === "DeployPool")
 
     console.log(`Deployed PoolFactory: ${factory.address}`)
-    console.log(`Deployed LeveragedPool: ${event.address}`)
+    console.log(`Deployed LeveragedPool: ${event.args.pool}`)
     console.log(`Deploy PoolKeeper: ${poolKeeper.address}`)
     console.log(`Deployed TestToken: ${token.address}`)
     console.log(`Deployed TestOracle: ${chainlinkOracle.address}`)

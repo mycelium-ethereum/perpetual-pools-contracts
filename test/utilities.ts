@@ -14,6 +14,7 @@ import {
     LeveragedPool__factory,
     TestChainlinkOracle__factory,
     PoolKeeper,
+    PoolFactory__factory,
     PoolKeeper__factory,
 } from "../typechain"
 
@@ -125,44 +126,52 @@ export const deployPoolAndTokenContracts = async (
     const library = await libraryFactory.deploy()
     await library.deployed()
 
-    const leveragedPoolFactory = (await ethers.getContractFactory(
-        "LeveragedPool",
-        { signer: signers[0], libraries: { PoolSwapLibrary: library.address } }
-    )) as LeveragedPool__factory
-    const pool = await leveragedPoolFactory.deploy()
-    await pool.deployed()
-    const poolReceipt = await (
-        await pool.initialize(
-            signers[0].address,
-            oracleWrapper.address,
-            long.address,
-            short.address,
-            POOL_CODE,
-            frontRunningInterval,
-            updateInterval,
-            fee,
-            leverage,
-            feeAddress,
-            token.address,
-            feeAddress //todo change to a proper MARGIN/ETH oracle
-        )
-    ).wait()
+    const PoolFactory = (await ethers.getContractFactory("PoolFactory", {
+        signer: signers[0],
+        libraries: { PoolSwapLibrary: library.address },
+    })) as PoolFactory__factory
+    const factory = await (await PoolFactory.deploy()).deployed()
 
+    const poolKeeperFactory = (await ethers.getContractFactory("PoolKeeper", {
+        signer: signers[0],
+    })) as PoolKeeper__factory
+    let poolKeeper = await poolKeeperFactory.deploy(factory.address)
+    poolKeeper = await poolKeeper.deployed()
+    await factory.setPoolKeeper(poolKeeper.address)
+
+    // deploy the pool using the factory, not separately
+    const deployParams = {
+        owner: signers[0].address,
+        keeper: poolKeeper.address,
+        poolCode: POOL_CODE,
+        frontRunningInterval: frontRunningInterval,
+        updateInterval: updateInterval,
+        fee: fee,
+        leverageAmount: leverage,
+        feeAddress: feeAddress,
+        quoteToken: token.address,
+        oracleWrapper: oracleWrapper.address,
+        keeperOracle: keeperOracle.address,
+    }
+
+    await factory.deployPool(deployParams)
+    const poolAddress = await poolKeeper.pools(0)
+    const pool = await ethers.getContractAt("LeveragedPool", poolAddress)
+
+    let longTokenAddr = await pool.tokens(0)
+    let shortTokenAddr = await pool.tokens(1)
+    const longToken = await ethers.getContractAt(ERC20Abi, longTokenAddr)
+    const shortToken = await ethers.getContractAt(ERC20Abi, shortTokenAddr)
     return {
         signers,
+        //@ts-ignore
         pool,
         token,
         library,
-        shortToken: new ethers.Contract(
-            getEventArgs(poolReceipt, "PoolInitialized")?.shortToken,
-            ERC20Abi,
-            signers[0]
-        ) as ERC20,
-        longToken: new ethers.Contract(
-            getEventArgs(poolReceipt, "PoolInitialized")?.longToken,
-            ERC20Abi,
-            signers[0]
-        ) as ERC20,
+        //@ts-ignore
+        shortToken,
+        //@ts-ignore
+        longToken,
     }
 }
 

@@ -7,11 +7,11 @@ pragma abicoder v2;
 */
 interface IPoolFactory {
     // #### Events
-
     event DeployPool(address indexed pool, string ticker);
 
     struct PoolDeployment {
-        address owner; // The address of the pool keeper that will administer the pool
+        address owner; // The address of the pool owner
+        address keeper; // The address of the pool keeper that will administer the pool
         string poolCode; // The pool identification code. This is unique per pool per pool keeper
         uint32 frontRunningInterval; // The minimum number of seconds that must elapse before a commit can be executed. Must be smaller than or equal to the update interval to prevent deadlock.
         uint32 updateInterval; // The minimum number of seconds that must elapse before a price change
@@ -24,8 +24,9 @@ interface IPoolFactory {
 
     // #### Functions
     /**
-    @notice Deploys a LeveragedPool contract
-    @return The address of the new pool
-   */
-    function deployPool(PoolDeployment memory deploymentParameters) external returns (address);
+     * @notice Deploys a LeveragedPool contract
+     * @param deploymentParameters Parameters for the new market deployment
+     * @return The address of the new pool
+     */
+    function deployPool(PoolDeployment calldata deploymentParameters) external returns (address);
 }

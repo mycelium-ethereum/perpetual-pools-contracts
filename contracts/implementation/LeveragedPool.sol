@@ -4,7 +4,6 @@ pragma abicoder v2;
 
 import "../interfaces/ILeveragedPool.sol";
 import "./PoolToken.sol";
-import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/proxy/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -18,7 +17,7 @@ import "../interfaces/IOracleWrapper.sol";
 /*
 @title The pool controller contract
 */
-contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
+contract LeveragedPool is ILeveragedPool, Initializable {
     using SafeMath_40 for uint40;
     using SafeMath_112 for uint112;
     using SafeMath_128 for uint128;
@@ -37,6 +36,8 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     // Index 0 is the LONG token, index 1 is the SHORT token
     address[2] public tokens;
 
+    address public owner;
+    address public keeper;
     address public feeAddress;
     address public quoteToken;
     address public keeperOracle;
@@ -47,45 +48,14 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     mapping(CommitType => uint112) public shadowPools;
     string public poolCode;
     address public override oracleWrapper;
-    // #### Roles
-    /**
-  @notice The Updater role is for addresses that can update a pool's price
-   */
-    bytes32 public constant UPDATER = keccak256("UPDATER");
-    /**
-  @notice The admin role for the fee holder and updater roles
-   */
-    bytes32 public constant ADMIN = keccak256("ADMIN");
-
-    /**
-  @notice The Fee holder role is for addresses that can change the address that fees go to.
-   */
-    bytes32 public constant FEE_HOLDER = keccak256("FEE_HOLDER");
 
     // #### Functions
 
-    function initialize(
-        address _updater,
-        address _oracleWrapper,
-        address _longToken,
-        address _shortToken,
-        string memory _poolCode,
-        uint32 _frontRunningInterval,
-        uint32 _updateInterval,
-        bytes16 _fee,
-        uint16 _leverageAmount,
-        address _feeAddress,
-        address _quoteToken
-    ) external override initializer {
-        require(_feeAddress != address(0), "Fee address cannot be 0 address");
-        require(_quoteToken != address(0), "Quote token cannot be 0 address");
-        require(_oracleWrapper != address(0), "Oracle wrapper cannot be 0 address");
-        // Setup roles
-        _setRoleAdmin(UPDATER, ADMIN);
-        _setRoleAdmin(FEE_HOLDER, ADMIN);
-        _setupRole(UPDATER, _updater);
-        _setupRole(ADMIN, _updater);
-        _setupRole(FEE_HOLDER, _feeAddress);
+    function initialize(ILeveragedPool.Initialization calldata initialization) external override initializer {
+        require(initialization._feeAddress != address(0), "Fee address cannot be 0 address");
+        require(initialization._quoteToken != address(0), "Quote token cannot be 0 address");
+        require(initialization._oracleWrapper != address(0), "Oracle wrapper cannot be 0 address");
+        transferOwnershipInitializer(initialization._owner);
 
         // Setup variables
         oracleWrapper = _oracleWrapper;
@@ -96,33 +66,38 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
         fee = _fee;
         leverageAmount = PoolSwapLibrary.convertUIntToDecimal(_leverageAmount);
         feeAddress = _feeAddress;
+        keeper = initialization._keeper;
         lastPriceTimestamp = uint40(block.timestamp);
-        poolCode = _poolCode;
-        tokens[0] = _longToken;
-        tokens[1] = _shortToken;
-        emit PoolInitialized(tokens[0], tokens[1], _quoteToken, _poolCode);
+        poolCode = initialization._poolCode;
+        tokens[0] = initialization._longToken;
+        tokens[1] = initialization._shortToken;
+        emit PoolInitialized(tokens[0], tokens[1], initialization._quoteToken, initialization._poolCode);
     }
 
     function commit(CommitType commitType, uint112 amount) external override {
         require(amount > 0, "Amount must not be zero");
         commitIDCounter = commitIDCounter.add(1);
 
+        // create commitment
         commits[commitIDCounter] = Commit({
             commitType: commitType,
             amount: amount,
             owner: msg.sender,
             created: uint40(block.timestamp)
         });
-
         shadowPools[commitType] = shadowPools[commitType].add(amount);
 
         emit CreateCommit(commitIDCounter, amount, commitType);
 
+        // pull in tokens
         if (commitType == CommitType.LongMint || commitType == CommitType.ShortMint) {
+            // minting: pull in the quote token from the commiter
             require(IERC20(quoteToken).transferFrom(msg.sender, address(this), amount), "Transfer failed");
         } else if (commitType == CommitType.LongBurn) {
+            // long burning: pull in long pool tokens from commiter
             require(PoolToken(tokens[0]).burn(amount, msg.sender), "Transfer failed");
         } else if (commitType == CommitType.ShortBurn) {
+            // short burning: pull in short pool tokens from commiter
             require(PoolToken(tokens[1]).burn(amount, msg.sender), "Transfer failed");
         }
     }
@@ -132,22 +107,25 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
         require(msg.sender == _commit.owner, "Unauthorized");
         require(_commit.owner != address(0), "Invalid commit");
 
-        shadowPools[_commit.commitType] -= _commit.amount;
-
+        // reduce pool commitment amount
+        shadowPools[_commit.commitType] = shadowPools[_commit.commitType].sub(_commit.amount);
         emit RemoveCommit(_commitID, _commit.amount, _commit.commitType);
-
         delete commits[_commitID];
 
+        // release tokens
         if (_commit.commitType == CommitType.LongMint || _commit.commitType == CommitType.ShortMint) {
+            // minting: return quote tokens to the commit owner
             require(IERC20(quoteToken).transfer(msg.sender, _commit.amount), "Transfer failed");
         } else if (_commit.commitType == CommitType.LongBurn) {
+            // long burning: return long pool tokens to commit owner
             require(PoolToken(tokens[0]).mint(_commit.amount, msg.sender), "Transfer failed");
         } else if (_commit.commitType == CommitType.ShortBurn) {
+            // short burning: return short pool tokens to the commit owner
             require(PoolToken(tokens[1]).mint(_commit.amount, msg.sender), "Transfer failed");
         }
     }
 
-    function executeCommitment(uint128[] memory _commitIDs) external override {
+    function executeCommitment(uint128[] calldata _commitIDs) external override {
         Commit memory _commit;
         for (uint128 i = 0; i < _commitIDs.length; i++) {
             _commit = commits[_commitIDs[i]];
@@ -158,9 +136,9 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     }
 
     /**
-    @notice Executes a single commitment.
-    @param _commit The commit to execute
-  */
+     * @notice Executes a single commitment.
+     * @param _commit The commit to execute
+     */
     function _executeCommitment(Commit memory _commit) internal {
         require(_commit.owner != address(0), "Invalid commit");
         require(lastPriceTimestamp.sub(_commit.created) > frontRunningInterval, "Commit too new");
@@ -169,9 +147,9 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
             longBalance = longBalance.add(_commit.amount);
             _mintTokens(
                 tokens[0],
-                _commit.amount,
-                longBalance.sub(_commit.amount),
-                shadowPools[CommitType.LongBurn],
+                _commit.amount, // amount of quote tokens commited to enter
+                longBalance.sub(_commit.amount), // total quote tokens in the long pull, excluding this mint
+                shadowPools[CommitType.LongBurn], // total pool tokens commited to be burned
                 _commit.owner
             );
         } else if (_commit.commitType == CommitType.LongBurn) {
@@ -221,37 +199,48 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
     }
 
     /**
-      @notice Mints new tokens
-      @param token The token to mint
-      @param amountIn The amount the user has committed to minting
-      @param balance The balance of pair at the start of the execution
-      @param inverseShadowbalance The amount of tokens burned from total supply
-      @param owner The address to send the tokens to
-   */
+     * @notice Mints new tokens
+     * @param token The token to mint
+     * @param amountIn The amount the user has committed to minting
+     * @param balance The balance of pair at the start of the execution
+     * @param inverseShadowbalance The amount of tokens burned from total supply
+     * @param tokenOwner The address to send the tokens to
+     */
     function _mintTokens(
         address token,
         uint112 amountIn,
         uint112 balance,
         uint112 inverseShadowbalance,
-        address owner
+        address tokenOwner
     ) internal {
         require(
             PoolToken(token).mint(
+                // amount out = ratio * amount in
                 PoolSwapLibrary.getAmountOut(
+                    // ratio = (totalSupply + inverseShadowBalance) / balance
                     PoolSwapLibrary.getRatio(
                         uint112(PoolToken(token).totalSupply()).add(inverseShadowbalance),
                         balance
                     ),
                     amountIn
                 ),
-                owner
+                tokenOwner
             ),
             "Mint failed"
         );
     }
 
-    function executePriceChange(int256 oldPrice, int256 newPrice) external override onlyUpdater {
+    /**
+     * @notice Processes the effect of a price change. This involves transferring funds from the losing pool to the other.
+     * @dev This function should be called by the Pool Keeper.
+     * @dev This function should be secured with some form of access control
+     * @param oldPrice The previously executed price
+     * @param newPrice The price for the latest interval.
+     */
+    function executePriceChange(int256 oldPrice, int256 newPrice) external override onlyKeeper {
         require(intervalPassed(), "Update interval hasn't passed");
+
+        // Calculate fees from long and short sides
         uint112 longFeeAmount = uint112(
             PoolSwapLibrary.convertDecimalToUInt(PoolSwapLibrary.multiplyDecimalByUInt(fee, longBalance))
         );
@@ -268,8 +257,11 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
             totalFeeAmount = totalFeeAmount.add(longFeeAmount);
         }
 
+        // Use the ratio to determine if the price increased or decreased and therefore which direction
+        // the funds should be transferred towards.
         bytes16 ratio = PoolSwapLibrary.divInt(newPrice, oldPrice);
         int8 direction = PoolSwapLibrary.compareDecimals(ratio, PoolSwapLibrary.one);
+        // Take into account the leverage
         bytes16 lossMultiplier = PoolSwapLibrary.getLossMultiplier(ratio, direction, leverageAmount);
 
         if (direction >= 0 && shortBalance > 0) {
@@ -296,30 +288,35 @@ contract LeveragedPool is ILeveragedPool, AccessControl, Initializable {
         return block.timestamp >= lastPriceTimestamp.add(updateInterval);
     }
 
-    function updateFeeAddress(address account) external override onlyFeeHolder {
+    function updateFeeAddress(address account) external override onlyOwner {
         require(account != address(0), "Invalid address");
         feeAddress = account;
     }
-
 
     function tipKeeper(address keeper, uint256 amount) external override onlyUpdater {
         require(IERC20(quoteToken).transfer(keeper, amount), "Tip failed");
     }
 
+    function setKeeper(address _keeper) external override onlyOwner {
+        keeper = _keeper;
+    }
+
+    function transferOwnershipInitializer(address _owner) internal initializer {
+        owner = _owner;
+    }
+
+    function transferOwnership(address _owner) external override onlyOwner {
+        owner = _owner;
+    }
+
     // #### Modifiers
-    /**
-    @notice Requires caller to have been granted the UPDATER role. Use this for functions that should be restricted to the PoolKeeper
-     */
-    modifier onlyUpdater() {
-        require(hasRole(UPDATER, msg.sender), "msg.sender not updater");
+    modifier onlyKeeper() {
+        require(msg.sender == keeper, "msg.sender not keeper");
         _;
     }
 
-    /** 
-  @notice Requires caller to have been granted the FEE_HOLDER role.
-  */
-    modifier onlyFeeHolder() {
-        require(hasRole(FEE_HOLDER, msg.sender));
+    modifier onlyOwner() {
+        require(msg.sender == owner, "msg.sender not owner");
         _;
     }
 }

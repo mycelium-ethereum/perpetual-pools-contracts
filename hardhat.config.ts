@@ -12,9 +12,7 @@ import "hardhat-gas-reporter"
 import "hardhat-deploy"
 import "hardhat-deploy-ethers"
 import "hardhat-contract-sizer"
-
-// TODO: reenable solidity-coverage when it works
-// import "solidity-coverage";
+import "solidity-coverage"
 
 const ALCHEMY_API_TESTNET_URL = process.env.ALCHEMY_API_TESTNET_URL || ""
 const ALCHEMY_API_MAINNET_URL = process.env.ALCHEMY_API_MAINNET_URL || ""
@@ -39,6 +37,9 @@ const config: HardhatUserConfig = {
         },
         coverage: {
             url: "http://127.0.0.1:8555", // Coverage launches its own ganache-cli client
+        },
+        local: {
+            url: "http://localhost:8545",
         },
     },
     etherscan: {

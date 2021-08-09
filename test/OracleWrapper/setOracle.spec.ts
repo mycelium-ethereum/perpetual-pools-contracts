@@ -43,14 +43,12 @@ describe("OracleWrapper - setOracle", () => {
         await oracleWrapper.deployed()
 
         // Sanity check the deployment
-        expect(await oracleWrapper.isAdmin(signers[0].address)).to.equal(true)
+        expect(await oracleWrapper.owner()).to.equal(signers[0].address)
     })
     it("should allow an authorized operator to set an oracle", async () => {
-        await oracleWrapper.switchAdmin(signers[1].address)
+        await oracleWrapper.transferOwnership(signers[1].address)
         await oracleWrapper.connect(signers[1]).setOracle(testOracle.address)
 
-        expect(await oracleWrapper.isAdmin(signers[1].address)).to.equal(true)
-        expect(await oracleWrapper.isAdmin(signers[0].address)).to.equal(false)
         expect(await oracleWrapper.oracle()).to.eq(testOracle.address)
     })
     it("should prevent unauthorized operators from setting an oracle", async () => {
@@ -58,31 +56,9 @@ describe("OracleWrapper - setOracle", () => {
             oracleWrapper.connect(signers[2]).setOracle(testOracle.address)
         ).to.be.rejectedWith(Error)
     })
-    // Currently skipped because we are moving to an Ownable model (not AccessControl)
-    it.skip("should allow multiple operators to set oracles", async () => {
-        await oracleWrapper.grantRole(
-            ethers.utils.keccak256(ethers.utils.toUtf8Bytes(OPERATOR_ROLE)),
-            signers[1].address
-        )
-        await oracleWrapper.grantRole(
-            ethers.utils.keccak256(ethers.utils.toUtf8Bytes(OPERATOR_ROLE)),
-            signers[2].address
-        )
-        await oracleWrapper.connect(signers[1]).setOracle(testOracle.address)
-        expect(await oracleWrapper.oracle()).to.eq(testOracle.address)
-        await oracleWrapper.connect(signers[2]).setOracle(testOracle2.address)
-        expect(await oracleWrapper.oracle()).to.eq(testOracle2.address)
-    })
     it("should prevent setting an oracle to the null address", async () => {
-        await oracleWrapper.grantRole(
-            ethers.utils.keccak256(ethers.utils.toUtf8Bytes(OPERATOR_ROLE)),
-            signers[1].address
-        )
-
         await expect(
-            oracleWrapper
-                .connect(signers[1])
-                .setOracle(ethers.constants.AddressZero)
+            oracleWrapper.setOracle(ethers.constants.AddressZero)
         ).to.be.rejectedWith(Error)
     })
 })
