@@ -137,11 +137,13 @@ describe("PoolFactory - deployPool", () => {
     it("pool should own tokens", async () => {
         const longToken = await pool.tokens(0)
         const shortToken = await pool.tokens(1)
-        let tokenInstance = new ethers.Contract(longToken, PoolToken__factory.abi).connect((await ethers.getSigners())[0])
+        let tokenInstance = new ethers.Contract(
+            longToken,
+            PoolToken__factory.abi
+        ).connect((await ethers.getSigners())[0])
         expect(await tokenInstance.owner()).to.eq(pool.address)
 
         tokenInstance = tokenInstance.attach(shortToken)
         expect(await tokenInstance.owner()).to.eq(pool.address)
-
     })
 })

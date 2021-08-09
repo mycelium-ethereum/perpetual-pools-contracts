@@ -47,10 +47,26 @@ contract PoolFactory is IPoolFactory, Ownable {
 
     function deployPool(PoolDeployment memory deploymentParameters) external override returns (address) {
         require(address(poolKeeper) != address(0), "PoolKeeper not set");
-        require(!IPoolKeeper(poolKeeper).poolIdTaken(deploymentParameters.poolCode, deploymentParameters.quoteToken, deploymentParameters.oracleWrapper), "Pool ID in use");
+        require(
+            !IPoolKeeper(poolKeeper).poolIdTaken(
+                deploymentParameters.poolCode,
+                deploymentParameters.quoteToken,
+                deploymentParameters.oracleWrapper
+            ),
+            "Pool ID in use"
+        );
         LeveragedPool pool = LeveragedPool(
             // pools are unique based on poolCode, quoteToken and oracle
-            Clones.cloneDeterministic(address(poolBase), keccak256(abi.encode(deploymentParameters.poolCode, deploymentParameters.quoteToken, deploymentParameters.oracleWrapper)))
+            Clones.cloneDeterministic(
+                address(poolBase),
+                keccak256(
+                    abi.encode(
+                        deploymentParameters.poolCode,
+                        deploymentParameters.quoteToken,
+                        deploymentParameters.oracleWrapper
+                    )
+                )
+            )
         );
         emit DeployPool(address(pool), deploymentParameters.poolCode);
 
@@ -81,7 +97,12 @@ contract PoolFactory is IPoolFactory, Ownable {
             deploymentParameters.quoteToken
         );
         pool.initialize(initialization);
-        poolKeeper.newPool(deploymentParameters.poolCode, address(pool), deploymentParameters.quoteToken, deploymentParameters.oracleWrapper);
+        poolKeeper.newPool(
+            deploymentParameters.poolCode,
+            address(pool),
+            deploymentParameters.quoteToken,
+            deploymentParameters.oracleWrapper
+        );
         return address(pool);
     }
 
@@ -93,7 +114,9 @@ contract PoolFactory is IPoolFactory, Ownable {
         address oracleWrapper
     ) internal returns (address) {
         // pools are unique based on poolCode, quoteToken and oracle -> pool tokens should be the same
-        PoolToken pairToken = PoolToken(Clones.cloneDeterministic(address(pairTokenBase), keccak256(abi.encode(name, quoteToken, oracleWrapper))));
+        PoolToken pairToken = PoolToken(
+            Clones.cloneDeterministic(address(pairTokenBase), keccak256(abi.encode(name, quoteToken, oracleWrapper)))
+        );
         pairToken.initialize(owner, name, symbol);
         return address(pairToken);
     }

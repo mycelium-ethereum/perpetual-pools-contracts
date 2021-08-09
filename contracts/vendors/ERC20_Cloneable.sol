@@ -343,8 +343,8 @@ contract ERC20_Cloneable is Context, IERC20, Initializable {
     ) internal virtual {}
 
     /**
-    * @notice Transfer ownership. Implemented to help with initializable
-    */
+     * @notice Transfer ownership. Implemented to help with initializable
+     */
     function transferOwnership(address _owner) external onlyOwner {
         require(_owner != address(0), "Owner: setting to 0 address");
         owner = _owner;

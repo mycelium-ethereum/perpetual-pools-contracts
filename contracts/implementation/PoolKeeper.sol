@@ -45,9 +45,9 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     mapping(address => int256) public lastExecutionPrice;
 
     /**
-    * @notice Format: Pool code => quote token => oracle wrapper => bool
-    * @dev ensures that the factory does not deterministicly deploy pools that already exist
-    */
+     * @notice Format: Pool code => quote token => oracle wrapper => bool
+     * @dev ensures that the factory does not deterministicly deploy pools that already exist
+     */
     mapping(string => mapping(address => mapping(address => bool))) public override poolIdTaken;
 
     /**
@@ -70,7 +70,12 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @param _poolCode The code associated with this pool.
      * @param _poolAddress The address of the newly-created pool.
      */
-    function newPool(string memory _poolCode, address _poolAddress, address _quoteToken, address _oracleWrapper) external override onlyFactory {    
+    function newPool(
+        string memory _poolCode,
+        address _poolAddress,
+        address _quoteToken,
+        address _oracleWrapper
+    ) external override onlyFactory {
         pools[numPools] = _poolAddress;
         numPools += 1;
 
