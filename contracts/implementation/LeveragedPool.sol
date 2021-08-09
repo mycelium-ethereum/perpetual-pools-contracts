@@ -47,6 +47,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     mapping(CommitType => uint112) public shadowPools;
     string public poolCode;
     address public override oracleWrapper;
+    address public override keeperOracle;
 
     // #### Functions
 

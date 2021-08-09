@@ -31,6 +31,7 @@ contract PoolFactory is IPoolFactory, Ownable {
             address(this),
             address(0),
             address(0),
+            address(0),
             "BASE_POOL",
             2,
             2,
@@ -56,6 +57,7 @@ contract PoolFactory is IPoolFactory, Ownable {
             deploymentParameters.owner,
             deploymentParameters.keeper,
             deploymentParameters.oracleWrapper,
+            deploymentParameters.keeperOracle,
             deployPairToken(
                 address(pool),
                 string(abi.encodePacked(deploymentParameters.poolCode, "-LONG")),

@@ -196,9 +196,21 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @param _gasSpent Number of gas units spent
      * @return Keeper's gas compensation
      */
-    function keeperGas(address _pool, uint256 _gasPrice, uint256 _gasSpent) public view returns (uint256) {
-        uint256 settlementTokenPrice = LeveragedPool(_pool).keeperOracle().getPrice();
-        return _gasPrice * _gasSpent * settlementTokenPrice;
+    function keeperGas(
+        address _pool,
+        uint256 _gasPrice,
+        uint256 _gasSpent
+    ) public view returns (uint256) {
+        int256 settlementTokenPrice = IOracleWrapper(
+            LeveragedPool(_pool).keeperOracle()
+        ).getPrice();
+
+        if (settlementTokenPrice <= 0) {
+            return 0;
+        } else {
+            /* safe due to explicit bounds check above */
+            return _gasPrice * _gasSpent * uint256(settlementTokenPrice);
+        }
     }
 
     /**
