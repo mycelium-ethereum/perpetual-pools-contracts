@@ -132,7 +132,6 @@ export const deployPoolAndTokenContracts = async (
     })) as PoolFactory__factory
     const factory = await (await PoolFactory.deploy()).deployed()
 
-
     const poolKeeperFactory = (await ethers.getContractFactory("PoolKeeper", {
         signer: signers[0],
     })) as PoolKeeper__factory
@@ -151,13 +150,13 @@ export const deployPoolAndTokenContracts = async (
         leverageAmount: leverage,
         feeAddress: feeAddress,
         quoteToken: token.address,
-        oracleWrapper: oracleWrapper.address
+        oracleWrapper: oracleWrapper.address,
     }
 
     await factory.deployPool(deployParams)
     const poolAddress = await poolKeeper.pools(0)
-    const pool = await ethers.getContractAt("LeveragedPool", poolAddress);
-    
+    const pool = await ethers.getContractAt("LeveragedPool", poolAddress)
+
     let longTokenAddr = await pool.tokens(0)
     let shortTokenAddr = await pool.tokens(1)
     const longToken = await ethers.getContractAt(ERC20Abi, longTokenAddr)
