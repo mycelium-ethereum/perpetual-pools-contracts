@@ -13,6 +13,7 @@ interface IPoolFactory {
     function pools(uint256 id) external view returns(address);
     function poolIdTaken(string calldata poolCode, address quoteToken, address oracleWrapper) external view returns(bool);
     function numPools() external view returns(uint256);
+    function isValidPool(address _pool) external view returns(bool);
 
     struct PoolDeployment {
         address owner; // The address of the pool owner

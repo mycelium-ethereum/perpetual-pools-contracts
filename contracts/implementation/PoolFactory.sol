@@ -32,9 +32,9 @@ contract PoolFactory is IPoolFactory, Ownable {
     uint256 public override numPools;
 
     /**
-    * @notice Format: Pool address => validity
-    */
-    mapping(address => bool) public isPool;
+     * @notice Format: Pool address => validity
+     */
+    mapping(address => bool) public override isValidPool;
 
     // #### Functions
     constructor() {
@@ -65,8 +65,18 @@ contract PoolFactory is IPoolFactory, Ownable {
     function deployPool(PoolDeployment calldata deploymentParameters) external override returns (address) {
         require(address(poolKeeper) != address(0), "PoolKeeper not set");
         require(
-            !poolIdTaken[deploymentParameters.poolCode][deploymentParameters.quoteToken][deploymentParameters.oracleWrapper],
+            !poolIdTaken[deploymentParameters.poolCode][deploymentParameters.quoteToken][
+                deploymentParameters.oracleWrapper
+            ],
             "Pool ID in use"
+        );
+        require(
+            deploymentParameters.owner != address(0) &&
+                deploymentParameters.quoteToken != address(0) &&
+                deploymentParameters.oracleWrapper != address(0) &&
+                deploymentParameters.feeAddress != address(0) &&
+                deploymentParameters.keeper != address(0),
+            "PoolKeeper: zero address as param"
         );
         LeveragedPool pool = LeveragedPool(
             // pools are unique based on poolCode, quoteToken and oracle
@@ -111,9 +121,7 @@ contract PoolFactory is IPoolFactory, Ownable {
             deploymentParameters.quoteToken
         );
         pool.initialize(initialization);
-        poolKeeper.newPool(
-            _pool
-        );
+        poolKeeper.newPool(_pool);
         pools[numPools] = _pool;
         numPools += 1;
         return address(pool);

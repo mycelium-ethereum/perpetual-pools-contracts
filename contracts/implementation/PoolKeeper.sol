@@ -75,15 +75,14 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @return upkeepNeeded Whether or not upkeep is needed for this single pool
      */
     function checkUpkeepSinglePool(address _pool) public view override returns (bool upkeepNeeded) {
+        if(!factory.isValidPool(_pool)) {
+            return false;
+        }
         ILeveragedPool pool = ILeveragedPool(_pool);
-        if (_pool == address(0)) {
-            return false;
-        }
 
+        // safety of oracle wrapper is ensured by PoolFactory. Not 0 on deploy and cannot be changed.
         IOracleWrapper oracleWrapper = IOracleWrapper(pool.oracleWrapper());
-        if (oracleWrapper.oracle() == address(0)) {
-            return false;
-        }
+
         int256 latestPrice = ABDKMathQuad.toInt(
             ABDKMathQuad.mul(ABDKMathQuad.fromInt(oracleWrapper.getPrice()), fixedPoint)
         );
