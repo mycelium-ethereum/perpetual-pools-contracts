@@ -15,7 +15,7 @@ library PoolSwapLibrary {
     @param _numerator The "parts per" side of the equation. If this is zero, the ratio is zero
     @param _denominator The "per part" side of the equation. If this is zero, the ratio is zero
     @return the ratio, as an ABDKMathQuad number (IEEE 754 quadruple precision floating point)
-    */
+   */
     function getRatio(uint112 _numerator, uint112 _denominator) internal pure returns (bytes16) {
         // Catch the divide by zero error.
         if (_denominator == 0) {

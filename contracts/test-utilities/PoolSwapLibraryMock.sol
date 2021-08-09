@@ -7,11 +7,11 @@ import "../implementation/PoolSwapLibrary.sol";
 
 library PoolSwapLibraryMock {
     function getRatio(uint112 _numerator, uint112 _denominator) external pure returns (bytes16) {
-		return PoolSwapLibrary.getRatio(_numerator, _denominator);
+		    return PoolSwapLibrary.getRatio(_numerator, _denominator);
     }
 
     function getAmountOut(bytes16 ratio, uint112 amountIn) external pure returns (uint112) {
-		return PoolSwapLibrary.getAmountOut(ratio, amountIn);
+		    return PoolSwapLibrary.getAmountOut(ratio, amountIn);
     }
 
     function compareDecimals(bytes16 x, bytes16 y) external pure returns (int8) {
@@ -39,11 +39,11 @@ library PoolSwapLibraryMock {
         int8 direction,
         bytes16 leverage
     ) external pure returns (bytes16) {
-		return PoolSwapLibrary.getLossMultiplier(ratio, direction, leverage);
+		    return PoolSwapLibrary.getLossMultiplier(ratio, direction, leverage);
     }
 
     function getLossAmount(bytes16 lossMultiplier, uint112 balance) external pure returns (uint256) {
-		return PoolSwapLibrary.getLossAmount(lossMultiplier, balance);
+		    return PoolSwapLibrary.getLossAmount(lossMultiplier, balance);
     }
 
     function calculatePriceChangeParameters(
@@ -62,6 +62,6 @@ library PoolSwapLibraryMock {
             uint112 totalFeeAmount
         )
     {
-		return PoolSwapLibrary.calculatePriceChangeParameters(oldPrice, newPrice, fee, longBalance, shortBalance, leverageAmount);
+		    return PoolSwapLibrary.calculatePriceChangeParameters(oldPrice, newPrice, fee, longBalance, shortBalance, leverageAmount);
     }
 }

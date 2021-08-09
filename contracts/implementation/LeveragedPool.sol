@@ -3,7 +3,7 @@ pragma solidity ^0.7.6;
 pragma abicoder v2;
 
 import "../interfaces/ILeveragedPool.sol";
-import "./PoolToken.sol";
+import "../interfaces/IPoolToken.sol";
 import "@openzeppelin/contracts/proxy/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -13,8 +13,6 @@ import "../vendors/SafeMath_128.sol";
 
 import "./PoolSwapLibrary.sol";
 import "../interfaces/IOracleWrapper.sol";
-
-import "hardhat/console.sol";
 
 /*
 @title The pool controller contract
@@ -29,7 +27,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     // Each balance is the amount of quote tokens in the pair
     uint112 public shortBalance;
     uint112 public longBalance;
-    uint32 public frontRunningInterval;
+    uint32 public override frontRunningInterval;
     uint32 public override updateInterval;
 
     bytes16 public fee;
@@ -42,13 +40,13 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     address public keeper;
     address public feeAddress;
     address public quoteToken;
-    uint40 public lastPriceTimestamp;
+    uint40 public override lastPriceTimestamp;
 
     // MAX_INT = 2**128 - 1 = 3.4028 * 10 ^ 38;
     //         = 340282366920938463463374607431768211455;
-    uint128 public constant NO_COMMITS_REMAINING = 340282366920938463463374607431768211455;
-    uint128 public earliestCommitUnexecuted;
-    uint128 public latestCommitUnexecuted;
+    uint128 public override constant NO_COMMITS_REMAINING = 340282366920938463463374607431768211455;
+    uint128 public override earliestCommitUnexecuted;
+    uint128 public override latestCommitUnexecuted;
     uint128 public commitIDCounter;
     mapping(uint128 => Commit) public commits;
     mapping(CommitType => uint112) public shadowPools;
@@ -58,7 +56,6 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     // #### Functions
 
     function initialize(ILeveragedPool.Initialization memory initialization) external override initializer {
-        console.log(2**128 - 1);
         require(initialization._feeAddress != address(0), "Fee address cannot be 0 address");
         require(initialization._quoteToken != address(0), "Quote token cannot be 0 address");
         require(initialization._oracleWrapper != address(0), "Oracle wrapper cannot be 0 address");
@@ -103,9 +100,9 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         if (commitType == CommitType.LongMint || commitType == CommitType.ShortMint) {
             require(IERC20(quoteToken).transferFrom(msg.sender, address(this), amount), "Transfer failed");
         } else if (commitType == CommitType.LongBurn) {
-            require(PoolToken(tokens[0]).burn(amount, msg.sender), "Transfer failed");
+            require(IPoolToken(tokens[0]).burn(amount, msg.sender), "Transfer failed");
         } else if (commitType == CommitType.ShortBurn) {
-            require(PoolToken(tokens[1]).burn(amount, msg.sender), "Transfer failed");
+            require(IPoolToken(tokens[1]).burn(amount, msg.sender), "Transfer failed");
         }
     }
 
@@ -133,49 +130,9 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         if (_commit.commitType == CommitType.LongMint || _commit.commitType == CommitType.ShortMint) {
             require(IERC20(quoteToken).transfer(msg.sender, _commit.amount), "Transfer failed");
         } else if (_commit.commitType == CommitType.LongBurn) {
-            require(PoolToken(tokens[0]).mint(_commit.amount, msg.sender), "Transfer failed");
+            require(IPoolToken(tokens[0]).mint(_commit.amount, msg.sender), "Transfer failed");
         } else if (_commit.commitType == CommitType.ShortBurn) {
-            require(PoolToken(tokens[1]).mint(_commit.amount, msg.sender), "Transfer failed");
-        }
-    }
-
-    /**
-     * @dev Iterate from earliestCommitUnexecuted to latestCommitUnexecuted, attempting to execute all of the commits
-     */
-    function executeAllCommitments() external override {
-        require(earliestCommitUnexecuted != NO_COMMITS_REMAINING, "No commits remaining");
-        uint128 nextEarliestCommitUnexecuted;
-        for (uint128 i = earliestCommitUnexecuted; i <= latestCommitUnexecuted; i++) {
-            Commit memory _commit = commits[i];
-            nextEarliestCommitUnexecuted = i;
-
-            // These two checks are so a given call to _executeCommitment won't revert,
-            // allowing us to continue iterations.
-            if (_commit.owner != address(0)) {
-                // Commit deleted (uncommitted) or already executed
-                nextEarliestCommitUnexecuted += 1; // It makes sense to set the next unexecuted to the next number
-                continue;
-            }
-            if (lastPriceTimestamp.sub(_commit.created) > frontRunningInterval) {
-                // This commit is the first that was too late.
-                break;
-            }
-            _executeCommitment(_commit);
-            if (i == latestCommitUnexecuted) {
-                earliestCommitUnexecuted = NO_COMMITS_REMAINING;
-                return;
-            }
-        }
-        earliestCommitUnexecuted = nextEarliestCommitUnexecuted;
-    }
-
-    function executeCommitment(uint128[] memory _commitIDs) external override {
-        Commit memory _commit;
-        for (uint128 i = 0; i < _commitIDs.length; i++) {
-            _commit = commits[_commitIDs[i]];
-            delete commits[_commitIDs[i]];
-            emit ExecuteCommit(_commitIDs[i]);
-            _executeCommitment(_commit);
+            require(IPoolToken(tokens[1]).mint(_commit.amount, msg.sender), "Transfer failed");
         }
     }
 
@@ -183,7 +140,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
      * @notice Executes a single commitment.
      * @param _commit The commit to execute
      */
-    function _executeCommitment(Commit memory _commit) internal {
+    function executeCommitment(Commit memory _commit) external override {
         require(_commit.owner != address(0), "Invalid commit");
         require(lastPriceTimestamp.sub(_commit.created) > frontRunningInterval, "Commit too new");
         shadowPools[_commit.commitType] = shadowPools[_commit.commitType].sub(_commit.amount);
@@ -201,7 +158,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
                 PoolSwapLibrary.getRatio(
                     longBalance,
                     uint112(
-                        uint112(PoolToken(tokens[0]).totalSupply()).add(shadowPools[CommitType.LongBurn]).add(
+                        uint112(IPoolToken(tokens[0])._totalSupply()).add(shadowPools[CommitType.LongBurn]).add(
                             _commit.amount
                         )
                     )
@@ -223,7 +180,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
             uint112 amountOut = PoolSwapLibrary.getAmountOut(
                 PoolSwapLibrary.getRatio(
                     shortBalance,
-                    uint112(PoolToken(tokens[1]).totalSupply()).add(shadowPools[CommitType.ShortBurn]).add(
+                    uint112(IPoolToken(tokens[1])._totalSupply()).add(shadowPools[CommitType.ShortBurn]).add(
                         _commit.amount
                     )
                 ),
@@ -258,10 +215,10 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         address tokenOwner
     ) internal {
         require(
-            PoolToken(token).mint(
+            IPoolToken(token).mint(
                 PoolSwapLibrary.getAmountOut(
                     PoolSwapLibrary.getRatio(
-                        uint112(PoolToken(token).totalSupply()).add(inverseShadowbalance),
+                        uint112(IPoolToken(token)._totalSupply()).add(inverseShadowbalance),
                         balance
                     ),
                     amountIn
@@ -301,7 +258,16 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         require(IERC20(quoteToken).transfer(feeAddress, totalFeeAmount), "Fee transfer failed");
     }
 
-    function executeUpkeep(int256 oldPrice, int256 newPrice) external override onlyKeeper {}
+    function getCommit(uint128 _commitID) external override returns (Commit memory) {
+        return commits[_commitID];
+    }
+
+    /**
+     * @notice Allow the PoolKeeper to update earliestCommitUnexecuted
+     */
+    function setEarliestCommitUnexecuted(uint128 _earliestCommitUnexecuted) external override onlyKeeper {
+        earliestCommitUnexecuted = _earliestCommitUnexecuted;
+    }
 
     /**
      * @return true if the price was last updated more than updateInterval seconds ago

@@ -155,6 +155,41 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     }
 
     /**
+     * @dev Iterate from the pool's earliestCommitUnexecuted to its latestCommitUnexecuted, attempting to execute all of the commits
+     * @param _pool The LeveragedPool to execute commitments for
+     */
+    function executeAllCommitments(address _pool) internal {
+        ILeveragedPool pool = ILeveragedPool(_pool);
+        require(pool.earliestCommitUnexecuted() != pool.NO_COMMITS_REMAINING(), "No commits remaining");
+        uint128 nextEarliestCommitUnexecuted;
+        uint40 poolLastPriceTimestamp = pool.lastPriceTimestamp();
+        uint40 poolFrontRunningInterval = pool.frontRunningInterval();
+        uint128 poolLatestCommitUnexecuted = pool.latestCommitUnexecuted();
+        for (uint128 i = pool.earliestCommitUnexecuted(); i <= pool.latestCommitUnexecuted(); i++) {
+            ILeveragedPool.Commit memory _commit = pool.getCommit(i);
+            nextEarliestCommitUnexecuted = i;
+            // These two checks are so a given call to _executeCommitment won't revert,
+            // allowing us to continue iterations.
+            if (_commit.owner != address(0)) {
+                // Commit deleted (uncommitted) or already executed
+                nextEarliestCommitUnexecuted += 1; // It makes sense to set the next unexecuted to the next number
+                continue;
+            }
+            if (poolLastPriceTimestamp.sub(_commit.created) > poolFrontRunningInterval) {
+                // This commit is the first that was too late.
+                break;
+            }
+            pool.executeCommitment(_commit);
+            if (i == poolLastPriceTimestamp) {
+                // We have reached the last one
+                pool.setEarliestCommitUnexecuted(pool.NO_COMMITS_REMAINING());
+                return;
+            }
+        }
+        pool.setEarliestCommitUnexecuted(nextEarliestCommitUnexecuted);
+    }
+
+    /**
      * @notice Executes a price change
      * @param roundStart The start time of the round
      * @param updateInterval The update interval of the pools

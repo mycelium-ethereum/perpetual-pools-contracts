@@ -4,24 +4,29 @@ pragma abicoder v2;
 
 import "../vendors/ERC20_Cloneable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "../interfaces/IPoolToken.sol";
 
 /*
 @title The pool token
 */
-contract PoolToken is ERC20_Cloneable, Ownable {
+contract PoolToken is IPoolToken, ERC20_Cloneable, Ownable {
     // #### Global state
 
     // #### Functions
 
     constructor() ERC20_Cloneable("BASE_TOKEN", "BASE") {}
 
-    function mint(uint256 amount, address account) external onlyOwner returns (bool) {
+    function mint(uint256 amount, address account) external override onlyOwner returns (bool) {
         _mint(account, amount);
         return true;
     }
 
-    function burn(uint256 amount, address account) external onlyOwner returns (bool) {
+    function burn(uint256 amount, address account) external override onlyOwner returns (bool) {
         _burn(account, amount);
         return true;
+    }
+
+    function _totalSupply() external override view returns (uint256) {
+        return totalSupply();
     }
 }

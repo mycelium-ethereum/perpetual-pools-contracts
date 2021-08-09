@@ -77,8 +77,14 @@ interface ILeveragedPool {
     event PriceChange(int256 indexed startPrice, int256 indexed endPrice, uint112 indexed transferAmount);
 
     function updateInterval() external view returns (uint32);
+    function frontRunningInterval() external view returns (uint32);
 
     function oracleWrapper() external view returns (address);
+
+    function NO_COMMITS_REMAINING() external view returns (uint128);
+    function earliestCommitUnexecuted() external view returns (uint128);
+    function latestCommitUnexecuted() external view returns (uint128);
+    function lastPriceTimestamp() external view returns (uint40);
 
     // #### Functions
     /**
@@ -104,16 +110,10 @@ interface ILeveragedPool {
     function uncommit(uint128 commitID) external;
 
     /**
-     * @notice
-     * @param
+     * @notice Executes a single commitment.
+     * @param _commit The commit to execute
      */
-    function executeAllCommitments() external;
-
-    /**
-     * @notice Executes one or more commitments and effects the changes on the live and shadow pools respectively. This can be used to execute on any valid commits in the commit pool
-     * @param _commitIDs an array of commits to execute. These do not have to all belong to the sender, nor do they need to be in a specific order.
-     */
-    function executeCommitment(uint128[] memory _commitIDs) external;
+    function executeCommitment(Commit memory _commit) external;
 
     /**
      * @notice Processes the effect of a price change. This involves transferring funds from the losing pool to the other.
@@ -125,19 +125,18 @@ interface ILeveragedPool {
     function executePriceChange(int256 oldPrice, int256 newPrice) external;
 
     /**
-     * @notice
-     * @dev
-     * @param oldPrice The previously executed price
-     * @param newPrice The price for the latest interval.
-     */
-    function executeUpkeep(int256 oldPrice, int256 newPrice) external;
-
-    /**
      * @return true if the price was last updated more than updateInterval seconds ago
      */
     function intervalPassed() external view returns (bool);
 
+    function getCommit(uint128 _commitID) external returns (Commit memory);
+
     function setKeeper(address _keeper) external;
+
+    /**
+     * @notice Allow the PoolKeeper to update earliestCommitUnexecuted
+     */
+    function setEarliestCommitUnexecuted(uint128 _earliestCommitUnexecuted) external;
 
     /**
      * @dev Allows the owner to transfer ownership to another address
