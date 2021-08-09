@@ -43,7 +43,7 @@ describe("LeveragedPool - executeCommitment: Basic test cases", () => {
         before(async () => {
             const result = await deployPoolAndTokenContracts(
                 POOL_CODE,
-                5,
+                frontRunningInterval,
                 updateInterval,
                 fee,
                 leverage,
