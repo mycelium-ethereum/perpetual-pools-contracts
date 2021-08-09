@@ -21,7 +21,7 @@ contract PoolFactory is IPoolFactory, Ownable {
 
     /**
      * @notice Format: Pool code => quote token => oracle wrapper => bool
-     * @dev ensures that the factory does not deterministicly deploy pools that already exist
+     * @dev ensures that the factory does not deterministically deploy pools that already exist
      */
     mapping(string => mapping(address => mapping(address => bool))) public override poolIdTaken;
 
