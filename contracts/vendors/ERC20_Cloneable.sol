@@ -6,7 +6,6 @@ import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/proxy/Initializable.sol";
-import "@openzeppelin/contracts/access/AccessControl.sol";
 
 /**
  * @dev Minimal Clones compatible implementation of the {IERC20} interface.
@@ -33,9 +32,7 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
  * functions have been added to mitigate the well-known issues around setting
  * allowances. See {IERC20-approve}.
  */
-contract ERC20_Cloneable is Context, IERC20, AccessControl, Initializable {
-    bytes32 public constant POOL = keccak256("POOL");
-
+contract ERC20_Cloneable is Context, IERC20, Initializable {
     using SafeMath for uint256;
 
     mapping(address => uint256) private _balances;
@@ -47,6 +44,7 @@ contract ERC20_Cloneable is Context, IERC20, AccessControl, Initializable {
     string private _name;
     string private _symbol;
     uint8 private _decimals;
+    address public owner;
 
     /**
      * @dev Sets the values for {name} and {symbol}, initializes {decimals} with
@@ -68,7 +66,7 @@ contract ERC20_Cloneable is Context, IERC20, AccessControl, Initializable {
         string memory name_,
         string memory symbol_
     ) external initializer {
-        _setupRole(POOL, _pool);
+        owner = _pool;
         _name = name_;
         _symbol = symbol_;
         _decimals = 18;
@@ -343,4 +341,17 @@ contract ERC20_Cloneable is Context, IERC20, AccessControl, Initializable {
         address to,
         uint256 amount
     ) internal virtual {}
+
+    /**
+    * @notice Transfer ownership. Implemented to help with initializable
+    */
+    function transferOwnership(address _owner) external onlyOwner {
+        require(_owner != address(0), "Owner: setting to 0 address");
+        owner = _owner;
+    }
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "msg.sender not owner");
+        _;
+    }
 }

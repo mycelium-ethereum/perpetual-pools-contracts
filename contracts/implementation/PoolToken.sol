@@ -3,12 +3,12 @@ pragma solidity ^0.7.6;
 pragma abicoder v2;
 
 import "../vendors/ERC20_Cloneable.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 
 /*
-@title The pool token
+* @title The pool token
+* @dev ERC_20_Cloneable contains onlyOwner code implemented for use with the cloneable setup
 */
-contract PoolToken is ERC20_Cloneable, Ownable {
+contract PoolToken is ERC20_Cloneable {
     // #### Global state
 
     // #### Functions
