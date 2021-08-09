@@ -16,8 +16,8 @@ describe("LeveragedPool - updateFeeAddress", () => {
         signers = await ethers.getSigners()
         const result = await deployPoolAndTokenContracts(
             POOL_CODE,
-            5,
-            2,
+            2, // frontRunningInterval
+            5, // updateInterval
             "0x00000000000000000000000000000000",
             1,
             signers[0].address,
