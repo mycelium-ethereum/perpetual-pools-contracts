@@ -23,6 +23,7 @@ describe("PoolFactory - deployPool", () => {
     let factory: PoolFactory
     let poolKeeper: PoolKeeper
     let oracleWrapper: TestOracleWrapper
+    let keeperOracle: TestOracleWrapper
     let poolTx: Result | undefined
     let pool: LeveragedPool
     before(async () => {
@@ -50,6 +51,11 @@ describe("PoolFactory - deployPool", () => {
         )
         await oracleWrapper.deployed()
 
+        keeperOracle = await oracleWrapperFactory.deploy(
+            chainlinkOracle.address
+        )
+        await keeperOracle.deployed()
+
         const PoolFactory = (await ethers.getContractFactory("PoolFactory", {
             signer: signers[0],
             libraries: { PoolSwapLibrary: library.address },
@@ -76,6 +82,7 @@ describe("PoolFactory - deployPool", () => {
             feeAddress: generateRandomAddress(),
             quoteToken: generateRandomAddress(),
             oracleWrapper: oracleWrapper.address,
+            keeperOracle: keeperOracle.address,
         }
         poolTx = getEventArgs(
             await (await factory.deployPool(deploymentData)).wait(),
@@ -95,6 +102,7 @@ describe("PoolFactory - deployPool", () => {
             _owner: generateRandomAddress(),
             _keeper: generateRandomAddress(),
             _oracleWrapper: generateRandomAddress(),
+            _keeperOracle: generateRandomAddress(),
             _longToken: generateRandomAddress(),
             _shortToken: generateRandomAddress(),
             _poolCode: POOL_CODE,
@@ -119,6 +127,7 @@ describe("PoolFactory - deployPool", () => {
             feeAddress: generateRandomAddress(),
             quoteToken: generateRandomAddress(),
             oracleWrapper: oracleWrapper.address,
+            keeperOracle: keeperOracle.address,
         }
         const secondPool = getEventArgs(
             await (await factory.deployPool(deploymentData)).wait(),

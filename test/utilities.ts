@@ -118,6 +118,11 @@ export const deployPoolAndTokenContracts = async (
         chainlinkOracle.address
     )
 
+    /* keeper oracle */
+    const keeperOracle = await oracleWrapperFactory.deploy(
+        chainlinkOracle.address
+    )
+
     // Deploy and initialise pool
     const libraryFactory = (await ethers.getContractFactory(
         "PoolSwapLibrary",
@@ -148,6 +153,7 @@ export const deployPoolAndTokenContracts = async (
         _owner: signers[0].address,
         _keeper: poolKeeper.address,
         _oracleWrapper: oracleWrapper.address,
+        _keeperOracle: keeperOracle.address,
         _longToken: long.address,
         _shortToken: short.address,
         _poolCode: POOL_CODE,

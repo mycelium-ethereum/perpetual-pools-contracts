@@ -21,6 +21,7 @@ const { expect } = chai
 
 let quoteToken: string
 let oracleWrapper: TestOracleWrapper
+let keeperOracle: TestOracleWrapper
 let oracle: TestChainlinkOracle
 let poolKeeper: PoolKeeper
 
@@ -55,6 +56,9 @@ const setupHook = async () => {
     oracleWrapper = await oracleWrapperFactory.deploy(oracle.address)
     await oracleWrapper.deployed()
 
+    keeperOracle = await oracleWrapperFactory.deploy(oracle.address)
+    await keeperOracle.deployed()
+
     // Deploy pool keeper
     const libraryFactory = (await ethers.getContractFactory(
         "PoolSwapLibrary",
@@ -86,6 +90,7 @@ const setupHook = async () => {
         feeAddress: generateRandomAddress(),
         quoteToken: quoteToken,
         oracleWrapper: oracleWrapper.address,
+        keeperOracle: keeperOracle.address,
     }
     await factory.deployPool(deploymentData)
 
@@ -100,6 +105,7 @@ const setupHook = async () => {
         feeAddress: generateRandomAddress(),
         quoteToken: quoteToken,
         oracleWrapper: oracleWrapper.address,
+        keeperOracle: keeperOracle.address,
     }
     await factory.deployPool(deploymentData2)
 }
