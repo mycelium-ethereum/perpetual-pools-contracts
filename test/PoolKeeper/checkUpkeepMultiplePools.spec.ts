@@ -110,10 +110,7 @@ describe("PoolKeeper - checkUpkeepMultiplePools", () => {
         await setupHook()
     })
     it("should return true if the trigger condition is met", async () => {
-        let poolAddresses = [
-            await factory.pools(0),
-            await factory.pools(1),
-        ]
+        let poolAddresses = [await factory.pools(0), await factory.pools(1)]
         await forwardTime(5)
         await oracleWrapper.incrementPrice()
         expect(await poolKeeper.checkUpkeepMultiplePools(poolAddresses)).to.eq(
@@ -121,10 +118,7 @@ describe("PoolKeeper - checkUpkeepMultiplePools", () => {
         )
     })
     it("should return true if the trigger condition is met on only one", async () => {
-        let poolAddresses = [
-            await factory.pools(0),
-            await factory.pools(1),
-        ]
+        let poolAddresses = [await factory.pools(0), await factory.pools(1)]
         await forwardTime(5)
         await oracleWrapper.incrementPrice()
         await poolKeeper.performUpkeepSinglePool(poolAddresses[0])
@@ -133,10 +127,7 @@ describe("PoolKeeper - checkUpkeepMultiplePools", () => {
         )
     })
     it("should return false if the trigger condition isn't met", async () => {
-        let poolAddresses = [
-            await factory.pools(0),
-            await factory.pools(1),
-        ]
+        let poolAddresses = [await factory.pools(0), await factory.pools(1)]
         await forwardTime(5)
         await oracleWrapper.incrementPrice()
         await poolKeeper.performUpkeepMultiplePools(poolAddresses)
@@ -145,10 +136,7 @@ describe("PoolKeeper - checkUpkeepMultiplePools", () => {
         )
     })
     it("should return false if the check data provided is invalid", async () => {
-        let poolAddresses = [
-            await factory.pools(0),
-            await factory.pools(1),
-        ]
+        let poolAddresses = [await factory.pools(0), await factory.pools(1)]
         await forwardTime(5)
         expect(await poolKeeper.checkUpkeepMultiplePools(poolAddresses)).to.eq(
             false

@@ -55,9 +55,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @notice When a pool is created, this function is called by the factory to initiate price tracking.
      * @param _poolAddress The address of the newly-created pool.
      */
-    function newPool(
-        address _poolAddress
-    ) external override onlyFactory {
+    function newPool(address _poolAddress) external override onlyFactory {
         address oracleWrapper = ILeveragedPool(_poolAddress).oracleWrapper();
         int256 firstPrice = IOracleWrapper(oracleWrapper).getPrice();
         int256 startingPrice = ABDKMathQuad.toInt(ABDKMathQuad.mul(ABDKMathQuad.fromInt(firstPrice), fixedPoint));
@@ -75,7 +73,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @return upkeepNeeded Whether or not upkeep is needed for this single pool
      */
     function checkUpkeepSinglePool(address _pool) public view override returns (bool upkeepNeeded) {
-        if(!factory.isValidPool(_pool)) {
+        if (!factory.isValidPool(_pool)) {
             return false;
         }
         ILeveragedPool pool = ILeveragedPool(_pool);
