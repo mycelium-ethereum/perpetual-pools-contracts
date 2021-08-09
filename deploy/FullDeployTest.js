@@ -1,6 +1,3 @@
-const { OPERATOR_ROLE, POOL_CODE, ADMIN_ROLE } = require("../test/constants")
-const { generateRandomAddress } = require("../test/utilities")
-
 module.exports = async (hre) => {
     const { getNamedAccounts, ethers } = hre
     const { deploy, execute } = deployments

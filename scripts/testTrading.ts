@@ -1,4 +1,3 @@
-import { timeout } from "../test/utilities"
 import {
     LeveragedPool__factory,
     PoolFactory__factory,
