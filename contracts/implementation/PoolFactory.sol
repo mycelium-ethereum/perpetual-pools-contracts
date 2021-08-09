@@ -124,7 +124,8 @@ contract PoolFactory is IPoolFactory, Ownable {
         poolKeeper.newPool(_pool);
         pools[numPools] = _pool;
         numPools += 1;
-        return address(pool);
+        isValidPool(_pool) = true;
+        return _pool;
     }
 
     function deployPairToken(
