@@ -201,12 +201,6 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         return BASE_TIP + TIP_DELTA_PER_BLOCK * elapsedBlocks;
     }
 
-    // #### Modifiers
-    modifier onlyAdmin() {
-        require(hasRole(ADMIN, msg.sender));
-        _;
-    }
-
     function setFactory(address _factory) external override onlyOwner {
         factory = IPoolFactory(_factory);
     }
