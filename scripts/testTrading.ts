@@ -1,4 +1,3 @@
-import { ADMIN_ROLE, OPERATOR_ROLE, UPDATER_ROLE } from "../test/constants"
 import {
     LeveragedPool__factory,
     PoolFactory__factory,
@@ -8,6 +7,10 @@ import {
     PoolFactory,
     PoolKeeper__factory,
     PoolKeeper,
+    TestOracleWrapper__factory,
+    TestOracleWrapper,
+    PoolToken__factory,
+    PoolToken,
 } from "../typechain"
 
 const hre = require("hardhat")
@@ -23,6 +26,20 @@ async function main() {
         factory.address,
         PoolFactory__factory.abi
     ).connect(deployer) as PoolFactory
+
+    /* Get the keeper */
+    const keeper = await deployments.get("PoolKeeper")
+    const keeperInstance = new ethers.Contract(
+        keeper.address,
+        PoolKeeper__factory.abi
+    ).connect(deployer) as PoolKeeper
+
+    /* Get the Oracle */
+    const oracleWrapper = await deployments.get("TestOracleWrapper")
+    const oracleWrapperInstance = new ethers.Contract(
+        oracleWrapper.address,
+        TestOracleWrapper__factory.abi
+    ).connect(deployer) as TestOracleWrapper
 
     const quoteToken = await deployments.get("TestToken")
     let quoteTokenInstance = new ethers.Contract(
@@ -43,6 +60,18 @@ async function main() {
 
     const shortMint = [0]
     const longMint = [2]
+
+    const token = await pool.tokens(0)
+    const tokenInstance = new ethers.Contract(
+        token,
+        PoolToken__factory.abi
+    ).connect(deployer) as PoolToken
+
+    console.log(`Pool address should own token: ${pool.address}`) // owners are different here
+    console.log(
+        `Owner for ${await tokenInstance.name()}`,
+        await tokenInstance.owner()
+    ) // no owner :(
 
     /* Commit to pool */
     console.log(`Account ${accounts[0].address} committing 100 short`)
@@ -77,14 +106,13 @@ async function main() {
     const allCommits = await pool?.queryFilter(createdCommits)
     let commitIds = allCommits.map((event) => event.args.commitID)
 
-    /* Setting keeper */
-    // TODO add keeper back and do this with the keeper
-    // const keeper = await deployments.get('PoolFactory')
-    // const keeperInstance = new ethers.Contract(keeper.address, PoolKeeper__factory.abi).connect(deployer) as PoolKeeper
+    const updateInterval = 10 * 60
 
-    const TEN_MINS = 10 * 60
+    /* Changing price */
+    await oracleWrapperInstance.incrementPrice()
+
     console.log("Fast forward 10 mins")
-    await ethers.provider.send("evm_increaseTime", [TEN_MINS + 1], {
+    await ethers.provider.send("evm_increaseTime", [updateInterval + 1], {
         from: deployer.address,
     })
     await ethers.provider.send("evm_mine", [], { from: deployer.address })
@@ -92,21 +120,20 @@ async function main() {
     /* Granting access */
     pool = pool.connect(deployer)
 
-    /* Changing price */
-    console.log("Changing price")
-    await pool.executePriceChange(1, 2)
+    console.log(`Performing upkeep first round`)
+    await keeperInstance.performUpkeepSinglePool(pool.address)
 
     console.log("Executing commitments")
-    await pool.executeCommitment(commitIds)
+    await pool.executeCommitment(commitIds) // fails here
 
     console.log("Fast forward 10 mins")
-    await ethers.provider.send("evm_increaseTime", [TEN_MINS + 1], {
+    await ethers.provider.send("evm_increaseTime", [updateInterval + 1], {
         from: deployer.address,
     })
     await ethers.provider.send("evm_mine", [], { from: deployer.address })
 
-    console.log(`Changing price`)
-    await pool.executePriceChange(2, 1)
+    console.log(`Performing upkeep second round`)
+    await keeperInstance.performUpkeepSinglePool(pool.address)
 }
 
 main()

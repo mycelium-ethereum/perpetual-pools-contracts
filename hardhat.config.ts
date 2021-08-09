@@ -12,9 +12,7 @@ import "hardhat-gas-reporter"
 import "hardhat-deploy"
 import "hardhat-deploy-ethers"
 import "hardhat-contract-sizer"
-
-// TODO: reenable solidity-coverage when it works
-// import "solidity-coverage";
+import "solidity-coverage"
 
 const ALCHEMY_API_TESTNET_URL = process.env.ALCHEMY_API_TESTNET_URL || ""
 const ALCHEMY_API_MAINNET_URL = process.env.ALCHEMY_API_MAINNET_URL || ""
