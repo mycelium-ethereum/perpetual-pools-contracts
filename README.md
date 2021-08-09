@@ -46,11 +46,8 @@ If you have `slither` installed and on your PATH, you can run `npm run slither` 
 
 ### Run Coverage Report for Tests
 
-`npm run coverage`
+`npx hardhat coverage`
 
-Notes:
-
-- running a coverage report currently deletes artifacts, so after each coverage run you will then need to run `npx hardhat clean` followed by `npm run build` before re-running tests
  
 ### Deploy to Ethereum
 
