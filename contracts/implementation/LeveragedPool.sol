@@ -50,7 +50,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
 
     // #### Functions
 
-    function initialize(ILeveragedPool.Initialization memory initialization) external override initializer {
+    function initialize(ILeveragedPool.Initialization calldata initialization) external override initializer {
         require(initialization._feeAddress != address(0), "Fee address cannot be 0 address");
         require(initialization._quoteToken != address(0), "Quote token cannot be 0 address");
         require(initialization._oracleWrapper != address(0), "Oracle wrapper cannot be 0 address");
@@ -123,7 +123,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         }
     }
 
-    function executeCommitment(uint128[] memory _commitIDs) external override {
+    function executeCommitment(uint128[] calldata _commitIDs) external override {
         Commit memory _commit;
         for (uint128 i = 0; i < _commitIDs.length; i++) {
             _commit = commits[_commitIDs[i]];
