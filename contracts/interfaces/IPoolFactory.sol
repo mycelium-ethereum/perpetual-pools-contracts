@@ -12,11 +12,7 @@ interface IPoolFactory {
     // #### Getters for Globals
     function pools(uint256 id) external view returns (address);
 
-    function poolIdTaken(
-        string calldata poolCode,
-        address quoteToken,
-        address oracleWrapper
-    ) external view returns (bool);
+    function poolIdTaken(bytes32 uniquePoolId) external view returns (bool);
 
     function numPools() external view returns (uint256);
 
