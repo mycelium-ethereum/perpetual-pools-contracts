@@ -201,9 +201,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         uint256 _gasPrice,
         uint256 _gasSpent
     ) public view returns (uint256) {
-        int256 settlementTokenPrice = IOracleWrapper(
-            LeveragedPool(_pool).keeperOracle()
-        ).getPrice();
+        int256 settlementTokenPrice = IOracleWrapper(LeveragedPool(_pool).keeperOracle()).getPrice();
 
         if (settlementTokenPrice <= 0) {
             return 0;
