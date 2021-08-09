@@ -7,7 +7,6 @@ pragma abicoder v2;
 */
 interface IPoolFactory {
     // #### Events
-
     event DeployPool(address indexed pool, string ticker);
 
     struct PoolDeployment {
@@ -25,8 +24,9 @@ interface IPoolFactory {
 
     // #### Functions
     /**
-    @notice Deploys a LeveragedPool contract
-    @return The address of the new pool
-   */
-    function deployPool(PoolDeployment memory deploymentParameters) external returns (address);
+     * @notice Deploys a LeveragedPool contract
+     * @param deploymentParameters Parameters for the new market deployment
+     * @return The address of the new pool
+     */
+    function deployPool(PoolDeployment calldata deploymentParameters) external returns (address);
 }

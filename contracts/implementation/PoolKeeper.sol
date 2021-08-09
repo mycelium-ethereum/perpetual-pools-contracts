@@ -64,7 +64,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @param _poolCode The code associated with this pool.
      * @param _poolAddress The address of the newly-created pool.
      */
-    function newPool(string memory _poolCode, address _poolAddress) external override onlyFactory {
+    function newPool(string calldata _poolCode, address _poolAddress) external override onlyFactory {
         IOracleWrapper oracleWrapper = IOracleWrapper(ILeveragedPool(_poolAddress).oracleWrapper());
 
         pools[numPools] = _poolAddress;
