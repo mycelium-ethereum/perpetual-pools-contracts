@@ -9,6 +9,11 @@ interface IPoolFactory {
     // #### Events
     event DeployPool(address indexed pool, string ticker);
 
+    // #### Getters for Globals
+    function pools(uint256 id) external view returns(address);
+    function poolIdTaken(string calldata poolCode, address quoteToken, address oracleWrapper) external view returns(bool);
+    function numPools() external view returns(uint256);
+
     struct PoolDeployment {
         address owner; // The address of the pool owner
         address keeper; // The address of the pool keeper that will administer the pool

@@ -19,6 +19,23 @@ contract PoolFactory is IPoolFactory, Ownable {
     LeveragedPool public poolBase;
     IPoolKeeper public poolKeeper;
 
+    /**
+     * @notice Format: Pool code => quote token => oracle wrapper => bool
+     * @dev ensures that the factory does not deterministicly deploy pools that already exist
+     */
+    mapping(string => mapping(address => mapping(address => bool))) public override poolIdTaken;
+
+    /**
+     * @notice Format: Pool counter => pool address
+     */
+    mapping(uint256 => address) public override pools;
+    uint256 public override numPools;
+
+    /**
+    * @notice Format: Pool address => validity
+    */
+    mapping(address => bool) public isPool;
+
     // #### Functions
     constructor() {
         // Deploy base contracts
@@ -48,11 +65,7 @@ contract PoolFactory is IPoolFactory, Ownable {
     function deployPool(PoolDeployment calldata deploymentParameters) external override returns (address) {
         require(address(poolKeeper) != address(0), "PoolKeeper not set");
         require(
-            !IPoolKeeper(poolKeeper).poolIdTaken(
-                deploymentParameters.poolCode,
-                deploymentParameters.quoteToken,
-                deploymentParameters.oracleWrapper
-            ),
+            !poolIdTaken[deploymentParameters.poolCode][deploymentParameters.quoteToken][deploymentParameters.oracleWrapper],
             "Pool ID in use"
         );
         LeveragedPool pool = LeveragedPool(
@@ -99,11 +112,10 @@ contract PoolFactory is IPoolFactory, Ownable {
         );
         pool.initialize(initialization);
         poolKeeper.newPool(
-            deploymentParameters.poolCode,
-            address(pool),
-            deploymentParameters.quoteToken,
-            deploymentParameters.oracleWrapper
+            _pool
         );
+        pools[numPools] = _pool;
+        numPools += 1;
         return address(pool);
     }
 

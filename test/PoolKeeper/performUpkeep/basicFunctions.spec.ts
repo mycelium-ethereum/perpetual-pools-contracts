@@ -107,8 +107,8 @@ const setupHook = async () => {
     await (await factory.deployPool(deploymentData2)).wait()
 
     // get pool addresses
-    POOL1_ADDR = await poolKeeper.pools(0)
-    POOL2_ADDR = await poolKeeper.pools(1)
+    POOL1_ADDR = await factory.pools(0)
+    POOL2_ADDR = await factory.pools(1)
 
     callData = ethers.utils.defaultAbiCoder.encode(
         [ethers.utils.ParamType.from("address[]")],

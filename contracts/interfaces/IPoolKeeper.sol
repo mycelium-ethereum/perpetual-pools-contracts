@@ -79,10 +79,7 @@ interface IPoolKeeper {
      * @param _poolAddress The address of the newly-created pool.
      */
     function newPool(
-        string memory _poolCode,
-        address _poolAddress,
-        address _quoteToken,
-        address _oracleWrapper
+        address _poolAddress
     ) external;
 
     /**
@@ -117,13 +114,4 @@ interface IPoolKeeper {
      * @param poolCodes pool codes to perform the update for.
      */
     function performUpkeepMultiplePools(address[] calldata poolCodes) external;
-
-    /**
-     * @notice Getter for the poolIdTaken mapping
-     */
-    function poolIdTaken(
-        string calldata poolCode,
-        address quoteToken,
-        address oracleWrapper
-    ) external view returns (bool);
 }

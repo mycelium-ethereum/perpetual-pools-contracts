@@ -23,14 +23,6 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     using SafeMath_40 for uint40;
 
     // #### Global variables
-
-    uint256 public numPools;
-
-    /**
-     * @notice Format: Pool counter => pool address, where pool code looks like TSLA/USD^5+aDAI
-     */
-    mapping(uint256 => address) public pools;
-
     /**
      * @notice Format: Pool code => roundStart
      */
@@ -43,12 +35,6 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @notice Format: Pool code => lastExecutionPrice
      */
     mapping(address => int256) public lastExecutionPrice;
-
-    /**
-     * @notice Format: Pool code => quote token => oracle wrapper => bool
-     * @dev ensures that the factory does not deterministicly deploy pools that already exist
-     */
-    mapping(string => mapping(address => mapping(address => bool))) public override poolIdTaken;
 
     /**
      * @notice Format: Pool code => timestamp of last price execution
@@ -70,21 +56,15 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @param _poolAddress The address of the newly-created pool.
      */
     function newPool(
-        string memory _poolCode,
-        address _poolAddress,
-        address _quoteToken,
-        address _oracleWrapper
+        address _poolAddress
     ) external override onlyFactory {
-        pools[numPools] = _poolAddress;
-        numPools += 1;
-
-        int256 firstPrice = IOracleWrapper(_oracleWrapper).getPrice();
+        address oracleWrapper = ILeveragedPool(_poolAddress).oracleWrapper();
+        int256 firstPrice = IOracleWrapper(oracleWrapper).getPrice();
         int256 startingPrice = ABDKMathQuad.toInt(ABDKMathQuad.mul(ABDKMathQuad.fromInt(firstPrice), fixedPoint));
         emit PoolAdded(_poolAddress, firstPrice, _poolAddress);
         poolRoundStart[_poolAddress] = uint40(block.timestamp);
         executionPrice[_poolAddress] = startingPrice;
         lastExecutionPrice[_poolAddress] = startingPrice;
-        poolIdTaken[_poolCode][_quoteToken][_oracleWrapper] = true;
     }
 
     // Keeper network
