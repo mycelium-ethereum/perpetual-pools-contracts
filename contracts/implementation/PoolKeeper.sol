@@ -45,6 +45,12 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     mapping(address => int256) public lastExecutionPrice;
 
     /**
+     * @notice Format: Pool code => quote token => oracle wrapper => bool
+     * @dev ensures that the factory does not deterministicly deploy pools that already exist
+     */
+    mapping(string => mapping(address => mapping(address => bool))) public override poolIdTaken;
+
+    /**
      * @notice Format: Pool code => timestamp of last price execution
      * @dev Used to allow multiple upkeep registrations to use the same market/update interval price data.
      */
@@ -64,18 +70,22 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @param _poolCode The code associated with this pool.
      * @param _poolAddress The address of the newly-created pool.
      */
-    function newPool(string calldata _poolCode, address _poolAddress) external override onlyFactory {
-        IOracleWrapper oracleWrapper = IOracleWrapper(ILeveragedPool(_poolAddress).oracleWrapper());
-
+    function newPool(
+        string memory _poolCode,
+        address _poolAddress,
+        address _quoteToken,
+        address _oracleWrapper
+    ) external override onlyFactory {
         pools[numPools] = _poolAddress;
         numPools += 1;
 
-        int256 firstPrice = oracleWrapper.getPrice();
+        int256 firstPrice = IOracleWrapper(_oracleWrapper).getPrice();
         int256 startingPrice = ABDKMathQuad.toInt(ABDKMathQuad.mul(ABDKMathQuad.fromInt(firstPrice), fixedPoint));
         emit PoolAdded(_poolAddress, firstPrice, _poolAddress);
         poolRoundStart[_poolAddress] = uint40(block.timestamp);
         executionPrice[_poolAddress] = startingPrice;
         lastExecutionPrice[_poolAddress] = startingPrice;
+        poolIdTaken[_poolCode][_quoteToken][_oracleWrapper] = true;
     }
 
     // Keeper network
