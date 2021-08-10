@@ -67,7 +67,6 @@ describe("PoolFactory - deployPool", () => {
 
         await factory.setPoolKeeper(poolKeeper.address)
         const deploymentData = {
-            owner: generateRandomAddress(),
             poolCode: POOL_CODE,
             frontRunningInterval: 5,
             updateInterval: 10,
@@ -109,7 +108,6 @@ describe("PoolFactory - deployPool", () => {
     })
     it("should allow multiple clones to exist", async () => {
         const deploymentData = {
-            owner: generateRandomAddress(),
             poolCode: POOL_CODE_2,
             frontRunningInterval: 5,
             updateInterval: 3,
@@ -147,7 +145,6 @@ describe("PoolFactory - deployPool", () => {
 
     it("should use the default keeper", async() => {
         const deploymentData = {
-            owner: generateRandomAddress(),
             poolCode: POOL_CODE_2,
             frontRunningInterval: 5,
             updateInterval: 3,
@@ -172,7 +169,6 @@ describe("PoolFactory - deployPool", () => {
     context("Deployment parameter checks", async() => {
         it("should reject leverages less than 1", async() => {
             const deploymentData = {
-                owner: generateRandomAddress(),
                 poolCode: POOL_CODE_2,
                 frontRunningInterval: 5,
                 updateInterval: 3,
@@ -188,7 +184,6 @@ describe("PoolFactory - deployPool", () => {
 
         it("should reject leverages greater than the MAX_LEVERAGE amount", async() => {
             const deploymentData = {
-                owner: generateRandomAddress(),
                 poolCode: POOL_CODE_2,
                 frontRunningInterval: 5,
                 updateInterval: 3,

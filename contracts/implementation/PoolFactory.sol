@@ -70,12 +70,6 @@ contract PoolFactory is IPoolFactory, Ownable {
             ],
             "Pool ID in use"
         );
-        // note that feeAddress, quoteToken and oracleWrapper are checked to be non zero in the initialize function
-        // in the LeveragedPool contract
-        require(
-            deploymentParameters.owner != address(0),
-            "PoolKeeper: zero address as owner"
-        );
         require(
             deploymentParameters.leverageAmount >= 1 && deploymentParameters.leverageAmount <= MAX_LEVERAGE,
             "PoolKeeper: leveraged amount invalid"
@@ -97,7 +91,7 @@ contract PoolFactory is IPoolFactory, Ownable {
         emit DeployPool(_pool, deploymentParameters.poolCode);
 
         ILeveragedPool.Initialization memory initialization = ILeveragedPool.Initialization(
-            deploymentParameters.owner,
+            msg.sender, // sender is the owner of the pool
             address(poolKeeper),
             deploymentParameters.oracleWrapper,
             deployPairToken(
