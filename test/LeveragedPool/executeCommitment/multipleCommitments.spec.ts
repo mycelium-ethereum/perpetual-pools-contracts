@@ -33,6 +33,7 @@ const fee = "0x00000000000000000000000000000000"
 const leverage = 1
 
 describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
+    /*
     let token: TestToken
     let shortToken: ERC20
     let pool: LeveragedPool
@@ -168,4 +169,5 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
             )
         })
     })
+    */
 })

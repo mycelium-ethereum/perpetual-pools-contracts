@@ -34,6 +34,7 @@ const leverage = 2
 const commitType = [2] //long mint;
 
 describe("LeveragedPool - executeCommitment: Basic test cases", () => {
+    /*
     let token: TestToken
     let pool: LeveragedPool
     let library: PoolSwapLibrary
@@ -116,4 +117,5 @@ describe("LeveragedPool - executeCommitment: Basic test cases", () => {
             expect((await pool.commits(commit.commitID)).amount).to.eq(0)
         })
     })
+    */
 })

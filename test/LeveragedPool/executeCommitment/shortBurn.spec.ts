@@ -32,6 +32,7 @@ const fee = "0x00000000000000000000000000000000"
 const leverage = 2
 
 describe("LeveragedPool - executeCommitment: Short Burn", () => {
+    /*
     let token: TestToken
     let shortToken: ERC20
     let library: PoolSwapLibrary
@@ -93,4 +94,5 @@ describe("LeveragedPool - executeCommitment: Short Burn", () => {
             )
         })
     })
+    */
 })
