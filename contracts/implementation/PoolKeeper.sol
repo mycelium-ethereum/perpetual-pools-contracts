@@ -137,6 +137,8 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @param _pool The pool code to perform the update for.
      */
     function performUpkeepSinglePool(address _pool) public override {
+        uint256 startGas = gasleft();
+
         if (!checkUpkeepSinglePool(_pool)) {
             return;
         }
@@ -156,6 +158,24 @@ contract PoolKeeper is IPoolKeeper, Ownable {
             lastExecutionPrice[_pool],
             executionPrice[_pool]
         );
+
+        uint256 gasSpent = startGas - gasleft();
+        uint256 _gasPrice = 1; /* TODO: poll gas price oracle (or BASEFEE) */
+
+        payKeeper(_pool, _gasPrice, gasSpent);
+    }
+
+    /**
+     * @notice Pay keeper for upkeep
+     * @param _pool Address of the given pool
+     * @param _gasPrice Price of a single gas unit (in ETH)
+     * @param _gasSpent Number of gas units spent
+     */
+    function payKeeper(address _pool, uint256 _gasPrice, uint256 _gasSpent) internal {
+        IERC20 settlementToken = IERC20(LeveragedPool(_pool).quoteToken());
+        uint256 reward = keeperReward(_pool, _gasPrice, _gasSpent);
+
+        settlementToken.transfer(msg.sender, reward);
     }
 
     /**
