@@ -61,7 +61,8 @@ describe("PoolKeeper - createPool", () => {
             signer: signers[0],
             libraries: { PoolSwapLibrary: library.address },
         })) as PoolFactory__factory
-        factory = await (await PoolFactory.deploy()).deployed()
+        let feeAddress = await generateRandomAddress()
+        factory = await (await PoolFactory.deploy(feeAddress)).deployed()
         poolKeeper = await poolKeeperFactory.deploy(factory.address)
         await poolKeeper.deployed()
 
@@ -70,9 +71,7 @@ describe("PoolKeeper - createPool", () => {
             poolCode: POOL_CODE,
             frontRunningInterval: 5,
             updateInterval: 10,
-            fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
             leverageAmount: 5,
-            feeAddress: generateRandomAddress(),
             quoteToken: generateRandomAddress(),
             oracleWrapper: oracleWrapper.address,
         }

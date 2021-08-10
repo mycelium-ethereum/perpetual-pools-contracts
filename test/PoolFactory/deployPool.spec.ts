@@ -55,7 +55,8 @@ describe("PoolFactory - deployPool", () => {
             signer: signers[0],
             libraries: { PoolSwapLibrary: library.address },
         })) as PoolFactory__factory
-        factory = await (await PoolFactory.deploy()).deployed()
+        let feeAddress = await generateRandomAddress()
+        factory = await (await PoolFactory.deploy(feeAddress)).deployed()
         const poolKeeperFactory = (await ethers.getContractFactory(
             "PoolKeeper",
             {
@@ -72,7 +73,6 @@ describe("PoolFactory - deployPool", () => {
             updateInterval: 10,
             fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
             leverageAmount: 5,
-            feeAddress: generateRandomAddress(),
             quoteToken: generateRandomAddress(),
             oracleWrapper: oracleWrapper.address,
         }
@@ -97,8 +97,8 @@ describe("PoolFactory - deployPool", () => {
             _longToken: generateRandomAddress(),
             _shortToken: generateRandomAddress(),
             _poolCode: POOL_CODE,
-            _frontRunningInterval: 5,
-            _updateInterval: 3,
+            _frontRunningInterval: 3,
+            _updateInterval: 5,
             _fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
             _leverageAmount: 5,
             _feeAddress: generateRandomAddress(),
@@ -109,11 +109,9 @@ describe("PoolFactory - deployPool", () => {
     it("should allow multiple clones to exist", async () => {
         const deploymentData = {
             poolCode: POOL_CODE_2,
-            frontRunningInterval: 5,
-            updateInterval: 3,
-            fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+            frontRunningInterval: 3,
+            updateInterval: 5,
             leverageAmount: 5,
-            feeAddress: generateRandomAddress(),
             quoteToken: generateRandomAddress(),
             oracleWrapper: oracleWrapper.address,
         }
@@ -148,9 +146,7 @@ describe("PoolFactory - deployPool", () => {
             poolCode: POOL_CODE_2,
             frontRunningInterval: 5,
             updateInterval: 3,
-            fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
             leverageAmount: 5,
-            feeAddress: generateRandomAddress(),
             quoteToken: generateRandomAddress(),
             oracleWrapper: oracleWrapper.address,
         }
@@ -172,9 +168,7 @@ describe("PoolFactory - deployPool", () => {
                 poolCode: POOL_CODE_2,
                 frontRunningInterval: 5,
                 updateInterval: 3,
-                fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
                 leverageAmount: 0,
-                feeAddress: generateRandomAddress(),
                 quoteToken: generateRandomAddress(),
                 oracleWrapper: oracleWrapper.address,
             }
@@ -189,9 +183,7 @@ describe("PoolFactory - deployPool", () => {
                 poolCode: POOL_CODE_2,
                 frontRunningInterval: 5,
                 updateInterval: 3,
-                fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
                 leverageAmount: 100, // default max leverage is 25
-                feeAddress: generateRandomAddress(),
                 quoteToken: generateRandomAddress(),
                 oracleWrapper: oracleWrapper.address,
             }
