@@ -16,6 +16,8 @@ import "../vendors/SafeMath_128.sol";
 import "./PoolSwapLibrary.sol";
 import "../interfaces/IOracleWrapper.sol";
 
+import "hardhat/console.sol";
+
 /*
 @title The pool controller contract
 */
@@ -112,6 +114,21 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     ) external override onlyPriceChangerOrCommitter {
         require(token == 0 || token == 1, "Pool: token out of range");
         address _token = tokens[token];
+        console.log("hi");
+        console.log(uint112(PoolToken(_token).totalSupply()));
+        // console.log(inverseShadowbalance);
+        // console.log(balance);
+        // console.log(amountIn);
+        console.log(
+                PoolSwapLibrary.getAmountOut(
+                    // ratio = (totalSupply + inverseShadowBalance) / balance
+                    PoolSwapLibrary.getRatio(
+                        uint112(PoolToken(_token).totalSupply()).add(inverseShadowbalance),
+                        balance
+                    ),
+                    amountIn
+                )
+        );
         require(
             PoolToken(_token).mint(
                 // amount out = ratio * amount in
@@ -127,6 +144,8 @@ contract LeveragedPool is ILeveragedPool, Initializable {
             ),
             "Mint failed"
         );
+        console.log(uint112(PoolToken(_token).totalSupply()));
+        console.log("After");
     }
 
     function burnTokens(
@@ -135,6 +154,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         address burner
     ) external override onlyPriceChangerOrCommitter {
         require(token == 0 || token == 1, "Pool: token out of range");
+        console.log("BURNING");
         require(PoolToken(tokens[token]).burn(amount, burner), "Burn failed");
     }
 

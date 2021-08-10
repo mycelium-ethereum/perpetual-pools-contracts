@@ -70,13 +70,13 @@ describe("PoolCommiter - executeCommitment: Basic test cases", () => {
                 amountCommitted
             )
             await expect(
-                poolCommiter.executeCommitments([commit.commitID])
+                poolCommiter.executeAllCommitments()
             ).to.be.rejectedWith(Error)
         })
 
         it("should revert if the commitment doesn't exist", async () => {
             await expect(
-                poolCommiter.executeCommitments([9])
+                poolCommiter.executeAllCommitments()
             ).to.be.rejectedWith(Error)
         })
     })
@@ -115,7 +115,7 @@ describe("PoolCommiter - executeCommitment: Basic test cases", () => {
             )
             await timeout(2000)
             await pool.poolUpkeep(9, 10)
-            await poolCommiter.executeCommitments([commit.commitID])
+            await poolCommiter.executeAllCommitments()
             expect((await poolCommiter.commits(commit.commitID)).amount).to.eq(
                 0
             )
@@ -124,7 +124,7 @@ describe("PoolCommiter - executeCommitment: Basic test cases", () => {
             await timeout(2000)
             await pool.poolUpkeep(9, 10)
             const receipt = await (
-                await poolCommiter.executeCommitments([commit.commitID])
+                await poolCommiter.executeAllCommitments()
             ).wait()
             expect(getEventArgs(receipt, "ExecuteCommit")?.commitID).to.eq(
                 commit.commitID
@@ -135,7 +135,7 @@ describe("PoolCommiter - executeCommitment: Basic test cases", () => {
             await pool.poolUpkeep(9, 10)
             await poolCommiter
                 .connect(signers[1])
-                .executeCommitments([commit.commitID])
+                .executeAllCommitments()
             expect((await poolCommiter.commits(commit.commitID)).amount).to.eq(
                 0
             )

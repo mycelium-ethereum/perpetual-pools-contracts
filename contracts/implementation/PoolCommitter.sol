@@ -15,6 +15,8 @@ import "../vendors/SafeMath_128.sol";
 import "./PoolSwapLibrary.sol";
 import "../interfaces/IOracleWrapper.sol";
 
+import "hardhat/console.sol";
+
 /*
 @title The pool controller contract
 */
@@ -37,7 +39,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
     // MAX_INT = 2**128 - 1 = 3.4028 * 10 ^ 38;
     //         = 340282366920938463463374607431768211455;
     uint128 public constant NO_COMMITS_REMAINING = 340282366920938463463374607431768211455;
-    uint128 public earliestCommitUnexecuted;
+    uint128 public earliestCommitUnexecuted = NO_COMMITS_REMAINING;
     uint128 public latestCommitUnexecuted;
     uint128 public commitIDCounter;
     mapping(uint128 => Commit) public commits;
@@ -137,17 +139,17 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             nextEarliestCommitUnexecuted = i;
             // These two checks are so a given call to _executeCommitment won't revert,
             // allowing us to continue iterations.
-            if (_commit.owner != address(0)) {
+            if (_commit.owner == address(0)) {
                 // Commit deleted (uncommitted) or already executed
                 nextEarliestCommitUnexecuted += 1; // It makes sense to set the next unexecuted to the next number
                 continue;
             }
-            if (lastPriceTimestamp.sub(_commit.created) > frontRunningInterval) {
+            if (lastPriceTimestamp.sub(_commit.created) <= frontRunningInterval) {
                 // This commit is the first that was too late.
                 break;
             }
             _executeCommitment(_commit);
-            if (i == lastPriceTimestamp) {
+            if (i == latestCommitUnexecuted) {
                 // We have reached the last one
                 earliestCommitUnexecuted = NO_COMMITS_REMAINING;
                 return;

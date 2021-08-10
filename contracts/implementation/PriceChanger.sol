@@ -16,6 +16,9 @@ import "../vendors/SafeMath_128.sol";
 import "./PoolSwapLibrary.sol";
 import "../interfaces/IOracleWrapper.sol";
 
+import "hardhat/console.sol";
+import "abdk-libraries-solidity/ABDKMathQuad.sol";
+
 /*
 @title Contract for executing price change logic
 */
@@ -58,6 +61,7 @@ contract PriceChanger is IPriceChanger, Ownable {
      * @param newPrice The price for the latest interval.
      */
     function executePriceChange(int256 oldPrice, int256 newPrice) external override onlyLeveragedPool {
+        console.log("executePriceChange");
         require(ILeveragedPool(leveragedPool).intervalPassed(), "Update interval hasn't passed");
         uint112 shortBalance = ILeveragedPool(leveragedPool).shortBalance();
         uint112 longBalance = ILeveragedPool(leveragedPool).longBalance();
@@ -78,6 +82,8 @@ contract PriceChanger is IPriceChanger, Ownable {
             longBalance = longBalance.sub(longFeeAmount);
             totalFeeAmount = totalFeeAmount.add(longFeeAmount);
         }
+        console.log(longBalance);
+        console.log(shortBalance);
 
         // Use the ratio to determine if the price increased or decreased and therefore which direction
         // the funds should be transferred towards.
@@ -89,6 +95,16 @@ contract PriceChanger is IPriceChanger, Ownable {
         if (direction >= 0 && shortBalance > 0) {
             // Move funds from short to long pair
             uint112 lossAmount = uint112(PoolSwapLibrary.getLossAmount(lossMultiplier, shortBalance));
+            console.log("direction >= 0");
+            /*
+            bytes16 one = 0x3fff0000000000000000000000000000;
+            console.log(ABDKMathQuad.toUInt(ratio));
+            console.log(ABDKMathQuad.toUInt(lossMultiplier));
+            console.log(ABDKMathQuad.toUInt(ABDKMathQuad.sub(one, lossMultiplier)));
+            console.log(ABDKMathQuad.toUInt(ABDKMathQuad.mul(ABDKMathQuad.sub(one, lossMultiplier), ABDKMathQuad.fromUInt(shortBalance))));
+            */
+            console.log(lossAmount);
+            console.log("loss");
             shortBalance = shortBalance.sub(lossAmount);
             longBalance = longBalance.add(lossAmount);
             emit PriceChange(oldPrice, newPrice, lossAmount);
