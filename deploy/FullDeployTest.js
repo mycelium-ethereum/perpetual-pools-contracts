@@ -86,7 +86,7 @@ module.exports = async (hre) => {
         from: deployer,
         log: true,
         libraries: { PoolSwapLibrary: library.address },
-        args: [deployer] // fee receiver
+        args: [deployer], // fee receiver
     })
 
     /* deploy PoolKeeper */
@@ -122,7 +122,6 @@ module.exports = async (hre) => {
         oracleWrapper: oracleWrapper.address,
         keeperOracle: keeperOracle.address,
     }
-
 
     const receipt = await execute(
         "PoolFactory",
