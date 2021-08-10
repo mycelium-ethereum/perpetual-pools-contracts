@@ -36,10 +36,6 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @notice Format: Pool code => executionPrice
      */
     mapping(address => int256) public executionPrice;
-    /**
-     * @notice Format: Pool code => lastExecutionPrice
-     */
-    mapping(address => int256) public lastExecutionPrice;
 
     /**
      * @notice Format: Pool => timestamp of last price execution
@@ -69,7 +65,6 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         emit PoolAdded(_poolAddress, firstPrice, _poolAddress);
         poolRoundStart[_poolAddress] = uint40(block.timestamp);
         executionPrice[_poolAddress] = startingPrice;
-        lastExecutionPrice[_poolAddress] = startingPrice;
     }
 
     // Keeper network
@@ -124,17 +119,17 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         ILeveragedPool pool = ILeveragedPool(_pool);
         int256 latestPrice = IOracleWrapper(pool.oracleWrapper()).getPrice();
         // Start a new round
-        lastExecutionPrice[_pool] = executionPrice[_pool];
+        int256 lastExecutionPrice = executionPrice[_pool];
         executionPrice[_pool] = ABDKMathQuad.toInt(ABDKMathQuad.mul(ABDKMathQuad.fromInt(latestPrice), fixedPoint));
         poolRoundStart[_pool] = block.timestamp;
 
-        emit NewRound(lastExecutionPrice[_pool], latestPrice, pool.updateInterval(), _pool);
+        emit NewRound(lastExecutionPrice, latestPrice, pool.updateInterval(), _pool);
 
         _executePriceChange(
             uint32(block.timestamp),
             pool.updateInterval(),
             _pool,
-            lastExecutionPrice[_pool],
+            lastExecutionPrice,
             executionPrice[_pool]
         );
 
