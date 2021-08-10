@@ -39,7 +39,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
     mapping(CommitType => uint112) public shadowPools;
     string public poolCode;
 
-    address factory;
+    address public factory;
 
     constructor(address _factory) {
         // set the factory on deploy
