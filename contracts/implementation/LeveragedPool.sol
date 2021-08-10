@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.7.6;
+pragma solidity 0.7.6;
 pragma abicoder v2;
 
 import "../interfaces/ILeveragedPool.sol";
@@ -56,6 +56,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         require(initialization._quoteToken != address(0), "Quote token cannot be 0 address");
         require(initialization._oracleWrapper != address(0), "Oracle wrapper cannot be 0 address");
         require(initialization._keeperOracle != address(0), "Keeper oracle cannot be 0 address");
+        require(initialization._frontRunningInterval < initialization._updateInterval, "frontRunning > updateInterval");
         transferOwnershipInitializer(initialization._owner);
 
         // Setup variables

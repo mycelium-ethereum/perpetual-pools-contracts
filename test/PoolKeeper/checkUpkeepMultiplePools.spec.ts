@@ -14,6 +14,7 @@ import {
     PoolKeeper__factory,
     PoolSwapLibrary__factory,
     TestToken__factory,
+    PoolFactory,
 } from "../../typechain"
 
 chai.use(chaiAsPromised)
@@ -24,6 +25,7 @@ let oracleWrapper: TestOracleWrapper
 let keeperOracle: TestOracleWrapper
 let oracle: TestChainlinkOracle
 let poolKeeper: PoolKeeper
+let factory: PoolFactory
 
 const forwardTime = async (seconds: number) => {
     await network.provider.send("evm_increaseTime", [seconds])
@@ -73,15 +75,13 @@ const setupHook = async () => {
         signer: signers[0],
         libraries: { PoolSwapLibrary: library.address },
     })) as PoolFactory__factory
-    const factory = await (await PoolFactory.deploy()).deployed()
+    factory = await (await PoolFactory.deploy()).deployed()
     poolKeeper = await poolKeeperFactory.deploy(factory.address)
     await poolKeeper.deployed()
     await factory.connect(signers[0]).setPoolKeeper(poolKeeper.address)
 
     // Create pool
     const deploymentData = {
-        owner: generateRandomAddress(),
-        keeper: generateRandomAddress(),
         poolCode: POOL_CODE,
         frontRunningInterval: 1,
         updateInterval: 2,
@@ -95,8 +95,6 @@ const setupHook = async () => {
     await factory.deployPool(deploymentData)
 
     const deploymentData2 = {
-        owner: generateRandomAddress(),
-        keeper: generateRandomAddress(),
         poolCode: POOL_CODE_2,
         frontRunningInterval: 1,
         updateInterval: 2,
@@ -114,10 +112,7 @@ describe("PoolKeeper - checkUpkeepMultiplePools", () => {
         await setupHook()
     })
     it("should return true if the trigger condition is met", async () => {
-        let poolAddresses = [
-            await poolKeeper.pools(0),
-            await poolKeeper.pools(1),
-        ]
+        let poolAddresses = [await factory.pools(0), await factory.pools(1)]
         await forwardTime(5)
         await oracleWrapper.incrementPrice()
         expect(await poolKeeper.checkUpkeepMultiplePools(poolAddresses)).to.eq(
@@ -125,10 +120,7 @@ describe("PoolKeeper - checkUpkeepMultiplePools", () => {
         )
     })
     it("should return true if the trigger condition is met on only one", async () => {
-        let poolAddresses = [
-            await poolKeeper.pools(0),
-            await poolKeeper.pools(1),
-        ]
+        let poolAddresses = [await factory.pools(0), await factory.pools(1)]
         await forwardTime(5)
         await oracleWrapper.incrementPrice()
         await poolKeeper.performUpkeepSinglePool(poolAddresses[0])
@@ -137,10 +129,7 @@ describe("PoolKeeper - checkUpkeepMultiplePools", () => {
         )
     })
     it("should return false if the trigger condition isn't met", async () => {
-        let poolAddresses = [
-            await poolKeeper.pools(0),
-            await poolKeeper.pools(1),
-        ]
+        let poolAddresses = [await factory.pools(0), await factory.pools(1)]
         await forwardTime(5)
         await oracleWrapper.incrementPrice()
         await poolKeeper.performUpkeepMultiplePools(poolAddresses)
@@ -149,10 +138,7 @@ describe("PoolKeeper - checkUpkeepMultiplePools", () => {
         )
     })
     it("should return false if the check data provided is invalid", async () => {
-        let poolAddresses = [
-            await poolKeeper.pools(0),
-            await poolKeeper.pools(1),
-        ]
+        let poolAddresses = [await factory.pools(0), await factory.pools(1)]
         await forwardTime(5)
         expect(await poolKeeper.checkUpkeepMultiplePools(poolAddresses)).to.eq(
             false

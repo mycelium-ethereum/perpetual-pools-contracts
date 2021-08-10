@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.7.6;
+pragma solidity 0.7.6;
 pragma abicoder v2;
 
 import "../interfaces/IPoolKeeper.sol";
@@ -28,14 +28,6 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     uint256 public constant BLOCK_TIME = 14; /* in seconds */
 
     // #### Global variables
-
-    uint256 public numPools;
-
-    /**
-     * @notice Format: Pool counter => pool address, where pool code looks like TSLA/USD^5+aDAI
-     */
-    mapping(uint256 => address) public pools;
-
     /**
      * @notice Format: Pool code => roundStart
      */
@@ -48,12 +40,6 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @notice Format: Pool code => lastExecutionPrice
      */
     mapping(address => int256) public lastExecutionPrice;
-
-    /**
-     * @notice Format: Pool code => quote token => oracle wrapper => bool
-     * @dev ensures that the factory does not deterministicly deploy pools that already exist
-     */
-    mapping(string => mapping(address => mapping(address => bool))) public override poolIdTaken;
 
     /**
      * @notice Format: Pool code => timestamp of last price execution
@@ -76,22 +62,14 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @notice When a pool is created, this function is called by the factory to initiate price tracking.
      * @param _poolAddress The address of the newly-created pool.
      */
-    function newPool(
-        string memory _poolCode,
-        address _poolAddress,
-        address _quoteToken,
-        address _oracleWrapper
-    ) external override onlyFactory {
-        pools[numPools] = _poolAddress;
-        numPools += 1;
-
-        int256 firstPrice = IOracleWrapper(_oracleWrapper).getPrice();
+    function newPool(address _poolAddress) external override onlyFactory {
+        address oracleWrapper = ILeveragedPool(_poolAddress).oracleWrapper();
+        int256 firstPrice = IOracleWrapper(oracleWrapper).getPrice();
         int256 startingPrice = ABDKMathQuad.toInt(ABDKMathQuad.mul(ABDKMathQuad.fromInt(firstPrice), fixedPoint));
         emit PoolAdded(_poolAddress, firstPrice, _poolAddress);
         poolRoundStart[_poolAddress] = uint40(block.timestamp);
         executionPrice[_poolAddress] = startingPrice;
         lastExecutionPrice[_poolAddress] = startingPrice;
-        poolIdTaken[_poolCode][_quoteToken][_oracleWrapper] = true;
     }
 
     // Keeper network
@@ -102,15 +80,14 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @return upkeepNeeded Whether or not upkeep is needed for this single pool
      */
     function checkUpkeepSinglePool(address _pool) public view override returns (bool upkeepNeeded) {
+        if (!factory.isValidPool(_pool)) {
+            return false;
+        }
         ILeveragedPool pool = ILeveragedPool(_pool);
-        if (_pool == address(0)) {
-            return false;
-        }
 
+        // safety of oracle wrapper is ensured by PoolFactory. Not 0 on deploy and cannot be changed.
         IOracleWrapper oracleWrapper = IOracleWrapper(pool.oracleWrapper());
-        if (oracleWrapper.oracle() == address(0)) {
-            return false;
-        }
+
         int256 latestPrice = ABDKMathQuad.toInt(
             ABDKMathQuad.mul(ABDKMathQuad.fromInt(oracleWrapper.getPrice()), fixedPoint)
         );

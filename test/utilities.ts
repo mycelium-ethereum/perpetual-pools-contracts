@@ -16,6 +16,7 @@ import {
     PoolKeeper,
     PoolFactory__factory,
     PoolKeeper__factory,
+    PoolFactory,
 } from "../typechain"
 
 import { abi as ERC20Abi } from "../artifacts/@openzeppelin/contracts/token/ERC20/ERC20.sol/ERC20.json"
@@ -160,7 +161,7 @@ export const deployPoolAndTokenContracts = async (
     }
 
     await factory.deployPool(deployParams)
-    const poolAddress = await poolKeeper.pools(0)
+    const poolAddress = await factory.pools(0)
     const pool = await ethers.getContractAt("LeveragedPool", poolAddress)
 
     let longTokenAddr = await pool.tokens(0)
@@ -214,7 +215,7 @@ export const timeout = async (milliseconds: number): Promise<void> => {
 }
 
 export function callData(
-    poolKeeper: PoolKeeper,
+    factory: PoolFactory,
     poolNumbers: number[]
 ): BytesLike {
     return ethers.utils.defaultAbiCoder.encode(
@@ -223,6 +224,6 @@ export function callData(
             ethers.utils.ParamType.from("string"),
             ethers.utils.ParamType.from("address[]"),
         ],
-        [2, MARKET, poolNumbers.map((x) => poolKeeper.pools(x))]
+        [2, MARKET, poolNumbers.map((x) => factory.pools(x))]
     )
 }
