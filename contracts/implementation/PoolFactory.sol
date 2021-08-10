@@ -21,10 +21,10 @@ contract PoolFactory is IPoolFactory, Ownable {
     uint16 public maxLeverage = 25; // default max leverage of 25
 
     /**
-     * @notice Format: Pool code => quote token => oracle wrapper => bool
+     * @notice Format: keccack(leverage, quoteToken, oracle) => is taken
      * @dev ensures that the factory does not deterministically deploy pools that already exist
      */
-    mapping(string => mapping(address => mapping(address => bool))) public override poolIdTaken;
+    mapping(bytes32 => bool) public override poolIdTaken;
 
     /**
      * @notice Format: Pool counter => pool address
@@ -64,28 +64,21 @@ contract PoolFactory is IPoolFactory, Ownable {
 
     function deployPool(PoolDeployment calldata deploymentParameters) external override returns (address) {
         require(address(poolKeeper) != address(0), "PoolKeeper not set");
-        require(
-            !poolIdTaken[deploymentParameters.poolCode][deploymentParameters.quoteToken][
+        bytes32 uniquePoolId = keccak256(
+            abi.encode(
+                deploymentParameters.leverageAmount,
+                deploymentParameters.quoteToken,
                 deploymentParameters.oracleWrapper
-            ],
-            "Pool ID in use"
+            )
         );
+        require(!poolIdTaken[uniquePoolId], "Pool ID in use");
         require(
             deploymentParameters.leverageAmount >= 1 && deploymentParameters.leverageAmount <= maxLeverage,
             "PoolKeeper: leveraged amount invalid"
         );
         LeveragedPool pool = LeveragedPool(
             // pools are unique based on poolCode, quoteToken and oracle
-            Clones.cloneDeterministic(
-                address(poolBase),
-                keccak256(
-                    abi.encode(
-                        deploymentParameters.poolCode,
-                        deploymentParameters.quoteToken,
-                        deploymentParameters.oracleWrapper
-                    )
-                )
-            )
+            Clones.cloneDeterministic(address(poolBase), uniquePoolId)
         );
         address _pool = address(pool);
         emit DeployPool(_pool, deploymentParameters.poolCode);
