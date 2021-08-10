@@ -143,7 +143,7 @@ contract PoolFactory is IPoolFactory, Ownable {
         poolKeeper = IPoolKeeper(_poolKeeper);
     }
 
-    function setMaxLeverage(uint256 newMaxLeverage) external onlyOwner {
+    function setMaxLeverage(uint16 newMaxLeverage) external onlyOwner {
         MAX_LEVERAGE = newMaxLeverage;
     }
 }
