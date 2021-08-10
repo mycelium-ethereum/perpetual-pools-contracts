@@ -15,6 +15,7 @@ import {
     PoolKeeper__factory,
     PoolSwapLibrary__factory,
     TestToken__factory,
+    PoolFactory,
 } from "../../typechain"
 
 chai.use(chaiAsPromised)
@@ -24,6 +25,7 @@ let quoteToken: string
 let oracleWrapper: TestOracleWrapper
 let oracle: TestChainlinkOracle
 let poolKeeper: PoolKeeper
+let factory: PoolFactory
 
 const forwardTime = async (seconds: number) => {
     await network.provider.send("evm_increaseTime", [seconds])
@@ -70,16 +72,13 @@ const setupHook = async () => {
         signer: signers[0],
         libraries: { PoolSwapLibrary: library.address },
     })) as PoolFactory__factory
-    // TODO replace addresses with the two new deployers
-    const factory = await (await PoolFactory.deploy(generateRandomAddress(), generateRandomAddress())).deployed()
+    factory = await (await PoolFactory.deploy(generateRandomAddress(), generateRandomAddress())).deployed()
     poolKeeper = await poolKeeperFactory.deploy(factory.address)
     await poolKeeper.deployed()
     await factory.connect(signers[0]).setPoolKeeper(poolKeeper.address)
 
     // Create pool
     const deploymentData = {
-        owner: generateRandomAddress(),
-        keeper: generateRandomAddress(),
         poolCode: POOL_CODE,
         frontRunningInterval: 1,
         updateInterval: 2,
@@ -92,8 +91,6 @@ const setupHook = async () => {
     await factory.deployPool(deploymentData)
 
     const deploymentData2 = {
-        owner: generateRandomAddress(),
-        keeper: generateRandomAddress(),
         poolCode: POOL_CODE_2,
         frontRunningInterval: 1,
         updateInterval: 2,
@@ -113,19 +110,19 @@ describe("PoolKeeper - checkUpkeepSinglePool", () => {
     it("should return true if the trigger condition is met", async () => {
         await forwardTime(5)
         await oracleWrapper.incrementPrice()
-        let poolAddress = await poolKeeper.pools(0)
+        let poolAddress = await factory.pools(0)
         expect(await poolKeeper.checkUpkeepSinglePool(poolAddress)).to.eq(true)
     })
     it("should return false if the trigger condition isn't met", async () => {
         await forwardTime(5)
         await oracleWrapper.incrementPrice()
-        let poolAddress = await poolKeeper.pools(0)
+        let poolAddress = await factory.pools(0)
         await poolKeeper.performUpkeepSinglePool(poolAddress)
         expect(await poolKeeper.checkUpkeepSinglePool(poolAddress)).to.eq(false)
     })
     it("should return false if the check data provided is invalid", async () => {
         await forwardTime(5)
-        let poolAddress = await poolKeeper.pools(0)
+        let poolAddress = await factory.pools(0)
         expect(await poolKeeper.checkUpkeepSinglePool(poolAddress)).to.eq(false)
     })
     */

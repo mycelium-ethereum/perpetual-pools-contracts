@@ -17,7 +17,7 @@ import {
     timeout,
 } from "../utilities"
 
-import { BytesLike, ContractReceipt } from "ethers"
+import { ContractReceipt } from "ethers"
 
 chai.use(chaiAsPromised)
 const { expect } = chai

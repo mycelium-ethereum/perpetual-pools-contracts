@@ -22,6 +22,24 @@ contract PoolFactory is IPoolFactory, Ownable {
     IPoolKeeper public poolKeeper;
     IPriceChangerDeployer public priceChangerDeployer;
     IPoolCommittorDeployer public poolCommittorDeployer;
+    uint16 public maxLeverage = 25; // default max leverage of 25
+
+    /**
+     * @notice Format: keccack(leverage, quoteToken, oracle) => is taken
+     * @dev ensures that the factory does not deterministically deploy pools that already exist
+     */
+    mapping(bytes32 => bool) public override poolIdTaken;
+
+    /**
+     * @notice Format: Pool counter => pool address
+     */
+    mapping(uint256 => address) public override pools;
+    uint256 public override numPools;
+
+    /**
+     * @notice Format: Pool address => validity
+     */
+    mapping(address => bool) public override isValidPool;
 
     // #### Functions
     constructor(address _poolCommittorDeployer, address _priceChangerDeployer) {
@@ -38,7 +56,7 @@ contract PoolFactory is IPoolFactory, Ownable {
             address(0),
             address(0),
             "BASE_POOL",
-            2,
+            1,
             2,
             0,
             0,
@@ -63,24 +81,42 @@ contract PoolFactory is IPoolFactory, Ownable {
         */
         address priceChanger = address(this);
         address poolCommittor = address(this);
-        LeveragedPool pool = LeveragedPool(
-            Clones.cloneDeterministic(address(poolBase), keccak256(abi.encode(deploymentParameters.poolCode)))
+        bytes32 uniquePoolId = keccak256(
+            abi.encode(
+                deploymentParameters.leverageAmount,
+                deploymentParameters.quoteToken,
+                deploymentParameters.oracleWrapper
+            )
         );
-        emit DeployPool(address(pool), deploymentParameters.poolCode);
+        require(!poolIdTaken[uniquePoolId], "Pool ID in use");
+        require(
+            deploymentParameters.leverageAmount >= 1 && deploymentParameters.leverageAmount <= maxLeverage,
+            "PoolKeeper: leveraged amount invalid"
+        );
+        LeveragedPool pool = LeveragedPool(
+            // pools are unique based on poolCode, quoteToken and oracle
+            Clones.cloneDeterministic(address(poolBase), uniquePoolId)
+        );
+        address _pool = address(pool);
+        emit DeployPool(_pool, deploymentParameters.poolCode);
 
         ILeveragedPool.Initialization memory initialization = ILeveragedPool.Initialization(
-            deploymentParameters.owner,
-            deploymentParameters.keeper,
+            msg.sender, // sender is the owner of the pool
+            address(poolKeeper),
             deploymentParameters.oracleWrapper,
             deployPairToken(
-                address(pool),
+                _pool,
                 string(abi.encodePacked(deploymentParameters.poolCode, "-LONG")),
-                string(abi.encodePacked("L-", deploymentParameters.poolCode))
+                string(abi.encodePacked("L-", deploymentParameters.poolCode)),
+                deploymentParameters.quoteToken,
+                deploymentParameters.oracleWrapper
             ),
             deployPairToken(
-                address(pool),
+                _pool,
                 string(abi.encodePacked(deploymentParameters.poolCode, "-SHORT")),
-                string(abi.encodePacked("S-", deploymentParameters.poolCode))
+                string(abi.encodePacked("S-", deploymentParameters.poolCode)),
+                deploymentParameters.quoteToken,
+                deploymentParameters.oracleWrapper
             ),
             priceChanger,
             poolCommittor,
@@ -93,22 +129,33 @@ contract PoolFactory is IPoolFactory, Ownable {
             deploymentParameters.quoteToken
         );
         pool.initialize(initialization);
-
-        poolKeeper.newPool(deploymentParameters.poolCode, address(pool));
-        return address(pool);
+        poolKeeper.newPool(_pool);
+        pools[numPools] = _pool;
+        numPools += 1;
+        isValidPool[_pool] = true;
+        return _pool;
     }
 
     function deployPairToken(
         address owner,
         string memory name,
-        string memory symbol
+        string memory symbol,
+        address quoteToken,
+        address oracleWrapper
     ) internal returns (address) {
-        PoolToken pairToken = PoolToken(Clones.cloneDeterministic(address(pairTokenBase), keccak256(abi.encode(name))));
+        // pools are unique based on poolCode, quoteToken and oracle -> pool tokens should be the same
+        PoolToken pairToken = PoolToken(
+            Clones.cloneDeterministic(address(pairTokenBase), keccak256(abi.encode(name, quoteToken, oracleWrapper)))
+        );
         pairToken.initialize(owner, name, symbol);
         return address(pairToken);
     }
 
     function setPoolKeeper(address _poolKeeper) external onlyOwner {
         poolKeeper = IPoolKeeper(_poolKeeper);
+    }
+
+    function setMaxLeverage(uint16 newMaxLeverage) external onlyOwner {
+        maxLeverage = newMaxLeverage;
     }
 }

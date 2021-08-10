@@ -11,6 +11,7 @@ import {
     TestOracleWrapper,
     TestOracleWrapper__factory,
     TestChainlinkOracle__factory,
+    PoolToken__factory,
 } from "../../typechain"
 import { POOL_CODE, POOL_CODE_2 } from "../constants"
 import { generateRandomAddress, getEventArgs } from "../utilities"
@@ -67,8 +68,6 @@ describe("PoolFactory - deployPool", () => {
 
         await factory.setPoolKeeper(poolKeeper.address)
         const deploymentData = {
-            owner: generateRandomAddress(),
-            keeper: poolKeeper.address,
             poolCode: POOL_CODE,
             frontRunningInterval: 5,
             updateInterval: 10,
@@ -99,8 +98,8 @@ describe("PoolFactory - deployPool", () => {
             _longToken: generateRandomAddress(),
             _shortToken: generateRandomAddress(),
             _poolCode: POOL_CODE,
-            _frontRunningInterval: 5,
-            _updateInterval: 3,
+            _frontRunningInterval: 3,
+            _updateInterval: 5,
             _fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
             _leverageAmount: 5,
             _feeAddress: generateRandomAddress(),
@@ -110,8 +109,43 @@ describe("PoolFactory - deployPool", () => {
     })
     it("should allow multiple clones to exist", async () => {
         const deploymentData = {
-            owner: generateRandomAddress(),
-            keeper: poolKeeper.address,
+            poolCode: POOL_CODE_2,
+            frontRunningInterval: 3,
+            updateInterval: 5,
+            fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+            leverageAmount: 5,
+            feeAddress: generateRandomAddress(),
+            quoteToken: generateRandomAddress(),
+            oracleWrapper: oracleWrapper.address,
+        }
+        const secondPool = getEventArgs(
+            await (await factory.deployPool(deploymentData)).wait(),
+            "DeployPool"
+        )
+        const pool2 = new ethers.Contract(
+            secondPool?.pool,
+            LeveragedPoolInterface.abi,
+            (await ethers.getSigners())[0]
+        ) as LeveragedPool
+        expect(await pool2.poolCode()).to.eq(POOL_CODE_2)
+        expect(await pool.poolCode()).to.eq(POOL_CODE)
+    })
+
+    it("pool should own tokens", async () => {
+        const longToken = await pool.tokens(0)
+        const shortToken = await pool.tokens(1)
+        let tokenInstance = new ethers.Contract(
+            longToken,
+            PoolToken__factory.abi
+        ).connect((await ethers.getSigners())[0])
+        expect(await tokenInstance.owner()).to.eq(pool.address)
+
+        tokenInstance = tokenInstance.attach(shortToken)
+        expect(await tokenInstance.owner()).to.eq(pool.address)
+    })
+
+    it("should use the default keeper", async () => {
+        const deploymentData = {
             poolCode: POOL_CODE_2,
             frontRunningInterval: 5,
             updateInterval: 3,
@@ -130,8 +164,43 @@ describe("PoolFactory - deployPool", () => {
             LeveragedPoolInterface.abi,
             (await ethers.getSigners())[0]
         ) as LeveragedPool
-        expect(await pool2.poolCode()).to.eq(POOL_CODE_2)
-        expect(await pool.poolCode()).to.eq(POOL_CODE)
+        expect(await pool2.keeper()).to.eq(poolKeeper.address)
+    })
+
+    context("Deployment parameter checks", async () => {
+        it("should reject leverages less than 1", async () => {
+            const deploymentData = {
+                poolCode: POOL_CODE_2,
+                frontRunningInterval: 5,
+                updateInterval: 3,
+                fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+                leverageAmount: 0,
+                feeAddress: generateRandomAddress(),
+                quoteToken: generateRandomAddress(),
+                oracleWrapper: oracleWrapper.address,
+            }
+
+            await expect(factory.deployPool(deploymentData)).to.be.revertedWith(
+                "PoolKeeper: leveraged amount invalid"
+            )
+        })
+
+        it("should reject leverages greater than the MAX_LEVERAGE amount", async () => {
+            const deploymentData = {
+                poolCode: POOL_CODE_2,
+                frontRunningInterval: 5,
+                updateInterval: 3,
+                fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+                leverageAmount: 100, // default max leverage is 25
+                feeAddress: generateRandomAddress(),
+                quoteToken: generateRandomAddress(),
+                oracleWrapper: oracleWrapper.address,
+            }
+
+            await expect(factory.deployPool(deploymentData)).to.be.revertedWith(
+                "PoolKeeper: leveraged amount invalid"
+            )
+        })
     })
     */
 })
