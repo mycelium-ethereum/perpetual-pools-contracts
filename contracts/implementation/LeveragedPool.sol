@@ -36,7 +36,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     // Index 0 is the LONG token, index 1 is the SHORT token
     address[2] public tokens;
 
-    address public owner;
+    address public governance;
     address public keeper;
     address public feeAddress;
     address public quoteToken;
@@ -57,7 +57,9 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         require(initialization._oracleWrapper != address(0), "Oracle wrapper cannot be 0 address");
         require(initialization._keeperOracle != address(0), "Keeper oracle cannot be 0 address");
         require(initialization._frontRunningInterval < initialization._updateInterval, "frontRunning > updateInterval");
-        transferOwnershipInitializer(initialization._owner);
+
+        // set the owner of the pool. This is governance when deployed from the factory
+        governance = initialization._owner;
 
         // Setup variables
         keeper = initialization._keeper;
@@ -290,21 +292,17 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         return block.timestamp >= lastPriceTimestamp.add(updateInterval);
     }
 
-    function updateFeeAddress(address account) external override onlyOwner {
+    function updateFeeAddress(address account) external override onlyGov {
         require(account != address(0), "Invalid address");
         feeAddress = account;
     }
 
-    function setKeeper(address _keeper) external override onlyOwner {
+    function setKeeper(address _keeper) external override onlyGov {
         keeper = _keeper;
     }
 
-    function transferOwnershipInitializer(address _owner) internal initializer {
-        owner = _owner;
-    }
-
-    function transferOwnership(address _owner) external override onlyOwner {
-        owner = _owner;
+    function transferGovernance(address _governance) external override onlyGov {
+        governance = _governance;
     }
 
     // #### Modifiers
@@ -313,8 +311,8 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         _;
     }
 
-    modifier onlyOwner() {
-        require(msg.sender == owner, "msg.sender not owner");
+    modifier onlyGov() {
+        require(msg.sender == governance, "msg.sender not governance");
         _;
     }
 }

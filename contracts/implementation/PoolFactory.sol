@@ -18,7 +18,12 @@ contract PoolFactory is IPoolFactory, Ownable {
     PoolToken public pairTokenBase;
     LeveragedPool public poolBase;
     IPoolKeeper public poolKeeper;
-    uint16 public maxLeverage = 25; // default max leverage of 25
+    // default max leverage of 25
+    uint16 public maxLeverage = 25;
+    // contract address to receive protocol fees
+    address feeReceiver;
+    // default fee
+    bytes16 public fee;
 
     /**
      * @notice Format: keccack(leverage, quoteToken, oracle) => is taken
@@ -38,7 +43,7 @@ contract PoolFactory is IPoolFactory, Ownable {
     mapping(address => bool) public override isValidPool;
 
     // #### Functions
-    constructor() {
+    constructor(address _feeReceiver) {
         // Deploy base contracts
         pairTokenBase = new PoolToken();
         poolBase = new LeveragedPool();
@@ -61,6 +66,7 @@ contract PoolFactory is IPoolFactory, Ownable {
         // Init bases
         poolBase.initialize(baseInitialization);
         pairTokenBase.initialize(address(this), "BASE_TOKEN", "BASE");
+        feeReceiver = _feeReceiver;
     }
 
     function deployPool(PoolDeployment calldata deploymentParameters) external override returns (address) {
@@ -85,7 +91,7 @@ contract PoolFactory is IPoolFactory, Ownable {
         emit DeployPool(_pool, deploymentParameters.poolCode);
 
         ILeveragedPool.Initialization memory initialization = ILeveragedPool.Initialization(
-            msg.sender, // sender is the owner of the pool
+            owner(), // governance is the owner of pools
             address(poolKeeper),
             deploymentParameters.oracleWrapper,
             deploymentParameters.keeperOracle,
@@ -106,9 +112,9 @@ contract PoolFactory is IPoolFactory, Ownable {
             deploymentParameters.poolCode,
             deploymentParameters.frontRunningInterval,
             deploymentParameters.updateInterval,
-            deploymentParameters.fee,
+            fee,
             deploymentParameters.leverageAmount,
-            deploymentParameters.feeAddress,
+            feeReceiver,
             deploymentParameters.quoteToken
         );
         pool.initialize(initialization);
@@ -134,11 +140,22 @@ contract PoolFactory is IPoolFactory, Ownable {
         return address(pairToken);
     }
 
-    function setPoolKeeper(address _poolKeeper) external onlyOwner {
+    // todo -> do we want this to be changeable. This would mean this needs to be propogated to all pools
+    // either we a) use a proxy and don't have a setter
+    // b) go for versioned releases and start with a safety switch we can turn off
+    function setPoolKeeper(address _poolKeeper) external override onlyOwner {
         poolKeeper = IPoolKeeper(_poolKeeper);
     }
 
-    function setMaxLeverage(uint16 newMaxLeverage) external onlyOwner {
+    function setMaxLeverage(uint16 newMaxLeverage) external override onlyOwner {
         maxLeverage = newMaxLeverage;
+    }
+
+    function setFeeReceiver(address _feeReceiver) external override onlyOwner {
+        feeReceiver = _feeReceiver;
+    }
+
+    function setFee(bytes16 _fee) external override onlyOwner {
+        fee = _fee;
     }
 }

@@ -77,7 +77,8 @@ const setupHook = async () => {
         signer: signers[0],
         libraries: { PoolSwapLibrary: library.address },
     })) as PoolFactory__factory
-    factory = await (await PoolFactory.deploy()).deployed()
+    let feeAddress = await generateRandomAddress()
+    factory = await (await PoolFactory.deploy(feeAddress)).deployed()
     poolKeeper = await poolKeeperFactory.deploy(factory.address)
     await poolKeeper.deployed()
     await factory.connect(signers[0]).setPoolKeeper(poolKeeper.address)
@@ -87,9 +88,7 @@ const setupHook = async () => {
         poolCode: POOL_CODE,
         frontRunningInterval: 1,
         updateInterval: 2,
-        fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         leverageAmount: 1,
-        feeAddress: generateRandomAddress(),
         quoteToken: quoteToken,
         oracleWrapper: oracleWrapper.address,
         keeperOracle: keeperOracle.address,
@@ -100,9 +99,7 @@ const setupHook = async () => {
         poolCode: POOL_CODE_2,
         frontRunningInterval: 1,
         updateInterval: 2,
-        fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         leverageAmount: 2,
-        feeAddress: generateRandomAddress(),
         quoteToken: quoteToken,
         oracleWrapper: oracleWrapper.address,
         keeperOracle: keeperOracle.address,

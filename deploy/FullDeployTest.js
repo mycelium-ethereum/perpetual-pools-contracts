@@ -111,7 +111,6 @@ module.exports = async (hre) => {
         updateInterval: TEN_MINS,
         fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
         leverageAmount: 5,
-        feeAddress: deployer,
         quoteToken: token.address,
         oracleWrapper: oracleWrapper.address,
     }

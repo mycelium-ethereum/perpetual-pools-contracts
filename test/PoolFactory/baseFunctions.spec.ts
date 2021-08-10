@@ -8,6 +8,7 @@ import {
     PoolFactory__factory,
     PoolSwapLibrary__factory,
 } from "../../typechain"
+import { generateRandomAddress } from "../utilities"
 
 chai.use(chaiAsPromised)
 const { expect } = chai
@@ -27,7 +28,8 @@ describe("PoolFactory - Basic functions", () => {
             signer: signers[0],
             libraries: { PoolSwapLibrary: library.address },
         })) as PoolFactory__factory
-        factory = await (await PoolFactory.deploy()).deployed()
+        let feeAddress = await generateRandomAddress()
+        factory = await (await PoolFactory.deploy(feeAddress)).deployed()
     })
 
     it("should deploy a base pool contract to clone from", async () => {
