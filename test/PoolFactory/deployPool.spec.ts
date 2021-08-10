@@ -146,7 +146,7 @@ describe("PoolFactory - deployPool", () => {
     it("should use the default keeper", async () => {
         const deploymentData = {
             poolCode: POOL_CODE_2,
-            frontRunningInterval: 5,
+            frontRunningInterval: 2,
             updateInterval: 3,
             fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
             leverageAmount: 5,
