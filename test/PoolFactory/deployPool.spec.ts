@@ -24,6 +24,7 @@ describe("PoolFactory - deployPool", () => {
     let factory: PoolFactory
     let poolKeeper: PoolKeeper
     let oracleWrapper: TestOracleWrapper
+    let keeperOracle: TestOracleWrapper
     let poolTx: Result | undefined
     let pool: LeveragedPool
     before(async () => {
@@ -51,11 +52,17 @@ describe("PoolFactory - deployPool", () => {
         )
         await oracleWrapper.deployed()
 
+        keeperOracle = await oracleWrapperFactory.deploy(
+            chainlinkOracle.address
+        )
+        await keeperOracle.deployed()
+
         const PoolFactory = (await ethers.getContractFactory("PoolFactory", {
             signer: signers[0],
             libraries: { PoolSwapLibrary: library.address },
         })) as PoolFactory__factory
-        factory = await (await PoolFactory.deploy()).deployed()
+        let feeAddress = await generateRandomAddress()
+        factory = await (await PoolFactory.deploy(feeAddress)).deployed()
         const poolKeeperFactory = (await ethers.getContractFactory(
             "PoolKeeper",
             {
@@ -72,9 +79,9 @@ describe("PoolFactory - deployPool", () => {
             updateInterval: 10,
             fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
             leverageAmount: 5,
-            feeAddress: generateRandomAddress(),
             quoteToken: generateRandomAddress(),
             oracleWrapper: oracleWrapper.address,
+            keeperOracle: keeperOracle.address,
         }
         poolTx = getEventArgs(
             await (await factory.deployPool(deploymentData)).wait(),
@@ -94,6 +101,7 @@ describe("PoolFactory - deployPool", () => {
             _owner: generateRandomAddress(),
             _keeper: generateRandomAddress(),
             _oracleWrapper: generateRandomAddress(),
+            _keeperOracle: generateRandomAddress(),
             _longToken: generateRandomAddress(),
             _shortToken: generateRandomAddress(),
             _poolCode: POOL_CODE,
@@ -111,11 +119,10 @@ describe("PoolFactory - deployPool", () => {
             poolCode: POOL_CODE_2,
             frontRunningInterval: 3,
             updateInterval: 5,
-            fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
             leverageAmount: 5,
-            feeAddress: generateRandomAddress(),
             quoteToken: generateRandomAddress(),
             oracleWrapper: oracleWrapper.address,
+            keeperOracle: keeperOracle.address,
         }
         const secondPool = getEventArgs(
             await (await factory.deployPool(deploymentData)).wait(),
@@ -147,12 +154,11 @@ describe("PoolFactory - deployPool", () => {
         const deploymentData = {
             poolCode: POOL_CODE_2,
             frontRunningInterval: 2,
-            updateInterval: 3,
-            fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+            updateInterval: 5,
             leverageAmount: 5,
-            feeAddress: generateRandomAddress(),
             quoteToken: generateRandomAddress(),
             oracleWrapper: oracleWrapper.address,
+            keeperOracle: keeperOracle.address,
         }
         const secondPool = getEventArgs(
             await (await factory.deployPool(deploymentData)).wait(),
@@ -172,11 +178,10 @@ describe("PoolFactory - deployPool", () => {
                 poolCode: POOL_CODE_2,
                 frontRunningInterval: 5,
                 updateInterval: 3,
-                fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
                 leverageAmount: 0,
-                feeAddress: generateRandomAddress(),
                 quoteToken: generateRandomAddress(),
                 oracleWrapper: oracleWrapper.address,
+                keeperOracle: keeperOracle.address,
             }
 
             await expect(factory.deployPool(deploymentData)).to.be.revertedWith(
@@ -189,11 +194,10 @@ describe("PoolFactory - deployPool", () => {
                 poolCode: POOL_CODE_2,
                 frontRunningInterval: 5,
                 updateInterval: 3,
-                fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
                 leverageAmount: 100, // default max leverage is 25
-                feeAddress: generateRandomAddress(),
                 quoteToken: generateRandomAddress(),
                 oracleWrapper: oracleWrapper.address,
+                keeperOracle: keeperOracle.address,
             }
 
             await expect(factory.deployPool(deploymentData)).to.be.revertedWith(

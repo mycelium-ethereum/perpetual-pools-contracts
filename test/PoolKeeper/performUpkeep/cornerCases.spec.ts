@@ -29,6 +29,7 @@ const { expect } = chai
 
 let quoteToken: string
 let oracleWrapper: TestOracleWrapper
+let keeperOracle: TestOracleWrapper
 let poolKeeper: PoolKeeper
 let factory: PoolFactory
 let oracle: TestChainlinkOracle
@@ -67,6 +68,9 @@ const setupHook = async () => {
     oracleWrapper = await oracleWrapperFactory.deploy(oracle.address)
     await oracleWrapper.deployed()
 
+    keeperOracle = await oracleWrapperFactory.deploy(oracle.address)
+    await keeperOracle.deployed()
+
     // Deploy pool keeper
     const libraryFactory = (await ethers.getContractFactory(
         "PoolSwapLibrary",
@@ -81,7 +85,8 @@ const setupHook = async () => {
         signer: signers[0],
         libraries: { PoolSwapLibrary: library.address },
     })) as PoolFactory__factory
-    factory = await (await PoolFactory.deploy()).deployed()
+    let feeAddress = await generateRandomAddress()
+    factory = await (await PoolFactory.deploy(feeAddress)).deployed()
     poolKeeper = await poolKeeperFactory.deploy(factory.address)
     await poolKeeper.deployed()
     await factory.setPoolKeeper(poolKeeper.address)
@@ -91,11 +96,10 @@ const setupHook = async () => {
         poolCode: POOL_CODE,
         frontRunningInterval: 1,
         updateInterval: updateInterval,
-        fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         leverageAmount: 1,
-        feeAddress: generateRandomAddress(),
         quoteToken: quoteToken,
         oracleWrapper: oracleWrapper.address,
+        keeperOracle: keeperOracle.address,
     }
     await (await factory.deployPool(deploymentData)).wait()
 
@@ -103,11 +107,10 @@ const setupHook = async () => {
         poolCode: POOL_CODE_2,
         frontRunningInterval: 1,
         updateInterval: updateInterval,
-        fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         leverageAmount: 2,
-        feeAddress: generateRandomAddress(),
         quoteToken: quoteToken,
         oracleWrapper: oracleWrapper.address,
+        keeperOracle: keeperOracle.address,
     }
     await (await factory.deployPool(deploymentData2)).wait()
     POOL1_ADDR = await factory.pools(0)
