@@ -1,16 +1,13 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.7.6;
+pragma solidity 0.8.6;
 pragma abicoder v2;
 
 import "../interfaces/IPoolKeeper.sol";
 import "../interfaces/IOracleWrapper.sol";
 import "../interfaces/IPoolFactory.sol";
 import "../implementation/LeveragedPool.sol";
-import "../vendors/SafeMath_40.sol";
-import "../vendors/SafeMath_32.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/math/SignedSafeMath.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "abdk-libraries-solidity/ABDKMathQuad.sol";
 
@@ -18,10 +15,6 @@ import "abdk-libraries-solidity/ABDKMathQuad.sol";
  * @title The manager contract for multiple markets and the pools in them
  */
 contract PoolKeeper is IPoolKeeper, Ownable {
-    using SignedSafeMath for int256;
-    using SafeMath_32 for uint32;
-    using SafeMath_40 for uint40;
-
     // #### Global variables
     /**
      * @notice Format: Pool code => roundStart

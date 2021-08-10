@@ -1,15 +1,11 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.7.6;
+pragma solidity 0.8.6;
 pragma abicoder v2;
 
 import "../interfaces/ILeveragedPool.sol";
 import "./PoolToken.sol";
-import "@openzeppelin/contracts/proxy/Initializable.sol";
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
-import "../vendors/SafeMath_40.sol";
-import "../vendors/SafeMath_112.sol";
-import "../vendors/SafeMath_128.sol";
 
 import "./PoolSwapLibrary.sol";
 import "../interfaces/IOracleWrapper.sol";
@@ -18,10 +14,6 @@ import "../interfaces/IOracleWrapper.sol";
 @title The pool controller contract
 */
 contract LeveragedPool is ILeveragedPool, Initializable {
-    using SafeMath_40 for uint40;
-    using SafeMath_112 for uint112;
-    using SafeMath_128 for uint128;
-
     // #### Globals
 
     // Each balance is the amount of quote tokens in the pair
@@ -75,7 +67,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
 
     function commit(CommitType commitType, uint112 amount) external override {
         require(amount > 0, "Amount must not be zero");
-        commitIDCounter = commitIDCounter.add(1);
+        commitIDCounter = commitIDCounter + 1;
 
         // create commitment
         commits[commitIDCounter] = Commit({
@@ -84,7 +76,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
             owner: msg.sender,
             created: uint40(block.timestamp)
         });
-        shadowPools[commitType] = shadowPools[commitType].add(amount);
+        shadowPools[commitType] = shadowPools[commitType] + amount;
 
         emit CreateCommit(commitIDCounter, amount, commitType);
 
@@ -107,7 +99,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         require(_commit.owner != address(0), "Invalid commit");
 
         // reduce pool commitment amount
-        shadowPools[_commit.commitType] = shadowPools[_commit.commitType].sub(_commit.amount);
+        shadowPools[_commit.commitType] = shadowPools[_commit.commitType] - _commit.amount;
         emit RemoveCommit(_commitID, _commit.amount, _commit.commitType);
         delete commits[_commitID];
 
@@ -140,14 +132,14 @@ contract LeveragedPool is ILeveragedPool, Initializable {
      */
     function _executeCommitment(Commit memory _commit) internal {
         require(_commit.owner != address(0), "Invalid commit");
-        require(lastPriceTimestamp.sub(_commit.created) > frontRunningInterval, "Commit too new");
-        shadowPools[_commit.commitType] = shadowPools[_commit.commitType].sub(_commit.amount);
+        require(lastPriceTimestamp - _commit.created > frontRunningInterval, "Commit too new");
+        shadowPools[_commit.commitType] = shadowPools[_commit.commitType] - _commit.amount;
         if (_commit.commitType == CommitType.LongMint) {
-            longBalance = longBalance.add(_commit.amount);
+            longBalance = longBalance + _commit.amount;
             _mintTokens(
                 tokens[0],
                 _commit.amount, // amount of quote tokens commited to enter
-                longBalance.sub(_commit.amount), // total quote tokens in the long pull, excluding this mint
+                longBalance - _commit.amount, // total quote tokens in the long pull, excluding this mint
                 shadowPools[CommitType.LongBurn], // total pool tokens commited to be burned
                 _commit.owner
             );
@@ -156,21 +148,19 @@ contract LeveragedPool is ILeveragedPool, Initializable {
                 PoolSwapLibrary.getRatio(
                     longBalance,
                     uint112(
-                        uint112(PoolToken(tokens[0]).totalSupply()).add(shadowPools[CommitType.LongBurn]).add(
-                            _commit.amount
-                        )
+                        uint112(PoolToken(tokens[0]).totalSupply()) + shadowPools[CommitType.LongBurn] + _commit.amount
                     )
                 ),
                 _commit.amount
             );
-            longBalance = longBalance.sub(amountOut);
+            longBalance = longBalance - amountOut;
             require(IERC20(quoteToken).transfer(_commit.owner, amountOut), "Transfer failed");
         } else if (_commit.commitType == CommitType.ShortMint) {
-            shortBalance = shortBalance.add(_commit.amount);
+            shortBalance = shortBalance + _commit.amount;
             _mintTokens(
                 tokens[1],
                 _commit.amount,
-                shortBalance.sub(_commit.amount),
+                shortBalance - _commit.amount,
                 shadowPools[CommitType.ShortBurn],
                 _commit.owner
             );
@@ -178,14 +168,12 @@ contract LeveragedPool is ILeveragedPool, Initializable {
             uint112 amountOut = PoolSwapLibrary.getAmountOut(
                 PoolSwapLibrary.getRatio(
                     shortBalance,
-                    uint112(PoolToken(tokens[1]).totalSupply()).add(shadowPools[CommitType.ShortBurn]).add(
-                        _commit.amount
-                    )
+                    uint112(PoolToken(tokens[1]).totalSupply()) + shadowPools[CommitType.ShortBurn] + _commit.amount
                 ),
                 _commit.amount
             );
 
-            shortBalance = shortBalance.sub(amountOut);
+            shortBalance = shortBalance - amountOut;
             require(IERC20(quoteToken).transfer(_commit.owner, amountOut), "Transfer failed");
         }
     }
@@ -218,7 +206,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
                 PoolSwapLibrary.getAmountOut(
                     // ratio = (totalSupply + inverseShadowBalance) / balance
                     PoolSwapLibrary.getRatio(
-                        uint112(PoolToken(token).totalSupply()).add(inverseShadowbalance),
+                        uint112(PoolToken(token).totalSupply()) + inverseShadowbalance,
                         balance
                     ),
                     amountIn
@@ -248,12 +236,12 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         );
         uint112 totalFeeAmount = 0;
         if (shortBalance >= shortFeeAmount) {
-            shortBalance = shortBalance.sub(shortFeeAmount);
-            totalFeeAmount = totalFeeAmount.add(shortFeeAmount);
+            shortBalance = shortBalance - shortFeeAmount;
+            totalFeeAmount = totalFeeAmount + shortFeeAmount;
         }
         if (longBalance >= longFeeAmount) {
-            longBalance = longBalance.sub(longFeeAmount);
-            totalFeeAmount = totalFeeAmount.add(longFeeAmount);
+            longBalance = longBalance - longFeeAmount;
+            totalFeeAmount = totalFeeAmount + longFeeAmount;
         }
 
         // Use the ratio to determine if the price increased or decreased and therefore which direction
@@ -266,14 +254,14 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         if (direction >= 0 && shortBalance > 0) {
             // Move funds from short to long pair
             uint112 lossAmount = uint112(PoolSwapLibrary.getLossAmount(lossMultiplier, shortBalance));
-            shortBalance = shortBalance.sub(lossAmount);
-            longBalance = longBalance.add(lossAmount);
+            shortBalance = shortBalance - lossAmount;
+            longBalance = longBalance + lossAmount;
             emit PriceChange(oldPrice, newPrice, lossAmount);
         } else if (direction < 0 && longBalance > 0) {
             // Move funds from long to short pair
             uint112 lossAmount = uint112(PoolSwapLibrary.getLossAmount(lossMultiplier, longBalance));
-            shortBalance = shortBalance.add(lossAmount);
-            longBalance = longBalance.sub(lossAmount);
+            shortBalance = shortBalance + lossAmount;
+            longBalance = longBalance - lossAmount;
             emit PriceChange(oldPrice, newPrice, lossAmount);
         }
         lastPriceTimestamp = uint40(block.timestamp);
@@ -284,7 +272,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
      * @return true if the price was last updated more than updateInterval seconds ago
      */
     function intervalPassed() public view override returns (bool) {
-        return block.timestamp >= lastPriceTimestamp.add(updateInterval);
+        return block.timestamp >= lastPriceTimestamp + updateInterval;
     }
 
     function updateFeeAddress(address account) external override onlyOwner {

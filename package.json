@@ -59,9 +59,9 @@
         "typescript": "^4.3.5"
     },
     "dependencies": {
-        "@chainlink/contracts": "^0.1.7",
-        "@openzeppelin/contracts": "^3.4.0",
-        "abdk-libraries-solidity": "^2.5.0",
+        "@chainlink/contracts": "^0.2.1",
+        "@openzeppelin/contracts": "^4.2.0",
+        "abdk-libraries-solidity": "^3.0.0",
         "hardhat-log-remover": "^2.0.2",
         "solidity-coverage": "^0.7.16",
         "ts-command-line-args": "^2.1.0"
