@@ -109,10 +109,6 @@ contract PriceChanger is IPriceChanger, Ownable {
         feeAddress = account;
     }
 
-    function setLeveragedPool(address _leveragedPool) external override onlyOwner {
-        leveragedPool = _leveragedPool;
-    }
-
     // #### Modifiers
     modifier onlyLeveragedPool() {
         require(msg.sender == leveragedPool, "msg.sender not LeveragedPool");

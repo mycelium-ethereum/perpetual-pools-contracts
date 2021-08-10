@@ -79,7 +79,6 @@ contract PoolCommittor is IPoolCommittor, Ownable {
     function uncommit(uint128 _commitID) external override {
         Commit memory _commit = commits[_commitID];
         require(msg.sender == _commit.owner, "Unauthorized");
-        require(_commit.owner != address(0), "Invalid commit");
 
         // reduce pool commitment amount
         shadowPools[_commit.commitType] = shadowPools[_commit.commitType].sub(_commit.amount);
@@ -177,10 +176,6 @@ contract PoolCommittor is IPoolCommittor, Ownable {
      */
     function getCommit(uint128 _commitID) public view override returns (Commit memory) {
         return commits[_commitID];
-    }
-
-    function setLeveragedPool(address _leveragedPool) external override onlyOwner {
-        leveragedPool = _leveragedPool;
     }
 
     /**
