@@ -74,7 +74,7 @@ describe("PoolFactory - deployPool", () => {
 
         await factory.setPoolKeeper(poolKeeper.address)
         const deploymentData = {
-            poolCode: POOL_CODE,
+            poolName: POOL_CODE,
             frontRunningInterval: 5,
             updateInterval: 10,
             fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
@@ -94,7 +94,7 @@ describe("PoolFactory - deployPool", () => {
         ) as LeveragedPool
     })
     it("should deploy a minimal clone", async () => {
-        expect(await pool.poolCode()).to.eq(POOL_CODE)
+        expect(await pool.poolName()).to.eq(POOL_CODE)
     })
     it("should initialize the clone", async () => {
         const initialization = {
@@ -104,7 +104,7 @@ describe("PoolFactory - deployPool", () => {
             _keeperOracle: generateRandomAddress(),
             _longToken: generateRandomAddress(),
             _shortToken: generateRandomAddress(),
-            _poolCode: POOL_CODE,
+            _poolName: POOL_CODE,
             _frontRunningInterval: 3,
             _updateInterval: 5,
             _fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
@@ -116,7 +116,7 @@ describe("PoolFactory - deployPool", () => {
     })
     it("should allow multiple clones to exist", async () => {
         const deploymentData = {
-            poolCode: POOL_CODE_2,
+            poolName: POOL_CODE_2,
             frontRunningInterval: 3,
             updateInterval: 5,
             leverageAmount: 5,
@@ -133,8 +133,8 @@ describe("PoolFactory - deployPool", () => {
             LeveragedPoolInterface.abi,
             (await ethers.getSigners())[0]
         ) as LeveragedPool
-        expect(await pool2.poolCode()).to.eq(POOL_CODE_2)
-        expect(await pool.poolCode()).to.eq(POOL_CODE)
+        expect(await pool2.poolName()).to.eq(POOL_CODE_2)
+        expect(await pool.poolName()).to.eq(POOL_CODE)
     })
 
     it("pool should own tokens", async () => {
@@ -152,7 +152,7 @@ describe("PoolFactory - deployPool", () => {
 
     it("should use the default keeper", async () => {
         const deploymentData = {
-            poolCode: POOL_CODE_2,
+            poolName: POOL_CODE_2,
             frontRunningInterval: 2,
             updateInterval: 5,
             leverageAmount: 5,
@@ -175,7 +175,7 @@ describe("PoolFactory - deployPool", () => {
     context("Deployment parameter checks", async () => {
         it("should reject leverages less than 1", async () => {
             const deploymentData = {
-                poolCode: POOL_CODE_2,
+                poolName: POOL_CODE_2,
                 frontRunningInterval: 5,
                 updateInterval: 3,
                 leverageAmount: 0,
@@ -191,7 +191,7 @@ describe("PoolFactory - deployPool", () => {
 
         it("should reject leverages greater than the MAX_LEVERAGE amount", async () => {
             const deploymentData = {
-                poolCode: POOL_CODE_2,
+                poolName: POOL_CODE_2,
                 frontRunningInterval: 5,
                 updateInterval: 3,
                 leverageAmount: 100, // default max leverage is 25

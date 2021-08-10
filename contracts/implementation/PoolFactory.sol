@@ -84,11 +84,11 @@ contract PoolFactory is IPoolFactory, Ownable {
             "PoolKeeper: leveraged amount invalid"
         );
         LeveragedPool pool = LeveragedPool(
-            // pools are unique based on poolCode, quoteToken and oracle
+            // pools are unique based on their leverage, quoteToken and oracle
             Clones.cloneDeterministic(address(poolBase), uniquePoolId)
         );
         address _pool = address(pool);
-        emit DeployPool(_pool, deploymentParameters.poolCode);
+        emit DeployPool(_pool, deploymentParameters.poolName);
 
         ILeveragedPool.Initialization memory initialization = ILeveragedPool.Initialization(
             owner(), // governance is the owner of pools
@@ -97,19 +97,19 @@ contract PoolFactory is IPoolFactory, Ownable {
             deploymentParameters.keeperOracle,
             deployPairToken(
                 _pool,
-                string(abi.encodePacked(deploymentParameters.poolCode, "-LONG")),
-                string(abi.encodePacked("L-", deploymentParameters.poolCode)),
+                string(abi.encodePacked(deploymentParameters.poolName, "-LONG")),
+                string(abi.encodePacked("L-", deploymentParameters.poolName)),
                 deploymentParameters.quoteToken,
                 deploymentParameters.oracleWrapper
             ),
             deployPairToken(
                 _pool,
-                string(abi.encodePacked(deploymentParameters.poolCode, "-SHORT")),
-                string(abi.encodePacked("S-", deploymentParameters.poolCode)),
+                string(abi.encodePacked(deploymentParameters.poolName, "-SHORT")),
+                string(abi.encodePacked("S-", deploymentParameters.poolName)),
                 deploymentParameters.quoteToken,
                 deploymentParameters.oracleWrapper
             ),
-            deploymentParameters.poolCode,
+            deploymentParameters.poolName,
             deploymentParameters.frontRunningInterval,
             deploymentParameters.updateInterval,
             fee,
@@ -132,7 +132,7 @@ contract PoolFactory is IPoolFactory, Ownable {
         address quoteToken,
         address oracleWrapper
     ) internal returns (address) {
-        // pools are unique based on poolCode, quoteToken and oracle -> pool tokens should be the same
+        // pools are unique based on leverage, quoteToken and oracle -> pool tokens should be the same
         PoolToken pairToken = PoolToken(
             Clones.cloneDeterministic(address(pairTokenBase), keccak256(abi.encode(name, quoteToken, oracleWrapper)))
         );

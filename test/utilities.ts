@@ -149,7 +149,7 @@ export const deployPoolAndTokenContracts = async (
     const deployParams = {
         owner: signers[0].address,
         keeper: poolKeeper.address,
-        poolCode: POOL_CODE,
+        poolName: POOL_CODE,
         frontRunningInterval: frontRunningInterval,
         updateInterval: updateInterval,
         leverageAmount: leverage,

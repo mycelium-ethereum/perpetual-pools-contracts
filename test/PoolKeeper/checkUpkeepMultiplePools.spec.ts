@@ -83,7 +83,7 @@ const setupHook = async () => {
 
     // Create pool
     const deploymentData = {
-        poolCode: POOL_CODE,
+        poolName: POOL_CODE,
         frontRunningInterval: 1,
         updateInterval: 2,
         leverageAmount: 1,
@@ -94,7 +94,7 @@ const setupHook = async () => {
     await factory.deployPool(deploymentData)
 
     const deploymentData2 = {
-        poolCode: POOL_CODE_2,
+        poolName: POOL_CODE_2,
         frontRunningInterval: 1,
         updateInterval: 2,
         leverageAmount: 2,

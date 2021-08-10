@@ -45,7 +45,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     uint128 public commitIDCounter;
     mapping(uint128 => Commit) public commits;
     mapping(CommitType => uint112) public shadowPools;
-    string public poolCode;
+    string public poolName;
     address public override oracleWrapper;
     address public override keeperOracle;
 
@@ -72,10 +72,10 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         leverageAmount = PoolSwapLibrary.convertUIntToDecimal(initialization._leverageAmount);
         feeAddress = initialization._feeAddress;
         lastPriceTimestamp = uint40(block.timestamp);
-        poolCode = initialization._poolCode;
+        poolName = initialization._poolName;
         tokens[0] = initialization._longToken;
         tokens[1] = initialization._shortToken;
-        emit PoolInitialized(tokens[0], tokens[1], initialization._quoteToken, initialization._poolCode);
+        emit PoolInitialized(tokens[0], tokens[1], initialization._quoteToken, initialization._poolName);
     }
 
     function commit(CommitType commitType, uint112 amount) external override {

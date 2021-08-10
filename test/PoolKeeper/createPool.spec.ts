@@ -73,7 +73,7 @@ describe("PoolKeeper - createPool", () => {
 
         await factory.setPoolKeeper(poolKeeper.address)
         deploymentData = {
-            poolCode: POOL_CODE,
+            poolName: POOL_CODE,
             frontRunningInterval: 5,
             updateInterval: 10,
             leverageAmount: 5,
