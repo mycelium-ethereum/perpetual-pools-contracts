@@ -33,4 +33,6 @@ interface IPoolCommitter {
     function executeAllCommitments() external;
 
     function getCommit(uint128 _commitID) external view returns (Commit memory);
+
+    function setQuoteAndPool(address quoteToken, address leveragedPool) external;
 }

@@ -38,14 +38,16 @@ contract PriceChanger is IPriceChanger, Ownable {
     address public leveragedPool;
     address public feeAddress;
     address public quoteToken;
+    address public factory;
 
     string public poolCode;
 
     // #### Functions
 
-    constructor(address _feeAddress) {
+    constructor(address _feeAddress, address _factory) {
         require(_feeAddress != address(0), "_feeAddress == address(0)");
         feeAddress = _feeAddress;
+        factory = _factory;
     }
 
     /**
@@ -109,9 +111,18 @@ contract PriceChanger is IPriceChanger, Ownable {
         feeAddress = account;
     }
 
+    function setPool(address _leveragedPool) external override onlyFactory {
+        leveragedPool = _leveragedPool;
+    }
+
     // #### Modifiers
     modifier onlyLeveragedPool() {
         require(msg.sender == leveragedPool, "msg.sender not LeveragedPool");
+        _;
+    }
+
+    modifier onlyFactory() {
+        require(msg.sender == factory, "msg.sender not factory");
         _;
     }
 }

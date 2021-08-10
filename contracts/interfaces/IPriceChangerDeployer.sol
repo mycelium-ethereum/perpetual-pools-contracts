@@ -6,5 +6,5 @@ pragma abicoder v2;
 @title The pool controller contract interface
 */
 interface IPriceChangerDeployer {
-    function deploy(address _feeAddress) external returns (address priceChanger);
+    function deploy(address _feeAddress, address _factory) external returns (address priceChanger);
 }
