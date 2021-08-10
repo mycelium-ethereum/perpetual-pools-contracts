@@ -16,8 +16,6 @@ import "../vendors/SafeMath_128.sol";
 import "./PoolSwapLibrary.sol";
 import "../interfaces/IOracleWrapper.sol";
 
-import "hardhat/console.sol";
-
 /*
 @title The pool controller contract
 */
@@ -78,7 +76,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         emit PoolInitialized(tokens[0], tokens[1], initialization._quoteToken, initialization._poolCode);
     }
 
-    function poolUpkeep(int256 _oldPrice, int256 _newPrice) external override {
+    function poolUpkeep(int256 _oldPrice, int256 _newPrice) external override onlyKeeper {
         IPriceChanger _priceChanger = IPriceChanger(priceChanger);
         _priceChanger.executePriceChange(_oldPrice, _newPrice);
         lastPriceTimestamp = uint40(block.timestamp);
