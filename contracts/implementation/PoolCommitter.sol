@@ -15,6 +15,8 @@ import "../vendors/SafeMath_128.sol";
 import "./PoolSwapLibrary.sol";
 import "../interfaces/IOracleWrapper.sol";
 
+import "hardhat/console.sol";
+
 /*
 @title The pool controller contract
 */
@@ -40,9 +42,11 @@ contract PoolCommitter is IPoolCommitter, Ownable {
     mapping(CommitType => uint112) public shadowPools;
     string public poolCode;
 
-    constructor(address quoteToken) {
-        // This contract will be telling LeveragedPool to transfer tokens
-        IERC20(quoteToken).approve(leveragedPool, IERC20(quoteToken).totalSupply());
+    address factory;
+
+    constructor(address _factory) {
+        // set the factory on deploy
+        factory = _factory;
     }
 
     function commit(CommitType commitType, uint112 amount) external override {
@@ -208,5 +212,18 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             ),
             "Mint failed"
         );
+    }
+
+    function setQuoteAndPool(address quoteToken, address _leveragedPool) external override onlyFactory {
+        console.log(quoteToken);
+        console.log(_leveragedPool);
+        leveragedPool = _leveragedPool;
+        IERC20 _token = IERC20(quoteToken);
+        _token.approve(leveragedPool, _token.totalSupply());
+    }
+
+    modifier onlyFactory() {
+        require(msg.sender == factory, "Commiter: not factory");
+        _;
     }
 }
