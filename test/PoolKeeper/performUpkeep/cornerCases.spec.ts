@@ -150,9 +150,7 @@ describe("PoolKeeper - performUpkeepMultiplePools: corner cases", () => {
             await (await oracleWrapper.incrementPrice()).wait()
             await poolKeeper.performUpkeepMultiplePools(bothUpkeeps)
             await timeout(updateInterval * 1000 + 1000) // TODO why this <- ?
-            oldLastExecutionPrice = await poolKeeper.executionPrice(
-                POOL1_ADDR
-            )
+            oldLastExecutionPrice = await poolKeeper.executionPrice(POOL1_ADDR)
 
             const upOne = await (
                 await poolKeeper.performUpkeepSinglePool(POOL1_ADDR)

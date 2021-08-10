@@ -180,9 +180,7 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
             // delay and upkeep again
             await timeout(updateInterval * 1000 + 1000)
 
-            newLastExecutionPrice = await poolKeeper.executionPrice(
-                POOL1_ADDR
-            )
+            newLastExecutionPrice = await poolKeeper.executionPrice(POOL1_ADDR)
             await poolKeeper.performUpkeepMultiplePools([
                 POOL1_ADDR,
                 POOL2_ADDR,
