@@ -205,8 +205,6 @@ export const deployPoolAndTokenContracts = async (
     const poolCommiter = await ethers.getContractAt("PoolCommitter", commiter)
     const priceChanger = await ethers.getContractAt("PriceChanger", changer)
 
-    console.log(poolCommiter.address)
-    console.log(priceChanger.address)
     return {
         signers,
         //@ts-ignore

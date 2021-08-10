@@ -15,6 +15,8 @@ import "../vendors/SafeMath_128.sol";
 import "./PoolSwapLibrary.sol";
 import "../interfaces/IOracleWrapper.sol";
 
+import "hardhat/console.sol";
+
 /*
 @title The pool controller contract
 */
@@ -70,10 +72,11 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             );
         } else if (commitType == CommitType.LongBurn) {
             // long burning: pull in long pool tokens from commiter
-            require(PoolToken(tokens[0]).burn(amount, msg.sender), "Transfer failed");
+            ILeveragedPool(leveragedPool).burnTokens(0, amount, msg.sender);
+            //require(PoolToken(tokens[0]).burn(amount, msg.sender), "Transfer failed");
         } else if (commitType == CommitType.ShortBurn) {
             // short burning: pull in short pool tokens from commiter
-            require(PoolToken(tokens[1]).burn(amount, msg.sender), "Transfer failed");
+            ILeveragedPool(leveragedPool).burnTokens(1, amount, msg.sender);
         }
     }
 
@@ -140,7 +143,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
                 PoolSwapLibrary.getRatio(
                     longBalance,
                     uint112(
-                        uint112(PoolToken(tokens[0]).totalSupply()).add(shadowPools[CommitType.LongBurn]).add(
+                        uint112(PoolToken(pool.poolTokens()[0]).totalSupply()).add(shadowPools[CommitType.LongBurn]).add(
                             _commit.amount
                         )
                     )
@@ -164,7 +167,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             uint112 amountOut = PoolSwapLibrary.getAmountOut(
                 PoolSwapLibrary.getRatio(
                     shortBalance,
-                    uint112(PoolToken(tokens[1]).totalSupply()).add(shadowPools[CommitType.ShortBurn]).add(
+                    uint112(PoolToken(pool.poolTokens()[1]).totalSupply()).add(shadowPools[CommitType.ShortBurn]).add(
                         _commit.amount
                     )
                 ),
