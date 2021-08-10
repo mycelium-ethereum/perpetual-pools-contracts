@@ -104,6 +104,10 @@ describe("LeveragedPool - initialize", () => {
                 chainlinkOracle.address
             )
 
+            const keeperOracle = await oracleWrapperFactory.deploy(
+                chainlinkOracle.address
+            )
+
             const leveragedPoolFactory = (await ethers.getContractFactory(
                 "LeveragedPool",
                 {
