@@ -6,27 +6,14 @@ pragma abicoder v2;
 @title The pool controller contract interface
 */
 interface ILeveragedPool {
-    // #### Enum & Struct definitions
-    enum CommitType {
-        ShortMint,
-        ShortBurn,
-        LongMint,
-        LongBurn
-    }
-
-    struct Commit {
-        uint112 amount;
-        CommitType commitType;
-        uint40 created;
-        address owner;
-    }
-
     struct Initialization {
         address _owner;
         address _keeper; // The address of the PoolKeeper contract
         address _oracleWrapper;
         address _longToken;
         address _shortToken;
+        address _priceChanger;
+        address _poolCommittor;
         string _poolCode; // The pool identification code. This is unique per pool per pool keeper
         uint32 _frontRunningInterval; // The minimum number of seconds that must elapse before a commit is forced to wait until the next interval
         uint32 _updateInterval; // The minimum number of seconds that must elapse before a commit can be executed.
@@ -46,40 +33,17 @@ interface ILeveragedPool {
      */
     event PoolInitialized(address indexed longToken, address indexed shortToken, address quoteToken, string poolCode);
 
-    /**
-     * @notice Creates a notification when a commit is created in the pool
-     * @param commitID The id of the new commit
-     * @param amount The amount of tokens committed
-     * @param commitType The commitment type
-     */
-    event CreateCommit(uint128 indexed commitID, uint128 indexed amount, CommitType commitType);
-
-    /**
-     * @notice Creates a notification for the removal of a commit that hasn't yet been executed
-     * @param commitID The commit that was removed
-     * @param amount The amount that was removed from the shadow ool
-     * @param commitType The type of commit that was removed
-     */
-    event RemoveCommit(uint128 indexed commitID, uint128 indexed amount, CommitType indexed commitType);
-
-    /**
-     * @notice Creates a notification that a commit has been executed
-     * @param commitID The commit that was executed
-     */
-    event ExecuteCommit(uint128 commitID);
-
-    /**
-     * @notice Creates a notification of a price execution
-     * @param startPrice The price from the last execution
-     * @param endPrice The price for this execution
-     * @param transferAmount The amount that was transferred between pools
-     */
-    event PriceChange(int256 indexed startPrice, int256 indexed endPrice, uint112 indexed transferAmount);
-
-    // ### Getters for public variables
-    function updateInterval() external view returns (uint32);
-
+    function poolCommittor() external view returns (address);
+    function priceChanger() external view returns (address);
     function oracleWrapper() external view returns (address);
+
+    function lastPriceTimestamp() external view returns (uint40);
+    function updateInterval() external view returns (uint32);
+    function shortBalance() external view returns (uint112);
+    function longBalance() external view returns (uint112);
+    function frontRunningInterval() external view returns (uint32);
+
+    function poolTokens() external view returns (address[2] memory);
 
     // #### Functions
     /**
@@ -89,43 +53,16 @@ interface ILeveragedPool {
      */
     function initialize(Initialization calldata initialization) external;
 
-    /**
-     * @notice Wrapper function to get the latest oracle price (using getPrice)
-     * @return Latest price from the oracle
-     */
+    // This would call `PriceChanger::executePriceChange` and `PoolCommittor::executeAllCommits` and would have onlyKeeper modifier
+    function poolUpkeep(int256 _oldPrice, int256 _newPrice) external;
+
+    function quoteTokenTransferFrom(address from, address to, uint256 amount) external returns (bool);
+
+    // This would be called in `PoolCommittor::executeCommitment` and `PriceChanger::executePriceChange` and would therefore have an onlyCommittorOrPriceChanger modifier or something
+    function setNewPoolBalances(uint112 _longBalance, uint112 _shortBalance) external;
+    
     function getOraclePrice() external view returns (int256);
 
-    /**
-     * @notice Creates a commitment to mint or burn
-     * @param commitType Valid types are SB,SM, LB, LM. Each type contains position (Short, Long) and action (Mint, Burn).
-     * @param amount the amount of the quote token that they wish to commit to a transaction
-     */
-    function commit(CommitType commitType, uint112 amount) external;
-
-    /**
-     * @notice Withdraws a user's existing commit. This cannot be used to remove another user's commits. The sender must own the commits they are withdrawing
-     * @param commitID the ID of the commit to be withdrawn
-     */
-    function uncommit(uint128 commitID) external;
-
-    /**
-     * @notice Executes one or more commitments and effects the changes on the live and shadow pools respectively. This can be used to execute on any valid commits in the commit pool
-     * @param _commitIDs an array of commits to execute. These do not have to all belong to the sender, nor do they need to be in a specific order.
-     */
-    function executeCommitment(uint128[] calldata _commitIDs) external;
-
-    /**
-     * @notice Processes the effect of a price change. This involves transferring funds from the losing pool to the other.
-     * @dev This function should be called by the Pool Keeper.
-     * @dev This function should be secured with some form of access control
-     * @param oldPrice The previously executed price
-     * @param newPrice The price for the latest interval.
-     */
-    function executePriceChange(int256 oldPrice, int256 newPrice) external;
-
-    /**
-     * @return true if the price was last updated more than updateInterval seconds ago
-     */
     function intervalPassed() external view returns (bool);
 
     /**
@@ -138,11 +75,4 @@ interface ILeveragedPool {
      * @dev Allows the owner to transfer ownership to another address
      */
     function transferOwnership(address _owner) external;
-
-    /**
-     * @notice Updates the fee address
-     * @dev This should be secured with some form of access control
-     * @param account The new account to send fees to
-     */
-    function updateFeeAddress(address account) external;
 }

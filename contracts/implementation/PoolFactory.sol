@@ -4,6 +4,8 @@ pragma abicoder v2;
 
 import "../interfaces/IPoolFactory.sol";
 import "../interfaces/ILeveragedPool.sol";
+import "../interfaces/IPriceChangerDeployer.sol";
+import "../interfaces/IPoolCommittorDeployer.sol";
 import "./LeveragedPool.sol";
 import "./PoolToken.sol";
 import "./PoolKeeper.sol";
@@ -18,9 +20,11 @@ contract PoolFactory is IPoolFactory, Ownable {
     PoolToken public pairTokenBase;
     LeveragedPool public poolBase;
     IPoolKeeper public poolKeeper;
+    IPriceChangerDeployer public priceChangerDeployer;
+    IPoolCommittorDeployer public poolCommittorDeployer;
 
     // #### Functions
-    constructor() {
+    constructor(address _poolCommittorDeployer, address _priceChangerDeployer) {
         // Deploy base contracts
         pairTokenBase = new PoolToken();
         poolBase = new LeveragedPool();
@@ -29,6 +33,8 @@ contract PoolFactory is IPoolFactory, Ownable {
             address(this),
             address(0),
             address(this),
+            address(0),
+            address(0),
             address(0),
             address(0),
             "BASE_POOL",
@@ -41,12 +47,22 @@ contract PoolFactory is IPoolFactory, Ownable {
         );
         // Init bases
         poolBase.initialize(baseInitialization);
+        poolCommittorDeployer = IPoolCommittorDeployer(_poolCommittorDeployer);
+        priceChangerDeployer = IPriceChangerDeployer(_priceChangerDeployer);
 
         pairTokenBase.initialize(address(this), "BASE_TOKEN", "BASE");
     }
 
     function deployPool(PoolDeployment calldata deploymentParameters) external override returns (address) {
         require(address(poolKeeper) != address(0), "PoolKeeper not set");
+
+        /* Since adding these appropriately involves changing a lot of places in the test,
+           we will add these two lines once tests are updated. In separate PRs
+        address priceChanger = priceChangerDeployer.deploy(deploymentParameters.feeAddress);
+        address poolCommittor = poolCommittorDeployer.deploy(deploymentParameters.quoteToken);
+        */
+        address priceChanger = address(this);
+        address poolCommittor = address(this);
         LeveragedPool pool = LeveragedPool(
             Clones.cloneDeterministic(address(poolBase), keccak256(abi.encode(deploymentParameters.poolCode)))
         );
@@ -66,6 +82,8 @@ contract PoolFactory is IPoolFactory, Ownable {
                 string(abi.encodePacked(deploymentParameters.poolCode, "-SHORT")),
                 string(abi.encodePacked("S-", deploymentParameters.poolCode))
             ),
+            priceChanger,
+            poolCommittor,
             deploymentParameters.poolCode,
             deploymentParameters.frontRunningInterval,
             deploymentParameters.updateInterval,

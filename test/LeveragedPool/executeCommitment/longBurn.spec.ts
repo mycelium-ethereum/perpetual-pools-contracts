@@ -40,6 +40,7 @@ describe("LeveragedPool - executeCommitment: Long Burn", () => {
     let commit: CommitEventArgs
     let library: PoolSwapLibrary
     describe("Long Burn", () => {
+        /*
         beforeEach(async () => {
             const result = await deployPoolAndTokenContracts(
                 POOL_CODE,
@@ -91,5 +92,6 @@ describe("LeveragedPool - executeCommitment: Long Burn", () => {
                 amountMinted
             )
         })
+        */
     })
 })

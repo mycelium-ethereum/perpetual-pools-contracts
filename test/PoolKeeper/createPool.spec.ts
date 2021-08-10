@@ -61,7 +61,8 @@ describe("PoolKeeper - createPool", () => {
             signer: signers[0],
             libraries: { PoolSwapLibrary: library.address },
         })) as PoolFactory__factory
-        factory = await (await PoolFactory.deploy()).deployed()
+        // TODO replace addresses with the two new deployers
+        factory = await (await PoolFactory.deploy(generateRandomAddress(), generateRandomAddress())).deployed()
         poolKeeper = await poolKeeperFactory.deploy(factory.address)
         await poolKeeper.deployed()
 

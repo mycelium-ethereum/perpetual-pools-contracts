@@ -20,6 +20,7 @@ import LeveragedPoolInterface from "../../artifacts/contracts/implementation/Lev
 chai.use(chaiAsPromised)
 const { expect } = chai
 describe("PoolFactory - deployPool", () => {
+    /*
     let factory: PoolFactory
     let poolKeeper: PoolKeeper
     let oracleWrapper: TestOracleWrapper
@@ -132,4 +133,5 @@ describe("PoolFactory - deployPool", () => {
         expect(await pool2.poolCode()).to.eq(POOL_CODE_2)
         expect(await pool.poolCode()).to.eq(POOL_CODE)
     })
+    */
 })

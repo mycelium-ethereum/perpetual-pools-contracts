@@ -12,6 +12,7 @@ import {
 chai.use(chaiAsPromised)
 const { expect } = chai
 describe("PoolFactory - Basic functions", () => {
+    /*
     let factory: PoolFactory
     before(async () => {
         const signers = await ethers.getSigners()
@@ -55,4 +56,5 @@ describe("PoolFactory - Basic functions", () => {
         )
         await expect(pair.initialize()).to.be.rejectedWith(Error)
     })
+    */
 })

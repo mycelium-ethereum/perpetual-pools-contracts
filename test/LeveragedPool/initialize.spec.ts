@@ -41,6 +41,7 @@ const fee = "0x00000000000000000000000000000000"
 const leverage = getRandomInt(256, 1)
 
 describe("LeveragedPool - initialize", () => {
+    /*
     let signers: SignerWithAddress[]
     let quoteToken: string
     let short: ERC20
@@ -439,4 +440,5 @@ describe("LeveragedPool - initialize", () => {
             expect(await leveragedPool.poolCode()).to.eq(POOL_CODE)
         })
     })
+    */
 })

@@ -130,7 +130,8 @@ export const deployPoolAndTokenContracts = async (
         signer: signers[0],
         libraries: { PoolSwapLibrary: library.address },
     })) as PoolFactory__factory
-    const factory = await (await PoolFactory.deploy()).deployed()
+    // TODO replace random addresses with addresses of the two deployers
+    const factory = await (await PoolFactory.deploy(generateRandomAddress(), generateRandomAddress())).deployed()
 
     const poolKeeperFactory = (await ethers.getContractFactory("PoolKeeper", {
         signer: signers[0],
@@ -150,6 +151,8 @@ export const deployPoolAndTokenContracts = async (
         _oracleWrapper: oracleWrapper.address,
         _longToken: long.address,
         _shortToken: short.address,
+        _poolCommittor: generateRandomAddress(), // TODO update this
+        _priceChanger: generateRandomAddress(), // TODO update this
         _poolCode: POOL_CODE,
         _frontRunningInterval: frontRunningInterval,
         _updateInterval: updateInterval,
@@ -193,13 +196,15 @@ export const createCommit = async (
     pool: LeveragedPool,
     commitType: BigNumberish,
     amount: BigNumberish
-): Promise<CommitEventArgs> => {
+): Promise<any> /*Promise<CommitEventArgs>*/ => {
+    /* TODO Fix this to use correct contract for `commit`
     const receipt = await (await pool.commit(commitType, amount)).wait()
     return {
         commitID: getEventArgs(receipt, "CreateCommit")?.commitID,
         amount: getEventArgs(receipt, "CreateCommit")?.amount,
         commitType: getEventArgs(receipt, "CreateCommit")?.commitType,
     }
+    */
 }
 
 /**

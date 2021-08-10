@@ -5,7 +5,7 @@ pragma abicoder v2;
 import "../interfaces/IPoolKeeper.sol";
 import "../interfaces/IOracleWrapper.sol";
 import "../interfaces/IPoolFactory.sol";
-import "../implementation/LeveragedPool.sol";
+import "../interfaces/ILeveragedPool.sol";
 import "../vendors/SafeMath_40.sol";
 import "../vendors/SafeMath_32.sol";
 
@@ -177,7 +177,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
                 emit ExecutePriceChange(oldPrice, latestPrice, updateInterval, pool);
                 // This allows us to still batch multiple calls to executePriceChange, even if some are invalid
                 // Without reverting the entire transaction
-                try LeveragedPool(pool).executePriceChange(oldPrice, latestPrice) {} catch Error(string memory reason) {
+                try ILeveragedPool(pool).poolUpkeep(oldPrice, latestPrice) {} catch Error(string memory reason) {
                     emit PoolUpdateError(pool, reason);
                 }
             }
