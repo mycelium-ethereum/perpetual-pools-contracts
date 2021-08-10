@@ -48,7 +48,6 @@ contract PriceChanger is IPriceChanger, Ownable {
         feeAddress = _feeAddress;
     }
 
-
     /**
      * @notice Processes the effect of a price change. This involves transferring funds from the losing pool to the other.
      * @dev This function should be called by the Pool Keeper.
@@ -98,7 +97,10 @@ contract PriceChanger is IPriceChanger, Ownable {
             longBalance = longBalance.sub(lossAmount);
             emit PriceChange(oldPrice, newPrice, lossAmount);
         }
-        require(ILeveragedPool(leveragedPool).quoteTokenTransferFrom(address(this), feeAddress, totalFeeAmount), "Fee transfer failed");
+        require(
+            ILeveragedPool(leveragedPool).quoteTokenTransferFrom(address(this), feeAddress, totalFeeAmount),
+            "Fee transfer failed"
+        );
         ILeveragedPool(leveragedPool).setNewPoolBalances(longBalance, shortBalance);
     }
 
@@ -116,5 +118,4 @@ contract PriceChanger is IPriceChanger, Ownable {
         require(msg.sender == leveragedPool, "msg.sender not LeveragedPool");
         _;
     }
-
 }

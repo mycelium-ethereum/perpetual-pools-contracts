@@ -132,7 +132,12 @@ export const deployPoolAndTokenContracts = async (
         libraries: { PoolSwapLibrary: library.address },
     })) as PoolFactory__factory
     // TODO replace random addresses with addresses of the two deployers
-    const factory = await (await PoolFactory.deploy(generateRandomAddress(), generateRandomAddress())).deployed()
+    const factory = await (
+        await PoolFactory.deploy(
+            generateRandomAddress(),
+            generateRandomAddress()
+        )
+    ).deployed()
 
     const poolKeeperFactory = (await ethers.getContractFactory("PoolKeeper", {
         signer: signers[0],

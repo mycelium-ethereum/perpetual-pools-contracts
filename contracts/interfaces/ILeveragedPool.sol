@@ -34,13 +34,19 @@ interface ILeveragedPool {
     event PoolInitialized(address indexed longToken, address indexed shortToken, address quoteToken, string poolCode);
 
     function poolCommittor() external view returns (address);
+
     function priceChanger() external view returns (address);
+
     function oracleWrapper() external view returns (address);
 
     function lastPriceTimestamp() external view returns (uint40);
+
     function updateInterval() external view returns (uint32);
+
     function shortBalance() external view returns (uint112);
+
     function longBalance() external view returns (uint112);
+
     function frontRunningInterval() external view returns (uint32);
 
     function poolTokens() external view returns (address[2] memory);
@@ -56,11 +62,15 @@ interface ILeveragedPool {
     // This would call `PriceChanger::executePriceChange` and `PoolCommittor::executeAllCommits` and would have onlyKeeper modifier
     function poolUpkeep(int256 _oldPrice, int256 _newPrice) external;
 
-    function quoteTokenTransferFrom(address from, address to, uint256 amount) external returns (bool);
+    function quoteTokenTransferFrom(
+        address from,
+        address to,
+        uint256 amount
+    ) external returns (bool);
 
     // This would be called in `PoolCommittor::executeCommitment` and `PriceChanger::executePriceChange` and would therefore have an onlyCommittorOrPriceChanger modifier or something
     function setNewPoolBalances(uint112 _longBalance, uint112 _shortBalance) external;
-    
+
     function getOraclePrice() external view returns (int256);
 
     function intervalPassed() external view returns (bool);

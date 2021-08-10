@@ -62,7 +62,12 @@ describe("PoolKeeper - createPool", () => {
             libraries: { PoolSwapLibrary: library.address },
         })) as PoolFactory__factory
         // TODO replace addresses with the two new deployers
-        factory = await (await PoolFactory.deploy(generateRandomAddress(), generateRandomAddress())).deployed()
+        factory = await (
+            await PoolFactory.deploy(
+                generateRandomAddress(),
+                generateRandomAddress()
+            )
+        ).deployed()
         poolKeeper = await poolKeeperFactory.deploy(factory.address)
         await poolKeeper.deployed()
 

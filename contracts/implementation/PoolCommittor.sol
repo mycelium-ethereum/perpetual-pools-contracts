@@ -40,12 +40,12 @@ contract PoolCommittor is IPoolCommittor, Ownable {
     mapping(CommitType => uint112) public shadowPools;
     string public poolCode;
 
-	constructor(address quoteToken) {
-		// This contract will be telling LeveragedPool to transfer tokens
-		IERC20(quoteToken).approve(leveragedPool, IERC20(quoteToken).totalSupply());
-	}
+    constructor(address quoteToken) {
+        // This contract will be telling LeveragedPool to transfer tokens
+        IERC20(quoteToken).approve(leveragedPool, IERC20(quoteToken).totalSupply());
+    }
 
-	function commit(CommitType commitType, uint112 amount) external override {
+    function commit(CommitType commitType, uint112 amount) external override {
         require(amount > 0, "Amount must not be zero");
         commitIDCounter = commitIDCounter.add(1);
 
@@ -63,7 +63,10 @@ contract PoolCommittor is IPoolCommittor, Ownable {
         // pull in tokens
         if (commitType == CommitType.LongMint || commitType == CommitType.ShortMint) {
             // minting: pull in the quote token from the commiter
-        	require(ILeveragedPool(leveragedPool).quoteTokenTransferFrom(msg.sender, address(this), amount), "Transfer failed");
+            require(
+                ILeveragedPool(leveragedPool).quoteTokenTransferFrom(msg.sender, address(this), amount),
+                "Transfer failed"
+            );
         } else if (commitType == CommitType.LongBurn) {
             // long burning: pull in long pool tokens from commiter
             require(PoolToken(tokens[0]).burn(amount, msg.sender), "Transfer failed");
@@ -86,7 +89,10 @@ contract PoolCommittor is IPoolCommittor, Ownable {
         // release tokens
         if (_commit.commitType == CommitType.LongMint || _commit.commitType == CommitType.ShortMint) {
             // minting: return quote tokens to the commit owner
-        	require(ILeveragedPool(leveragedPool).quoteTokenTransferFrom(address(this), msg.sender, _commit.amount), "Transfer failed");
+            require(
+                ILeveragedPool(leveragedPool).quoteTokenTransferFrom(address(this), msg.sender, _commit.amount),
+                "Transfer failed"
+            );
         } else if (_commit.commitType == CommitType.LongBurn) {
             // long burning: return long pool tokens to commit owner
             require(PoolToken(tokens[0]).mint(_commit.amount, msg.sender), "Transfer failed");
@@ -139,7 +145,7 @@ contract PoolCommittor is IPoolCommittor, Ownable {
                 _commit.amount
             );
             longBalance = longBalance.sub(amountOut);
-        	require(pool.quoteTokenTransferFrom(address(this), _commit.owner, amountOut), "Transfer failed");
+            require(pool.quoteTokenTransferFrom(address(this), _commit.owner, amountOut), "Transfer failed");
         } else if (_commit.commitType == CommitType.ShortMint) {
             shortBalance = shortBalance.add(_commit.amount);
             _mintTokens(
@@ -161,10 +167,11 @@ contract PoolCommittor is IPoolCommittor, Ownable {
             );
 
             shortBalance = shortBalance.sub(amountOut);
-        	require(pool.quoteTokenTransferFrom(address(this), _commit.owner, amountOut), "Transfer failed");
+            require(pool.quoteTokenTransferFrom(address(this), _commit.owner, amountOut), "Transfer failed");
             pool.setNewPoolBalances(longBalance, shortBalance);
         }
     }
+
     /**
      * @return A Commit of a given ID
      */
@@ -207,5 +214,4 @@ contract PoolCommittor is IPoolCommittor, Ownable {
             "Mint failed"
         );
     }
-
 }
