@@ -140,7 +140,7 @@ describe("PoolKeeper - checkUpkeepSinglePool", () => {
         let preUpkeepFee = await poolKeeper.keeperFees(keeperAddress)
 
         /* perform upkeep */
-        let poolAddress = await poolKeeper.pools(0)
+        let poolAddress = await factory.pools(0)
         let res = await poolKeeper.performUpkeepSinglePool(poolAddress)
 
         let postUpkeepFee = await poolKeeper.keeperFees(keeperAddress)

@@ -162,6 +162,7 @@ describe("PoolFactory - deployPool", () => {
             feeAddress: generateRandomAddress(),
             quoteToken: generateRandomAddress(),
             oracleWrapper: oracleWrapper.address,
+            keeperOracle: keeperOracle.address,
         }
         const secondPool = getEventArgs(
             await (await factory.deployPool(deploymentData)).wait(),
@@ -186,6 +187,7 @@ describe("PoolFactory - deployPool", () => {
                 feeAddress: generateRandomAddress(),
                 quoteToken: generateRandomAddress(),
                 oracleWrapper: oracleWrapper.address,
+                keeperOracle: keeperOracle.address,
             }
 
             await expect(factory.deployPool(deploymentData)).to.be.revertedWith(
@@ -203,6 +205,7 @@ describe("PoolFactory - deployPool", () => {
                 feeAddress: generateRandomAddress(),
                 quoteToken: generateRandomAddress(),
                 oracleWrapper: oracleWrapper.address,
+                keeperOracle: keeperOracle.address,
             }
 
             await expect(factory.deployPool(deploymentData)).to.be.revertedWith(
