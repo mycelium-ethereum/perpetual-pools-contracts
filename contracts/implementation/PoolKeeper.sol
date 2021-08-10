@@ -61,6 +61,8 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      */
     mapping(address => uint256) public lastExecutionTime;
 
+    mapping(address => uint256) public keeperFees;
+
     IPoolFactory public factory;
     bytes16 constant fixedPoint = 0x403abc16d674ec800000000000000000; // 1 ether
 
@@ -179,7 +181,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         IERC20 settlementToken = IERC20(LeveragedPool(_pool).quoteToken());
         uint256 reward = keeperReward(_pool, _gasPrice, _gasSpent);
 
-        settlementToken.transfer(msg.sender, reward);
+        keeperFees[msg.sender] += reward;
     }
 
     /**
