@@ -89,6 +89,7 @@ export const deployPoolAndTokenContracts = async (
     library: PoolSwapLibrary
     poolCommiter: PoolCommitter
     priceChanger: PriceChanger
+    poolKeeper: PoolKeeper
 }> => {
     const signers = await ethers.getSigners()
     // Deploy test ERC20 token
@@ -139,7 +140,7 @@ export const deployPoolAndTokenContracts = async (
         signer: signers[0],
         libraries: { PoolSwapLibrary: library.address },
     })) as PoolFactory__factory
-    // TODO replace random addresses with addresses of the two deployers
+    
     const PoolCommiterDeployerFactory = (await ethers.getContractFactory("PoolCommitterDeployer", {
         signer: signers[0],
         libraries: { PoolSwapLibrary: library.address },
@@ -156,14 +157,12 @@ export const deployPoolAndTokenContracts = async (
     let priceChangerDeployer = await PriceChangerDeployerFactory.deploy()
     priceChangerDeployer = await priceChangerDeployer.deployed()
 
-    console.log("Factory deploy")
     const factory = await (
         await PoolFactory.deploy(
             poolCommiterDeployer.address,
             priceChangerDeployer.address
         )
     ).deployed()
-    console.log("factory deployed")
 
     const poolKeeperFactory = (await ethers.getContractFactory("PoolKeeper", {
         signer: signers[0],
@@ -215,7 +214,9 @@ export const deployPoolAndTokenContracts = async (
         //@ts-ignore
         poolCommiter,
         //@ts-ignore
-        priceChanger
+        priceChanger,
+        //@ts-ignore
+        poolKeeper
     }
 }
 

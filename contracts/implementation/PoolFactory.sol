@@ -7,12 +7,12 @@ import "../interfaces/ILeveragedPool.sol";
 import "../interfaces/IPriceChangerDeployer.sol";
 import "../interfaces/IPoolCommitterDeployer.sol";
 import "../interfaces/IPoolCommitter.sol";
+import "../interfaces/IPriceChanger.sol";
 import "./LeveragedPool.sol";
 import "./PoolToken.sol";
 import "./PoolKeeper.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "hardhat/console.sol";
 
 /*
 @title The oracle management contract
@@ -76,7 +76,7 @@ contract PoolFactory is IPoolFactory, Ownable {
     function deployPool(PoolDeployment calldata deploymentParameters) external override returns (address) {
         require(address(poolKeeper) != address(0), "PoolKeeper not set");
 
-        address priceChanger = priceChangerDeployer.deploy(deploymentParameters.feeAddress);
+        address priceChanger = priceChangerDeployer.deploy(deploymentParameters.feeAddress, address(this));
         address poolCommitter = poolCommitterDeployer.deploy(address(this));
         bytes32 uniquePoolId = keccak256(
             abi.encode(
@@ -125,9 +125,13 @@ contract PoolFactory is IPoolFactory, Ownable {
             deploymentParameters.feeAddress,
             deploymentParameters.quoteToken
         );
+        // the following two function calls are both due to circular dependencies
         // aprove the quote token on the pool commiter to finalise linking
         // this also stores the pool address in the commiter
         IPoolCommitter(poolCommitter).setQuoteAndPool(deploymentParameters.quoteToken, _pool);
+
+        // link in the pool to the priceChanger
+        IPriceChanger(priceChanger).setPool(_pool);
 
         // finalise pool setup
         pool.initialize(initialization);

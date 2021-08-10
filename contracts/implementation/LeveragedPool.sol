@@ -101,6 +101,32 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         shortBalance = _shortBalance;
     }
 
+    function mintTokens(
+        uint token,
+        uint112 amountIn,
+        uint112 balance,
+        uint112 inverseShadowbalance,
+        address tokenOwner
+    ) external override onlyPriceChangerOrCommitter {
+        require(token == 0 || token == 1, "Pool: token out of range");
+        address _token = tokens[token];
+        require(
+            PoolToken(_token).mint(
+                // amount out = ratio * amount in
+                PoolSwapLibrary.getAmountOut(
+                    // ratio = (totalSupply + inverseShadowBalance) / balance
+                    PoolSwapLibrary.getRatio(
+                        uint112(PoolToken(_token).totalSupply()).add(inverseShadowbalance),
+                        balance
+                    ),
+                    amountIn
+                ),
+                tokenOwner
+            ),
+            "Mint failed"
+        );
+    }
+
     /**
      * @return true if the price was last updated more than updateInterval seconds ago
      */

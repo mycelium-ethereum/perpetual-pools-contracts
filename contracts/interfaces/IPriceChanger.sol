@@ -12,4 +12,6 @@ interface IPriceChanger {
     function executePriceChange(int256 oldPrice, int256 newPrice) external;
 
     function updateFeeAddress(address account) external;
+
+    function setPool(address _pool) external;
 }

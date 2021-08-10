@@ -7,6 +7,8 @@ import {
     TestToken,
     ERC20,
     PoolCommitter,
+    PoolKeeper,
+    PriceChanger,
 } from "../../../typechain"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { POOL_CODE } from "../../constants"
@@ -40,6 +42,7 @@ describe("PoolCommiter - executeCommitment: Basic test cases", () => {
     let library: PoolSwapLibrary
     let signers: SignerWithAddress[]
     let poolCommiter: PoolCommitter
+    let priceChanger: PriceChanger
 
     describe("Revert cases", () => {
         before(async () => {
@@ -56,6 +59,7 @@ describe("PoolCommiter - executeCommitment: Basic test cases", () => {
             signers = result.signers
             token = result.token
             library = result.library
+            priceChanger = result.priceChanger
             poolCommiter = result.poolCommiter
         })
         it("should revert if the commitment is too new", async () => {
@@ -88,6 +92,7 @@ describe("PoolCommiter - executeCommitment: Basic test cases", () => {
             token = result.token
             library = result.library
             poolCommiter = result.poolCommiter
+            priceChanger = result.priceChanger
 
             await token.approve(pool.address, amountCommitted)
             commit = await createCommit(poolCommiter, commitType, amountCommitted)
@@ -99,13 +104,13 @@ describe("PoolCommiter - executeCommitment: Basic test cases", () => {
                 amountCommitted
             )
             await timeout(2000)
-            //await pool.executePriceChange(9, 10)
+            await pool.poolUpkeep(9, 10)
             await poolCommiter.executeCommitments([commit.commitID])
             expect((await poolCommiter.commits(commit.commitID)).amount).to.eq(0)
         })
         it("should emit an event for commitment removal", async () => {
             await timeout(2000)
-            //await poolCommiter.executePriceChange(9, 10)
+            await pool.poolUpkeep(9, 10)
             const receipt = await (
                 await poolCommiter.executeCommitments([commit.commitID])
             ).wait()
@@ -115,7 +120,7 @@ describe("PoolCommiter - executeCommitment: Basic test cases", () => {
         })
         it("should allow anyone to execute a commitment", async () => {
             await timeout(2000)
-            //await pool.executePriceChange(9, 10)
+            await pool.poolUpkeep(9, 10)
             await poolCommiter.connect(signers[1]).executeCommitments([commit.commitID])
             expect((await poolCommiter.commits(commit.commitID)).amount).to.eq(0)
         })
