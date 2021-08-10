@@ -71,7 +71,7 @@ contract PoolFactory is IPoolFactory, Ownable {
             "Pool ID in use"
         );
         require(
-            deploymentParameters.leverageAmount >= 1 && deploymentParameters.leverageAmount <= MAX_LEVERAGE,
+            deploymentParameters.leverageAmount >= 1 && deploymentParameters.leverageAmount <= maxLeverage,
             "PoolKeeper: leveraged amount invalid"
         );
         LeveragedPool pool = LeveragedPool(
@@ -144,6 +144,6 @@ contract PoolFactory is IPoolFactory, Ownable {
     }
 
     function setMaxLeverage(uint16 newMaxLeverage) external onlyOwner {
-        MAX_LEVERAGE = newMaxLeverage;
+        maxLeverage = newMaxLeverage;
     }
 }
