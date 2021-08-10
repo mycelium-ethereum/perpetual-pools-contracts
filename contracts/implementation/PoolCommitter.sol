@@ -33,16 +33,17 @@ contract PoolCommitter is IPoolCommitter, Ownable {
     address[2] public tokens;
 
     address public leveragedPool;
-    uint40 public lastPriceTimestamp;
 
     uint128 public commitIDCounter;
     mapping(uint128 => Commit) public commits;
     mapping(CommitType => uint112) public shadowPools;
     string public poolCode;
 
-    constructor(address quoteToken) {
-        // This contract will be telling LeveragedPool to transfer tokens
-        IERC20(quoteToken).approve(leveragedPool, IERC20(quoteToken).totalSupply());
+    address public factory;
+
+    constructor(address _factory) {
+        // set the factory on deploy
+        factory = _factory;
     }
 
     function commit(CommitType commitType, uint112 amount) external override {
@@ -69,10 +70,10 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             );
         } else if (commitType == CommitType.LongBurn) {
             // long burning: pull in long pool tokens from commiter
-            require(PoolToken(tokens[0]).burn(amount, msg.sender), "Transfer failed");
+            ILeveragedPool(leveragedPool).burnTokens(0, amount, msg.sender);
         } else if (commitType == CommitType.ShortBurn) {
             // short burning: pull in short pool tokens from commiter
-            require(PoolToken(tokens[1]).burn(amount, msg.sender), "Transfer failed");
+            ILeveragedPool(leveragedPool).burnTokens(1, amount, msg.sender);
         }
     }
 
@@ -118,56 +119,61 @@ contract PoolCommitter is IPoolCommitter, Ownable {
     function _executeCommitment(Commit memory _commit) internal {
         require(_commit.owner != address(0), "Invalid commit");
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
+        uint40 lastPriceTimestamp = pool.lastPriceTimestamp();
         require(lastPriceTimestamp.sub(_commit.created) > pool.frontRunningInterval(), "Commit too new");
         uint112 shortBalance = pool.shortBalance();
         uint112 longBalance = pool.longBalance();
         shadowPools[_commit.commitType] = shadowPools[_commit.commitType].sub(_commit.amount);
         if (_commit.commitType == CommitType.LongMint) {
-            longBalance = longBalance.add(_commit.amount);
-            _mintTokens(
-                tokens[0],
+            pool.mintTokens(
+                0, // long token
                 _commit.amount, // amount of quote tokens commited to enter
-                longBalance.sub(_commit.amount), // total quote tokens in the long pull, excluding this mint
+                longBalance, // total quote tokens in the long pull
                 shadowPools[CommitType.LongBurn], // total pool tokens commited to be burned
                 _commit.owner
             );
+
+            // update long and short balances
+            pool.setNewPoolBalances(longBalance.add(_commit.amount), shortBalance);
         } else if (_commit.commitType == CommitType.LongBurn) {
             uint112 amountOut = PoolSwapLibrary.getAmountOut(
                 PoolSwapLibrary.getRatio(
                     longBalance,
                     uint112(
-                        uint112(PoolToken(tokens[0]).totalSupply()).add(shadowPools[CommitType.LongBurn]).add(
-                            _commit.amount
-                        )
+                        uint112(PoolToken(pool.poolTokens()[0]).totalSupply())
+                            .add(shadowPools[CommitType.LongBurn])
+                            .add(_commit.amount)
                     )
                 ),
                 _commit.amount
             );
-            longBalance = longBalance.sub(amountOut);
+
+            // update long and short balances
+            pool.setNewPoolBalances(longBalance.sub(amountOut), shortBalance);
             require(pool.quoteTokenTransferFrom(address(this), _commit.owner, amountOut), "Transfer failed");
         } else if (_commit.commitType == CommitType.ShortMint) {
-            shortBalance = shortBalance.add(_commit.amount);
-            _mintTokens(
-                tokens[1],
+            pool.mintTokens(
+                1, // short token
                 _commit.amount,
-                shortBalance.sub(_commit.amount),
+                shortBalance,
                 shadowPools[CommitType.ShortBurn],
                 _commit.owner
             );
+            pool.setNewPoolBalances(longBalance, shortBalance.add(_commit.amount));
         } else if (_commit.commitType == CommitType.ShortBurn) {
             uint112 amountOut = PoolSwapLibrary.getAmountOut(
                 PoolSwapLibrary.getRatio(
                     shortBalance,
-                    uint112(PoolToken(tokens[1]).totalSupply()).add(shadowPools[CommitType.ShortBurn]).add(
+                    uint112(PoolToken(pool.poolTokens()[1]).totalSupply()).add(shadowPools[CommitType.ShortBurn]).add(
                         _commit.amount
                     )
                 ),
                 _commit.amount
             );
 
-            shortBalance = shortBalance.sub(amountOut);
+            // update long and short balances
+            pool.setNewPoolBalances(longBalance, shortBalance.sub(amountOut));
             require(pool.quoteTokenTransferFrom(address(this), _commit.owner, amountOut), "Transfer failed");
-            pool.setNewPoolBalances(longBalance, shortBalance);
         }
     }
 
@@ -178,35 +184,14 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         return commits[_commitID];
     }
 
-    /**
-     * @notice Mints new tokens
-     * @param token The token to mint
-     * @param amountIn The amount the user has committed to minting
-     * @param balance The balance of pair at the start of the execution
-     * @param inverseShadowbalance The amount of tokens burned from total supply
-     * @param tokenOwner The address to send the tokens to
-     */
-    function _mintTokens(
-        address token,
-        uint112 amountIn,
-        uint112 balance,
-        uint112 inverseShadowbalance,
-        address tokenOwner
-    ) internal {
-        require(
-            PoolToken(token).mint(
-                // amount out = ratio * amount in
-                PoolSwapLibrary.getAmountOut(
-                    // ratio = (totalSupply + inverseShadowBalance) / balance
-                    PoolSwapLibrary.getRatio(
-                        uint112(PoolToken(token).totalSupply()).add(inverseShadowbalance),
-                        balance
-                    ),
-                    amountIn
-                ),
-                tokenOwner
-            ),
-            "Mint failed"
-        );
+    function setQuoteAndPool(address quoteToken, address _leveragedPool) external override onlyFactory {
+        leveragedPool = _leveragedPool;
+        IERC20 _token = IERC20(quoteToken);
+        _token.approve(leveragedPool, _token.totalSupply());
+    }
+
+    modifier onlyFactory() {
+        require(msg.sender == factory, "Commiter: not factory");
+        _;
     }
 }
