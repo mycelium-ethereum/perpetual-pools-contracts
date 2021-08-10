@@ -140,19 +140,25 @@ export const deployPoolAndTokenContracts = async (
         signer: signers[0],
         libraries: { PoolSwapLibrary: library.address },
     })) as PoolFactory__factory
-    
-    const PoolCommiterDeployerFactory = (await ethers.getContractFactory("PoolCommitterDeployer", {
-        signer: signers[0],
-        libraries: { PoolSwapLibrary: library.address },
-    })) as PoolCommitterDeployer__factory
+
+    const PoolCommiterDeployerFactory = (await ethers.getContractFactory(
+        "PoolCommitterDeployer",
+        {
+            signer: signers[0],
+            libraries: { PoolSwapLibrary: library.address },
+        }
+    )) as PoolCommitterDeployer__factory
 
     let poolCommiterDeployer = await PoolCommiterDeployerFactory.deploy()
     poolCommiterDeployer = await poolCommiterDeployer.deployed()
 
-    const PriceChangerDeployerFactory = (await ethers.getContractFactory("PriceChangerDeployer", {
-        signer: signers[0],
-        libraries: { PoolSwapLibrary: library.address },
-    })) as PriceChangerDeployer__factory
+    const PriceChangerDeployerFactory = (await ethers.getContractFactory(
+        "PriceChangerDeployer",
+        {
+            signer: signers[0],
+            libraries: { PoolSwapLibrary: library.address },
+        }
+    )) as PriceChangerDeployer__factory
 
     let priceChangerDeployer = await PriceChangerDeployerFactory.deploy()
     priceChangerDeployer = await priceChangerDeployer.deployed()
@@ -216,7 +222,7 @@ export const deployPoolAndTokenContracts = async (
         //@ts-ignore
         priceChanger,
         //@ts-ignore
-        poolKeeper
+        poolKeeper,
     }
 }
 

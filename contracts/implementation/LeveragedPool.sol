@@ -102,7 +102,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     }
 
     function mintTokens(
-        uint token,
+        uint256 token,
         uint112 amountIn,
         uint112 balance,
         uint112 inverseShadowbalance,

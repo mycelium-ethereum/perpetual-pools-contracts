@@ -64,14 +64,20 @@ describe("PoolCommiter - executeCommitment: Basic test cases", () => {
         })
         it("should revert if the commitment is too new", async () => {
             await token.approve(pool.address, amountCommitted)
-            const commit = await createCommit(poolCommiter, commitType, amountCommitted)
+            const commit = await createCommit(
+                poolCommiter,
+                commitType,
+                amountCommitted
+            )
             await expect(
                 poolCommiter.executeCommitments([commit.commitID])
             ).to.be.rejectedWith(Error)
         })
 
         it("should revert if the commitment doesn't exist", async () => {
-            await expect(poolCommiter.executeCommitments([9])).to.be.rejectedWith(Error)
+            await expect(
+                poolCommiter.executeCommitments([9])
+            ).to.be.rejectedWith(Error)
         })
     })
 
@@ -95,7 +101,11 @@ describe("PoolCommiter - executeCommitment: Basic test cases", () => {
             priceChanger = result.priceChanger
 
             await token.approve(pool.address, amountCommitted)
-            commit = await createCommit(poolCommiter, commitType, amountCommitted)
+            commit = await createCommit(
+                poolCommiter,
+                commitType,
+                amountCommitted
+            )
             await pool.setKeeper(signers[0].address)
         })
 
@@ -106,7 +116,9 @@ describe("PoolCommiter - executeCommitment: Basic test cases", () => {
             await timeout(2000)
             await pool.poolUpkeep(9, 10)
             await poolCommiter.executeCommitments([commit.commitID])
-            expect((await poolCommiter.commits(commit.commitID)).amount).to.eq(0)
+            expect((await poolCommiter.commits(commit.commitID)).amount).to.eq(
+                0
+            )
         })
         it("should emit an event for commitment removal", async () => {
             await timeout(2000)
@@ -121,8 +133,12 @@ describe("PoolCommiter - executeCommitment: Basic test cases", () => {
         it("should allow anyone to execute a commitment", async () => {
             await timeout(2000)
             await pool.poolUpkeep(9, 10)
-            await poolCommiter.connect(signers[1]).executeCommitments([commit.commitID])
-            expect((await poolCommiter.commits(commit.commitID)).amount).to.eq(0)
+            await poolCommiter
+                .connect(signers[1])
+                .executeCommitments([commit.commitID])
+            expect((await poolCommiter.commits(commit.commitID)).amount).to.eq(
+                0
+            )
         })
     })
 })

@@ -95,7 +95,7 @@ interface ILeveragedPool {
      * @param tokenOwner The address to send the tokens to
      */
     function mintTokens(
-        uint token,
+        uint256 token,
         uint112 amountIn,
         uint112 balance,
         uint112 inverseShadowbalance,
