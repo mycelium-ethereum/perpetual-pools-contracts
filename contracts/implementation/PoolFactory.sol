@@ -18,7 +18,7 @@ contract PoolFactory is IPoolFactory, Ownable {
     PoolToken public pairTokenBase;
     LeveragedPool public poolBase;
     IPoolKeeper public poolKeeper;
-    uint256 public MAX_LEVERAGE = 25; // default max leverage of 25
+    uint16 public maxLeverage = 25; // default max leverage of 25
 
     /**
      * @notice Format: Pool code => quote token => oracle wrapper => bool
