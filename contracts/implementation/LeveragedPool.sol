@@ -76,12 +76,14 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         emit PoolInitialized(tokens[0], tokens[1], initialization._quoteToken, initialization._poolCode);
     }
 
+    /**
+     * @notice Execute a price change in the PriceChanger contract, then execute all commits in PoolCommitter
+     */
     function poolUpkeep(int256 _oldPrice, int256 _newPrice) external override onlyKeeper {
         IPriceChanger _priceChanger = IPriceChanger(priceChanger);
         _priceChanger.executePriceChange(_oldPrice, _newPrice);
         lastPriceTimestamp = uint40(block.timestamp);
-        // TODO execute all commitments on upkeep is a separate PR.
-        // IPoolCommitter(poolCommitter).executeAllCommits();
+        IPoolCommitter(poolCommitter).executeAllCommitments();
     }
 
     function quoteTokenTransferFrom(

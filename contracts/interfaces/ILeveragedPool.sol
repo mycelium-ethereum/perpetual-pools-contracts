@@ -59,7 +59,7 @@ interface ILeveragedPool {
      */
     function initialize(Initialization calldata initialization) external;
 
-    // This would call `PriceChanger::executePriceChange` and `PoolCommitter::executeAllCommits` and would have onlyKeeper modifier
+    // This would call `PriceChanger::executePriceChange` and `PoolCommitter::executeAllCommitments` and would have onlyKeeper modifier
     function poolUpkeep(int256 _oldPrice, int256 _newPrice) external;
 
     function quoteTokenTransferFrom(
