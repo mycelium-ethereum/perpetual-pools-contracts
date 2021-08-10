@@ -103,11 +103,11 @@ interface ILeveragedPool {
     ) external;
 
     /**
-    * @notice burns an amount of pool tokens from someones account
-    */
+     * @notice burns an amount of pool tokens from someones account
+     */
     function burnTokens(
         uint256 token,
         uint256 amount,
-    address burner
-    ) external; 
+        address burner
+    ) external;
 }

@@ -140,9 +140,9 @@ contract PoolCommitter is IPoolCommitter, Ownable {
                 PoolSwapLibrary.getRatio(
                     longBalance,
                     uint112(
-                        uint112(PoolToken(pool.poolTokens()[0]).totalSupply()).add(shadowPools[CommitType.LongBurn]).add(
-                            _commit.amount
-                        )
+                        uint112(PoolToken(pool.poolTokens()[0]).totalSupply())
+                            .add(shadowPools[CommitType.LongBurn])
+                            .add(_commit.amount)
                     )
                 ),
                 _commit.amount

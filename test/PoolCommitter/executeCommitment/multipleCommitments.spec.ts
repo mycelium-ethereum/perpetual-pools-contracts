@@ -61,7 +61,11 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
 
             await token.approve(pool.address, amountMinted)
 
-            const commit = await createCommit(poolCommiter, [2], amountCommitted)
+            const commit = await createCommit(
+                poolCommiter,
+                [2],
+                amountCommitted
+            )
             await shortToken.approve(pool.address, amountMinted)
             await timeout(2000)
             const signers = await ethers.getSigners()
@@ -69,9 +73,11 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
 
             await pool.poolUpkeep(lastPrice, lastPrice + 10)
             await poolCommiter.executeCommitments([commit.commitID])
-            
+
             commits.push(await createCommit(poolCommiter, [2], amountCommitted))
-            commits.push(await createCommit(poolCommiter, [3], amountCommitted.div(2)))
+            commits.push(
+                await createCommit(poolCommiter, [3], amountCommitted.div(2))
+            )
         })
         it("should reduce the balances of the shadows pools involved", async () => {
             // Short mint and burn pools
@@ -88,8 +94,12 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
                 commits[1].commitID,
             ])
 
-            expect(await poolCommiter.shadowPools(commits[0].commitType)).to.eq(0)
-            expect(await poolCommiter.shadowPools(commits[1].commitType)).to.eq(0)
+            expect(await poolCommiter.shadowPools(commits[0].commitType)).to.eq(
+                0
+            )
+            expect(await poolCommiter.shadowPools(commits[1].commitType)).to.eq(
+                0
+            )
         })
         it("should adjust the balances of the live pools involved", async () => {
             expect(await pool.longBalance()).to.eq(amountCommitted)
@@ -127,7 +137,11 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
 
             await token.approve(pool.address, amountMinted)
 
-            const commit = await createCommit(poolCommiter, [0], amountCommitted)
+            const commit = await createCommit(
+                poolCommiter,
+                [0],
+                amountCommitted
+            )
 
             await shortToken.approve(pool.address, amountMinted)
             await timeout(2000)
@@ -136,7 +150,9 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
             await poolCommiter.executeCommitments([commit.commitID])
 
             commits.push(await createCommit(poolCommiter, [0], amountCommitted))
-            commits.push(await createCommit(poolCommiter, [1], amountCommitted.div(2)))
+            commits.push(
+                await createCommit(poolCommiter, [1], amountCommitted.div(2))
+            )
         })
         it("should reduce the balances of the shadows pools involved", async () => {
             // Short mint and burn pools
@@ -153,8 +169,12 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
                 commits[1].commitID,
             ])
 
-            expect(await poolCommiter.shadowPools(commits[0].commitType)).to.eq(0)
-            expect(await poolCommiter.shadowPools(commits[1].commitType)).to.eq(0)
+            expect(await poolCommiter.shadowPools(commits[0].commitType)).to.eq(
+                0
+            )
+            expect(await poolCommiter.shadowPools(commits[1].commitType)).to.eq(
+                0
+            )
         })
         it("should adjust the balances of the live pools involved", async () => {
             expect(await pool.shortBalance()).to.eq(amountCommitted)
