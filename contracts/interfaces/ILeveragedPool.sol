@@ -135,9 +135,9 @@ interface ILeveragedPool {
     function setKeeper(address _keeper) external;
 
     /**
-     * @dev Allows the owner to transfer ownership to another address
+     * @dev Allows the governor to transfer governance rights to another address
      */
-    function transferOwnership(address _owner) external;
+    function transferGovernance(address _governance) external;
 
     /**
      * @notice Updates the fee address

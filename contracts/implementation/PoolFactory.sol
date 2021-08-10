@@ -91,7 +91,7 @@ contract PoolFactory is IPoolFactory, Ownable {
         emit DeployPool(_pool, deploymentParameters.poolCode);
 
         ILeveragedPool.Initialization memory initialization = ILeveragedPool.Initialization(
-            msg.sender, // sender is the owner of the pool
+            owner(), // governance is the owner of pools
             address(poolKeeper),
             deploymentParameters.oracleWrapper,
             deployPairToken(
@@ -139,6 +139,9 @@ contract PoolFactory is IPoolFactory, Ownable {
         return address(pairToken);
     }
 
+    // todo -> do we want this to be changeable. This would mean this needs to be propogated to all pools
+    // either we a) use a proxy and don't have a setter
+    // b) go for versioned releases and start with a safety switch we can turn off
     function setPoolKeeper(address _poolKeeper) external onlyOwner {
         poolKeeper = IPoolKeeper(_poolKeeper);
     }
