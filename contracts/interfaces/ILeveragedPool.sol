@@ -25,6 +25,7 @@ interface ILeveragedPool {
         address _owner;
         address _keeper; // The address of the PoolKeeper contract
         address _oracleWrapper;
+        address _keeperOracle;
         address _longToken;
         address _shortToken;
         string _poolCode; // The pool identification code. This is unique per pool per pool keeper
@@ -80,6 +81,8 @@ interface ILeveragedPool {
     function updateInterval() external view returns (uint32);
 
     function oracleWrapper() external view returns (address);
+
+    function keeperOracle() external view returns (address);
 
     // #### Functions
     /**

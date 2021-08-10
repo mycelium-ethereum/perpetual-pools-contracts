@@ -27,6 +27,7 @@ interface IPoolFactory {
         address feeAddress; // The address that the fund movement fee is sent to
         address quoteToken; // The digital asset that the pool accepts
         address oracleWrapper; // The IOracleWrapper implementation for fetching feed data
+        address keeperOracle;
     }
 
     // #### Functions

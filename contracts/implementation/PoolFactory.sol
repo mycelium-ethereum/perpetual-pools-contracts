@@ -47,6 +47,7 @@ contract PoolFactory is IPoolFactory, Ownable {
             address(this),
             address(0),
             address(this),
+            address(this),
             address(0),
             address(0),
             "BASE_POOL",
@@ -87,6 +88,7 @@ contract PoolFactory is IPoolFactory, Ownable {
             msg.sender, // sender is the owner of the pool
             address(poolKeeper),
             deploymentParameters.oracleWrapper,
+            deploymentParameters.keeperOracle,
             deployPairToken(
                 _pool,
                 string(abi.encodePacked(deploymentParameters.poolCode, "-LONG")),

@@ -46,6 +46,8 @@ describe("LeveragedPool - initialize", () => {
     let short: ERC20
     let long: ERC20
     let oracleWrapper: TestOracleWrapper
+    let keeperOracle: TestOracleWrapper
+
     before(async () => {
         signers = await ethers.getSigners()
     })
@@ -102,6 +104,10 @@ describe("LeveragedPool - initialize", () => {
                 chainlinkOracle.address
             )
 
+            const keeperOracle = await oracleWrapperFactory.deploy(
+                chainlinkOracle.address
+            )
+
             const leveragedPoolFactory = (await ethers.getContractFactory(
                 "LeveragedPool",
                 {
@@ -115,6 +121,7 @@ describe("LeveragedPool - initialize", () => {
                 _owner: signers[0].address,
                 _keeper: generateRandomAddress(),
                 _oracleWrapper: oracleWrapper.address,
+                _keeperOracle: keeperOracle.address,
                 _longToken: long.address,
                 _shortToken: short.address,
                 _poolCode: POOL_CODE,
@@ -149,6 +156,7 @@ describe("LeveragedPool - initialize", () => {
                     _owner: signers[0].address,
                     _keeper: generateRandomAddress(),
                     _oracleWrapper: oracleWrapper.address,
+                    _keeperOracle: keeperOracle.address,
                     _longToken: long.address,
                     _shortToken: short.address,
                     _poolCode: POOL_CODE,
@@ -266,6 +274,10 @@ describe("LeveragedPool - initialize", () => {
                 chainlinkOracle.address
             )
 
+            keeperOracle = await oracleWrapperFactory.deploy(
+                chainlinkOracle.address
+            )
+
             const leveragedPoolFactory = (await ethers.getContractFactory(
                 "LeveragedPool",
                 {
@@ -295,6 +307,7 @@ describe("LeveragedPool - initialize", () => {
                     _owner: signers[0].address,
                     _keeper: generateRandomAddress(),
                     _oracleWrapper: oracleWrapper.address,
+                    _keeperOracle: keeperOracle.address,
                     _longToken: long.address,
                     _shortToken: short.address,
                     _poolCode: POOL_CODE,
@@ -332,6 +345,7 @@ describe("LeveragedPool - initialize", () => {
                 _owner: signers[0].address,
                 _keeper: generateRandomAddress(),
                 _oracleWrapper: oracleWrapper.address,
+                _keeperOracle: keeperOracle.address,
                 _longToken: long.address,
                 _shortToken: short.address,
                 _poolCode: POOL_CODE,
@@ -347,6 +361,7 @@ describe("LeveragedPool - initialize", () => {
                     _owner: signers[0].address,
                     _keeper: generateRandomAddress(),
                     _oracleWrapper: oracleWrapper.address,
+                    _keeperOracle: keeperOracle.address,
                     _longToken: long.address,
                     _shortToken: short.address,
                     _poolCode: POOL_CODE,
@@ -365,6 +380,7 @@ describe("LeveragedPool - initialize", () => {
                     _owner: signers[0].address,
                     _keeper: generateRandomAddress(),
                     _oracleWrapper: oracleWrapper.address,
+                    _keeperOracle: keeperOracle.address,
                     _longToken: long.address,
                     _shortToken: short.address,
                     _poolCode: POOL_CODE,
@@ -383,6 +399,7 @@ describe("LeveragedPool - initialize", () => {
                     _owner: signers[0].address,
                     _keeper: generateRandomAddress(),
                     _oracleWrapper: ethers.constants.AddressZero,
+                    _keeperOracle: ethers.constants.AddressZero,
                     _longToken: long.address,
                     _shortToken: short.address,
                     _poolCode: POOL_CODE,
@@ -401,6 +418,7 @@ describe("LeveragedPool - initialize", () => {
                     _owner: signers[0].address,
                     _keeper: generateRandomAddress(),
                     _oracleWrapper: oracleWrapper.address,
+                    _keeperOracle: keeperOracle.address,
                     _longToken: long.address,
                     _shortToken: short.address,
                     _poolCode: POOL_CODE,
@@ -420,6 +438,7 @@ describe("LeveragedPool - initialize", () => {
                     _owner: signers[0].address,
                     _keeper: generateRandomAddress(),
                     _oracleWrapper: oracleWrapper.address,
+                    _keeperOracle: keeperOracle.address,
                     _longToken: long.address,
                     _shortToken: short.address,
                     _poolCode: POOL_CODE,
@@ -447,6 +466,7 @@ describe("LeveragedPool - initialize", () => {
                 _owner: signers[0].address,
                 _keeper: generateRandomAddress(),
                 _oracleWrapper: oracleWrapper.address,
+                _keeperOracle: keeperOracle.address,
                 _longToken: long.address,
                 _shortToken: short.address,
                 _poolCode: POOL_CODE_2,
@@ -461,6 +481,7 @@ describe("LeveragedPool - initialize", () => {
                 _owner: signers[0].address,
                 _keeper: generateRandomAddress(),
                 _oracleWrapper: oracleWrapper.address,
+                _keeperOracle: keeperOracle.address,
                 _longToken: long.address,
                 _shortToken: short.address,
                 _poolCode: POOL_CODE,

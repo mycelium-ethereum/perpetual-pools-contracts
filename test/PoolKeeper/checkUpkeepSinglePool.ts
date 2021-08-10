@@ -21,8 +21,10 @@ import {
 chai.use(chaiAsPromised)
 const { expect } = chai
 
+let signers: any
 let quoteToken: string
 let oracleWrapper: TestOracleWrapper
+let keeperOracle: TestOracleWrapper
 let oracle: TestChainlinkOracle
 let poolKeeper: PoolKeeper
 let factory: PoolFactory
@@ -33,7 +35,7 @@ const forwardTime = async (seconds: number) => {
 }
 
 const setupHook = async () => {
-    const signers = await ethers.getSigners()
+    signers = await ethers.getSigners()
     // Deploy quote token
     const testToken = (await ethers.getContractFactory(
         "TestToken",
@@ -57,6 +59,9 @@ const setupHook = async () => {
     )) as TestOracleWrapper__factory
     oracleWrapper = await oracleWrapperFactory.deploy(oracle.address)
     await oracleWrapper.deployed()
+
+    keeperOracle = await oracleWrapperFactory.deploy(oracle.address)
+    await keeperOracle.deployed()
 
     // Deploy pool keeper
     const libraryFactory = (await ethers.getContractFactory(
@@ -87,6 +92,7 @@ const setupHook = async () => {
         feeAddress: generateRandomAddress(),
         quoteToken: quoteToken,
         oracleWrapper: oracleWrapper.address,
+        keeperOracle: keeperOracle.address,
     }
     await factory.deployPool(deploymentData)
 
@@ -99,6 +105,7 @@ const setupHook = async () => {
         feeAddress: generateRandomAddress(),
         quoteToken: quoteToken,
         oracleWrapper: oracleWrapper.address,
+        keeperOracle: keeperOracle.address,
     }
     await factory.deployPool(deploymentData2)
 }
@@ -123,5 +130,21 @@ describe("PoolKeeper - checkUpkeepSinglePool", () => {
         await forwardTime(5)
         let poolAddress = await factory.pools(0)
         expect(await poolKeeper.checkUpkeepSinglePool(poolAddress)).to.eq(false)
+    })
+
+    it("should increase the keeper fee balance", async () => {
+        await forwardTime(5)
+        await oracleWrapper.incrementPrice()
+        let keeperAddress = await signers[0].getAddress()
+
+        let preUpkeepFee = await poolKeeper.keeperFees(keeperAddress)
+
+        /* perform upkeep */
+        let poolAddress = await factory.pools(0)
+        let res = await poolKeeper.performUpkeepSinglePool(poolAddress)
+
+        let postUpkeepFee = await poolKeeper.keeperFees(keeperAddress)
+
+        expect(postUpkeepFee).to.gt(preUpkeepFee)
     })
 })
