@@ -5,6 +5,6 @@ pragma abicoder v2;
 /*
 @title The pool controller contract interface
 */
-interface IPoolCommittorDeployer {
-    function deploy(address _quoteToken) external returns (address poolCommittor);
+interface IPoolCommitterDeployer {
+    function deploy(address _quoteToken) external returns (address poolCommitter);
 }

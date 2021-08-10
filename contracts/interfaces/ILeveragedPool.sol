@@ -13,7 +13,7 @@ interface ILeveragedPool {
         address _longToken;
         address _shortToken;
         address _priceChanger;
-        address _poolCommittor;
+        address _poolCommitter;
         string _poolCode; // The pool identification code. This is unique per pool per pool keeper
         uint32 _frontRunningInterval; // The minimum number of seconds that must elapse before a commit is forced to wait until the next interval
         uint32 _updateInterval; // The minimum number of seconds that must elapse before a commit can be executed.
@@ -33,7 +33,7 @@ interface ILeveragedPool {
      */
     event PoolInitialized(address indexed longToken, address indexed shortToken, address quoteToken, string poolCode);
 
-    function poolCommittor() external view returns (address);
+    function poolCommitter() external view returns (address);
 
     function priceChanger() external view returns (address);
 
@@ -59,7 +59,7 @@ interface ILeveragedPool {
      */
     function initialize(Initialization calldata initialization) external;
 
-    // This would call `PriceChanger::executePriceChange` and `PoolCommittor::executeAllCommits` and would have onlyKeeper modifier
+    // This would call `PriceChanger::executePriceChange` and `PoolCommitter::executeAllCommits` and would have onlyKeeper modifier
     function poolUpkeep(int256 _oldPrice, int256 _newPrice) external;
 
     function quoteTokenTransferFrom(
@@ -68,7 +68,7 @@ interface ILeveragedPool {
         uint256 amount
     ) external returns (bool);
 
-    // This would be called in `PoolCommittor::executeCommitment` and `PriceChanger::executePriceChange` and would therefore have an onlyCommittorOrPriceChanger modifier or something
+    // This would be called in `PoolCommitter::executeCommitment` and `PriceChanger::executePriceChange` and would therefore have an onlyCommitterOrPriceChanger modifier or something
     function setNewPoolBalances(uint112 _longBalance, uint112 _shortBalance) external;
 
     function getOraclePrice() external view returns (int256);

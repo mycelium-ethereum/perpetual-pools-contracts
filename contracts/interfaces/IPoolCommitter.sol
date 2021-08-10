@@ -5,7 +5,7 @@ pragma abicoder v2;
 /*
 @title The interface for the contract that handles pool commitments
 */
-interface IPoolCommittor {
+interface IPoolCommitter {
     enum CommitType {
         ShortMint,
         ShortBurn,

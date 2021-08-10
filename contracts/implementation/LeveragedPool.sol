@@ -4,7 +4,7 @@ pragma abicoder v2;
 
 import "../interfaces/ILeveragedPool.sol";
 import "../interfaces/IPriceChanger.sol";
-import "../interfaces/IPoolCommittor.sol";
+import "../interfaces/IPoolCommitter.sol";
 import "./PoolToken.sol";
 import "@openzeppelin/contracts/proxy/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -43,7 +43,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     address public feeAddress;
     address public quoteToken;
     address public override priceChanger;
-    address public override poolCommittor;
+    address public override poolCommitter;
     uint40 public override lastPriceTimestamp;
 
     string public poolCode;
@@ -72,7 +72,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         tokens[0] = initialization._longToken;
         tokens[1] = initialization._shortToken;
         priceChanger = initialization._priceChanger;
-        poolCommittor = initialization._poolCommittor;
+        poolCommitter = initialization._poolCommitter;
         emit PoolInitialized(tokens[0], tokens[1], initialization._quoteToken, initialization._poolCode);
     }
 
@@ -81,21 +81,21 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         _priceChanger.executePriceChange(_oldPrice, _newPrice);
         lastPriceTimestamp = uint40(block.timestamp);
         // TODO execute all commitments on upkeep is a separate PR.
-        // IPoolCommittor(poolCommittor).executeAllCommits();
+        // IPoolCommitter(poolCommitter).executeAllCommits();
     }
 
     function quoteTokenTransferFrom(
         address from,
         address to,
         uint256 amount
-    ) external override onlyPriceChangerOrCommittor returns (bool) {
+    ) external override onlyPriceChangerOrCommitter returns (bool) {
         return IERC20(quoteToken).transferFrom(from, to, amount);
     }
 
     function setNewPoolBalances(uint112 _longBalance, uint112 _shortBalance)
         external
         override
-        onlyPriceChangerOrCommittor
+        onlyPriceChangerOrCommitter
     {
         longBalance = _longBalance;
         shortBalance = _shortBalance;
@@ -137,10 +137,10 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         _;
     }
 
-    modifier onlyPriceChangerOrCommittor() {
+    modifier onlyPriceChangerOrCommitter() {
         require(
-            msg.sender == priceChanger || msg.sender == poolCommittor,
-            "msg.sender not priceChanger or poolCommittor"
+            msg.sender == priceChanger || msg.sender == poolCommitter,
+            "msg.sender not priceChanger or poolCommitter"
         );
         _;
     }

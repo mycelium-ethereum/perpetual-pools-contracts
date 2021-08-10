@@ -2,7 +2,7 @@
 pragma solidity ^0.7.6;
 pragma abicoder v2;
 
-import "../interfaces/IPoolCommittor.sol";
+import "../interfaces/IPoolCommitter.sol";
 import "../interfaces/ILeveragedPool.sol";
 import "./PoolToken.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -18,7 +18,7 @@ import "../interfaces/IOracleWrapper.sol";
 /*
 @title The pool controller contract
 */
-contract PoolCommittor is IPoolCommittor, Ownable {
+contract PoolCommitter is IPoolCommitter, Ownable {
     using SafeMath_40 for uint40;
     using SafeMath_112 for uint112;
     using SafeMath_128 for uint128;
