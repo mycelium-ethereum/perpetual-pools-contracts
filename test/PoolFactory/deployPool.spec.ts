@@ -143,7 +143,7 @@ describe("PoolFactory - deployPool", () => {
         expect(await tokenInstance.owner()).to.eq(pool.address)
     })
 
-    it("should use the default keeper", async() => {
+    it("should use the default keeper", async () => {
         const deploymentData = {
             poolCode: POOL_CODE_2,
             frontRunningInterval: 5,
@@ -166,8 +166,8 @@ describe("PoolFactory - deployPool", () => {
         expect(await pool2.keeper()).to.eq(poolKeeper.address)
     })
 
-    context("Deployment parameter checks", async() => {
-        it("should reject leverages less than 1", async() => {
+    context("Deployment parameter checks", async () => {
+        it("should reject leverages less than 1", async () => {
             const deploymentData = {
                 poolCode: POOL_CODE_2,
                 frontRunningInterval: 5,
@@ -179,10 +179,12 @@ describe("PoolFactory - deployPool", () => {
                 oracleWrapper: oracleWrapper.address,
             }
 
-            await expect(factory.deployPool(deploymentData)).to.be.revertedWith("PoolKeeper: leveraged amount invalid")
+            await expect(factory.deployPool(deploymentData)).to.be.revertedWith(
+                "PoolKeeper: leveraged amount invalid"
+            )
         })
 
-        it("should reject leverages greater than the MAX_LEVERAGE amount", async() => {
+        it("should reject leverages greater than the MAX_LEVERAGE amount", async () => {
             const deploymentData = {
                 poolCode: POOL_CODE_2,
                 frontRunningInterval: 5,
@@ -194,9 +196,9 @@ describe("PoolFactory - deployPool", () => {
                 oracleWrapper: oracleWrapper.address,
             }
 
-            await expect(factory.deployPool(deploymentData)).to.be.revertedWith("PoolKeeper: leveraged amount invalid")
+            await expect(factory.deployPool(deploymentData)).to.be.revertedWith(
+                "PoolKeeper: leveraged amount invalid"
+            )
         })
-
-        
     })
 })
