@@ -78,8 +78,6 @@ const setupHook = async () => {
 
     // Create pool
     const deploymentData = {
-        owner: generateRandomAddress(),
-        keeper: generateRandomAddress(),
         poolCode: POOL_CODE,
         frontRunningInterval: 1,
         updateInterval: 2,
@@ -92,8 +90,6 @@ const setupHook = async () => {
     await factory.deployPool(deploymentData)
 
     const deploymentData2 = {
-        owner: generateRandomAddress(),
-        keeper: generateRandomAddress(),
         poolCode: POOL_CODE_2,
         frontRunningInterval: 1,
         updateInterval: 2,

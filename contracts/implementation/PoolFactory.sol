@@ -18,6 +18,7 @@ contract PoolFactory is IPoolFactory, Ownable {
     PoolToken public pairTokenBase;
     LeveragedPool public poolBase;
     IPoolKeeper public poolKeeper;
+    uint256 public MAX_LEVERAGE = 25; // default max leverage of 25
 
     /**
      * @notice Format: keccack(leverage, quoteToken, oracle) => is taken
@@ -58,7 +59,6 @@ contract PoolFactory is IPoolFactory, Ownable {
         );
         // Init bases
         poolBase.initialize(baseInitialization);
-
         pairTokenBase.initialize(address(this), "BASE_TOKEN", "BASE");
     }
 
@@ -73,12 +73,8 @@ contract PoolFactory is IPoolFactory, Ownable {
         );
         require(!poolIdTaken[uniquePoolId], "Pool ID in use");
         require(
-            deploymentParameters.owner != address(0) &&
-                deploymentParameters.quoteToken != address(0) &&
-                deploymentParameters.oracleWrapper != address(0) &&
-                deploymentParameters.feeAddress != address(0) &&
-                deploymentParameters.keeper != address(0),
-            "PoolKeeper: zero address as param"
+            deploymentParameters.leverageAmount >= 1 && deploymentParameters.leverageAmount <= MAX_LEVERAGE,
+            "PoolKeeper: leveraged amount invalid"
         );
         LeveragedPool pool = LeveragedPool(
             // pools are unique based on poolCode, quoteToken and oracle
@@ -88,8 +84,8 @@ contract PoolFactory is IPoolFactory, Ownable {
         emit DeployPool(_pool, deploymentParameters.poolCode);
 
         ILeveragedPool.Initialization memory initialization = ILeveragedPool.Initialization(
-            deploymentParameters.owner,
-            deploymentParameters.keeper,
+            msg.sender, // sender is the owner of the pool
+            address(poolKeeper),
             deploymentParameters.oracleWrapper,
             deployPairToken(
                 _pool,
@@ -138,5 +134,9 @@ contract PoolFactory is IPoolFactory, Ownable {
 
     function setPoolKeeper(address _poolKeeper) external onlyOwner {
         poolKeeper = IPoolKeeper(_poolKeeper);
+    }
+
+    function setMaxLeverage(uint256 newMaxLeverage) external onlyOwner {
+        MAX_LEVERAGE = newMaxLeverage;
     }
 }
