@@ -205,10 +205,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
                 // amount out = ratio * amount in
                 PoolSwapLibrary.getAmountOut(
                     // ratio = (totalSupply + inverseShadowBalance) / balance
-                    PoolSwapLibrary.getRatio(
-                        uint112(PoolToken(token).totalSupply()) + inverseShadowbalance,
-                        balance
-                    ),
+                    PoolSwapLibrary.getRatio(uint112(PoolToken(token).totalSupply()) + inverseShadowbalance, balance),
                     amountIn
                 ),
                 tokenOwner
