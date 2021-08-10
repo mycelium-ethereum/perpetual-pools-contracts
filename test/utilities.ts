@@ -147,13 +147,13 @@ export const deployPoolAndTokenContracts = async (
         poolCode: POOL_CODE,
         frontRunningInterval: frontRunningInterval,
         updateInterval: updateInterval,
-        fee: fee,
         leverageAmount: leverage,
         feeAddress: feeAddress,
         quoteToken: token.address,
         oracleWrapper: oracleWrapper.address,
     }
 
+    await factory.setFee(fee)
     await factory.deployPool(deployParams)
     const poolAddress = await factory.pools(0)
     const pool = await ethers.getContractAt("LeveragedPool", poolAddress)

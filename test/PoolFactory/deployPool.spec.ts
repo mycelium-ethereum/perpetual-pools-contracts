@@ -144,8 +144,8 @@ describe("PoolFactory - deployPool", () => {
     it("should use the default keeper", async () => {
         const deploymentData = {
             poolCode: POOL_CODE_2,
-            frontRunningInterval: 5,
-            updateInterval: 3,
+            frontRunningInterval: 3,
+            updateInterval: 5,
             leverageAmount: 5,
             quoteToken: generateRandomAddress(),
             oracleWrapper: oracleWrapper.address,
