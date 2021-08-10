@@ -155,7 +155,6 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         uint256 _gasPrice,
         uint256 _gasSpent
     ) internal {
-        IERC20 settlementToken = IERC20(LeveragedPool(_pool).quoteToken());
         uint256 reward = keeperReward(_pool, _gasPrice, _gasSpent);
 
         keeperFees[msg.sender] += reward;
