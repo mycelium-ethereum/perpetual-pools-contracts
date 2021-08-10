@@ -78,12 +78,7 @@ interface IPoolKeeper {
      * @notice When a pool is created, this function is called by the factory to initiate price tracking.
      * @param _poolAddress The address of the newly-created pool.
      */
-    function newPool(
-        string memory _poolCode,
-        address _poolAddress,
-        address _quoteToken,
-        address _oracleWrapper
-    ) external;
+    function newPool(address _poolAddress) external;
 
     /**
      * @notice Sets the factory of the keeper contract
@@ -117,13 +112,4 @@ interface IPoolKeeper {
      * @param poolCodes pool codes to perform the update for.
      */
     function performUpkeepMultiplePools(address[] calldata poolCodes) external;
-
-    /**
-     * @notice Getter for the poolIdTaken mapping
-     */
-    function poolIdTaken(
-        string calldata poolCode,
-        address quoteToken,
-        address oracleWrapper
-    ) external view returns (bool);
 }

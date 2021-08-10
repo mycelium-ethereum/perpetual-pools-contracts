@@ -377,6 +377,24 @@ describe("LeveragedPool - initialize", () => {
                 })
             ).to.rejectedWith(Error)
         })
+        it("should revert if oracleWrapper address is the zero address", async () => {
+            await expect(
+                leveragedPool.initialize({
+                    _owner: signers[0].address,
+                    _keeper: generateRandomAddress(),
+                    _oracleWrapper: ethers.constants.AddressZero,
+                    _longToken: long.address,
+                    _shortToken: short.address,
+                    _poolCode: POOL_CODE,
+                    _frontRunningInterval: frontRunningInterval,
+                    _updateInterval: updateInterval,
+                    _fee: fee,
+                    _leverageAmount: leverage,
+                    _feeAddress: feeAddress,
+                    _quoteToken: quoteToken,
+                })
+            ).to.rejectedWith(Error)
+        })
         it("should revert if the fee address is the zero address", async () => {
             await expect(
                 leveragedPool.initialize({

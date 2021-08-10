@@ -88,8 +88,6 @@ const setupHook = async () => {
 
     // Create pool
     const deploymentData = {
-        owner: poolKeeper.address,
-        keeper: poolKeeper.address,
         poolCode: POOL_CODE,
         frontRunningInterval: 1,
         updateInterval: updateInterval,
@@ -102,8 +100,6 @@ const setupHook = async () => {
     await (await factory.deployPool(deploymentData)).wait()
 
     const deploymentData2 = {
-        owner: poolKeeper.address,
-        keeper: poolKeeper.address,
         poolCode: POOL_CODE_2,
         frontRunningInterval: 1,
         updateInterval: updateInterval,
@@ -114,8 +110,8 @@ const setupHook = async () => {
         oracleWrapper: oracleWrapper.address,
     }
     await (await factory.deployPool(deploymentData2)).wait()
-    POOL1_ADDR = await poolKeeper.pools(0)
-    POOL2_ADDR = await poolKeeper.pools(1)
+    POOL1_ADDR = await factory.pools(0)
+    POOL2_ADDR = await factory.pools(1)
 
     upkeepOne = ethers.utils.defaultAbiCoder.encode(
         [ethers.utils.ParamType.from("address[]")],
@@ -126,7 +122,7 @@ const setupHook = async () => {
         [[POOL2_ADDR]]
     )
 
-    bothUpkeeps = [await poolKeeper.pools(0), await poolKeeper.pools(1)]
+    bothUpkeeps = [await factory.pools(0), await factory.pools(1)]
 }
 
 interface Upkeep {

@@ -78,8 +78,6 @@ const setupHook = async () => {
     await oracleWrapper.incrementPrice()
     // Create pool
     const deploymentData = {
-        owner: poolKeeper.address,
-        keeper: poolKeeper.address,
         poolCode: POOL_CODE,
         frontRunningInterval: 1,
         updateInterval: updateInterval,
@@ -93,8 +91,6 @@ const setupHook = async () => {
 
     await oracleWrapper.incrementPrice()
     const deploymentData2 = {
-        owner: poolKeeper.address,
-        keeper: poolKeeper.address,
         poolCode: POOL_CODE_2,
         frontRunningInterval: 1,
         updateInterval: updateInterval,
@@ -107,8 +103,8 @@ const setupHook = async () => {
     await (await factory.deployPool(deploymentData2)).wait()
 
     // get pool addresses
-    POOL1_ADDR = await poolKeeper.pools(0)
-    POOL2_ADDR = await poolKeeper.pools(1)
+    POOL1_ADDR = await factory.pools(0)
+    POOL2_ADDR = await factory.pools(1)
 
     callData = ethers.utils.defaultAbiCoder.encode(
         [ethers.utils.ParamType.from("address[]")],

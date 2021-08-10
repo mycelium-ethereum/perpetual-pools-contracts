@@ -18,6 +18,24 @@ contract PoolFactory is IPoolFactory, Ownable {
     PoolToken public pairTokenBase;
     LeveragedPool public poolBase;
     IPoolKeeper public poolKeeper;
+    uint16 public maxLeverage = 25; // default max leverage of 25
+
+    /**
+     * @notice Format: Pool code => quote token => oracle wrapper => bool
+     * @dev ensures that the factory does not deterministically deploy pools that already exist
+     */
+    mapping(string => mapping(address => mapping(address => bool))) public override poolIdTaken;
+
+    /**
+     * @notice Format: Pool counter => pool address
+     */
+    mapping(uint256 => address) public override pools;
+    uint256 public override numPools;
+
+    /**
+     * @notice Format: Pool address => validity
+     */
+    mapping(address => bool) public override isValidPool;
 
     // #### Functions
     constructor() {
@@ -41,19 +59,20 @@ contract PoolFactory is IPoolFactory, Ownable {
         );
         // Init bases
         poolBase.initialize(baseInitialization);
-
         pairTokenBase.initialize(address(this), "BASE_TOKEN", "BASE");
     }
 
     function deployPool(PoolDeployment calldata deploymentParameters) external override returns (address) {
         require(address(poolKeeper) != address(0), "PoolKeeper not set");
         require(
-            !IPoolKeeper(poolKeeper).poolIdTaken(
-                deploymentParameters.poolCode,
-                deploymentParameters.quoteToken,
+            !poolIdTaken[deploymentParameters.poolCode][deploymentParameters.quoteToken][
                 deploymentParameters.oracleWrapper
-            ),
+            ],
             "Pool ID in use"
+        );
+        require(
+            deploymentParameters.leverageAmount >= 1 && deploymentParameters.leverageAmount <= maxLeverage,
+            "PoolKeeper: leveraged amount invalid"
         );
         LeveragedPool pool = LeveragedPool(
             // pools are unique based on poolCode, quoteToken and oracle
@@ -72,8 +91,8 @@ contract PoolFactory is IPoolFactory, Ownable {
         emit DeployPool(_pool, deploymentParameters.poolCode);
 
         ILeveragedPool.Initialization memory initialization = ILeveragedPool.Initialization(
-            deploymentParameters.owner,
-            deploymentParameters.keeper,
+            msg.sender, // sender is the owner of the pool
+            address(poolKeeper),
             deploymentParameters.oracleWrapper,
             deployPairToken(
                 _pool,
@@ -98,13 +117,11 @@ contract PoolFactory is IPoolFactory, Ownable {
             deploymentParameters.quoteToken
         );
         pool.initialize(initialization);
-        poolKeeper.newPool(
-            deploymentParameters.poolCode,
-            address(pool),
-            deploymentParameters.quoteToken,
-            deploymentParameters.oracleWrapper
-        );
-        return address(pool);
+        poolKeeper.newPool(_pool);
+        pools[numPools] = _pool;
+        numPools += 1;
+        isValidPool[_pool] = true;
+        return _pool;
     }
 
     function deployPairToken(
@@ -124,5 +141,9 @@ contract PoolFactory is IPoolFactory, Ownable {
 
     function setPoolKeeper(address _poolKeeper) external onlyOwner {
         poolKeeper = IPoolKeeper(_poolKeeper);
+    }
+
+    function setMaxLeverage(uint16 newMaxLeverage) external onlyOwner {
+        maxLeverage = newMaxLeverage;
     }
 }

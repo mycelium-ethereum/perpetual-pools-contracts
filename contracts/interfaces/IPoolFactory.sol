@@ -9,9 +9,20 @@ interface IPoolFactory {
     // #### Events
     event DeployPool(address indexed pool, string ticker);
 
+    // #### Getters for Globals
+    function pools(uint256 id) external view returns (address);
+
+    function poolIdTaken(
+        string calldata poolCode,
+        address quoteToken,
+        address oracleWrapper
+    ) external view returns (bool);
+
+    function numPools() external view returns (uint256);
+
+    function isValidPool(address _pool) external view returns (bool);
+
     struct PoolDeployment {
-        address owner; // The address of the pool owner
-        address keeper; // The address of the pool keeper that will administer the pool
         string poolCode; // The pool identification code. This is unique per pool per pool keeper
         uint32 frontRunningInterval; // The minimum number of seconds that must elapse before a commit can be executed. Must be smaller than or equal to the update interval to prevent deadlock.
         uint32 updateInterval; // The minimum number of seconds that must elapse before a price change
