@@ -22,7 +22,7 @@ contract PoolFactory is IPoolFactory, Ownable {
 
     /**
      * @notice Format: keccack(leverage, quoteToken, oracle) => is taken
-     * @dev ensures that the factory does not deterministicly deploy pools that already exist
+     * @dev ensures that the factory does not deterministically deploy pools that already exist
      */
     mapping(bytes32 => bool) public override poolIdTaken;
 
