@@ -29,7 +29,7 @@ contract PoolFactory is IPoolFactory, Ownable {
             address(this),
             address(0),
             address(this),
-            address(0),
+            address(this),
             address(0),
             address(0),
             "BASE_POOL",

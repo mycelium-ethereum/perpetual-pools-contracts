@@ -55,11 +55,13 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         require(initialization._feeAddress != address(0), "Fee address cannot be 0 address");
         require(initialization._quoteToken != address(0), "Quote token cannot be 0 address");
         require(initialization._oracleWrapper != address(0), "Oracle wrapper cannot be 0 address");
+        require(initialization._keeperOracle != address(0), "Keeper oracle cannot be 0 address");
         transferOwnershipInitializer(initialization._owner);
 
         // Setup variables
         keeper = initialization._keeper;
         oracleWrapper = initialization._oracleWrapper;
+        keeperOracle = initialization._keeperOracle;
         quoteToken = initialization._quoteToken;
         frontRunningInterval = initialization._frontRunningInterval;
         updateInterval = initialization._updateInterval;
