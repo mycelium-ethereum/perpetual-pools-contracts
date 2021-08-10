@@ -171,7 +171,11 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @param _gasPrice Price of a single gas unit (in ETH)
      * @param _gasSpent Number of gas units spent
      */
-    function payKeeper(address _pool, uint256 _gasPrice, uint256 _gasSpent) internal {
+    function payKeeper(
+        address _pool,
+        uint256 _gasPrice,
+        uint256 _gasSpent
+    ) internal {
         IERC20 settlementToken = IERC20(LeveragedPool(_pool).quoteToken());
         uint256 reward = keeperReward(_pool, _gasPrice, _gasSpent);
 
