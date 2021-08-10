@@ -73,9 +73,8 @@ contract PoolFactory is IPoolFactory, Ownable {
         // note that feeAddress, quoteToken and oracleWrapper are checked to be non zero in the initialize function
         // in the LeveragedPool contract
         require(
-            deploymentParameters.owner != address(0) &&
-                deploymentParameters.keeper != address(0),
-            "PoolKeeper: zero address as param"
+            deploymentParameters.owner != address(0),
+            "PoolKeeper: zero address as owner"
         );
         require(
             deploymentParameters.leverageAmount >= 1 && deploymentParameters.leverageAmount <= MAX_LEVERAGE,
@@ -99,7 +98,7 @@ contract PoolFactory is IPoolFactory, Ownable {
 
         ILeveragedPool.Initialization memory initialization = ILeveragedPool.Initialization(
             deploymentParameters.owner,
-            deploymentParameters.keeper,
+            address(poolKeeper),
             deploymentParameters.oracleWrapper,
             deployPairToken(
                 _pool,

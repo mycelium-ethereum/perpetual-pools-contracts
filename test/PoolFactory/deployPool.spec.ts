@@ -68,7 +68,6 @@ describe("PoolFactory - deployPool", () => {
         await factory.setPoolKeeper(poolKeeper.address)
         const deploymentData = {
             owner: generateRandomAddress(),
-            keeper: poolKeeper.address,
             poolCode: POOL_CODE,
             frontRunningInterval: 5,
             updateInterval: 10,
@@ -111,7 +110,6 @@ describe("PoolFactory - deployPool", () => {
     it("should allow multiple clones to exist", async () => {
         const deploymentData = {
             owner: generateRandomAddress(),
-            keeper: poolKeeper.address,
             poolCode: POOL_CODE_2,
             frontRunningInterval: 5,
             updateInterval: 3,
@@ -147,11 +145,34 @@ describe("PoolFactory - deployPool", () => {
         expect(await tokenInstance.owner()).to.eq(pool.address)
     })
 
+    it("should use the default keeper", async() => {
+        const deploymentData = {
+            owner: generateRandomAddress(),
+            poolCode: POOL_CODE_2,
+            frontRunningInterval: 5,
+            updateInterval: 3,
+            fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+            leverageAmount: 5,
+            feeAddress: generateRandomAddress(),
+            quoteToken: generateRandomAddress(),
+            oracleWrapper: oracleWrapper.address,
+        }
+        const secondPool = getEventArgs(
+            await (await factory.deployPool(deploymentData)).wait(),
+            "DeployPool"
+        )
+        const pool2 = new ethers.Contract(
+            secondPool?.pool,
+            LeveragedPoolInterface.abi,
+            (await ethers.getSigners())[0]
+        ) as LeveragedPool
+        expect(await pool2.keeper()).to.eq(poolKeeper.address)
+    })
+
     context("Deployment parameter checks", async() => {
         it("should reject leverages less than 1", async() => {
             const deploymentData = {
                 owner: generateRandomAddress(),
-                keeper: poolKeeper.address,
                 poolCode: POOL_CODE_2,
                 frontRunningInterval: 5,
                 updateInterval: 3,
@@ -168,7 +189,6 @@ describe("PoolFactory - deployPool", () => {
         it("should reject leverages greater than the MAX_LEVERAGE amount", async() => {
             const deploymentData = {
                 owner: generateRandomAddress(),
-                keeper: poolKeeper.address,
                 poolCode: POOL_CODE_2,
                 frontRunningInterval: 5,
                 updateInterval: 3,
