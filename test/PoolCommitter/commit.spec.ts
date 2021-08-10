@@ -43,7 +43,7 @@ describe("LeveragedPool - commit", () => {
     let longToken: ERC20
     let poolCommiter: PoolCommitter
     let priceChanger: PriceChanger
-    
+
     describe("Create commit", () => {
         let receipt: ContractReceipt
         before(async () => {
@@ -78,7 +78,9 @@ describe("LeveragedPool - commit", () => {
         })
         it("should increment the id counter", async () => {
             expect(
-                (await poolCommiter.commitIDCounter()).eq(ethers.BigNumber.from(1))
+                (await poolCommiter.commitIDCounter()).eq(
+                    ethers.BigNumber.from(1)
+                )
             ).to.eq(true)
         })
         it("should set the amount committed", async () => {
@@ -249,14 +251,14 @@ describe("LeveragedPool - commit", () => {
                 getEventArgs(receipt, "CreateCommit")?.commitID,
             ])
 
-            expect((await token.balanceOf(poolCommiter.address)).toHexString()).to.eq(
-                amountCommitted.toHexString()
-            )
+            expect(
+                (await token.balanceOf(poolCommiter.address)).toHexString()
+            ).to.eq(amountCommitted.toHexString())
             await poolCommiter.commit([1], amountCommitted)
 
-            expect((await token.balanceOf(poolCommiter.address)).toHexString()).to.eq(
-                amountCommitted.toHexString()
-            )
+            expect(
+                (await token.balanceOf(poolCommiter.address)).toHexString()
+            ).to.eq(amountCommitted.toHexString())
         })
         it("should not require a quote token transfer for long burn commits", async () => {
             const receipt = await (
@@ -268,13 +270,13 @@ describe("LeveragedPool - commit", () => {
             await poolCommiter.executeCommitments([
                 getEventArgs(receipt, "CreateCommit")?.commitID,
             ])
-            expect((await token.balanceOf(poolCommiter.address)).toHexString()).to.eq(
-                amountCommitted.toHexString()
-            )
+            expect(
+                (await token.balanceOf(poolCommiter.address)).toHexString()
+            ).to.eq(amountCommitted.toHexString())
             await poolCommiter.commit([3], amountCommitted)
-            expect((await token.balanceOf(poolCommiter.address)).toHexString()).to.eq(
-                amountCommitted.toHexString()
-            )
+            expect(
+                (await token.balanceOf(poolCommiter.address)).toHexString()
+            ).to.eq(amountCommitted.toHexString())
         })
         it("should burn the user's short pair tokens for short burn commits", async () => {
             // Acquire pool tokens
@@ -315,13 +317,17 @@ describe("LeveragedPool - commit", () => {
         it("should transfer the user's quote tokens into the pool for long mint commits", async () => {
             expect(await token.balanceOf(poolCommiter.address)).to.eq(0)
             await poolCommiter.commit([2], amountCommitted)
-            expect(await token.balanceOf(poolCommiter.address)).to.eq(amountCommitted)
+            expect(await token.balanceOf(poolCommiter.address)).to.eq(
+                amountCommitted
+            )
         })
 
         it("should transfer the user's quote tokens into the pool for short mint commits", async () => {
             expect(await token.balanceOf(poolCommiter.address)).to.eq(0)
             await poolCommiter.commit([0], amountCommitted)
-            expect(await token.balanceOf(poolCommiter.address)).to.eq(amountCommitted)
+            expect(await token.balanceOf(poolCommiter.address)).to.eq(
+                amountCommitted
+            )
         })
     })
 })
