@@ -101,4 +101,13 @@ interface ILeveragedPool {
         uint112 inverseShadowbalance,
         address tokenOwner
     ) external;
+
+    /**
+     * @notice burns an amount of pool tokens from someones account
+     */
+    function burnTokens(
+        uint256 token,
+        uint256 amount,
+        address burner
+    ) external;
 }

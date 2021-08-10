@@ -127,6 +127,15 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         );
     }
 
+    function burnTokens(
+        uint256 token,
+        uint256 amount,
+        address burner
+    ) external override onlyPriceChangerOrCommitter {
+        require(token == 0 || token == 1, "Pool: token out of range");
+        require(PoolToken(tokens[token]).burn(amount, burner), "Burn failed");
+    }
+
     /**
      * @return true if the price was last updated more than updateInterval seconds ago
      */
