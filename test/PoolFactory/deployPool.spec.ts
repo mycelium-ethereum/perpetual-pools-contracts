@@ -146,4 +146,42 @@ describe("PoolFactory - deployPool", () => {
         tokenInstance = tokenInstance.attach(shortToken)
         expect(await tokenInstance.owner()).to.eq(pool.address)
     })
+
+    context("Deployment parameter checks", async() => {
+        it("should reject leverages less than 1", async() => {
+            const deploymentData = {
+                owner: generateRandomAddress(),
+                keeper: poolKeeper.address,
+                poolCode: POOL_CODE_2,
+                frontRunningInterval: 5,
+                updateInterval: 3,
+                fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+                leverageAmount: 0,
+                feeAddress: generateRandomAddress(),
+                quoteToken: generateRandomAddress(),
+                oracleWrapper: oracleWrapper.address,
+            }
+
+            await expect(factory.deployPool(deploymentData)).to.be.revertedWith("PoolKeeper: leveraged amount invalid")
+        })
+
+        it("should reject leverages greater than the MAX_LEVERAGE amount", async() => {
+            const deploymentData = {
+                owner: generateRandomAddress(),
+                keeper: poolKeeper.address,
+                poolCode: POOL_CODE_2,
+                frontRunningInterval: 5,
+                updateInterval: 3,
+                fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+                leverageAmount: 100, // default max leverage is 25
+                feeAddress: generateRandomAddress(),
+                quoteToken: generateRandomAddress(),
+                oracleWrapper: oracleWrapper.address,
+            }
+
+            await expect(factory.deployPool(deploymentData)).to.be.revertedWith("PoolKeeper: leveraged amount invalid")
+        })
+
+        
+    })
 })

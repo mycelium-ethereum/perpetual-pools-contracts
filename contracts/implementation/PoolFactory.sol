@@ -18,6 +18,7 @@ contract PoolFactory is IPoolFactory, Ownable {
     PoolToken public pairTokenBase;
     LeveragedPool public poolBase;
     IPoolKeeper public poolKeeper;
+    uint256 public MAX_LEVERAGE = 25; // default max leverage of 25
 
     /**
      * @notice Format: Pool code => quote token => oracle wrapper => bool
@@ -58,7 +59,6 @@ contract PoolFactory is IPoolFactory, Ownable {
         );
         // Init bases
         poolBase.initialize(baseInitialization);
-
         pairTokenBase.initialize(address(this), "BASE_TOKEN", "BASE");
     }
 
@@ -70,13 +70,16 @@ contract PoolFactory is IPoolFactory, Ownable {
             ],
             "Pool ID in use"
         );
+        // note that feeAddress, quoteToken and oracleWrapper are checked to be non zero in the initialize function
+        // in the LeveragedPool contract
         require(
             deploymentParameters.owner != address(0) &&
-                deploymentParameters.quoteToken != address(0) &&
-                deploymentParameters.oracleWrapper != address(0) &&
-                deploymentParameters.feeAddress != address(0) &&
                 deploymentParameters.keeper != address(0),
             "PoolKeeper: zero address as param"
+        );
+        require(
+            deploymentParameters.leverageAmount >= 1 && deploymentParameters.leverageAmount <= MAX_LEVERAGE,
+            "PoolKeeper: leveraged amount invalid"
         );
         LeveragedPool pool = LeveragedPool(
             // pools are unique based on poolCode, quoteToken and oracle
@@ -145,5 +148,9 @@ contract PoolFactory is IPoolFactory, Ownable {
 
     function setPoolKeeper(address _poolKeeper) external onlyOwner {
         poolKeeper = IPoolKeeper(_poolKeeper);
+    }
+
+    function setMaxLeverage(uint256 newMaxLeverage) external onlyOwner {
+        MAX_LEVERAGE = newMaxLeverage;
     }
 }
