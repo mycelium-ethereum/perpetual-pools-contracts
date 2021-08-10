@@ -15,8 +15,6 @@ import "../vendors/SafeMath_128.sol";
 import "./PoolSwapLibrary.sol";
 import "../interfaces/IOracleWrapper.sol";
 
-import "hardhat/console.sol";
-
 /*
 @title The pool controller contract
 */
@@ -73,7 +71,6 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         } else if (commitType == CommitType.LongBurn) {
             // long burning: pull in long pool tokens from commiter
             ILeveragedPool(leveragedPool).burnTokens(0, amount, msg.sender);
-            //require(PoolToken(tokens[0]).burn(amount, msg.sender), "Transfer failed");
         } else if (commitType == CommitType.ShortBurn) {
             // short burning: pull in short pool tokens from commiter
             ILeveragedPool(leveragedPool).burnTokens(1, amount, msg.sender);
