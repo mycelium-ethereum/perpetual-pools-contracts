@@ -30,7 +30,7 @@ interface IPoolCommitter {
 
     function uncommit(uint128 commitID) external;
 
-    function executeCommitments(uint128[] calldata _commitIDs) external;
+    function executeAllCommitments() external;
 
     function getCommit(uint128 _commitID) external view returns (Commit memory);
 

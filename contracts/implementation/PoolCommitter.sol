@@ -25,19 +25,18 @@ contract PoolCommitter is IPoolCommitter, Ownable {
 
     // #### Globals
 
-    // Each balance is the amount of quote tokens in the pair
-    bytes16 public fee;
-    bytes16 public leverageAmount;
-
     // Index 0 is the LONG token, index 1 is the SHORT token
     address[2] public tokens;
 
     address public leveragedPool;
 
+    // MAX_INT
+    uint128 public constant NO_COMMITS_REMAINING = type(uint128).max;
+    uint128 public earliestCommitUnexecuted = NO_COMMITS_REMAINING;
+    uint128 public latestCommitUnexecuted;
     uint128 public commitIDCounter;
     mapping(uint128 => Commit) public commits;
     mapping(CommitType => uint112) public shadowPools;
-    string public poolCode;
 
     address public factory;
 
@@ -58,6 +57,11 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             created: uint40(block.timestamp)
         });
         shadowPools[commitType] = shadowPools[commitType].add(amount);
+
+        if (earliestCommitUnexecuted == NO_COMMITS_REMAINING) {
+            earliestCommitUnexecuted = commitIDCounter;
+        }
+        latestCommitUnexecuted = commitIDCounter;
 
         emit CreateCommit(commitIDCounter, amount, commitType);
 
@@ -84,7 +88,22 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         // reduce pool commitment amount
         shadowPools[_commit.commitType] = shadowPools[_commit.commitType].sub(_commit.amount);
         emit RemoveCommit(_commitID, _commit.amount, _commit.commitType);
+
         delete commits[_commitID];
+
+        if (earliestCommitUnexecuted == _commitID) {
+            // This is the first unexecuted commit, so we can bump this up one
+            earliestCommitUnexecuted += 1;
+        }
+        if (earliestCommitUnexecuted > latestCommitUnexecuted) {
+            // We have just bumped earliestCommitUnexecuted above latestCommitUnexecuted,
+            // we have therefore run out of commits
+            earliestCommitUnexecuted = NO_COMMITS_REMAINING;
+        }
+        if (latestCommitUnexecuted == _commitID && earliestCommitUnexecuted != NO_COMMITS_REMAINING) {
+            // This is the latest commit unexecuted that we are trying to delete.
+            latestCommitUnexecuted -= 1;
+        }
 
         // release tokens
         if (_commit.commitType == CommitType.LongMint || _commit.commitType == CommitType.ShortMint) {
@@ -102,14 +121,38 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         }
     }
 
-    function executeCommitments(uint128[] calldata _commitIDs) external override {
-        Commit memory _commit;
-        for (uint128 i = 0; i < _commitIDs.length; i++) {
-            _commit = commits[_commitIDs[i]];
-            delete commits[_commitIDs[i]];
-            emit ExecuteCommit(_commitIDs[i]);
-            _executeCommitment(_commit);
+    function executeAllCommitments() external override onlyPool {
+        if (earliestCommitUnexecuted == NO_COMMITS_REMAINING) {
+            return;
         }
+        uint128 nextEarliestCommitUnexecuted;
+        ILeveragedPool pool = ILeveragedPool(leveragedPool);
+        uint256 frontRunningInterval = pool.frontRunningInterval();
+        uint40 lastPriceTimestamp = pool.lastPriceTimestamp();
+        for (uint128 i = earliestCommitUnexecuted; i <= latestCommitUnexecuted; i++) {
+            IPoolCommitter.Commit memory _commit = commits[i];
+            nextEarliestCommitUnexecuted = i;
+            // These two checks are so a given call to _executeCommitment won't revert,
+            // allowing us to continue iterations, as well as update nextEarliestCommitUnexecuted.
+            if (_commit.owner == address(0)) {
+                // Commit deleted (uncommitted) or already executed
+                nextEarliestCommitUnexecuted += 1; // It makes sense to set the next unexecuted to the next number
+                continue;
+            }
+            if (lastPriceTimestamp.sub(_commit.created) <= frontRunningInterval) {
+                // This commit is the first that was too late.
+                break;
+            }
+            emit ExecuteCommit(i);
+            _executeCommitment(_commit);
+            delete commits[i];
+            if (i == latestCommitUnexecuted) {
+                // We have reached the last one
+                earliestCommitUnexecuted = NO_COMMITS_REMAINING;
+                return;
+            }
+        }
+        earliestCommitUnexecuted = nextEarliestCommitUnexecuted;
     }
 
     /**
@@ -192,6 +235,11 @@ contract PoolCommitter is IPoolCommitter, Ownable {
 
     modifier onlyFactory() {
         require(msg.sender == factory, "Commiter: not factory");
+        _;
+    }
+
+    modifier onlyPool() {
+        require(msg.sender == leveragedPool, "msg.sender not leveragedPool");
         _;
     }
 }

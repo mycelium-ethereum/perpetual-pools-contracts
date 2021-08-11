@@ -33,6 +33,8 @@ interface ILeveragedPool {
      */
     event PoolInitialized(address indexed longToken, address indexed shortToken, address quoteToken, string poolCode);
 
+    function leverageAmount() external view returns (bytes16);
+
     function poolCommitter() external view returns (address);
 
     function priceChanger() external view returns (address);
@@ -59,7 +61,7 @@ interface ILeveragedPool {
      */
     function initialize(Initialization calldata initialization) external;
 
-    // This would call `PriceChanger::executePriceChange` and `PoolCommitter::executeAllCommits` and would have onlyKeeper modifier
+    // This would call `PriceChanger::executePriceChange` and `PoolCommitter::executeAllCommitments` and would have onlyKeeper modifier
     function poolUpkeep(int256 _oldPrice, int256 _newPrice) external;
 
     function quoteTokenTransferFrom(

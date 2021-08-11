@@ -69,7 +69,6 @@ describe("LeveragedPool - executeCommitment: Long Mint", () => {
             expect(await pool.longBalance()).to.eq(0)
             await timeout(2000)
             await pool.poolUpkeep(9, 10)
-            await poolCommiter.executeCommitments([commit.commitID])
             expect(await pool.longBalance()).to.eq(amountCommitted)
         })
         it("should reduce the shadow long mint pool balance", async () => {
@@ -78,14 +77,12 @@ describe("LeveragedPool - executeCommitment: Long Mint", () => {
             )
             await timeout(2000)
             await pool.poolUpkeep(9, 10)
-            await poolCommiter.executeCommitments([commit.commitID])
             expect(await poolCommiter.shadowPools(commit.commitType)).to.eq(0)
         })
         it("should mint long pair tokens", async () => {
             expect(await longToken.balanceOf(signers[0].address)).to.eq(0)
             await timeout(2000)
             await pool.poolUpkeep(9, 10)
-            await poolCommiter.executeCommitments([commit.commitID])
             expect(await longToken.balanceOf(signers[0].address)).to.eq(
                 amountCommitted
             )

@@ -26,21 +26,11 @@ contract PriceChanger is IPriceChanger, Ownable {
 
     // #### Globals
 
-    // Each balance is the amount of quote tokens in the pair
-    uint32 public frontRunningInterval;
-
     bytes16 public fee;
-    bytes16 public leverageAmount;
-
-    // Index 0 is the LONG token, index 1 is the SHORT token
-    address[2] public tokens;
 
     address public leveragedPool;
     address public feeAddress;
-    address public quoteToken;
     address public factory;
-
-    string public poolCode;
 
     // #### Functions
 
@@ -61,6 +51,7 @@ contract PriceChanger is IPriceChanger, Ownable {
         require(ILeveragedPool(leveragedPool).intervalPassed(), "Update interval hasn't passed");
         uint112 shortBalance = ILeveragedPool(leveragedPool).shortBalance();
         uint112 longBalance = ILeveragedPool(leveragedPool).longBalance();
+        bytes16 leverageAmount = ILeveragedPool(leveragedPool).leverageAmount();
 
         // Calculate fees from long and short sides
         uint112 longFeeAmount = uint112(
@@ -81,6 +72,7 @@ contract PriceChanger is IPriceChanger, Ownable {
 
         // Use the ratio to determine if the price increased or decreased and therefore which direction
         // the funds should be transferred towards.
+
         bytes16 ratio = PoolSwapLibrary.divInt(newPrice, oldPrice);
         int8 direction = PoolSwapLibrary.compareDecimals(ratio, PoolSwapLibrary.one);
         // Take into account the leverage
