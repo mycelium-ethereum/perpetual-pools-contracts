@@ -85,6 +85,8 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         Commit memory _commit = commits[_commitID];
         require(msg.sender == _commit.owner, "Unauthorized");
 
+        ILeveragedPool pool = ILeveragedPool(leveragedPool);
+
         // reduce pool commitment amount
         shadowPools[_commit.commitType] = shadowPools[_commit.commitType].sub(_commit.amount);
         emit RemoveCommit(_commitID, _commit.amount, _commit.commitType);
@@ -114,10 +116,10 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             );
         } else if (_commit.commitType == CommitType.LongBurn) {
             // long burning: return long pool tokens to commit owner
-            ILeveragedPool(leveragedPool).burnTokens(0, _commit.amount, msg.sender);
+            pool.mintTokens(0, _commit.amount, pool.longBalance(), pool.shortBalance(), msg.sender);
         } else if (_commit.commitType == CommitType.ShortBurn) {
             // short burning: return short pool tokens to the commit owner
-            ILeveragedPool(leveragedPool).burnTokens(1, _commit.amount, msg.sender);
+            pool.mintTokens(1, _commit.amount, pool.shortBalance(), pool.longBalance(), msg.sender);
         }
     }
 
