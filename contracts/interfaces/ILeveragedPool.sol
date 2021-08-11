@@ -33,6 +33,8 @@ interface ILeveragedPool {
      */
     event PoolInitialized(address indexed longToken, address indexed shortToken, address quoteToken, string poolCode);
 
+    function leverageAmount() external view returns (bytes16);
+
     function poolCommitter() external view returns (address);
 
     function priceChanger() external view returns (address);

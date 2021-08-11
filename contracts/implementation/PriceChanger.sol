@@ -16,9 +16,6 @@ import "../vendors/SafeMath_128.sol";
 import "./PoolSwapLibrary.sol";
 import "../interfaces/IOracleWrapper.sol";
 
-import "hardhat/console.sol";
-import "abdk-libraries-solidity/ABDKMathQuad.sol";
-
 /*
 @title Contract for executing price change logic
 */
@@ -33,7 +30,6 @@ contract PriceChanger is IPriceChanger, Ownable {
     uint32 public frontRunningInterval;
 
     bytes16 public fee;
-    bytes16 public leverageAmount;
 
     // Index 0 is the LONG token, index 1 is the SHORT token
     address[2] public tokens;
@@ -61,10 +57,10 @@ contract PriceChanger is IPriceChanger, Ownable {
      * @param newPrice The price for the latest interval.
      */
     function executePriceChange(int256 oldPrice, int256 newPrice) external override onlyLeveragedPool {
-        console.log("executePriceChange");
         require(ILeveragedPool(leveragedPool).intervalPassed(), "Update interval hasn't passed");
         uint112 shortBalance = ILeveragedPool(leveragedPool).shortBalance();
         uint112 longBalance = ILeveragedPool(leveragedPool).longBalance();
+        bytes16 leverageAmount = ILeveragedPool(leveragedPool).leverageAmount();
 
         // Calculate fees from long and short sides
         uint112 longFeeAmount = uint112(
@@ -82,32 +78,24 @@ contract PriceChanger is IPriceChanger, Ownable {
             longBalance = longBalance.sub(longFeeAmount);
             totalFeeAmount = totalFeeAmount.add(longFeeAmount);
         }
-        console.log(longBalance);
-        console.log(shortBalance);
 
         // Use the ratio to determine if the price increased or decreased and therefore which direction
         // the funds should be transferred towards.
+        // bytes16 ratio = PoolSwapLibrary.divInt(newPrice, oldPrice);
+
         bytes16 ratio = PoolSwapLibrary.divInt(newPrice, oldPrice);
         int8 direction = PoolSwapLibrary.compareDecimals(ratio, PoolSwapLibrary.one);
         // Take into account the leverage
         bytes16 lossMultiplier = PoolSwapLibrary.getLossMultiplier(ratio, direction, leverageAmount);
-
+        
         if (direction >= 0 && shortBalance > 0) {
             // Move funds from short to long pair
             uint112 lossAmount = uint112(PoolSwapLibrary.getLossAmount(lossMultiplier, shortBalance));
-            console.log("direction >= 0");
-            /*
             bytes16 one = 0x3fff0000000000000000000000000000;
-            console.log(ABDKMathQuad.toUInt(ratio));
-            console.log(ABDKMathQuad.toUInt(lossMultiplier));
-            console.log(ABDKMathQuad.toUInt(ABDKMathQuad.sub(one, lossMultiplier)));
-            console.log(ABDKMathQuad.toUInt(ABDKMathQuad.mul(ABDKMathQuad.sub(one, lossMultiplier), ABDKMathQuad.fromUInt(shortBalance))));
-            */
-            console.log(lossAmount);
-            console.log("loss");
+            bytes16 zero = 0x00000000000000000000000000000000;
             shortBalance = shortBalance.sub(lossAmount);
             longBalance = longBalance.add(lossAmount);
-            emit PriceChange(oldPrice, newPrice, lossAmount);
+            // emit PriceChange(oldPrice, newPrice, lossAmount);
         } else if (direction < 0 && longBalance > 0) {
             // Move funds from long to short pair
             uint112 lossAmount = uint112(PoolSwapLibrary.getLossAmount(lossMultiplier, longBalance));

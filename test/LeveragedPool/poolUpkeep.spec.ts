@@ -19,7 +19,7 @@ import {
     CommitEventArgs,
     timeout,
 } from "../utilities"
-import { BytesLike } from "ethers"
+import { BigNumber, BytesLike } from "ethers"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 
 chai.use(chaiAsPromised)
@@ -28,7 +28,7 @@ const { expect } = chai
 const amountCommitted = ethers.utils.parseEther("2000")
 const amountMinted = ethers.utils.parseEther("10000")
 const feeAddress = generateRandomAddress()
-const lastPrice = getRandomInt(99999999, 1)
+const lastPrice = ethers.utils.parseEther(getRandomInt(99999999, 1).toString())
 const updateInterval = 2
 const frontRunningInterval = 1 // seconds
 const fee = "0x00000000000000000000000000000000"
@@ -74,9 +74,11 @@ describe("LeveragedPool - executeAllCommitments", () => {
         await timeout(2000)
         const signers = await ethers.getSigners()
         await pool.setKeeper(signers[0].address)
+
+        // No price change so only commits are executed
         await pool.poolUpkeep(lastPrice, lastPrice)
 
-        // End state: `amountCommitted` worth of Long token minted. Price = lastPrice + 10
+        // End state: `amountCommitted` worth of Long and short token minted. Price = lastPrice
     })
 
     describe("With one Long Mint and one Long Burn and normal price change", async () => {
@@ -91,18 +93,14 @@ describe("LeveragedPool - executeAllCommitments", () => {
             const longTokenTotalSupplyBefore = await longToken.totalSupply()
             const longBalanceBefore = await pool.longBalance()
             const shortBalanceBefore = await pool.shortBalance()
-            /*
-            - earliestCommitUnexecuted
-            - tokens[0] and [1] do not change totalSupply
-            - shortBalance and longBalance do not change
-            - balance of leveragedpool does not change
-            */
             // Double the price
-            await pool.poolUpkeep(lastPrice + 10, 2 * (lastPrice + 10));
+            await pool.poolUpkeep(lastPrice, BigNumber.from("2").mul(lastPrice));
 
             const shortTokenTotalSupplyAfter = await shortToken.totalSupply()
             const longTokenTotalSupplyAfter = await longToken.totalSupply()
-            const expectedLongTokenDifference = ethers.utils.parseEther("2000")
+            // (longTokenTotalSupply + longburnShadowPool) / longBalance * amountCommitted
+            //=(1000 + 1000) / 3000 * 2000 = 1333.333....
+            const expectedLongTokenDifference = "1333333333333333333333"
 
             // Should be equal since the commits are long commits
             expect(shortTokenTotalSupplyAfter).to.equal(shortTokenTotalSupplyBefore)
@@ -110,11 +108,11 @@ describe("LeveragedPool - executeAllCommitments", () => {
 
             const longBalanceAfter = await pool.longBalance()
             const shortBalanceAfter = await pool.shortBalance()
-            expect(longBalanceAfter).to.equal(longBalanceBefore.add(shortBalanceBefore.div(2)))
-            console.log(ethers.utils.formatEther(shortBalanceBefore))
-            console.log(ethers.utils.formatEther(shortBalanceAfter))
-            console.log(ethers.utils.formatEther(longBalanceBefore))
-            console.log(ethers.utils.formatEther(longBalanceAfter))
+
+            // Based on ratio and `getAmountOut`
+            const longBalanceDecreaseOnBurn = ethers.utils.parseEther("1500")
+            // Long balance should increase by (the amount shortBalance decreases) + (the amount LONG MINT committed) - (the burn amount from the LONG BURN)
+            expect(longBalanceAfter).to.equal(longBalanceBefore.add(shortBalanceBefore.div(2)).add(amountCommitted).sub(longBalanceDecreaseOnBurn))
             expect(shortBalanceAfter).to.equal(shortBalanceBefore.div(2))
 
             const earliestCommitUnexecuted = await poolCommiter.earliestCommitUnexecuted()
