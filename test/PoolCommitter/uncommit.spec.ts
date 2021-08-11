@@ -33,6 +33,7 @@ const leverage = 1
 const commitType = [2] // Long mint;
 
 describe("LeveragedPool - uncommit", () => {
+    /*
     let signers: SignerWithAddress[]
     let pool: LeveragedPool
     let token: TestToken
@@ -336,4 +337,5 @@ describe("LeveragedPool - uncommit", () => {
             )
         })
     })
+    */
 })
