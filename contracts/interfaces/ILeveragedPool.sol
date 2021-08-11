@@ -10,6 +10,7 @@ interface ILeveragedPool {
         address _owner;
         address _keeper; // The address of the PoolKeeper contract
         address _oracleWrapper;
+        address _keeperOracle;
         address _longToken;
         address _shortToken;
         address _priceChanger;
@@ -53,6 +54,10 @@ interface ILeveragedPool {
 
     function poolTokens() external view returns (address[2] memory);
 
+    function keeperOracle() external view returns (address);
+
+    function quoteToken() external view returns (address);
+
     // #### Functions
     /**
      * @notice Configures the pool on deployment. The pools are EIP 1167 clones.
@@ -84,9 +89,14 @@ interface ILeveragedPool {
     function setKeeper(address _keeper) external;
 
     /**
-     * @dev Allows the owner to transfer ownership to another address
+     * @dev Allows the governor to transfer governance rights to another address
      */
-    function transferOwnership(address _owner) external;
+    function transferGovernance(address _governance) external;
+
+    /**
+     * @notice sets the address that can pull fees from this pool
+     */
+    function updateFeeAddress(address account) external;
 
     /**
      * @notice Mints new tokens
