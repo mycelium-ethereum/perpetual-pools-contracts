@@ -30,9 +30,8 @@ contract PoolCommitter is IPoolCommitter, Ownable {
 
     address public leveragedPool;
 
-    // MAX_INT = 2**128 - 1 = 3.4028 * 10 ^ 38;
-    //         = 340282366920938463463374607431768211455;
-    uint128 public constant NO_COMMITS_REMAINING = 340282366920938463463374607431768211455;
+    // MAX_INT
+    uint128 public constant NO_COMMITS_REMAINING = type(uint128).max;
     uint128 public earliestCommitUnexecuted = NO_COMMITS_REMAINING;
     uint128 public latestCommitUnexecuted;
     uint128 public commitIDCounter;
