@@ -93,12 +93,16 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         delete commits[_commitID];
 
         if (earliestCommitUnexecuted == _commitID) {
+            // This is the first unexecuted commit, so we can bump this up one
             earliestCommitUnexecuted += 1;
         }
         if (earliestCommitUnexecuted > latestCommitUnexecuted) {
+            // We have just bumped earliestCommitUnexecuted above latestCommitUnexecuted,
+            // we have therefore run out of commits
             earliestCommitUnexecuted = NO_COMMITS_REMAINING;
         }
         if (latestCommitUnexecuted == _commitID && earliestCommitUnexecuted != NO_COMMITS_REMAINING) {
+            // This is the latest commit unexecuted that we are trying to delete.
             latestCommitUnexecuted -= 1;
         }
 
