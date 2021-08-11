@@ -72,7 +72,6 @@ contract PriceChanger is IPriceChanger, Ownable {
 
         // Use the ratio to determine if the price increased or decreased and therefore which direction
         // the funds should be transferred towards.
-        // bytes16 ratio = PoolSwapLibrary.divInt(newPrice, oldPrice);
 
         bytes16 ratio = PoolSwapLibrary.divInt(newPrice, oldPrice);
         int8 direction = PoolSwapLibrary.compareDecimals(ratio, PoolSwapLibrary.one);
@@ -86,7 +85,7 @@ contract PriceChanger is IPriceChanger, Ownable {
             bytes16 zero = 0x00000000000000000000000000000000;
             shortBalance = shortBalance.sub(lossAmount);
             longBalance = longBalance.add(lossAmount);
-            // emit PriceChange(oldPrice, newPrice, lossAmount);
+            emit PriceChange(oldPrice, newPrice, lossAmount);
         } else if (direction < 0 && longBalance > 0) {
             // Move funds from long to short pair
             uint112 lossAmount = uint112(PoolSwapLibrary.getLossAmount(lossMultiplier, longBalance));

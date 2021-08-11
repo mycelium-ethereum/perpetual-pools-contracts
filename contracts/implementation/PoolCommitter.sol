@@ -130,7 +130,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             IPoolCommitter.Commit memory _commit = commits[i];
             nextEarliestCommitUnexecuted = i;
             // These two checks are so a given call to _executeCommitment won't revert,
-            // allowing us to continue iterations.
+            // allowing us to continue iterations, as well as update nextEarliestCommitUnexecuted.
             if (_commit.owner == address(0)) {
                 // Commit deleted (uncommitted) or already executed
                 nextEarliestCommitUnexecuted += 1; // It makes sense to set the next unexecuted to the next number
