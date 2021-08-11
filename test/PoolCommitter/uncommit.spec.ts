@@ -32,80 +32,96 @@ const fee = "0x00000000000000000000000000000000"
 const leverage = 1
 const commitType = [2] // Long mint;
 
-describe("LeveragedPool - uncommit", () => {
-    /*
+describe("LeveragedPool.uncommit", () => {
     let signers: SignerWithAddress[]
     let pool: LeveragedPool
     let token: TestToken
     let library: PoolSwapLibrary
-    describe("Delete commit", () => {
-        let receipt: ContractReceipt
-        let commitID: string
-        beforeEach(async () => {
-            const elements = await deployPoolAndTokenContracts(
-                POOL_CODE,
-                frontRunningInterval,
-                updateInterval,
-                fee,
-                leverage,
-                feeAddress,
-                amountMinted
-            )
-            signers = elements.signers
-            pool = elements.pool
-            token = elements.token
-            library = elements.library
-            await token.approve(pool.address, amountCommitted)
-            receipt = await (
-                await pool.commit(commitType, amountCommitted)
-            ).wait()
-            commitID = getEventArgs(receipt, "CreateCommit")?.commitID
-        })
-        it("should allow the owner of a commit delete that commit", async () => {
-            expect(
-                (await pool.commits(commitID)).amount.eq(
-                    ethers.BigNumber.from(amountCommitted)
+
+    context(
+        "When called with valid commit ID and by the commit's owner",
+        async () => {
+            let receipt: ContractReceipt
+            let commitID: string
+
+            beforeEach(async () => {
+                const elements = await deployPoolAndTokenContracts(
+                    POOL_CODE,
+                    frontRunningInterval,
+                    updateInterval,
+                    fee,
+                    leverage,
+                    feeAddress,
+                    amountMinted
                 )
-            ).to.eq(true)
-            await pool.uncommit(commitID)
-            expect(
-                (await pool.commits(commitID)).amount.eq(
-                    ethers.BigNumber.from(0)
+                signers = elements.signers
+                pool = elements.pool
+                token = elements.token
+                library = elements.library
+                await token.approve(pool.address, amountCommitted)
+                receipt = await (
+                    await pool.commit(commitType, amountCommitted)
+                ).wait()
+                commitID = getEventArgs(receipt, "CreateCommit")?.commitID
+            })
+
+            it("deletes the specified commitment", async () => {
+                expect(
+                    (await pool.commits(commitID)).amount.eq(
+                        ethers.BigNumber.from(amountCommitted)
+                    )
+                ).to.eq(true)
+                await pool.uncommit(commitID)
+                expect(
+                    (await pool.commits(commitID)).amount.eq(
+                        ethers.BigNumber.from(0)
+                    )
+                ).to.eq(true)
+            })
+
+            it("removes the specified commit from storage", async () => {
+                await pool.uncommit(commitID)
+                expect((await pool.commits(commitID)).owner).to.eq(
+                    ethers.constants.AddressZero
                 )
-            ).to.eq(true)
-        })
-        it("should remove the commit from storage", async () => {
-            await pool.uncommit(commitID)
-            expect((await pool.commits(commitID)).owner).to.eq(
-                ethers.constants.AddressZero
-            )
-            expect((await pool.commits(commitID)).created).to.eq(0)
-            expect((await pool.commits(commitID)).amount).to.eq(0)
-            expect((await pool.commits(commitID)).commitType).to.eq(0)
-        })
-        it("should emit an event for uncommitting", async () => {
-            const uncommitReceipt = await (await pool.uncommit(commitID)).wait()
-            expect(
-                getEventArgs(uncommitReceipt, "RemoveCommit")?.commitID
-            ).to.eq(commitID)
-            expect(getEventArgs(uncommitReceipt, "RemoveCommit")?.amount).to.eq(
-                getEventArgs(receipt, "CreateCommit")?.amount
-            )
-            expect(
-                getEventArgs(uncommitReceipt, "RemoveCommit")?.commitType
-            ).to.eq(getEventArgs(receipt, "CreateCommit")?.commitType)
-        })
-        it("should revert if the commit doesn't exist", async () => {
-            await expect(
-                pool.uncommit(getRandomInt(10, 100))
-            ).to.be.rejectedWith(Error)
-        })
-        it("should revert if an account other than the owner tries to uncommit a commitment", async () => {
-            await expect(
-                pool.connect(signers[1]).uncommit(commitID)
-            ).to.be.rejectedWith(Error)
-        })
-    })
+                expect((await pool.commits(commitID)).created).to.eq(0)
+                expect((await pool.commits(commitID)).amount).to.eq(0)
+                expect((await pool.commits(commitID)).commitType).to.eq(0)
+            })
+            it("emits a `RemoveCommit` event with the correct parameters", async () => {
+                const uncommitReceipt = await (
+                    await pool.uncommit(commitID)
+                ).wait()
+                expect(
+                    getEventArgs(uncommitReceipt, "RemoveCommit")?.commitID
+                ).to.eq(commitID)
+                expect(
+                    getEventArgs(uncommitReceipt, "RemoveCommit")?.amount
+                ).to.eq(getEventArgs(receipt, "CreateCommit")?.amount)
+                expect(
+                    getEventArgs(uncommitReceipt, "RemoveCommit")?.commitType
+                ).to.eq(getEventArgs(receipt, "CreateCommit")?.commitType)
+            })
+            it("reverts if the specified commit does not exist", async () => {
+                await expect(
+                    pool.uncommit(getRandomInt(10, 100))
+                ).to.be.rejectedWith(Error)
+            })
+        }
+    )
+
+    context(
+        "When called with a valid commit ID and not the owner of the specified commitment",
+        async () => {
+            it("reverts", async () => {
+                await expect(
+                    pool.connect(signers[1]).uncommit(commitID)
+                ).to.be.rejectedWith(Error)
+            })
+        }
+    )
+
+    /*
     describe("Shadow pools", () => {
         beforeEach(async () => {
             const elements = await deployPoolAndTokenContracts(
