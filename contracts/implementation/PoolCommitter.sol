@@ -114,10 +114,10 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             );
         } else if (_commit.commitType == CommitType.LongBurn) {
             // long burning: return long pool tokens to commit owner
-            require(PoolToken(tokens[0]).mint(_commit.amount, msg.sender), "Transfer failed");
+            ILeveragedPool(leveragedPool).burnTokens(0, _commit.amount, msg.sender);
         } else if (_commit.commitType == CommitType.ShortBurn) {
             // short burning: return short pool tokens to the commit owner
-            require(PoolToken(tokens[1]).mint(_commit.amount, msg.sender), "Transfer failed");
+            ILeveragedPool(leveragedPool).burnTokens(1, _commit.amount, msg.sender);
         }
     }
 
