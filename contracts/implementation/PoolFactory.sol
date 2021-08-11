@@ -150,6 +150,7 @@ contract PoolFactory is IPoolFactory, Ownable {
         poolKeeper.newPool(_pool);
         pools[numPools] = _pool;
         numPools += 1;
+        poolIdTaken[uniquePoolId] = true;
         isValidPool[_pool] = true;
         return _pool;
     }
