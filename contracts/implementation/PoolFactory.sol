@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.6;
-pragma abicoder v2;
 
 import "../interfaces/IPoolFactory.sol";
 import "../interfaces/ILeveragedPool.sol";
+import "../interfaces/IPriceChangerDeployer.sol";
+import "../interfaces/IPoolCommitterDeployer.sol";
+import "../interfaces/IPoolCommitter.sol";
+import "../interfaces/IPriceChanger.sol";
 import "./LeveragedPool.sol";
 import "./PoolToken.sol";
 import "./PoolKeeper.sol";
@@ -18,6 +21,8 @@ contract PoolFactory is IPoolFactory, Ownable {
     PoolToken public pairTokenBase;
     LeveragedPool public poolBase;
     IPoolKeeper public poolKeeper;
+    IPriceChangerDeployer public priceChangerDeployer;
+    IPoolCommitterDeployer public poolCommitterDeployer;
     // default max leverage of 25
     uint16 public maxLeverage = 25;
     // contract address to receive protocol fees
@@ -43,7 +48,11 @@ contract PoolFactory is IPoolFactory, Ownable {
     mapping(address => bool) public override isValidPool;
 
     // #### Functions
-    constructor(address _feeReceiver) {
+    constructor(
+        address _poolCommitterDeployer,
+        address _priceChangerDeployer,
+        address _feeReceiver
+    ) {
         // Deploy base contracts
         pairTokenBase = new PoolToken();
         poolBase = new LeveragedPool();
@@ -53,6 +62,8 @@ contract PoolFactory is IPoolFactory, Ownable {
             address(0),
             address(this),
             address(this),
+            address(0),
+            address(0),
             address(0),
             address(0),
             "BASE_POOL",
@@ -65,12 +76,18 @@ contract PoolFactory is IPoolFactory, Ownable {
         );
         // Init bases
         poolBase.initialize(baseInitialization);
+        poolCommitterDeployer = IPoolCommitterDeployer(_poolCommitterDeployer);
+        priceChangerDeployer = IPriceChangerDeployer(_priceChangerDeployer);
+
         pairTokenBase.initialize(address(this), "BASE_TOKEN", "BASE");
         feeReceiver = _feeReceiver;
     }
 
     function deployPool(PoolDeployment calldata deploymentParameters) external override returns (address) {
         require(address(poolKeeper) != address(0), "PoolKeeper not set");
+
+        address priceChanger = priceChangerDeployer.deploy(feeReceiver, address(this));
+        address poolCommitter = poolCommitterDeployer.deploy(address(this));
         bytes32 uniquePoolId = keccak256(
             abi.encode(
                 deploymentParameters.leverageAmount,
@@ -109,6 +126,8 @@ contract PoolFactory is IPoolFactory, Ownable {
                 deploymentParameters.quoteToken,
                 deploymentParameters.oracleWrapper
             ),
+            priceChanger,
+            poolCommitter,
             deploymentParameters.poolCode,
             deploymentParameters.frontRunningInterval,
             deploymentParameters.updateInterval,
@@ -117,6 +136,15 @@ contract PoolFactory is IPoolFactory, Ownable {
             feeReceiver,
             deploymentParameters.quoteToken
         );
+        // the following two function calls are both due to circular dependencies
+        // aprove the quote token on the pool commiter to finalise linking
+        // this also stores the pool address in the commiter
+        IPoolCommitter(poolCommitter).setQuoteAndPool(deploymentParameters.quoteToken, _pool);
+
+        // link in the pool to the priceChanger
+        IPriceChanger(priceChanger).setPool(_pool);
+
+        // finalise pool setup
         pool.initialize(initialization);
         poolKeeper.newPool(_pool);
         pools[numPools] = _pool;

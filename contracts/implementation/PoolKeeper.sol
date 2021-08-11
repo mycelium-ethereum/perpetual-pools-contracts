@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.6;
-pragma abicoder v2;
 
 import "../interfaces/IPoolKeeper.sol";
 import "../interfaces/IOracleWrapper.sol";
 import "../interfaces/IPoolFactory.sol";
-import "../implementation/LeveragedPool.sol";
+import "../interfaces/ILeveragedPool.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "abdk-libraries-solidity/ABDKMathQuad.sol";
 
 /*
@@ -148,7 +148,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         uint256 _gasPrice,
         uint256 _gasSpent
     ) internal {
-        IERC20 settlementToken = IERC20(LeveragedPool(_pool).quoteToken());
+        IERC20 settlementToken = IERC20(ILeveragedPool(_pool).quoteToken());
         uint256 reward = keeperReward(_pool, _gasPrice, _gasSpent);
 
         keeperFees[msg.sender] += reward;
@@ -187,7 +187,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
                 emit ExecutePriceChange(oldPrice, latestPrice, updateInterval, pool);
                 // This allows us to still batch multiple calls to executePriceChange, even if some are invalid
                 // Without reverting the entire transaction
-                try LeveragedPool(pool).executePriceChange(oldPrice, latestPrice) {} catch Error(string memory reason) {
+                try ILeveragedPool(pool).poolUpkeep(oldPrice, latestPrice) {} catch Error(string memory reason) {
                     emit PoolUpdateError(pool, reason);
                 }
             }
@@ -221,7 +221,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         uint256 _gasPrice,
         uint256 _gasSpent
     ) public view returns (uint256) {
-        int256 settlementTokenPrice = IOracleWrapper(LeveragedPool(_pool).keeperOracle()).getPrice();
+        int256 settlementTokenPrice = IOracleWrapper(ILeveragedPool(_pool).keeperOracle()).getPrice();
 
         if (settlementTokenPrice <= 0) {
             return 0;

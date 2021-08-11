@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.6;
-pragma abicoder v2;
 
 /**
 @title The contract factory for the keeper and pool contracts. Utilizes minimal clones to keep gas costs low.
