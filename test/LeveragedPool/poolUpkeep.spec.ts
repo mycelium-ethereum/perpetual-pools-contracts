@@ -82,7 +82,7 @@ describe("LeveragedPool - executeAllCommitments", () => {
     })
 
     describe("With one Long Mint and one Long Burn and normal price change", async () => {
-        it.only("Updates state", async () => {
+        it("Updates state", async () => {
             // Long mint commit
             await createCommit(poolCommiter, [2], amountCommitted)
             // Long burn commit
@@ -94,7 +94,7 @@ describe("LeveragedPool - executeAllCommitments", () => {
             const longBalanceBefore = await pool.longBalance()
             const shortBalanceBefore = await pool.shortBalance()
             // Double the price
-            await pool.poolUpkeep(lastPrice, BigNumber.from("2").mul(lastPrice));
+            await pool.poolUpkeep(lastPrice, BigNumber.from("2").mul(lastPrice))
 
             const shortTokenTotalSupplyAfter = await shortToken.totalSupply()
             const longTokenTotalSupplyAfter = await longToken.totalSupply()
@@ -103,8 +103,12 @@ describe("LeveragedPool - executeAllCommitments", () => {
             const expectedLongTokenDifference = "1333333333333333333333"
 
             // Should be equal since the commits are long commits
-            expect(shortTokenTotalSupplyAfter).to.equal(shortTokenTotalSupplyBefore)
-            expect(longTokenTotalSupplyAfter).to.equal(longTokenTotalSupplyBefore.add(expectedLongTokenDifference))
+            expect(shortTokenTotalSupplyAfter).to.equal(
+                shortTokenTotalSupplyBefore
+            )
+            expect(longTokenTotalSupplyAfter).to.equal(
+                longTokenTotalSupplyBefore.add(expectedLongTokenDifference)
+            )
 
             const longBalanceAfter = await pool.longBalance()
             const shortBalanceAfter = await pool.shortBalance()
@@ -112,10 +116,16 @@ describe("LeveragedPool - executeAllCommitments", () => {
             // Based on ratio and `getAmountOut`
             const longBalanceDecreaseOnBurn = ethers.utils.parseEther("1500")
             // Long balance should increase by (the amount shortBalance decreases) + (the amount LONG MINT committed) - (the burn amount from the LONG BURN)
-            expect(longBalanceAfter).to.equal(longBalanceBefore.add(shortBalanceBefore.div(2)).add(amountCommitted).sub(longBalanceDecreaseOnBurn))
+            expect(longBalanceAfter).to.equal(
+                longBalanceBefore
+                    .add(shortBalanceBefore.div(2))
+                    .add(amountCommitted)
+                    .sub(longBalanceDecreaseOnBurn)
+            )
             expect(shortBalanceAfter).to.equal(shortBalanceBefore.div(2))
 
-            const earliestCommitUnexecuted = await poolCommiter.earliestCommitUnexecuted()
+            const earliestCommitUnexecuted =
+                await poolCommiter.earliestCommitUnexecuted()
             expect(earliestCommitUnexecuted).to.equal(NO_COMMITS_REMAINING)
         })
     })

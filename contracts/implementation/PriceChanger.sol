@@ -26,20 +26,11 @@ contract PriceChanger is IPriceChanger, Ownable {
 
     // #### Globals
 
-    // Each balance is the amount of quote tokens in the pair
-    uint32 public frontRunningInterval;
-
     bytes16 public fee;
-
-    // Index 0 is the LONG token, index 1 is the SHORT token
-    address[2] public tokens;
 
     address public leveragedPool;
     address public feeAddress;
-    address public quoteToken;
     address public factory;
-
-    string public poolCode;
 
     // #### Functions
 
@@ -87,7 +78,7 @@ contract PriceChanger is IPriceChanger, Ownable {
         int8 direction = PoolSwapLibrary.compareDecimals(ratio, PoolSwapLibrary.one);
         // Take into account the leverage
         bytes16 lossMultiplier = PoolSwapLibrary.getLossMultiplier(ratio, direction, leverageAmount);
-        
+
         if (direction >= 0 && shortBalance > 0) {
             // Move funds from short to long pair
             uint112 lossAmount = uint112(PoolSwapLibrary.getLossAmount(lossMultiplier, shortBalance));

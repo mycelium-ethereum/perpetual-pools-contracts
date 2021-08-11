@@ -25,10 +25,6 @@ contract PoolCommitter is IPoolCommitter, Ownable {
 
     // #### Globals
 
-    // Each balance is the amount of quote tokens in the pair
-    bytes16 public fee;
-    bytes16 public leverageAmount;
-
     // Index 0 is the LONG token, index 1 is the SHORT token
     address[2] public tokens;
 
@@ -42,7 +38,6 @@ contract PoolCommitter is IPoolCommitter, Ownable {
     uint128 public commitIDCounter;
     mapping(uint128 => Commit) public commits;
     mapping(CommitType => uint112) public shadowPools;
-    string public poolCode;
 
     address public factory;
 
@@ -63,7 +58,6 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             created: uint40(block.timestamp)
         });
         shadowPools[commitType] = shadowPools[commitType].add(amount);
-
 
         if (earliestCommitUnexecuted == NO_COMMITS_REMAINING) {
             earliestCommitUnexecuted = commitIDCounter;
@@ -146,7 +140,9 @@ contract PoolCommitter is IPoolCommitter, Ownable {
                 // This commit is the first that was too late.
                 break;
             }
+            emit ExecuteCommit(i);
             _executeCommitment(_commit);
+            delete commits[i];
             if (i == latestCommitUnexecuted) {
                 // We have reached the last one
                 earliestCommitUnexecuted = NO_COMMITS_REMAINING;

@@ -66,7 +66,6 @@ describe("LeveragedPool - executeCommitment: Long Burn", () => {
             commit = await createCommit(poolCommiter, [2], amountCommitted)
             await timeout(2000)
             await pool.poolUpkeep(9, 10)
-            await poolCommiter.executeAllCommitments()
             await longToken.approve(pool.address, amountCommitted)
             commit = await createCommit(poolCommiter, [3], amountCommitted)
         })
@@ -74,7 +73,6 @@ describe("LeveragedPool - executeCommitment: Long Burn", () => {
             expect(await pool.longBalance()).to.eq(amountCommitted)
             await timeout(2000)
             await pool.poolUpkeep(9, 10)
-            await poolCommiter.executeAllCommitments()
             expect(await pool.longBalance()).to.eq(0)
         })
         it("should reduce the shadow long burn pool balance", async () => {
@@ -83,7 +81,6 @@ describe("LeveragedPool - executeCommitment: Long Burn", () => {
             )
             await timeout(2000)
             await pool.poolUpkeep(9, 10)
-            await poolCommiter.executeAllCommitments()
             expect(await poolCommiter.shadowPools(commit.commitType)).to.eq(0)
         })
         it("should transfer quote tokens to the commit owner", async () => {
@@ -92,7 +89,6 @@ describe("LeveragedPool - executeCommitment: Long Burn", () => {
             )
             await timeout(2000)
             await pool.poolUpkeep(9, 10)
-            await poolCommiter.executeAllCommitments()
             expect(await token.balanceOf(signers[0].address)).to.eq(
                 amountMinted
             )

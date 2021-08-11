@@ -72,7 +72,6 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
             await pool.setKeeper(signers[0].address)
 
             await pool.poolUpkeep(lastPrice, lastPrice + 10)
-            await poolCommiter.executeAllCommitments()
 
             commits.push(await createCommit(poolCommiter, [2], amountCommitted))
             commits.push(
@@ -89,7 +88,6 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
             )
             await timeout(2000)
             await pool.poolUpkeep(lastPrice, lastPrice + 10)
-            await poolCommiter.executeAllCommitments()
 
             expect(await poolCommiter.shadowPools(commits[0].commitType)).to.eq(
                 0
@@ -102,8 +100,6 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
             expect(await pool.longBalance()).to.eq(amountCommitted)
             await timeout(2000)
             await pool.poolUpkeep(lastPrice, lastPrice + 10)
-
-            await poolCommiter.executeAllCommitments()
 
             expect(await pool.longBalance()).to.eq(
                 amountCommitted.add(amountCommitted.div(2))
@@ -142,7 +138,6 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
             await timeout(2000)
 
             await pool.poolUpkeep(lastPrice, 10)
-            await poolCommiter.executeAllCommitments()
 
             commits.push(await createCommit(poolCommiter, [0], amountCommitted))
             commits.push(
@@ -159,7 +154,6 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
             )
             await timeout(2000)
             await pool.poolUpkeep(lastPrice, 10)
-            await poolCommiter.executeAllCommitments()
 
             expect(await poolCommiter.shadowPools(commits[0].commitType)).to.eq(
                 0
@@ -172,8 +166,6 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
             expect(await pool.shortBalance()).to.eq(amountCommitted)
             await timeout(2000)
             await pool.poolUpkeep(lastPrice, 10)
-
-            await poolCommiter.executeAllCommitments()
 
             expect(await pool.shortBalance()).to.eq(
                 amountCommitted.add(amountCommitted.div(2))
