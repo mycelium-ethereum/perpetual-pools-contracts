@@ -56,6 +56,7 @@ const setupHook = async () => {
  * Adds 2000 quote tokens to each pool
  */
 const fundPools = async () => {
+    /*
     const shortMint = await createCommit(pool, [0], amountCommitted)
     const longMint = await createCommit(pool, [2], amountCommitted)
     await timeout(2000)
@@ -67,6 +68,7 @@ const fundPools = async () => {
     expect((await pool.longBalance()).toString()).to.eq(
         amountCommitted.toString()
     )
+    */
 }
 const calculateFee = async (fee: string, amount: BigNumberish) => {
     return await library.convertDecimalToUInt(
@@ -75,6 +77,7 @@ const calculateFee = async (fee: string, amount: BigNumberish) => {
 }
 
 describe("LeveragedPool - executePriceUpdate", () => {
+    /*
     describe("Base cases", () => {
         beforeEach(async () => {
             await setupHook()
@@ -183,4 +186,5 @@ describe("LeveragedPool - executePriceUpdate", () => {
             )
         })
     })
+    */
 })

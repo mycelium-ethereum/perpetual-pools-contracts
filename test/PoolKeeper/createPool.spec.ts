@@ -10,6 +10,9 @@ import {
     TestChainlinkOracle__factory,
     TestOracleWrapper,
     PoolFactory,
+    PoolCommitterDeployer__factory,
+    PriceChangerDeployer__factory,
+    TestToken__factory,
 } from "../../typechain"
 
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
@@ -28,6 +31,14 @@ describe("PoolKeeper - createPool", () => {
     beforeEach(async () => {
         // Deploy the contracts
         signers = await ethers.getSigners()
+
+        const testToken = (await ethers.getContractFactory(
+            "TestToken",
+            signers[0]
+        )) as TestToken__factory
+        const token = await testToken.deploy("TEST TOKEN", "TST1")
+        await token.deployed()
+        await token.mint(ethers.utils.parseEther("10000"), signers[0].address)
 
         const chainlinkOracleFactory = (await ethers.getContractFactory(
             "TestChainlinkOracle",
@@ -66,18 +77,50 @@ describe("PoolKeeper - createPool", () => {
             signer: signers[0],
             libraries: { PoolSwapLibrary: library.address },
         })) as PoolFactory__factory
-        let feeAddress = await generateRandomAddress()
-        factory = await (await PoolFactory.deploy(feeAddress)).deployed()
+
+        const PoolCommiterDeployerFactory = (await ethers.getContractFactory(
+            "PoolCommitterDeployer",
+            {
+                signer: signers[0],
+                libraries: { PoolSwapLibrary: library.address },
+            }
+        )) as PoolCommitterDeployer__factory
+
+        let poolCommiterDeployer = await PoolCommiterDeployerFactory.deploy()
+        poolCommiterDeployer = await poolCommiterDeployer.deployed()
+
+        const PriceChangerDeployerFactory = (await ethers.getContractFactory(
+            "PriceChangerDeployer",
+            {
+                signer: signers[0],
+                libraries: { PoolSwapLibrary: library.address },
+            }
+        )) as PriceChangerDeployer__factory
+
+        let priceChangerDeployer = await PriceChangerDeployerFactory.deploy()
+        priceChangerDeployer = await priceChangerDeployer.deployed()
+
+        factory = await (
+            await PoolFactory.deploy(
+                poolCommiterDeployer.address,
+                priceChangerDeployer.address,
+                generateRandomAddress()
+            )
+        ).deployed()
         poolKeeper = await poolKeeperFactory.deploy(factory.address)
         await poolKeeper.deployed()
 
         await factory.setPoolKeeper(poolKeeper.address)
+
         deploymentData = {
+            owner: signers[0].address,
+            keeper: poolKeeper.address,
             poolCode: POOL_CODE,
-            frontRunningInterval: 5,
-            updateInterval: 10,
+            frontRunningInterval: 3,
+            updateInterval: 5,
             leverageAmount: 5,
-            quoteToken: generateRandomAddress(),
+            feeAddress: generateRandomAddress(),
+            quoteToken: token.address,
             oracleWrapper: oracleWrapper.address,
             keeperOracle: keeperOracle.address,
         }

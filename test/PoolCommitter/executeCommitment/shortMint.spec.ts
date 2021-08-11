@@ -32,6 +32,7 @@ const fee = "0x00000000000000000000000000000000"
 const leverage = 2
 
 describe("LeveragedPool - executeCommitment: Short Mint", () => {
+    /*
     let token: TestToken
     let shortToken: ERC20
     let pool: LeveragedPool
@@ -84,4 +85,5 @@ describe("LeveragedPool - executeCommitment: Short Mint", () => {
             )
         })
     })
+    */
 })
