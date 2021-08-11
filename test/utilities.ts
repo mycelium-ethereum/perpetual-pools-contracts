@@ -128,6 +128,11 @@ export const deployPoolAndTokenContracts = async (
         chainlinkOracle.address
     )
 
+    /* keeper oracle */
+    const keeperOracle = await oracleWrapperFactory.deploy(
+        chainlinkOracle.address
+    )
+
     // Deploy and initialise pool
     const libraryFactory = (await ethers.getContractFactory(
         "PoolSwapLibrary",
@@ -166,7 +171,8 @@ export const deployPoolAndTokenContracts = async (
     const factory = await (
         await PoolFactory.deploy(
             poolCommiterDeployer.address,
-            priceChangerDeployer.address
+            priceChangerDeployer.address,
+            generateRandomAddress()
         )
     ).deployed()
 
@@ -184,13 +190,14 @@ export const deployPoolAndTokenContracts = async (
         poolCode: POOL_CODE,
         frontRunningInterval: frontRunningInterval,
         updateInterval: updateInterval,
-        fee: fee,
         leverageAmount: leverage,
         feeAddress: feeAddress,
         quoteToken: token.address,
         oracleWrapper: oracleWrapper.address,
+        keeperOracle: keeperOracle.address,
     }
 
+    await factory.setFee(fee)
     await factory.deployPool(deployParams)
     const poolAddress = await factory.pools(0)
     const pool = await ethers.getContractAt("LeveragedPool", poolAddress)

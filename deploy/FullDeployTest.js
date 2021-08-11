@@ -68,6 +68,12 @@ module.exports = async (hre) => {
         log: true,
         args: [chainlinkOracle.address],
     })
+    /* deploy TestOracleWrapper for keeper */
+    const keeperOracle = await deploy("TestOracleWrapper", {
+        from: deployer,
+        log: true,
+        args: [chainlinkOracle.address],
+    })
 
     /* deploy PoolSwapLibrary */
     const library = await deploy("PoolSwapLibrary", {
@@ -80,6 +86,7 @@ module.exports = async (hre) => {
         from: deployer,
         log: true,
         libraries: { PoolSwapLibrary: library.address },
+        args: [deployer], // fee receiver
     })
 
     /* deploy PoolKeeper */
@@ -111,9 +118,9 @@ module.exports = async (hre) => {
         updateInterval: TEN_MINS,
         fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
         leverageAmount: 5,
-        feeAddress: deployer,
         quoteToken: token.address,
         oracleWrapper: oracleWrapper.address,
+        keeperOracle: keeperOracle.address,
     }
 
     const receipt = await execute(
