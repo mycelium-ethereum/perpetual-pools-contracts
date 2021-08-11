@@ -46,7 +46,7 @@ describe("PoolCommitter.uncommit", () => {
     let receipt: ContractReceipt
     let commitID: string
 
-    beforeEach(async () => {
+    before(async () => {
         const elements = await deployPoolAndTokenContracts(
             POOL_CODE,
             frontRunningInterval,
@@ -64,7 +64,7 @@ describe("PoolCommitter.uncommit", () => {
         longToken = elements.longToken
         shortToken = elements.shortToken
         library = elements.library
-        await token.approve(pool.address, amountCommitted)
+        await token.approve(pool.address, amountCommitted);
         receipt = await (
             await committer.commit(commitType, amountCommitted)
         ).wait()
@@ -216,7 +216,7 @@ describe("PoolCommitter.uncommit", () => {
                 await committer.commit([2], amountCommitted)
             ).wait()
             await timeout(2000)
-            await changer.executePriceChange(1, 2)
+            await pool.poolUpkeep(1, 2);
             await committer.executeCommitments([
                 getEventArgs(pairToken, "CreateCommit")?.commitID,
             ])
@@ -242,7 +242,7 @@ describe("PoolCommitter.uncommit", () => {
                 await committer.commit([2], amountCommitted)
             ).wait()
             await timeout(2000)
-            await changer.executePriceChange(1, 2)
+            await pool.poolUpkeep(1, 2)
             await committer.executeCommitments([
                 getEventArgs(pairToken, "CreateCommit")?.commitID,
             ])
@@ -269,7 +269,7 @@ describe("PoolCommitter.uncommit", () => {
                 await committer.commit([2], amountCommitted)
             ).wait()
             await timeout(2000)
-            await changer.executePriceChange(1, 2)
+            await pool.poolUpkeep(1, 2)
             await committer.executeCommitments([
                 getEventArgs(pairToken, "CreateCommit")?.commitID,
             ])
@@ -292,7 +292,7 @@ describe("PoolCommitter.uncommit", () => {
                 await committer.commit([0], amountCommitted)
             ).wait()
             await timeout(2000)
-            await changer.executePriceChange(1, 2)
+            await pool.poolUpkeep(1, 2)
             await committer.executeCommitments([
                 getEventArgs(pairToken, "CreateCommit")?.commitID,
             ])
@@ -317,7 +317,7 @@ describe("PoolCommitter.uncommit", () => {
                 await committer.commit([0], amountCommitted)
             ).wait()
             await timeout(2000)
-            await changer.executePriceChange(1, 2)
+            await pool.poolUpkeep(1, 2)
             await committer.executeCommitments([
                 getEventArgs(pairToken, "CreateCommit")?.commitID,
             ])
@@ -343,7 +343,7 @@ describe("PoolCommitter.uncommit", () => {
                 await committer.commit([0], amountCommitted)
             ).wait()
             await timeout(2000)
-            await changer.executePriceChange(1, 2)
+            await pool.poolUpkeep(1, 2)
             await committer.executeCommitments([
                 getEventArgs(pairToken, "CreateCommit")?.commitID,
             ])
