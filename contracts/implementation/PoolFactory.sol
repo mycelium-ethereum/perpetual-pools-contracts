@@ -49,7 +49,11 @@ contract PoolFactory is IPoolFactory, Ownable {
     mapping(address => bool) public override isValidPool;
 
     // #### Functions
-    constructor(address _poolCommitterDeployer, address _priceChangerDeployer, address _feeReceiver) {
+    constructor(
+        address _poolCommitterDeployer,
+        address _priceChangerDeployer,
+        address _feeReceiver
+    ) {
         // Deploy base contracts
         pairTokenBase = new PoolToken();
         poolBase = new LeveragedPool();

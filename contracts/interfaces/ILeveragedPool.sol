@@ -54,7 +54,7 @@ interface ILeveragedPool {
 
     function keeperOracle() external view returns (address);
 
-    function quoteToken() external view returns(address);
+    function quoteToken() external view returns (address);
 
     // #### Functions
     /**
@@ -92,10 +92,9 @@ interface ILeveragedPool {
     function transferGovernance(address _governance) external;
 
     /**
-    * @notice sets the address that can pull fees from this pool
-    */
+     * @notice sets the address that can pull fees from this pool
+     */
     function updateFeeAddress(address account) external;
-
 
     /**
      * @notice Mints new tokens
