@@ -6,6 +6,8 @@ import {
     TestToken,
     ERC20,
     PoolSwapLibrary,
+    PoolCommitter,
+    PriceChanger,
 } from "../../../typechain"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { POOL_CODE } from "../../constants"
@@ -31,15 +33,17 @@ const frontRunningInterval = 1 // seconds
 const fee = "0x00000000000000000000000000000000"
 const leverage = 2
 
-describe("LeveragedPool - executeCommitment: Long Burn", () => {
+describe("LeveragedPool - executeCommitment: Long Mint", () => {
     let token: TestToken
-
     let longToken: ERC20
     let pool: LeveragedPool
     let signers: SignerWithAddress[]
     let commit: CommitEventArgs
     let library: PoolSwapLibrary
-    describe("Long Burn", () => {
+    let poolCommiter: PoolCommitter
+    let priceChanger: PriceChanger
+
+    describe("Long Mint", () => {
         beforeEach(async () => {
             const result = await deployPoolAndTokenContracts(
                 POOL_CODE,
@@ -52,43 +56,35 @@ describe("LeveragedPool - executeCommitment: Long Burn", () => {
             )
             pool = result.pool
             signers = result.signers
+            poolCommiter = result.poolCommiter
+            priceChanger = result.priceChanger
+            await pool.setKeeper(signers[0].address)
             token = result.token
             library = result.library
             longToken = result.longToken
-            await pool.setKeeper(signers[0].address)
             await token.approve(pool.address, amountMinted)
-            commit = await createCommit(pool, [2], amountCommitted)
-            await timeout(2000)
-            await pool.executePriceChange(9, 10)
-            await pool.executeCommitment([commit.commitID])
-            await longToken.approve(pool.address, amountCommitted)
-            commit = await createCommit(pool, [3], amountCommitted)
+            commit = await createCommit(poolCommiter, [2], amountCommitted)
         })
         it("should adjust the live long pool balance", async () => {
-            expect(await pool.longBalance()).to.eq(amountCommitted)
-            await timeout(2000)
-            await pool.executePriceChange(9, 10)
-            await pool.executeCommitment([commit.commitID])
             expect(await pool.longBalance()).to.eq(0)
+            await timeout(2000)
+            await pool.poolUpkeep(9, 10)
+            expect(await pool.longBalance()).to.eq(amountCommitted)
         })
-        it("should reduce the shadow long burn pool balance", async () => {
-            expect(await pool.shadowPools(commit.commitType)).to.eq(
+        it("should reduce the shadow long mint pool balance", async () => {
+            expect(await poolCommiter.shadowPools(commit.commitType)).to.eq(
                 amountCommitted
             )
             await timeout(2000)
-            await pool.executePriceChange(9, 10)
-            await pool.executeCommitment([commit.commitID])
-            expect(await pool.shadowPools(commit.commitType)).to.eq(0)
+            await pool.poolUpkeep(9, 10)
+            expect(await poolCommiter.shadowPools(commit.commitType)).to.eq(0)
         })
-        it("should transfer quote tokens to the commit owner", async () => {
-            expect(await token.balanceOf(signers[0].address)).to.eq(
-                amountMinted.sub(amountCommitted)
-            )
+        it("should mint long pair tokens", async () => {
+            expect(await longToken.balanceOf(signers[0].address)).to.eq(0)
             await timeout(2000)
-            await pool.executePriceChange(9, 10)
-            await pool.executeCommitment([commit.commitID])
-            expect(await token.balanceOf(signers[0].address)).to.eq(
-                amountMinted
+            await pool.poolUpkeep(9, 10)
+            expect(await longToken.balanceOf(signers[0].address)).to.eq(
+                amountCommitted
             )
         })
     })

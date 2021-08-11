@@ -6,6 +6,8 @@ import {
     TestToken,
     ERC20,
     PoolSwapLibrary,
+    PriceChanger,
+    PoolCommitter,
 } from "../../../typechain"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { POOL_CODE } from "../../constants"
@@ -31,15 +33,17 @@ const frontRunningInterval = 1 // seconds
 const fee = "0x00000000000000000000000000000000"
 const leverage = 2
 
-describe("LeveragedPool - executeCommitment: Short Burn", () => {
+describe("LeveragedPool - executeCommitment: Long Burn", () => {
     let token: TestToken
-    let shortToken: ERC20
-    let library: PoolSwapLibrary
+
+    let longToken: ERC20
+    let priceChanger: PriceChanger
+    let poolCommiter: PoolCommitter
     let pool: LeveragedPool
     let signers: SignerWithAddress[]
     let commit: CommitEventArgs
-
-    describe("Short Burn", () => {
+    let library: PoolSwapLibrary
+    describe("Long Burn", () => {
         beforeEach(async () => {
             const result = await deployPoolAndTokenContracts(
                 POOL_CODE,
@@ -53,41 +57,38 @@ describe("LeveragedPool - executeCommitment: Short Burn", () => {
             pool = result.pool
             signers = result.signers
             token = result.token
-            shortToken = result.shortToken
             library = result.library
-            await token.approve(pool.address, amountMinted)
-            commit = await createCommit(pool, [0], amountCommitted)
-            await timeout(2000)
+            longToken = result.longToken
+            poolCommiter = result.poolCommiter
+            priceChanger = result.priceChanger
             await pool.setKeeper(signers[0].address)
-            await pool.executePriceChange(lastPrice, 10)
-            await pool.executeCommitment([commit.commitID])
-
-            await shortToken.approve(pool.address, amountCommitted)
-            commit = await createCommit(pool, [1], amountCommitted)
-        })
-        it("should reduce the live short pool balance", async () => {
-            expect(await pool.shortBalance()).to.eq(amountCommitted)
+            await token.approve(pool.address, amountMinted)
+            commit = await createCommit(poolCommiter, [2], amountCommitted)
             await timeout(2000)
-            await pool.executePriceChange(lastPrice, 10)
-            await pool.executeCommitment([commit.commitID])
-            expect(await pool.shortBalance()).to.eq(0)
+            await pool.poolUpkeep(9, 10)
+            await longToken.approve(pool.address, amountCommitted)
+            commit = await createCommit(poolCommiter, [3], amountCommitted)
         })
-        it("should reduce the shadow short burn pool balance", async () => {
-            expect(await pool.shadowPools(commit.commitType)).to.eq(
+        it("should adjust the live long pool balance", async () => {
+            expect(await pool.longBalance()).to.eq(amountCommitted)
+            await timeout(2000)
+            await pool.poolUpkeep(9, 10)
+            expect(await pool.longBalance()).to.eq(0)
+        })
+        it("should reduce the shadow long burn pool balance", async () => {
+            expect(await poolCommiter.shadowPools(commit.commitType)).to.eq(
                 amountCommitted
             )
             await timeout(2000)
-            await pool.executePriceChange(lastPrice, 10)
-            await pool.executeCommitment([commit.commitID])
-            expect(await pool.shadowPools(commit.commitType)).to.eq(0)
+            await pool.poolUpkeep(9, 10)
+            expect(await poolCommiter.shadowPools(commit.commitType)).to.eq(0)
         })
         it("should transfer quote tokens to the commit owner", async () => {
             expect(await token.balanceOf(signers[0].address)).to.eq(
                 amountMinted.sub(amountCommitted)
             )
             await timeout(2000)
-            await pool.executePriceChange(lastPrice, 10)
-            await pool.executeCommitment([commit.commitID])
+            await pool.poolUpkeep(9, 10)
             expect(await token.balanceOf(signers[0].address)).to.eq(
                 amountMinted
             )

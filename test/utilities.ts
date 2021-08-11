@@ -17,6 +17,12 @@ import {
     PoolFactory__factory,
     PoolKeeper__factory,
     PoolFactory,
+    PoolCommitter,
+    PriceChanger,
+    PoolCommitter__factory,
+    PriceChanger__factory,
+    PoolCommitterDeployer__factory,
+    PriceChangerDeployer__factory,
 } from "../typechain"
 
 import { abi as ERC20Abi } from "../artifacts/@openzeppelin/contracts/token/ERC20/ERC20.sol/ERC20.json"
@@ -81,6 +87,9 @@ export const deployPoolAndTokenContracts = async (
     shortToken: ERC20
     longToken: ERC20
     library: PoolSwapLibrary
+    poolCommiter: PoolCommitter
+    priceChanger: PriceChanger
+    poolKeeper: PoolKeeper
 }> => {
     const signers = await ethers.getSigners()
     // Deploy test ERC20 token
@@ -136,7 +145,36 @@ export const deployPoolAndTokenContracts = async (
         signer: signers[0],
         libraries: { PoolSwapLibrary: library.address },
     })) as PoolFactory__factory
-    const factory = await (await PoolFactory.deploy(feeAddress)).deployed()
+
+    const PoolCommiterDeployerFactory = (await ethers.getContractFactory(
+        "PoolCommitterDeployer",
+        {
+            signer: signers[0],
+            libraries: { PoolSwapLibrary: library.address },
+        }
+    )) as PoolCommitterDeployer__factory
+
+    let poolCommiterDeployer = await PoolCommiterDeployerFactory.deploy()
+    poolCommiterDeployer = await poolCommiterDeployer.deployed()
+
+    const PriceChangerDeployerFactory = (await ethers.getContractFactory(
+        "PriceChangerDeployer",
+        {
+            signer: signers[0],
+            libraries: { PoolSwapLibrary: library.address },
+        }
+    )) as PriceChangerDeployer__factory
+
+    let priceChangerDeployer = await PriceChangerDeployerFactory.deploy()
+    priceChangerDeployer = await priceChangerDeployer.deployed()
+
+    const factory = await (
+        await PoolFactory.deploy(
+            poolCommiterDeployer.address,
+            priceChangerDeployer.address,
+            generateRandomAddress()
+        )
+    ).deployed()
 
     const poolKeeperFactory = (await ethers.getContractFactory("PoolKeeper", {
         signer: signers[0],
@@ -168,6 +206,12 @@ export const deployPoolAndTokenContracts = async (
     let shortTokenAddr = await pool.tokens(1)
     const longToken = await ethers.getContractAt(ERC20Abi, longTokenAddr)
     const shortToken = await ethers.getContractAt(ERC20Abi, shortTokenAddr)
+
+    let commiter = await pool.poolCommitter()
+    let changer = await pool.priceChanger()
+    const poolCommiter = await ethers.getContractAt("PoolCommitter", commiter)
+    const priceChanger = await ethers.getContractAt("PriceChanger", changer)
+
     return {
         signers,
         //@ts-ignore
@@ -178,6 +222,12 @@ export const deployPoolAndTokenContracts = async (
         shortToken,
         //@ts-ignore
         longToken,
+        //@ts-ignore
+        poolCommiter,
+        //@ts-ignore
+        priceChanger,
+        //@ts-ignore
+        poolKeeper,
     }
 }
 
@@ -193,11 +243,11 @@ export interface CommitEventArgs {
  * @param amount The amount to commit to
  */
 export const createCommit = async (
-    pool: LeveragedPool,
+    poolCommiter: PoolCommitter,
     commitType: BigNumberish,
     amount: BigNumberish
-): Promise<CommitEventArgs> => {
-    const receipt = await (await pool.commit(commitType, amount)).wait()
+): Promise<any> /*Promise<CommitEventArgs>*/ => {
+    const receipt = await (await poolCommiter.commit(commitType, amount)).wait()
     return {
         commitID: getEventArgs(receipt, "CreateCommit")?.commitID,
         amount: getEventArgs(receipt, "CreateCommit")?.amount,
