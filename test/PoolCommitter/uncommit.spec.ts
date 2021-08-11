@@ -39,7 +39,7 @@ describe("LeveragedPool.uncommit", () => {
     let library: PoolSwapLibrary
 
     context(
-        "When called with valid commit ID and by the commit's owner",
+        "When called with valid commitment ID and by the owner of the specified commitment",
         async () => {
             let receipt: ContractReceipt
             let commitID: string
@@ -102,16 +102,19 @@ describe("LeveragedPool.uncommit", () => {
                     getEventArgs(uncommitReceipt, "RemoveCommit")?.commitType
                 ).to.eq(getEventArgs(receipt, "CreateCommit")?.commitType)
             })
-            it("reverts if the specified commit does not exist", async () => {
-                await expect(
-                    pool.uncommit(getRandomInt(10, 100))
-                ).to.be.rejectedWith(Error)
-            })
         }
     )
 
+    context("When called with an invalid commitment ID", async () => {
+        it("reverts", async () => {
+            await expect(
+                pool.uncommit(getRandomInt(10, 100))
+            ).to.be.rejectedWith(Error)
+        })
+    })
+
     context(
-        "When called with a valid commit ID and not the owner of the specified commitment",
+        "When called with a valid commitment ID and not by the owner of the specified commitment",
         async () => {
             it("reverts", async () => {
                 await expect(
@@ -121,25 +124,25 @@ describe("LeveragedPool.uncommit", () => {
         }
     )
 
-    /*
-    describe("Shadow pools", () => {
-        beforeEach(async () => {
-            const elements = await deployPoolAndTokenContracts(
-                POOL_CODE,
-                frontRunningInterval,
-                updateInterval,
-                fee,
-                leverage,
-                feeAddress,
-                amountMinted
-            )
-            signers = elements.signers
-            pool = elements.pool
-            token = elements.token
-            await pool.setKeeper(signers[0].address)
-            await token.approve(pool.address, amountCommitted)
+    context("When specified commitment is a long mint", async () => {
+        it("updates the shadow long mint balance", async () => {
+            const receipt = await (
+                await pool.commit([2], amountCommitted)
+            ).wait()
+            expect(
+                (await pool.shadowPools(2)).eq(
+                    ethers.BigNumber.from(amountCommitted)
+                )
+            ).to.eq(true)
+            await pool.uncommit(getEventArgs(receipt, "CreateCommit")?.commitID)
+            expect(
+                (await pool.shadowPools(2)).eq(ethers.BigNumber.from(0))
+            ).to.eq(true)
         })
-        it("should update the shadow short mint balance", async () => {
+    })
+
+    context("When specified commitment is a short mint", async () => {
+        it("updates the shadow short mint balance", async () => {
             const receipt = await (
                 await pool.commit([0], amountCommitted)
             ).wait()
@@ -154,44 +157,10 @@ describe("LeveragedPool.uncommit", () => {
                 (await pool.shadowPools(0)).eq(ethers.BigNumber.from(0))
             ).to.eq(true)
         })
-        it("should update the shadow short burn balance", async () => {
-            const pairToken = await (
-                await pool.commit([0], amountCommitted)
-            ).wait()
-            await timeout(2000)
-            await pool.executePriceChange(1, 2)
-            await pool.executeCommitment([
-                getEventArgs(pairToken, "CreateCommit")?.commitID,
-            ])
-            const receipt = await (
-                await pool.commit([1], amountCommitted)
-            ).wait()
+    })
 
-            expect(
-                (await pool.shadowPools(1)).eq(
-                    ethers.BigNumber.from(amountCommitted)
-                )
-            ).to.eq(true)
-            await pool.uncommit(getEventArgs(receipt, "CreateCommit")?.commitID)
-            expect(
-                (await pool.shadowPools(1)).eq(ethers.BigNumber.from(0))
-            ).to.eq(true)
-        })
-        it("should update the shadow long mint balance", async () => {
-            const receipt = await (
-                await pool.commit([2], amountCommitted)
-            ).wait()
-            expect(
-                (await pool.shadowPools(2)).eq(
-                    ethers.BigNumber.from(amountCommitted)
-                )
-            ).to.eq(true)
-            await pool.uncommit(getEventArgs(receipt, "CreateCommit")?.commitID)
-            expect(
-                (await pool.shadowPools(2)).eq(ethers.BigNumber.from(0))
-            ).to.eq(true)
-        })
-        it("should update the shadow long burn balance", async () => {
+    context("When specified commitment is a long burn", async () => {
+        it("updates the shadow long burn balance", async () => {
             const pairToken = await (
                 await pool.commit([2], amountCommitted)
             ).wait()
@@ -215,6 +184,34 @@ describe("LeveragedPool.uncommit", () => {
             ).to.eq(true)
         })
     })
+
+    context("When specified commitment is a short burn", async () => {
+        it("updates the shadow short burn balance", async () => {
+            const pairToken = await (
+                await pool.commit([0], amountCommitted)
+            ).wait()
+            await timeout(2000)
+            await pool.executePriceChange(1, 2)
+            await pool.executeCommitment([
+                getEventArgs(pairToken, "CreateCommit")?.commitID,
+            ])
+            const receipt = await (
+                await pool.commit([1], amountCommitted)
+            ).wait()
+
+            expect(
+                (await pool.shadowPools(1)).eq(
+                    ethers.BigNumber.from(amountCommitted)
+                )
+            ).to.eq(true)
+            await pool.uncommit(getEventArgs(receipt, "CreateCommit")?.commitID)
+            expect(
+                (await pool.shadowPools(1)).eq(ethers.BigNumber.from(0))
+            ).to.eq(true)
+        })
+    })
+
+    /*
     describe("Token transfers", () => {
         let shortToken: ERC20
         let longToken: ERC20
