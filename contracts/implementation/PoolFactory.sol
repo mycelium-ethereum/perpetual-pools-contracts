@@ -108,25 +108,31 @@ contract PoolFactory is IPoolFactory, Ownable {
         address _pool = address(pool);
         emit DeployPool(_pool, deploymentParameters.poolName);
 
+        address shortToken = deployPairToken(
+            _pool,
+            string(abi.encodePacked(deploymentParameters.poolName, "-LONG")),
+            string(abi.encodePacked("L-", deploymentParameters.poolName)),
+            0,
+            deploymentParameters.leverageAmount,
+            deploymentParameters.quoteToken,
+            deploymentParameters.oracleWrapper
+        );
+        address longToken = deployPairToken(
+            _pool,
+            string(abi.encodePacked(deploymentParameters.poolName, "-SHORT")),
+            string(abi.encodePacked("S-", deploymentParameters.poolName)),
+            1,
+            deploymentParameters.leverageAmount,
+            deploymentParameters.quoteToken,
+            deploymentParameters.oracleWrapper
+        );
         ILeveragedPool.Initialization memory initialization = ILeveragedPool.Initialization(
             owner(), // governance is the owner of pools
             address(poolKeeper),
             deploymentParameters.oracleWrapper,
             deploymentParameters.keeperOracle,
-            deployPairToken(
-                _pool,
-                string(abi.encodePacked(deploymentParameters.poolName, "-LONG")),
-                string(abi.encodePacked("L-", deploymentParameters.poolName)),
-                deploymentParameters.quoteToken,
-                deploymentParameters.oracleWrapper
-            ),
-            deployPairToken(
-                _pool,
-                string(abi.encodePacked(deploymentParameters.poolName, "-SHORT")),
-                string(abi.encodePacked("S-", deploymentParameters.poolName)),
-                deploymentParameters.quoteToken,
-                deploymentParameters.oracleWrapper
-            ),
+            shortToken,
+            longToken,
             priceChanger,
             poolCommitter,
             deploymentParameters.poolName,
@@ -138,7 +144,7 @@ contract PoolFactory is IPoolFactory, Ownable {
             deploymentParameters.quoteToken
         );
         // the following two function calls are both due to circular dependencies
-        // aprove the quote token on the pool commiter to finalise linking
+        // approve the quote token on the pool commiter to finalise linking
         // this also stores the pool address in the commiter
         IPoolCommitter(poolCommitter).setQuoteAndPool(deploymentParameters.quoteToken, _pool);
 
@@ -159,12 +165,17 @@ contract PoolFactory is IPoolFactory, Ownable {
         address owner,
         string memory name,
         string memory symbol,
+        uint8 tokenType,
+        uint16 leverageAmount,
         address quoteToken,
         address oracleWrapper
     ) internal returns (address) {
         // pools are unique based on leverage, quoteToken and oracle -> pool tokens should be the same
         PoolToken pairToken = PoolToken(
-            Clones.cloneDeterministic(address(pairTokenBase), keccak256(abi.encode(name, quoteToken, oracleWrapper)))
+            Clones.cloneDeterministic(
+                address(pairTokenBase),
+                keccak256(abi.encode(tokenType, leverageAmount, quoteToken, oracleWrapper))
+            )
         );
         pairToken.initialize(owner, name, symbol);
         return address(pairToken);
