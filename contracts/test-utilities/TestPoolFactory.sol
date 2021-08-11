@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.6;
-pragma abicoder v2;
 
 import "../implementation/LeveragedPool.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
