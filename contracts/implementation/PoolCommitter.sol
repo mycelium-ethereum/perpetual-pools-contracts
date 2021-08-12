@@ -170,9 +170,16 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         uint112 longBalance = pool.longBalance();
         shadowPools[_commit.commitType] = shadowPools[_commit.commitType].sub(_commit.amount);
         if (_commit.commitType == CommitType.LongMint) {
+            uint112 mintAmount = PoolSwapLibrary.mintProportion(
+                tokens[0],
+                _commit.amount,
+                pool.longBalance(),
+                pool.shortBalance(),
+                IERC20(tokens[0]).totalSupply()
+            );
             pool.mintTokens(
                 0, // long token
-                _commit.amount, // amount of quote tokens commited to enter
+                mintAmount, // amount of quote tokens commited to enter
                 _commit.owner
             );
 
