@@ -5,8 +5,6 @@ import "abdk-libraries-solidity/ABDKMathQuad.sol";
 import "./PoolToken.sol";
 
 library PoolSwapLibrary {
-    using SafeMath for uint112;
-
     bytes16 public constant one = 0x3fff0000000000000000000000000000;
     bytes16 public constant zero = 0x00000000000000000000000000000000;
 
@@ -149,7 +147,7 @@ library PoolSwapLibrary {
         uint256 _totalSupply
     ) external pure returns (uint112) {
         PoolSwapLibrary.getAmountOut(
-            PoolSwapLibrary.getRatio(uint112(uint112(_totalSupply).add(_oppositeBalance)), _balance),
+            PoolSwapLibrary.getRatio(uint112(uint112(_totalSupply) + _oppositeBalance), _balance),
             _amountIn
         );
     }
