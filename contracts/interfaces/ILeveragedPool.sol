@@ -107,36 +107,20 @@ interface ILeveragedPool {
      */
     function mintTokens(
         uint256 token,
-        uint256 amount,
-        address minter 
+        uint112 amount,
+        address minter
     ) external;
 
     /**
      * @notice Burns `amount` pool tokens from `burner`
-     * @param token Index into tokens array specifying which token is to be burnt 
-     * @param amount Quantity of specified tokens to burn 
-     * @param burner Address of account to burn tokens from 
+     * @param token Index into tokens array specifying which token is to be burnt
+     * @param amount Quantity of specified tokens to burn
+     * @param burner Address of account to burn tokens from
      * @dev Throws if `token` is out of bounds
      */
     function burnTokens(
         uint256 token,
         uint256 amount,
         address burner
-    ) external;
-
-    /**
-     * @notice Mints new tokens
-     * @param token The token to mint
-     * @param amountIn The amount the user has committed to minting
-     * @param balance The balance of pair at the start of the execution
-     * @param inverseShadowbalance The amount of tokens burned from total supply
-     * @param tokenOwner The address to send the tokens to
-     */
-    function mintTokensProportionally(
-        uint256 token,
-        uint112 amountIn,
-        uint112 balance,
-        uint112 inverseShadowbalance,
-        address tokenOwner
     ) external;
 }

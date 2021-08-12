@@ -173,8 +173,6 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             pool.mintTokens(
                 0, // long token
                 _commit.amount, // amount of quote tokens commited to enter
-                longBalance, // total quote tokens in the long pull
-                shadowPools[CommitType.LongBurn], // total pool tokens commited to be burned
                 _commit.owner
             );
 
@@ -200,8 +198,6 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             pool.mintTokens(
                 1, // short token
                 _commit.amount,
-                shortBalance,
-                shadowPools[CommitType.ShortBurn],
                 _commit.owner
             );
             pool.setNewPoolBalances(longBalance, shortBalance.add(_commit.amount));

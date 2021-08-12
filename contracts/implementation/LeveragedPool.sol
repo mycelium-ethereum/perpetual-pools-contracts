@@ -111,36 +111,10 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     function mintTokens(
         uint256 token,
         uint112 amount,
-        address minter 
-    ) external onlyPriceChangerOrCommitter {
-        require(token == 0 || token == 1, "Pool: token out of range");
-        require(PoolToken(tokens[token]).mint(amount, minter), "Mint failed");
-    }
-
-    function mintTokensProportionally(
-        uint256 token,
-        uint112 amountIn,
-        uint112 balance,
-        uint112 inverseShadowbalance,
-        address tokenOwner
+        address minter
     ) external override onlyPriceChangerOrCommitter {
         require(token == 0 || token == 1, "Pool: token out of range");
-        address _token = tokens[token];
-        require(
-            this.mintTokens(token,
-                // amount out = ratio * amount in
-                PoolSwapLibrary.getAmountOut(
-                    // ratio = (totalSupply + inverseShadowBalance) / balance
-                    PoolSwapLibrary.getRatio(
-                        uint112(PoolToken(_token).totalSupply()).add(inverseShadowbalance),
-                        balance
-                    ),
-                    amountIn
-                ),
-                tokenOwner
-            ),
-            "Mint failed"
-        );
+        require(PoolToken(tokens[token]).mint(amount, minter), "Mint failed");
     }
 
     function burnTokens(
