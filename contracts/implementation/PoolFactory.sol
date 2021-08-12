@@ -3,10 +3,8 @@ pragma solidity 0.8.6;
 
 import "../interfaces/IPoolFactory.sol";
 import "../interfaces/ILeveragedPool.sol";
-import "../interfaces/IPriceChangerDeployer.sol";
 import "../interfaces/IPoolCommitterDeployer.sol";
 import "../interfaces/IPoolCommitter.sol";
-import "../interfaces/IPriceChanger.sol";
 import "./LeveragedPool.sol";
 import "./PoolToken.sol";
 import "./PoolKeeper.sol";
@@ -21,7 +19,6 @@ contract PoolFactory is IPoolFactory, Ownable {
     PoolToken public pairTokenBase;
     LeveragedPool public poolBase;
     IPoolKeeper public poolKeeper;
-    IPriceChangerDeployer public priceChangerDeployer;
     IPoolCommitterDeployer public poolCommitterDeployer;
     // default max leverage of 25
     uint16 public maxLeverage = 25;
@@ -50,7 +47,6 @@ contract PoolFactory is IPoolFactory, Ownable {
     // #### Functions
     constructor(
         address _poolCommitterDeployer,
-        address _priceChangerDeployer,
         address _feeReceiver
     ) {
         // Deploy base contracts
@@ -65,7 +61,6 @@ contract PoolFactory is IPoolFactory, Ownable {
             address(0),
             address(0),
             address(0),
-            address(0),
             "BASE_POOL",
             1,
             2,
@@ -77,7 +72,6 @@ contract PoolFactory is IPoolFactory, Ownable {
         // Init bases
         poolBase.initialize(baseInitialization);
         poolCommitterDeployer = IPoolCommitterDeployer(_poolCommitterDeployer);
-        priceChangerDeployer = IPriceChangerDeployer(_priceChangerDeployer);
 
         pairTokenBase.initialize(address(this), "BASE_TOKEN", "BASE");
         feeReceiver = _feeReceiver;
@@ -86,7 +80,6 @@ contract PoolFactory is IPoolFactory, Ownable {
     function deployPool(PoolDeployment calldata deploymentParameters) external override returns (address) {
         require(address(poolKeeper) != address(0), "PoolKeeper not set");
 
-        address priceChanger = priceChangerDeployer.deploy(feeReceiver, address(this));
         address poolCommitter = poolCommitterDeployer.deploy(address(this));
         bytes32 uniquePoolId = keccak256(
             abi.encode(
@@ -126,7 +119,6 @@ contract PoolFactory is IPoolFactory, Ownable {
                 deploymentParameters.quoteToken,
                 deploymentParameters.oracleWrapper
             ),
-            priceChanger,
             poolCommitter,
             deploymentParameters.poolCode,
             deploymentParameters.frontRunningInterval,
@@ -140,9 +132,6 @@ contract PoolFactory is IPoolFactory, Ownable {
         // aprove the quote token on the pool commiter to finalise linking
         // this also stores the pool address in the commiter
         IPoolCommitter(poolCommitter).setQuoteAndPool(deploymentParameters.quoteToken, _pool);
-
-        // link in the pool to the priceChanger
-        IPriceChanger(priceChanger).setPool(_pool);
 
         // finalise pool setup
         pool.initialize(initialization);

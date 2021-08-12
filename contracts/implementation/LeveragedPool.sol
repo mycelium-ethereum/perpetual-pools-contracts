@@ -2,7 +2,6 @@
 pragma solidity 0.8.6;
 
 import "../interfaces/ILeveragedPool.sol";
-import "../interfaces/IPriceChanger.sol";
 import "../interfaces/IPoolCommitter.sol";
 import "./PoolToken.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
@@ -33,7 +32,6 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     address public keeper;
     address public feeAddress;
     address public override quoteToken;
-    address public override priceChanger;
     address public override poolCommitter;
     uint40 public override lastPriceTimestamp;
 
@@ -67,33 +65,46 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         poolCode = initialization._poolCode;
         tokens[0] = initialization._longToken;
         tokens[1] = initialization._shortToken;
-        priceChanger = initialization._priceChanger;
         poolCommitter = initialization._poolCommitter;
         emit PoolInitialized(tokens[0], tokens[1], initialization._quoteToken, initialization._poolCode);
     }
 
     /**
-     * @notice Execute a price change in the PriceChanger contract, then execute all commits in PoolCommitter
+     * @notice Execute a price change, then execute all commits in PoolCommitter
      */
     function poolUpkeep(int256 _oldPrice, int256 _newPrice) external override onlyKeeper {
-        IPriceChanger _priceChanger = IPriceChanger(priceChanger);
-        _priceChanger.executePriceChange(_oldPrice, _newPrice);
+        require(intervalPassed(), "Update interval hasn't passed");
         lastPriceTimestamp = uint40(block.timestamp);
+        executePriceChange(_oldPrice, _newPrice);
         IPoolCommitter(poolCommitter).executeAllCommitments();
+    }
+
+    function executePriceChange(int256 _oldPrice, int256 _newPrice) internal {
+        PoolSwapLibrary.PriceChangeData memory priceChangeData = PoolSwapLibrary.PriceChangeData(
+            _oldPrice, _newPrice, longBalance, shortBalance, leverageAmount, fee
+        );
+        (uint112 newLongBalance, uint112 newShortBalance, uint112 totalFeeAmount) = PoolSwapLibrary.calculatePriceChange(priceChangeData);
+
+        // Update pool balances
+        longBalance = newLongBalance;
+        shortBalance = newShortBalance;
+        // Pay the fee
+        IERC20(quoteToken).transferFrom(address(this), feeAddress, totalFeeAmount);
+        emit PriceChange(_oldPrice, _newPrice);
     }
 
     function quoteTokenTransferFrom(
         address from,
         address to,
         uint256 amount
-    ) external override onlyPriceChangerOrCommitter returns (bool) {
+    ) external override onlyPoolCommitter returns (bool) {
         return IERC20(quoteToken).transferFrom(from, to, amount);
     }
 
     function setNewPoolBalances(uint112 _longBalance, uint112 _shortBalance)
         external
         override
-        onlyPriceChangerOrCommitter
+        onlyPoolCommitter
     {
         longBalance = _longBalance;
         shortBalance = _shortBalance;
@@ -105,7 +116,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         uint112 balance,
         uint112 inverseShadowbalance,
         address tokenOwner
-    ) external override onlyPriceChangerOrCommitter {
+    ) external override onlyPoolCommitter {
         require(token == 0 || token == 1, "Pool: token out of range");
         address _token = tokens[token];
         require(
@@ -126,7 +137,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         uint256 token,
         uint256 amount,
         address burner
-    ) external override onlyPriceChangerOrCommitter {
+    ) external override onlyPoolCommitter {
         require(token == 0 || token == 1, "Pool: token out of range");
         require(PoolToken(tokens[token]).burn(amount, burner), "Burn failed");
     }
@@ -168,10 +179,10 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         _;
     }
 
-    modifier onlyPriceChangerOrCommitter() {
+    modifier onlyPoolCommitter() {
         require(
-            msg.sender == priceChanger || msg.sender == poolCommitter,
-            "msg.sender not priceChanger or poolCommitter"
+            msg.sender == poolCommitter,
+            "msg.sender not poolCommitter"
         );
         _;
     }

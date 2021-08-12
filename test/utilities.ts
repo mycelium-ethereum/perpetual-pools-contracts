@@ -18,11 +18,8 @@ import {
     PoolKeeper__factory,
     PoolFactory,
     PoolCommitter,
-    PriceChanger,
     PoolCommitter__factory,
-    PriceChanger__factory,
     PoolCommitterDeployer__factory,
-    PriceChangerDeployer__factory,
 } from "../typechain"
 
 import { abi as ERC20Abi } from "../artifacts/@openzeppelin/contracts/token/ERC20/ERC20.sol/ERC20.json"
@@ -88,7 +85,6 @@ export const deployPoolAndTokenContracts = async (
     longToken: ERC20
     library: PoolSwapLibrary
     poolCommiter: PoolCommitter
-    priceChanger: PriceChanger
     poolKeeper: PoolKeeper
 }> => {
     const signers = await ethers.getSigners()
@@ -157,21 +153,9 @@ export const deployPoolAndTokenContracts = async (
     let poolCommiterDeployer = await PoolCommiterDeployerFactory.deploy()
     poolCommiterDeployer = await poolCommiterDeployer.deployed()
 
-    const PriceChangerDeployerFactory = (await ethers.getContractFactory(
-        "PriceChangerDeployer",
-        {
-            signer: signers[0],
-            libraries: { PoolSwapLibrary: library.address },
-        }
-    )) as PriceChangerDeployer__factory
-
-    let priceChangerDeployer = await PriceChangerDeployerFactory.deploy()
-    priceChangerDeployer = await priceChangerDeployer.deployed()
-
     const factory = await (
         await PoolFactory.deploy(
             poolCommiterDeployer.address,
-            priceChangerDeployer.address,
             generateRandomAddress()
         )
     ).deployed()
@@ -208,9 +192,7 @@ export const deployPoolAndTokenContracts = async (
     const shortToken = await ethers.getContractAt(ERC20Abi, shortTokenAddr)
 
     let commiter = await pool.poolCommitter()
-    let changer = await pool.priceChanger()
     const poolCommiter = await ethers.getContractAt("PoolCommitter", commiter)
-    const priceChanger = await ethers.getContractAt("PriceChanger", changer)
 
     return {
         signers,
@@ -224,8 +206,6 @@ export const deployPoolAndTokenContracts = async (
         longToken,
         //@ts-ignore
         poolCommiter,
-        //@ts-ignore
-        priceChanger,
         //@ts-ignore
         poolKeeper,
     }

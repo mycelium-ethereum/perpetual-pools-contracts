@@ -123,13 +123,8 @@ contract PoolKeeper is IPoolKeeper, Ownable {
 
         emit NewRound(lastExecutionPrice[_pool], latestPrice, pool.updateInterval(), _pool);
 
-        _executePriceChange(
-            uint32(block.timestamp),
-            pool.updateInterval(),
-            _pool,
-            lastExecutionPrice[_pool],
-            executionPrice[_pool]
-        );
+        lastExecutionTime[_pool] = uint40(block.timestamp);
+        pool.poolUpkeep(lastExecutionPrice[_pool], executionPrice[_pool]);
 
         uint256 gasSpent = startGas - gasleft();
         uint256 _gasPrice = 1; /* TODO: poll gas price oracle (or BASEFEE) */
@@ -161,36 +156,6 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     function performUpkeepMultiplePools(address[] calldata poolCodes) external override {
         for (uint256 i = 0; i < poolCodes.length; i++) {
             performUpkeepSinglePool(poolCodes[i]);
-        }
-    }
-
-    /**
-     * @notice Executes a price change
-     * @param roundStart The start time of the round
-     * @param updateInterval The update interval of the pools
-     * @param pool The pool to update
-     * @param oldPrice The previously executed price
-     * @param latestPrice The price for the current interval
-     */
-    function _executePriceChange(
-        uint256 roundStart,
-        uint32 updateInterval,
-        address pool,
-        int256 oldPrice,
-        int256 latestPrice
-    ) internal {
-        if (oldPrice > 0) {
-            // TODO why is this check here?
-            if (lastExecutionTime[pool] < roundStart) {
-                // Make sure this round is after last execution time
-                lastExecutionTime[pool] = uint40(block.timestamp);
-                emit ExecutePriceChange(oldPrice, latestPrice, updateInterval, pool);
-                // This allows us to still batch multiple calls to executePriceChange, even if some are invalid
-                // Without reverting the entire transaction
-                try ILeveragedPool(pool).poolUpkeep(oldPrice, latestPrice) {} catch Error(string memory reason) {
-                    emit PoolUpdateError(pool, reason);
-                }
-            }
         }
     }
 
