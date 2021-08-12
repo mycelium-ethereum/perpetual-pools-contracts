@@ -27,7 +27,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
     uint128 public latestCommitUnexecuted;
     uint128 public commitIDCounter;
     mapping(uint128 => Commit) public commits;
-    mapping(CommitType => uint112) public shadowPools;
+    mapping(uint256 => uint112) public shadowPools;
 
     address public factory;
 
@@ -47,7 +47,8 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             owner: msg.sender,
             created: uint40(block.timestamp)
         });
-        shadowPools[commitType] = shadowPools[commitType] + amount;
+        uint256 _commitType = commitTypeToUint(commitType);
+        shadowPools[_commitType] = shadowPools[_commitType] + amount;
 
         if (earliestCommitUnexecuted == NO_COMMITS_REMAINING) {
             earliestCommitUnexecuted = commitIDCounter;
@@ -79,7 +80,8 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
 
         // reduce pool commitment amount
-        shadowPools[_commit.commitType] = shadowPools[_commit.commitType] - _commit.amount;
+        uint256 _commitType = commitTypeToUint(_commit.commitType);
+        shadowPools[_commitType] = shadowPools[_commitType] - _commit.amount;
         emit RemoveCommit(_commitID, _commit.amount, _commit.commitType);
 
         delete commits[_commitID];
@@ -159,7 +161,8 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         require(lastPriceTimestamp - _commit.created > pool.frontRunningInterval(), "Commit too new");
         uint112 shortBalance = pool.shortBalance();
         uint112 longBalance = pool.longBalance();
-        shadowPools[_commit.commitType] = shadowPools[_commit.commitType] - _commit.amount;
+        uint256 _commitType = commitTypeToUint(_commit.commitType);
+        shadowPools[_commitType] = shadowPools[_commitType] - _commit.amount;
         if (_commit.commitType == CommitType.LongMint) {
             uint112 mintAmount = PoolSwapLibrary.mintProportion(
                 tokens[0],
@@ -182,7 +185,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
                     longBalance,
                     uint112(
                         uint112(PoolToken(pool.poolTokens()[0]).totalSupply()) +
-                            shadowPools[CommitType.LongBurn] +
+                            shadowPools[commitTypeToUint(CommitType.LongBurn)] +
                             _commit.amount
                     )
                 ),
@@ -204,7 +207,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
                 PoolSwapLibrary.getRatio(
                     shortBalance,
                     uint112(PoolToken(pool.poolTokens()[1]).totalSupply()) +
-                        shadowPools[CommitType.ShortBurn] +
+                        shadowPools[commitTypeToUint(CommitType.ShortBurn)] +
                         _commit.amount
                 ),
                 _commit.amount
@@ -227,6 +230,20 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         leveragedPool = _leveragedPool;
         IERC20 _token = IERC20(quoteToken);
         _token.approve(leveragedPool, _token.totalSupply());
+    }
+
+    function commitTypeToUint(CommitType commit) public pure returns (uint256) {
+        if (commit == CommitType.ShortMint) {
+            return 0;
+        } else if (commit == CommitType.ShortBurn) {
+            return 1;
+        } else if (commit == CommitType.LongMint) {
+            return 2;
+        } else if (commit == CommitType.LongBurn) {
+            return 3;
+        } else {
+            return 0;
+        }
     }
 
     modifier onlyFactory() {
