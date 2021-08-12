@@ -64,7 +64,7 @@ describe("PoolCommitter.uncommit", () => {
         longToken = elements.longToken
         shortToken = elements.shortToken
         library = elements.library
-        await token.approve(pool.address, amountCommitted);
+        await token.approve(pool.address, amountCommitted)
         receipt = await (
             await committer.commit(commitType, amountCommitted)
         ).wait()
@@ -216,10 +216,8 @@ describe("PoolCommitter.uncommit", () => {
                 await committer.commit([2], amountCommitted)
             ).wait()
             await timeout(2000)
-            await pool.poolUpkeep(1, 2);
-            await committer.executeCommitments([
-                getEventArgs(pairToken, "CreateCommit")?.commitID,
-            ])
+            await pool.poolUpkeep(1, 2)
+            await committer.executeAllCommitments()
             const receipt = await (
                 await committer.commit([3], amountCommitted)
             ).wait()
@@ -243,9 +241,7 @@ describe("PoolCommitter.uncommit", () => {
             ).wait()
             await timeout(2000)
             await pool.poolUpkeep(1, 2)
-            await committer.executeCommitments([
-                getEventArgs(pairToken, "CreateCommit")?.commitID,
-            ])
+            await committer.executeAllCommitments()
             const receipt = await (
                 await committer.commit([3], amountCommitted)
             ).wait()
@@ -270,9 +266,7 @@ describe("PoolCommitter.uncommit", () => {
             ).wait()
             await timeout(2000)
             await pool.poolUpkeep(1, 2)
-            await committer.executeCommitments([
-                getEventArgs(pairToken, "CreateCommit")?.commitID,
-            ])
+            await committer.executeAllCommitments()
             const receipt = await (
                 await committer.commit([3], amountCommitted)
             ).wait()
@@ -293,9 +287,7 @@ describe("PoolCommitter.uncommit", () => {
             ).wait()
             await timeout(2000)
             await pool.poolUpkeep(1, 2)
-            await committer.executeCommitments([
-                getEventArgs(pairToken, "CreateCommit")?.commitID,
-            ])
+            await committer.executeAllCommitments()
             const receipt = await (
                 await committer.commit([1], amountCommitted)
             ).wait()
@@ -318,9 +310,7 @@ describe("PoolCommitter.uncommit", () => {
             ).wait()
             await timeout(2000)
             await pool.poolUpkeep(1, 2)
-            await committer.executeCommitments([
-                getEventArgs(pairToken, "CreateCommit")?.commitID,
-            ])
+            await committer.executeAllCommitments()
             const receipt = await (
                 await committer.commit([1], amountCommitted)
             ).wait()
@@ -344,9 +334,7 @@ describe("PoolCommitter.uncommit", () => {
             ).wait()
             await timeout(2000)
             await pool.poolUpkeep(1, 2)
-            await committer.executeCommitments([
-                getEventArgs(pairToken, "CreateCommit")?.commitID,
-            ])
+            await committer.executeAllCommitments()
             const receipt = await (
                 await committer.commit([1], amountCommitted)
             ).wait()
