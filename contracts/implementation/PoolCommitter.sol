@@ -1,16 +1,11 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.7.6;
-pragma abicoder v2;
+pragma solidity 0.8.6;
 
 import "../interfaces/IPoolCommitter.sol";
 import "../interfaces/ILeveragedPool.sol";
 import "./PoolToken.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-
-import "../vendors/SafeMath_40.sol";
-import "../vendors/SafeMath_112.sol";
-import "../vendors/SafeMath_128.sol";
 
 import "./PoolSwapLibrary.sol";
 import "../interfaces/IOracleWrapper.sol";
@@ -19,10 +14,6 @@ import "../interfaces/IOracleWrapper.sol";
 @title The pool controller contract
 */
 contract PoolCommitter is IPoolCommitter, Ownable {
-    using SafeMath_40 for uint40;
-    using SafeMath_112 for uint112;
-    using SafeMath_128 for uint128;
-
     // #### Globals
 
     // Index 0 is the LONG token, index 1 is the SHORT token
@@ -47,7 +38,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
 
     function commit(CommitType commitType, uint112 amount) external override {
         require(amount > 0, "Amount must not be zero");
-        commitIDCounter = commitIDCounter.add(1);
+        commitIDCounter = commitIDCounter + 1;
 
         // create commitment
         commits[commitIDCounter] = Commit({
@@ -56,7 +47,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             owner: msg.sender,
             created: uint40(block.timestamp)
         });
-        shadowPools[commitType] = shadowPools[commitType].add(amount);
+        shadowPools[commitType] = shadowPools[commitType] + amount;
 
         if (earliestCommitUnexecuted == NO_COMMITS_REMAINING) {
             earliestCommitUnexecuted = commitIDCounter;
@@ -86,7 +77,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         require(msg.sender == _commit.owner, "Unauthorized");
 
         // reduce pool commitment amount
-        shadowPools[_commit.commitType] = shadowPools[_commit.commitType].sub(_commit.amount);
+        shadowPools[_commit.commitType] = shadowPools[_commit.commitType] - _commit.amount;
         emit RemoveCommit(_commitID, _commit.amount, _commit.commitType);
 
         delete commits[_commitID];
@@ -139,7 +130,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
                 nextEarliestCommitUnexecuted += 1; // It makes sense to set the next unexecuted to the next number
                 continue;
             }
-            if (lastPriceTimestamp.sub(_commit.created) <= frontRunningInterval) {
+            if (lastPriceTimestamp - _commit.created <= frontRunningInterval) {
                 // This commit is the first that was too late.
                 break;
             }
@@ -163,10 +154,10 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         require(_commit.owner != address(0), "Invalid commit");
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
         uint40 lastPriceTimestamp = pool.lastPriceTimestamp();
-        require(lastPriceTimestamp.sub(_commit.created) > pool.frontRunningInterval(), "Commit too new");
+        require(lastPriceTimestamp - _commit.created > pool.frontRunningInterval(), "Commit too new");
         uint112 shortBalance = pool.shortBalance();
         uint112 longBalance = pool.longBalance();
-        shadowPools[_commit.commitType] = shadowPools[_commit.commitType].sub(_commit.amount);
+        shadowPools[_commit.commitType] = shadowPools[_commit.commitType] - _commit.amount;
         if (_commit.commitType == CommitType.LongMint) {
             pool.mintTokens(
                 0, // long token
@@ -177,22 +168,22 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             );
 
             // update long and short balances
-            pool.setNewPoolBalances(longBalance.add(_commit.amount), shortBalance);
+            pool.setNewPoolBalances(longBalance + _commit.amount, shortBalance);
         } else if (_commit.commitType == CommitType.LongBurn) {
             uint112 amountOut = PoolSwapLibrary.getAmountOut(
                 PoolSwapLibrary.getRatio(
                     longBalance,
                     uint112(
-                        uint112(PoolToken(pool.poolTokens()[0]).totalSupply())
-                            .add(shadowPools[CommitType.LongBurn])
-                            .add(_commit.amount)
+                        uint112(PoolToken(pool.poolTokens()[0]).totalSupply()) +
+                            shadowPools[CommitType.LongBurn] +
+                            _commit.amount
                     )
                 ),
                 _commit.amount
             );
 
             // update long and short balances
-            pool.setNewPoolBalances(longBalance.sub(amountOut), shortBalance);
+            pool.setNewPoolBalances(longBalance - amountOut, shortBalance);
             require(pool.quoteTokenTransferFrom(address(this), _commit.owner, amountOut), "Transfer failed");
         } else if (_commit.commitType == CommitType.ShortMint) {
             pool.mintTokens(
@@ -202,20 +193,20 @@ contract PoolCommitter is IPoolCommitter, Ownable {
                 shadowPools[CommitType.ShortBurn],
                 _commit.owner
             );
-            pool.setNewPoolBalances(longBalance, shortBalance.add(_commit.amount));
+            pool.setNewPoolBalances(longBalance, shortBalance + _commit.amount);
         } else if (_commit.commitType == CommitType.ShortBurn) {
             uint112 amountOut = PoolSwapLibrary.getAmountOut(
                 PoolSwapLibrary.getRatio(
                     shortBalance,
-                    uint112(PoolToken(pool.poolTokens()[1]).totalSupply()).add(shadowPools[CommitType.ShortBurn]).add(
+                    uint112(PoolToken(pool.poolTokens()[1]).totalSupply()) +
+                        shadowPools[CommitType.ShortBurn] +
                         _commit.amount
-                    )
                 ),
                 _commit.amount
             );
 
             // update long and short balances
-            pool.setNewPoolBalances(longBalance, shortBalance.sub(amountOut));
+            pool.setNewPoolBalances(longBalance, shortBalance - amountOut);
             require(pool.quoteTokenTransferFrom(address(this), _commit.owner, amountOut), "Transfer failed");
         }
     }

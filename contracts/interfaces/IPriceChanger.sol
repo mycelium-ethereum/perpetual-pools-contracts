@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.7.6;
-pragma abicoder v2;
+pragma solidity 0.8.6;
 
 /*
 @title The interface for the contract that handles pool price changes

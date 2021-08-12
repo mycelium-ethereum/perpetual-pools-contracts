@@ -1,17 +1,12 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.7.6;
-pragma abicoder v2;
+pragma solidity 0.8.6;
 
 import "../interfaces/ILeveragedPool.sol";
 import "../interfaces/IPriceChanger.sol";
 import "./PoolToken.sol";
-import "@openzeppelin/contracts/proxy/Initializable.sol";
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-
-import "../vendors/SafeMath_40.sol";
-import "../vendors/SafeMath_112.sol";
-import "../vendors/SafeMath_128.sol";
 
 import "./PoolSwapLibrary.sol";
 import "../interfaces/IOracleWrapper.sol";
@@ -20,10 +15,6 @@ import "../interfaces/IOracleWrapper.sol";
 @title Contract for executing price change logic
 */
 contract PriceChanger is IPriceChanger, Ownable {
-    using SafeMath_40 for uint40;
-    using SafeMath_112 for uint112;
-    using SafeMath_128 for uint128;
-
     // #### Globals
 
     bytes16 public fee;
@@ -62,12 +53,12 @@ contract PriceChanger is IPriceChanger, Ownable {
         );
         uint112 totalFeeAmount = 0;
         if (shortBalance >= shortFeeAmount) {
-            shortBalance = shortBalance.sub(shortFeeAmount);
-            totalFeeAmount = totalFeeAmount.add(shortFeeAmount);
+            shortBalance = shortBalance - shortFeeAmount;
+            totalFeeAmount = totalFeeAmount + shortFeeAmount;
         }
         if (longBalance >= longFeeAmount) {
-            longBalance = longBalance.sub(longFeeAmount);
-            totalFeeAmount = totalFeeAmount.add(longFeeAmount);
+            longBalance = longBalance - longFeeAmount;
+            totalFeeAmount = totalFeeAmount + longFeeAmount;
         }
 
         // Use the ratio to determine if the price increased or decreased and therefore which direction
@@ -81,14 +72,14 @@ contract PriceChanger is IPriceChanger, Ownable {
         if (direction >= 0 && shortBalance > 0) {
             // Move funds from short to long pair
             uint112 lossAmount = uint112(PoolSwapLibrary.getLossAmount(lossMultiplier, shortBalance));
-            shortBalance = shortBalance.sub(lossAmount);
-            longBalance = longBalance.add(lossAmount);
+            shortBalance = shortBalance - lossAmount;
+            longBalance = longBalance + lossAmount;
             emit PriceChange(oldPrice, newPrice, lossAmount);
         } else if (direction < 0 && longBalance > 0) {
             // Move funds from long to short pair
             uint112 lossAmount = uint112(PoolSwapLibrary.getLossAmount(lossMultiplier, longBalance));
-            shortBalance = shortBalance.add(lossAmount);
-            longBalance = longBalance.sub(lossAmount);
+            shortBalance = shortBalance + lossAmount;
+            longBalance = longBalance - lossAmount;
             emit PriceChange(oldPrice, newPrice, lossAmount);
         }
         require(
