@@ -150,7 +150,6 @@ export const deployPoolAndTokenContracts = async (
         "PoolCommitterDeployer",
         {
             signer: signers[0],
-            libraries: { PoolSwapLibrary: library.address },
         }
     )) as PoolCommitterDeployer__factory
 
