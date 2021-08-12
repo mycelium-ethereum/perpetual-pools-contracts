@@ -133,11 +133,12 @@ library PoolSwapLibrary {
         uint112 amountIn,
         uint112 balance,
         uint112 inverseShadowbalance
-    ) external pure returns(uint112) {
-        return getAmountOut(
-            // ratio = (totalSupply + inverseShadowBalance) / balance
-            getRatio(uint112(tokenSupply) + inverseShadowbalance, balance),
-            amountIn
-        );
+    ) external pure returns (uint112) {
+        return
+            getAmountOut(
+                // ratio = (totalSupply + inverseShadowBalance) / balance
+                getRatio(uint112(tokenSupply) + inverseShadowbalance, balance),
+                amountIn
+            );
     }
 }
