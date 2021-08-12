@@ -167,9 +167,9 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             uint112 mintAmount = PoolSwapLibrary.mintProportion(
                 tokens[0],
                 _commit.amount,
-                pool.longBalance(),
-                pool.shortBalance(),
-                IERC20(tokens[0]).totalSupply()
+                shadowPools[0],
+                shadowPools[1],
+                IERC20(pool.poolTokens()[0]).totalSupply()
             );
             pool.mintTokens(
                 0, // long token
