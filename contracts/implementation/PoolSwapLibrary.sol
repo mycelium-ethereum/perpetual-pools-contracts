@@ -2,8 +2,11 @@
 pragma solidity 0.7.6;
 pragma abicoder v2;
 import "abdk-libraries-solidity/ABDKMathQuad.sol";
+import "./PoolToken.sol";
 
 library PoolSwapLibrary {
+    using SafeMath for uint112;
+
     bytes16 public constant one = 0x3fff0000000000000000000000000000;
     bytes16 public constant zero = 0x00000000000000000000000000000000;
 
@@ -14,7 +17,7 @@ library PoolSwapLibrary {
     @param _denominator The "per part" side of the equation. If this is zero, the ratio is zero
     @return the ratio, as an ABDKMathQuad number (IEEE 754 quadruple precision floating point)
    */
-    function getRatio(uint112 _numerator, uint112 _denominator) external pure returns (bytes16) {
+    function getRatio(uint112 _numerator, uint112 _denominator) internal pure returns (bytes16) {
         // Catch the divide by zero error.
         if (_denominator == 0) {
             return 0;
@@ -29,7 +32,7 @@ library PoolSwapLibrary {
     @param amountIn The amount of tokens the user is providing. This can be quote tokens or pool tokens.
     @return The amount of tokens to mint/remit to the user.
    */
-    function getAmountOut(bytes16 ratio, uint112 amountIn) external pure returns (uint112) {
+    function getAmountOut(bytes16 ratio, uint112 amountIn) internal pure returns (uint112) {
         require(amountIn > 0, "Invalid amount");
         if (ABDKMathQuad.cmp(ratio, 0) == 0 || ABDKMathQuad.cmp(ratio, bytes16("0x1")) == 0) {
             return amountIn;
@@ -126,5 +129,28 @@ library PoolSwapLibrary {
             ABDKMathQuad.toUInt(
                 ABDKMathQuad.mul(ABDKMathQuad.sub(one, lossMultiplier), ABDKMathQuad.fromUInt(balance))
             );
+    }
+
+    /**
+     * @notice Amount of tokens to mint in order to maintain existing pool ratio
+     * @param _token Address of specified pool token
+     * @param _amountIn Quantity of settlement tokens being exchanged
+     * @param _balance Quantity of pool tokens in specified side
+     * @param _oppositeBalance Quantity of pool tokens in opposite side
+     * @param _totalSupply Total supply of specified pool tokens
+     * @return Quantity of pool tokens to mint in order to preserve existing ratio
+     * @dev Suitable for passing in to `ILeveragedPool.mintTokens`
+     */
+    function mintProportion(
+        address _token,
+        uint112 _amountIn,
+        uint112 _balance,
+        uint112 _oppositeBalance,
+        uint256 _totalSupply
+    ) external pure returns (uint112) {
+        PoolSwapLibrary.getAmountOut(
+            PoolSwapLibrary.getRatio(uint112(uint112(_totalSupply).add(_oppositeBalance)), _balance),
+            _amountIn
+        );
     }
 }
