@@ -56,6 +56,11 @@ describe("PoolKeeper - createPool", () => {
         )
         await oracleWrapper.deployed()
 
+        const keeperOracle = await oracleWrapperFactory.deploy(
+            chainlinkOracle.address
+        )
+        await keeperOracle.deployed()
+
         const libraryFactory = (await ethers.getContractFactory(
             "PoolSwapLibrary",
             signers[0]
@@ -98,7 +103,8 @@ describe("PoolKeeper - createPool", () => {
         factory = await (
             await PoolFactory.deploy(
                 poolCommiterDeployer.address,
-                priceChangerDeployer.address
+                priceChangerDeployer.address,
+                generateRandomAddress()
             )
         ).deployed()
         poolKeeper = await poolKeeperFactory.deploy(factory.address)
@@ -112,11 +118,11 @@ describe("PoolKeeper - createPool", () => {
             poolCode: POOL_CODE,
             frontRunningInterval: 3,
             updateInterval: 5,
-            fee: "0x00000000000000000000000000000000", // fee as 0
             leverageAmount: 5,
             feeAddress: generateRandomAddress(),
             quoteToken: token.address,
             oracleWrapper: oracleWrapper.address,
+            keeperOracle: keeperOracle.address,
         }
     })
 

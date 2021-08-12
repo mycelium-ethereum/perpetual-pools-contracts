@@ -179,9 +179,6 @@ describe("LeveragedPool - commit", () => {
             await timeout(2000)
             await pool.setKeeper(signers[0].address)
             await pool.poolUpkeep(1, 2)
-            await poolCommiter.executeCommitments([
-                getEventArgs(receipt, "CreateCommit")?.commitID,
-            ])
 
             expect(await poolCommiter.shadowPools([1])).to.eq(0)
             await poolCommiter.commit([1], amountCommitted)
@@ -204,9 +201,6 @@ describe("LeveragedPool - commit", () => {
             await timeout(2000)
             await pool.setKeeper(signers[0].address)
             await pool.poolUpkeep(1, 2)
-            await poolCommiter.executeCommitments([
-                getEventArgs(receipt, "CreateCommit")?.commitID,
-            ])
 
             expect(await poolCommiter.shadowPools([2])).to.eq(0)
             await poolCommiter.commit([3], amountCommitted)
@@ -247,9 +241,6 @@ describe("LeveragedPool - commit", () => {
             await timeout(2000)
             await pool.setKeeper(signers[0].address)
             await pool.poolUpkeep(1, 2)
-            await poolCommiter.executeCommitments([
-                getEventArgs(receipt, "CreateCommit")?.commitID,
-            ])
 
             expect(
                 (await token.balanceOf(poolCommiter.address)).toHexString()
@@ -267,9 +258,6 @@ describe("LeveragedPool - commit", () => {
             await timeout(2000)
             await pool.setKeeper(signers[0].address)
             await pool.poolUpkeep(1, 2)
-            await poolCommiter.executeCommitments([
-                getEventArgs(receipt, "CreateCommit")?.commitID,
-            ])
             expect(
                 (await token.balanceOf(poolCommiter.address)).toHexString()
             ).to.eq(amountCommitted.toHexString())
@@ -286,9 +274,6 @@ describe("LeveragedPool - commit", () => {
             await timeout(2000)
             await pool.setKeeper(signers[0].address)
             await pool.poolUpkeep(1, 2)
-            await poolCommiter.executeCommitments([
-                getEventArgs(receipt, "CreateCommit")?.commitID,
-            ])
 
             expect(
                 (await shortToken.balanceOf(signers[0].address)).toHexString()
@@ -304,9 +289,6 @@ describe("LeveragedPool - commit", () => {
             await timeout(2000)
             await pool.setKeeper(signers[0].address)
             await pool.poolUpkeep(1, 2)
-            await poolCommiter.executeCommitments([
-                getEventArgs(receipt, "CreateCommit")?.commitID,
-            ])
 
             expect(
                 (await longToken.balanceOf(signers[0].address)).toHexString()

@@ -1,18 +1,10 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.7.6;
-pragma abicoder v2;
+pragma solidity 0.8.6;
 
 /*
 @title The manager contract interface for multiple markets and the pools in them
 */
 interface IPoolKeeper {
-    // #### Structs
-    struct Upkeep {
-        int256 executionPrice; // The price for the current execution
-        int256 lastExecutionPrice; // The last price executed on.
-        uint40 roundStart;
-    }
-
     // #### Events
     /**
      * @notice Creates a notification when a pool is created
@@ -23,13 +15,6 @@ interface IPoolKeeper {
     event PoolAdded(address indexed poolAddress, int256 indexed firstPrice, address poolCode);
 
     /**
-     * @notice Creates a notification when a market is created
-     * @param marketCode The market identifier for the new market
-     * @param oracle The oracle that will be used for price updates
-     */
-    event CreateMarket(string marketCode, address oracle);
-
-    /**
      * @notice Creates notification of a new round for a market/update interval pair
      * @param oldPrice The average price for the penultimate round
      * @param newPrice The average price for the round that's just ended
@@ -37,20 +22,6 @@ interface IPoolKeeper {
      * @param poolCode The code for the pool being updated
      */
     event NewRound(int256 indexed oldPrice, int256 indexed newPrice, uint32 indexed updateInterval, address poolCode);
-
-    /**
-     * @notice Creates a notification of a price sample being taken
-     * @param cumulativePrice The sum of all samples taken for this round
-     * @param count The number of samples inclusive
-     * @param updateInterval The length of the round
-     * @param market The market that's being updated
-     */
-    event PriceSample(
-        int256 indexed cumulativePrice,
-        int256 indexed count,
-        uint32 indexed updateInterval,
-        string market
-    );
 
     /**
      * @notice Creates notification of a price execution for a set of pools

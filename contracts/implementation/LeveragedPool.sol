@@ -1,17 +1,12 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.7.6;
-pragma abicoder v2;
+pragma solidity 0.8.6;
 
 import "../interfaces/ILeveragedPool.sol";
 import "../interfaces/IPriceChanger.sol";
 import "../interfaces/IPoolCommitter.sol";
 import "./PoolToken.sol";
-import "@openzeppelin/contracts/proxy/Initializable.sol";
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
-import "../vendors/SafeMath_40.sol";
-import "../vendors/SafeMath_112.sol";
-import "../vendors/SafeMath_128.sol";
 
 import "./PoolSwapLibrary.sol";
 import "../interfaces/IOracleWrapper.sol";
@@ -20,10 +15,6 @@ import "../interfaces/IOracleWrapper.sol";
 @title The pool controller contract
 */
 contract LeveragedPool is ILeveragedPool, Initializable {
-    using SafeMath_40 for uint40;
-    using SafeMath_112 for uint112;
-    using SafeMath_128 for uint128;
-
     // #### Globals
 
     // Each balance is the amount of quote tokens in the pair
@@ -33,21 +24,22 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     uint32 public override updateInterval;
 
     bytes16 public fee;
-    bytes16 public leverageAmount;
+    bytes16 public override leverageAmount;
 
     // Index 0 is the LONG token, index 1 is the SHORT token
     address[2] public tokens;
 
-    address public owner;
+    address public governance;
     address public keeper;
     address public feeAddress;
-    address public quoteToken;
+    address public override quoteToken;
     address public override priceChanger;
     address public override poolCommitter;
     uint40 public override lastPriceTimestamp;
 
     string public poolCode;
     address public override oracleWrapper;
+    address public override keeperOracle;
 
     // #### Functions
 
@@ -55,12 +47,16 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         require(initialization._feeAddress != address(0), "Fee address cannot be 0 address");
         require(initialization._quoteToken != address(0), "Quote token cannot be 0 address");
         require(initialization._oracleWrapper != address(0), "Oracle wrapper cannot be 0 address");
+        require(initialization._keeperOracle != address(0), "Keeper oracle cannot be 0 address");
         require(initialization._frontRunningInterval < initialization._updateInterval, "frontRunning > updateInterval");
-        transferOwnershipInitializer(initialization._owner);
+
+        // set the owner of the pool. This is governance when deployed from the factory
+        governance = initialization._owner;
 
         // Setup variables
         keeper = initialization._keeper;
         oracleWrapper = initialization._oracleWrapper;
+        keeperOracle = initialization._keeperOracle;
         quoteToken = initialization._quoteToken;
         frontRunningInterval = initialization._frontRunningInterval;
         updateInterval = initialization._updateInterval;
@@ -76,12 +72,14 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         emit PoolInitialized(tokens[0], tokens[1], initialization._quoteToken, initialization._poolCode);
     }
 
+    /**
+     * @notice Execute a price change in the PriceChanger contract, then execute all commits in PoolCommitter
+     */
     function poolUpkeep(int256 _oldPrice, int256 _newPrice) external override onlyKeeper {
         IPriceChanger _priceChanger = IPriceChanger(priceChanger);
         _priceChanger.executePriceChange(_oldPrice, _newPrice);
         lastPriceTimestamp = uint40(block.timestamp);
-        // TODO execute all commitments on upkeep is a separate PR.
-        // IPoolCommitter(poolCommitter).executeAllCommits();
+        IPoolCommitter(poolCommitter).executeAllCommitments();
     }
 
     function quoteTokenTransferFrom(
@@ -115,10 +113,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
                 // amount out = ratio * amount in
                 PoolSwapLibrary.getAmountOut(
                     // ratio = (totalSupply + inverseShadowBalance) / balance
-                    PoolSwapLibrary.getRatio(
-                        uint112(PoolToken(_token).totalSupply()).add(inverseShadowbalance),
-                        balance
-                    ),
+                    PoolSwapLibrary.getRatio(uint112(PoolToken(_token).totalSupply()) + inverseShadowbalance, balance),
                     amountIn
                 ),
                 tokenOwner
@@ -140,19 +135,20 @@ contract LeveragedPool is ILeveragedPool, Initializable {
      * @return true if the price was last updated more than updateInterval seconds ago
      */
     function intervalPassed() public view override returns (bool) {
-        return block.timestamp >= lastPriceTimestamp.add(updateInterval);
+        return block.timestamp >= lastPriceTimestamp + updateInterval;
     }
 
-    function setKeeper(address _keeper) external override onlyOwner {
+    function updateFeeAddress(address account) external override onlyGov {
+        require(account != address(0), "Invalid address");
+        feeAddress = account;
+    }
+
+    function setKeeper(address _keeper) external override onlyGov {
         keeper = _keeper;
     }
 
-    function transferOwnershipInitializer(address _owner) internal initializer {
-        owner = _owner;
-    }
-
-    function transferOwnership(address _owner) external override onlyOwner {
-        owner = _owner;
+    function transferGovernance(address _governance) external override onlyGov {
+        governance = _governance;
     }
 
     /**
@@ -180,8 +176,8 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         _;
     }
 
-    modifier onlyOwner() {
-        require(msg.sender == owner, "msg.sender not owner");
+    modifier onlyGov() {
+        require(msg.sender == governance, "msg.sender not governance");
         _;
     }
 }

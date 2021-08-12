@@ -1,26 +1,24 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.7.6;
-pragma abicoder v2;
+pragma solidity 0.8.6;
 
 import "../interfaces/IPoolKeeper.sol";
 import "../interfaces/IOracleWrapper.sol";
 import "../interfaces/IPoolFactory.sol";
 import "../interfaces/ILeveragedPool.sol";
-import "../vendors/SafeMath_40.sol";
-import "../vendors/SafeMath_32.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/math/SignedSafeMath.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "abdk-libraries-solidity/ABDKMathQuad.sol";
 
 /*
  * @title The manager contract for multiple markets and the pools in them
  */
 contract PoolKeeper is IPoolKeeper, Ownable {
-    using SignedSafeMath for int256;
-    using SafeMath_32 for uint32;
-    using SafeMath_40 for uint40;
+    /* Constants */
+    uint256 public constant BASE_TIP = 1;
+    uint256 public constant TIP_DELTA_PER_BLOCK = 1;
+    uint256 public constant BLOCK_TIME = 14; /* in seconds */
 
     // #### Global variables
     /**
@@ -41,6 +39,8 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @dev Used to allow multiple upkeep registrations to use the same market/update interval price data.
      */
     mapping(address => uint256) public lastExecutionTime;
+
+    mapping(address => uint256) public keeperFees;
 
     IPoolFactory public factory;
     bytes16 constant fixedPoint = 0x403abc16d674ec800000000000000000; // 1 ether
@@ -109,6 +109,8 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @param _pool The pool code to perform the update for.
      */
     function performUpkeepSinglePool(address _pool) public override {
+        uint256 startGas = gasleft();
+
         if (!checkUpkeepSinglePool(_pool)) {
             return;
         }
@@ -128,6 +130,28 @@ contract PoolKeeper is IPoolKeeper, Ownable {
             lastExecutionPrice[_pool],
             executionPrice[_pool]
         );
+
+        uint256 gasSpent = startGas - gasleft();
+        uint256 _gasPrice = 1; /* TODO: poll gas price oracle (or BASEFEE) */
+
+        payKeeper(_pool, _gasPrice, gasSpent);
+    }
+
+    /**
+     * @notice Pay keeper for upkeep
+     * @param _pool Address of the given pool
+     * @param _gasPrice Price of a single gas unit (in ETH)
+     * @param _gasSpent Number of gas units spent
+     */
+    function payKeeper(
+        address _pool,
+        uint256 _gasPrice,
+        uint256 _gasSpent
+    ) internal {
+        IERC20 settlementToken = IERC20(ILeveragedPool(_pool).quoteToken());
+        uint256 reward = keeperReward(_pool, _gasPrice, _gasSpent);
+
+        keeperFees[msg.sender] += reward;
     }
 
     /**
@@ -168,6 +192,55 @@ contract PoolKeeper is IPoolKeeper, Ownable {
                 }
             }
         }
+    }
+
+    /**
+     * @notice Payment keeper receives for performing upkeep on a given pool
+     * @param _pool Address of the given pool
+     * @param _gasPrice Price of a single gas unit (in ETH)
+     * @param _gasSpent Number of gas units spent
+     * @return Keeper's reward
+     */
+    function keeperReward(
+        address _pool,
+        uint256 _gasPrice,
+        uint256 _gasSpent
+    ) public view returns (uint256) {
+        return keeperGas(_pool, _gasPrice, _gasSpent) + keeperTip(_pool);
+    }
+
+    /**
+     * @notice Compensation a keeper will receive for their gas expenditure
+     * @param _pool Address of the given pool
+     * @param _gasPrice Price of a single gas unit (in ETH)
+     * @param _gasSpent Number of gas units spent
+     * @return Keeper's gas compensation
+     */
+    function keeperGas(
+        address _pool,
+        uint256 _gasPrice,
+        uint256 _gasSpent
+    ) public view returns (uint256) {
+        int256 settlementTokenPrice = IOracleWrapper(ILeveragedPool(_pool).keeperOracle()).getPrice();
+
+        if (settlementTokenPrice <= 0) {
+            return 0;
+        } else {
+            /* safe due to explicit bounds check above */
+            return _gasPrice * _gasSpent * uint256(settlementTokenPrice);
+        }
+    }
+
+    /**
+     * @notice Tip a keeper will receive for successfully updating the specified pool
+     * @param _pool Address of the given pool
+     * @return Keeper's tip
+     */
+    function keeperTip(address _pool) public view returns (uint256) {
+        /* the number of blocks that have elapsed since the given pool was last updated */
+        uint256 elapsedBlocks = (lastExecutionTime[_pool] - block.timestamp) / BLOCK_TIME;
+
+        return BASE_TIP + TIP_DELTA_PER_BLOCK * elapsedBlocks;
     }
 
     function setFactory(address _factory) external override onlyOwner {
