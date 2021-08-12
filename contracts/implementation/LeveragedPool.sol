@@ -1,17 +1,12 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.7.6;
-pragma abicoder v2;
+pragma solidity 0.8.6;
 
 import "../interfaces/ILeveragedPool.sol";
 import "../interfaces/IPriceChanger.sol";
 import "../interfaces/IPoolCommitter.sol";
 import "./PoolToken.sol";
-import "@openzeppelin/contracts/proxy/Initializable.sol";
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
-import "../vendors/SafeMath_40.sol";
-import "../vendors/SafeMath_112.sol";
-import "../vendors/SafeMath_128.sol";
 
 import "./PoolSwapLibrary.sol";
 import "../interfaces/IOracleWrapper.sol";
@@ -20,10 +15,6 @@ import "../interfaces/IOracleWrapper.sol";
 @title The pool controller contract
 */
 contract LeveragedPool is ILeveragedPool, Initializable {
-    using SafeMath_40 for uint40;
-    using SafeMath_112 for uint112;
-    using SafeMath_128 for uint128;
-
     // #### Globals
 
     // Each balance is the amount of quote tokens in the pair
@@ -130,7 +121,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
      * @return true if the price was last updated more than updateInterval seconds ago
      */
     function intervalPassed() public view override returns (bool) {
-        return block.timestamp >= lastPriceTimestamp.add(updateInterval);
+        return block.timestamp >= lastPriceTimestamp + updateInterval;
     }
 
     function updateFeeAddress(address account) external override onlyGov {
