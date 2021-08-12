@@ -46,7 +46,7 @@ describe("PoolCommitter.uncommit", () => {
     let receipt: ContractReceipt
     let commitID: string
 
-    before(async () => {
+    beforeEach(async () => {
         const elements = await deployPoolAndTokenContracts(
             POOL_CODE,
             frontRunningInterval,
