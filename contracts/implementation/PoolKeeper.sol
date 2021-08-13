@@ -115,6 +115,11 @@ contract PoolKeeper is IPoolKeeper, Ownable {
 
         emit NewRound(lastExecutionPrice[_pool], latestPrice, pool.updateInterval(), _pool);
 
+        uint256 gasSpent = startGas - gasleft();
+        uint256 _gasPrice = 1; /* TODO: poll gas price oracle (or BASEFEE) */
+
+        payKeeper(_pool, _gasPrice, gasSpent);
+
         _executePriceChange(
             uint32(block.timestamp),
             pool.updateInterval(),
@@ -122,11 +127,6 @@ contract PoolKeeper is IPoolKeeper, Ownable {
             lastExecutionPrice[_pool],
             executionPrice[_pool]
         );
-
-        uint256 gasSpent = startGas - gasleft();
-        uint256 _gasPrice = 1; /* TODO: poll gas price oracle (or BASEFEE) */
-
-        payKeeper(_pool, _gasPrice, gasSpent);
     }
 
     /**
