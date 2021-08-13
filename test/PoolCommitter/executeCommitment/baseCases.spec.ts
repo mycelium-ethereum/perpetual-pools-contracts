@@ -34,7 +34,7 @@ const updateInterval = 2
 const frontRunningInterval = 1 // seconds
 const fee = "0x00000000000000000000000000000000"
 const leverage = 2
-const commitType = [2] //short mint;
+const commitType = [2] //long mint;
 
 describe("PoolCommiter - executeCommitment: Basic test cases", () => {
     let token: TestToken
