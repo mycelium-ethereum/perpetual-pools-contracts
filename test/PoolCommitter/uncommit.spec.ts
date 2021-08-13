@@ -69,6 +69,7 @@ describe("PoolCommitter.uncommit", () => {
             await committer.commit(commitType, amountCommitted)
         ).wait()
         commitID = getEventArgs(receipt, "CreateCommit")?.commitID
+        await pool.setKeeper(signers[0].address)
     })
 
     context(
@@ -217,7 +218,6 @@ describe("PoolCommitter.uncommit", () => {
             ).wait()
             await timeout(2000)
             await pool.poolUpkeep(1, 2)
-            await committer.executeAllCommitments()
             const receipt = await (
                 await committer.commit([3], amountCommitted)
             ).wait()
@@ -241,7 +241,6 @@ describe("PoolCommitter.uncommit", () => {
             ).wait()
             await timeout(2000)
             await pool.poolUpkeep(1, 2)
-            await committer.executeAllCommitments()
             const receipt = await (
                 await committer.commit([3], amountCommitted)
             ).wait()
@@ -266,7 +265,6 @@ describe("PoolCommitter.uncommit", () => {
             ).wait()
             await timeout(2000)
             await pool.poolUpkeep(1, 2)
-            await committer.executeAllCommitments()
             const receipt = await (
                 await committer.commit([3], amountCommitted)
             ).wait()
@@ -287,7 +285,6 @@ describe("PoolCommitter.uncommit", () => {
             ).wait()
             await timeout(2000)
             await pool.poolUpkeep(1, 2)
-            await committer.executeAllCommitments()
             const receipt = await (
                 await committer.commit([1], amountCommitted)
             ).wait()
@@ -310,7 +307,6 @@ describe("PoolCommitter.uncommit", () => {
             ).wait()
             await timeout(2000)
             await pool.poolUpkeep(1, 2)
-            await committer.executeAllCommitments()
             const receipt = await (
                 await committer.commit([1], amountCommitted)
             ).wait()
@@ -328,13 +324,12 @@ describe("PoolCommitter.uncommit", () => {
             )
             expect(await token.balanceOf(pool.address)).to.eq(amountCommitted)
         })
-        it("refunds short pair tokens to the user", async () => {
+        it.only("refunds short pair tokens to the user", async () => {
             const pairToken = await (
                 await committer.commit([0], amountCommitted)
             ).wait()
             await timeout(2000)
             await pool.poolUpkeep(1, 2)
-            await committer.executeAllCommitments()
             const receipt = await (
                 await committer.commit([1], amountCommitted)
             ).wait()

@@ -16,9 +16,6 @@ import "../interfaces/IOracleWrapper.sol";
 contract PoolCommitter is IPoolCommitter, Ownable {
     // #### Globals
 
-    // Index 0 is the LONG token, index 1 is the SHORT token
-    address[2] public tokens;
-
     address public leveragedPool;
 
     // MAX_INT
@@ -76,6 +73,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
     function uncommit(uint128 _commitID) external override {
         Commit memory _commit = commits[_commitID];
         require(msg.sender == _commit.owner, "Unauthorized");
+        address[2] tokens = ILeveragedPool(leveragedPool).poolTokens();
 
         // reduce pool commitment amount
         uint256 _commitType = commitTypeToUint(_commit.commitType);
@@ -101,10 +99,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         // release tokens
         if (_commit.commitType == CommitType.LongMint || _commit.commitType == CommitType.ShortMint) {
             // minting: return quote tokens to the commit owner
-            require(
-                ILeveragedPool(leveragedPool).quoteTokenTransferFrom(leveragedPool, msg.sender, _commit.amount),
-                "Transfer failed"
-            );
+            require(ILeveragedPool(leveragedPool).quoteTokenTransfer(msg.sender, _commit.amount), "Transfer failed");
         } else if (_commit.commitType == CommitType.LongBurn) {
             // long burning: return long pool tokens to commit owner
             require(PoolToken(tokens[0]).mint(_commit.amount, msg.sender), "Transfer failed");
@@ -187,7 +182,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
 
             // update long and short balances
             pool.setNewPoolBalances(longBalance - amountOut, shortBalance);
-            require(pool.quoteTokenTransferFrom(address(this), _commit.owner, amountOut), "Transfer failed");
+            require(pool.quoteTokenTransfer(_commit.owner, amountOut), "Transfer failed");
         } else if (_commit.commitType == CommitType.ShortMint) {
             pool.mintTokens(
                 1, // short token
@@ -210,7 +205,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
 
             // update long and short balances
             pool.setNewPoolBalances(longBalance, shortBalance - amountOut);
-            require(pool.quoteTokenTransferFrom(address(this), _commit.owner, amountOut), "Transfer failed");
+            require(pool.quoteTokenTransfer(_commit.owner, amountOut), "Transfer failed");
         }
     }
 
