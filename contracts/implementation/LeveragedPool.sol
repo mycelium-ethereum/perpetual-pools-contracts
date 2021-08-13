@@ -81,9 +81,15 @@ contract LeveragedPool is ILeveragedPool, Initializable {
 
     function executePriceChange(int256 _oldPrice, int256 _newPrice) internal {
         PoolSwapLibrary.PriceChangeData memory priceChangeData = PoolSwapLibrary.PriceChangeData(
-            _oldPrice, _newPrice, longBalance, shortBalance, leverageAmount, fee
+            _oldPrice,
+            _newPrice,
+            longBalance,
+            shortBalance,
+            leverageAmount,
+            fee
         );
-        (uint112 newLongBalance, uint112 newShortBalance, uint112 totalFeeAmount) = PoolSwapLibrary.calculatePriceChange(priceChangeData);
+        (uint112 newLongBalance, uint112 newShortBalance, uint112 totalFeeAmount) = PoolSwapLibrary
+            .calculatePriceChange(priceChangeData);
 
         // Update pool balances
         longBalance = newLongBalance;
@@ -101,11 +107,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         return IERC20(quoteToken).transferFrom(from, to, amount);
     }
 
-    function setNewPoolBalances(uint112 _longBalance, uint112 _shortBalance)
-        external
-        override
-        onlyPoolCommitter
-    {
+    function setNewPoolBalances(uint112 _longBalance, uint112 _shortBalance) external override onlyPoolCommitter {
         longBalance = _longBalance;
         shortBalance = _shortBalance;
     }
@@ -180,10 +182,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     }
 
     modifier onlyPoolCommitter() {
-        require(
-            msg.sender == poolCommitter,
-            "msg.sender not poolCommitter"
-        );
+        require(msg.sender == poolCommitter, "msg.sender not poolCommitter");
         _;
     }
 

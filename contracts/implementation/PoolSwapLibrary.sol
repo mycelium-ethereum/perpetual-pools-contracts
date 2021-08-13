@@ -52,7 +52,7 @@ library PoolSwapLibrary {
     @param y The second number to compare
     @return -1 if x < y, 0 if x = y, or 1 if x > y
    */
-    function compareDecimals(bytes16 x, bytes16 y) internal pure returns (int8) {
+    function compareDecimals(bytes16 x, bytes16 y) public pure returns (int8) {
         return ABDKMathQuad.cmp(x, y);
     }
 
@@ -61,7 +61,7 @@ library PoolSwapLibrary {
     @param amount The amount to convert
     @return The amount as a IEEE754 quadruple precision number
   */
-    function convertUIntToDecimal(uint112 amount) internal pure returns (bytes16) {
+    function convertUIntToDecimal(uint112 amount) external pure returns (bytes16) {
         return ABDKMathQuad.fromUInt(uint256(amount));
     }
 
@@ -90,7 +90,7 @@ library PoolSwapLibrary {
     @param b The divisor
     @return The qotient 
   */
-    function divInt(int256 a, int256 b) internal pure returns (bytes16) {
+    function divInt(int256 a, int256 b) public pure returns (bytes16) {
         return ABDKMathQuad.div(ABDKMathQuad.fromInt(a), ABDKMathQuad.fromInt(b));
     }
 
@@ -105,7 +105,7 @@ library PoolSwapLibrary {
         bytes16 ratio,
         int8 direction,
         bytes16 leverage
-    ) internal pure returns (bytes16) {
+    ) public pure returns (bytes16) {
         // If decreased:  2 ^ (leverage * log2[(1 * new/old) + [(0 * 1) / new/old]])
         //              = 2 ^ (leverage * log2[(new/old)])
         // If increased:  2 ^ (leverage * log2[(0 * new/old) + [(1 * 1) / new/old]])
@@ -130,7 +130,7 @@ library PoolSwapLibrary {
     @param lossMultiplier The multiplier to use
     @param balance The balance of the losing pool
   */
-    function getLossAmount(bytes16 lossMultiplier, uint112 balance) internal pure returns (uint256) {
+    function getLossAmount(bytes16 lossMultiplier, uint112 balance) public pure returns (uint256) {
         return
             ABDKMathQuad.toUInt(
                 ABDKMathQuad.mul(ABDKMathQuad.sub(one, lossMultiplier), ABDKMathQuad.fromUInt(balance))
@@ -142,7 +142,15 @@ library PoolSwapLibrary {
      * @dev This function should be called by the LeveragedPool.
      * @param priceChange The struct containing necessary data to calculate price change
      */
-    function calculatePriceChange(PriceChangeData memory priceChange) external pure returns (uint112 newLongBalance, uint112 newShortBalance, uint112 totalFeeAmount) {
+    function calculatePriceChange(PriceChangeData memory priceChange)
+        public
+        returns (
+            // pure
+            uint112 newLongBalance,
+            uint112 newShortBalance,
+            uint112 totalFeeAmount
+        )
+    {
         uint112 shortBalance = priceChange.shortBalance;
         uint112 longBalance = priceChange.longBalance;
         bytes16 leverageAmount = priceChange.leverageAmount;
@@ -151,12 +159,8 @@ library PoolSwapLibrary {
         bytes16 fee = priceChange.fee;
 
         // Calculate fees from long and short sides
-        uint112 longFeeAmount = uint112(
-            convertDecimalToUInt(multiplyDecimalByUInt(fee, longBalance))
-        );
-        uint112 shortFeeAmount = uint112(
-            convertDecimalToUInt(multiplyDecimalByUInt(fee, shortBalance))
-        );
+        uint112 longFeeAmount = uint112(convertDecimalToUInt(multiplyDecimalByUInt(fee, longBalance)));
+        uint112 shortFeeAmount = uint112(convertDecimalToUInt(multiplyDecimalByUInt(fee, shortBalance)));
         totalFeeAmount = 0;
         if (shortBalance >= shortFeeAmount) {
             shortBalance = shortBalance - shortFeeAmount;
@@ -187,6 +191,6 @@ library PoolSwapLibrary {
             longBalance = longBalance - lossAmount;
         }
 
-        return (newLongBalance, newShortBalance, totalFeeAmount);
+        return (longBalance, shortBalance, totalFeeAmount);
     }
 }

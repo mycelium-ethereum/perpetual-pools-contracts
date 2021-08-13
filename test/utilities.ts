@@ -20,6 +20,8 @@ import {
     PoolCommitter,
     PoolCommitter__factory,
     PoolCommitterDeployer__factory,
+    PoolSwapLibraryMock,
+    PoolSwapLibraryMock__factory,
 } from "../typechain"
 
 import { abi as ERC20Abi } from "../artifacts/@openzeppelin/contracts/token/ERC20/ERC20.sol/ERC20.json"
@@ -84,6 +86,7 @@ export const deployPoolAndTokenContracts = async (
     shortToken: ERC20
     longToken: ERC20
     library: PoolSwapLibrary
+    libraryMock: PoolSwapLibraryMock
     poolCommiter: PoolCommitter
     poolKeeper: PoolKeeper
 }> => {
@@ -136,6 +139,16 @@ export const deployPoolAndTokenContracts = async (
     )) as PoolSwapLibrary__factory
     const library = await libraryFactory.deploy()
     await library.deployed()
+
+    const libraryMockFactory = (await ethers.getContractFactory(
+        "PoolSwapLibraryMock",
+        {
+            signer: signers[0],
+            // libraries: { PoolSwapLibrary: library.address },
+        }
+    )) as PoolSwapLibraryMock__factory
+    const libraryMock = await libraryMockFactory.deploy()
+    await libraryMock.deployed()
 
     const PoolFactory = (await ethers.getContractFactory("PoolFactory", {
         signer: signers[0],
@@ -200,6 +213,7 @@ export const deployPoolAndTokenContracts = async (
         pool,
         token,
         library,
+        libraryMock,
         //@ts-ignore
         shortToken,
         //@ts-ignore

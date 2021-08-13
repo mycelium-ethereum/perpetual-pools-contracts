@@ -227,14 +227,14 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         _token.approve(leveragedPool, _token.totalSupply());
     }
 
-    function commitTypeToUint(CommitType commit) public pure returns (uint256) {
-        if (commit == CommitType.ShortMint) {
+    function commitTypeToUint(CommitType _commit) public pure returns (uint256) {
+        if (_commit == CommitType.ShortMint) {
             return 0;
-        } else if (commit == CommitType.ShortBurn) {
+        } else if (_commit == CommitType.ShortBurn) {
             return 1;
-        } else if (commit == CommitType.LongMint) {
+        } else if (_commit == CommitType.LongMint) {
             return 2;
-        } else if (commit == CommitType.LongBurn) {
+        } else if (_commit == CommitType.LongBurn) {
             return 3;
         } else {
             return 0;
