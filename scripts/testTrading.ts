@@ -43,7 +43,6 @@ async function main() {
         TestOracleWrapper__factory.abi
     ).connect(deployer) as TestOracleWrapper
 
-
     /* Get deployed pool */
     const createdMarkets = factoryInstance.filters.DeployPool()
     const allEvents = await factoryInstance?.queryFilter(createdMarkets)
@@ -55,14 +54,16 @@ async function main() {
             ).connect(deployer) as LeveragedPool
     )[0]
 
-
-    const poolCommitter = await pool.poolCommitter();
-    let committerInstance = new ethers.Contract(poolCommitter, PoolCommitter__factory.abi).connect(deployer) as PoolCommitter;
+    const poolCommitter = await pool.poolCommitter()
+    let committerInstance = new ethers.Contract(
+        poolCommitter,
+        PoolCommitter__factory.abi
+    ).connect(deployer) as PoolCommitter
 
     const shortMint = [0]
     const longMint = [2]
 
-    const quoteToken = await pool.quoteToken();
+    const quoteToken = await pool.quoteToken()
     let quoteTokenInstance = new ethers.Contract(
         quoteToken,
         TestToken__factory.abi
