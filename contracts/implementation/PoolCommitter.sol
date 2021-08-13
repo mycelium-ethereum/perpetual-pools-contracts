@@ -16,9 +16,6 @@ import "../interfaces/IOracleWrapper.sol";
 contract PoolCommitter is IPoolCommitter, Ownable {
     // #### Globals
 
-    // Index 0 is the LONG token, index 1 is the SHORT token
-    address[2] public tokens;
-
     address public leveragedPool;
 
     // MAX_INT
@@ -107,10 +104,10 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             );
         } else if (_commit.commitType == CommitType.LongBurn) {
             // long burning: return long pool tokens to commit owner
-            require(PoolToken(tokens[0]).mint(_commit.amount, msg.sender), "Transfer failed");
+            ILeveragedPool(leveragedPool).mintTokens(0, _commit.amount, msg.sender);
         } else if (_commit.commitType == CommitType.ShortBurn) {
             // short burning: return short pool tokens to the commit owner
-            require(PoolToken(tokens[1]).mint(_commit.amount, msg.sender), "Transfer failed");
+            ILeveragedPool(leveragedPool).mintTokens(1, _commit.amount, msg.sender);
         }
     }
 
