@@ -126,11 +126,8 @@ async function main() {
 
     /* Granting access */
     pool = pool.connect(deployer)
-    console.log(`Performing upkeep first round`)
-    await keeperInstance.performUpkeepSinglePool(pool.address)
-
     console.log("Executing commitments")
-    await pool.poolUpkeep(2, 1)
+    await keeperInstance.performUpkeepSinglePool(pool.address)
 
     console.log("Fast forward 10 mins")
     await ethers.provider.send("evm_increaseTime", [updateInterval + 1], {
