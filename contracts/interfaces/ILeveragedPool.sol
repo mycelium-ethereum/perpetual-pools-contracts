@@ -34,13 +34,34 @@ interface ILeveragedPool {
 
     event PriceChange(int256 indexed startPrice, int256 indexed endPrice);
 
+    /**
+     * @notice Represents change in fee receiver's address
+     * @param oldAddress Previous address
+     * @param newAddress Address after change
+     */
+    event FeeAddressUpdated(address oldAddress, address newAddress);
+
+    /**
+     * @notice Represents change in keeper's address
+     * @param oldAddress Previous address
+     * @param newAddress Address after change
+     */
+    event KeeperAddressChanged(address oldAddress, address newAddress);
+
+    /**
+     * @notice Represents change in governance address
+     * @param oldAddress Previous address
+     * @param newAddress Address after change
+     */
+    event GovernanceAddressChanged(address oldAddress, address newAddress);
+
     function leverageAmount() external view returns (bytes16);
 
     function poolCommitter() external view returns (address);
 
     function oracleWrapper() external view returns (address);
 
-    function lastPriceTimestamp() external view returns (uint40);
+    function lastPriceTimestamp() external view returns (uint256);
 
     function updateInterval() external view returns (uint32);
 

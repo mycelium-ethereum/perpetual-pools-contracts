@@ -76,17 +76,9 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         if (!factory.isValidPool(_pool)) {
             return false;
         }
-        ILeveragedPool pool = ILeveragedPool(_pool);
 
-        // safety of oracle wrapper is ensured by PoolFactory. Not 0 on deploy and cannot be changed.
-        IOracleWrapper oracleWrapper = IOracleWrapper(pool.oracleWrapper());
-
-        int256 latestPrice = ABDKMathQuad.toInt(
-            ABDKMathQuad.mul(ABDKMathQuad.fromInt(oracleWrapper.getPrice()), fixedPoint)
-        );
-
-        // The update interval has passed and the price has changed
-        return (pool.intervalPassed() && latestPrice != executionPrice[_pool]);
+        // The update interval has passed
+        return ILeveragedPool(_pool).intervalPassed();
     }
 
     /**
@@ -95,7 +87,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @return upkeepNeeded Whether or not at least one pool needs upkeeping
      */
     function checkUpkeepMultiplePools(address[] calldata _pools) external view override returns (bool upkeepNeeded) {
-        for (uint8 i = 0; i < _pools.length; i++) {
+        for (uint256 i = 0; i < _pools.length; i++) {
             if (checkUpkeepSinglePool(_pools[i])) {
                 // One has been found that requires upkeeping
                 return true;
@@ -123,13 +115,18 @@ contract PoolKeeper is IPoolKeeper, Ownable {
 
         emit NewRound(lastExecutionPrice[_pool], latestPrice, pool.updateInterval(), _pool);
 
-        lastExecutionTime[_pool] = uint40(block.timestamp);
-        pool.poolUpkeep(lastExecutionPrice[_pool], executionPrice[_pool]);
-
         uint256 gasSpent = startGas - gasleft();
         uint256 _gasPrice = 1; /* TODO: poll gas price oracle (or BASEFEE) */
 
         payKeeper(_pool, _gasPrice, gasSpent);
+
+        _executePriceChange(
+            uint32(block.timestamp),
+            pool.updateInterval(),
+            _pool,
+            lastExecutionPrice[_pool],
+            executionPrice[_pool]
+        );
     }
 
     /**
