@@ -73,7 +73,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
     function uncommit(uint128 _commitID) external override {
         Commit memory _commit = commits[_commitID];
         require(msg.sender == _commit.owner, "Unauthorized");
-        address[2] tokens = ILeveragedPool(leveragedPool).poolTokens();
+        ILeveragedPool pool = ILeveragedPool(leveragedPool);
 
         // reduce pool commitment amount
         uint256 _commitType = commitTypeToUint(_commit.commitType);
@@ -102,10 +102,10 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             require(ILeveragedPool(leveragedPool).quoteTokenTransfer(msg.sender, _commit.amount), "Transfer failed");
         } else if (_commit.commitType == CommitType.LongBurn) {
             // long burning: return long pool tokens to commit owner
-            require(PoolToken(tokens[0]).mint(_commit.amount, msg.sender), "Transfer failed");
+            pool.mintTokens(0, _commit.amount, msg.sender);
         } else if (_commit.commitType == CommitType.ShortBurn) {
             // short burning: return short pool tokens to the commit owner
-            require(PoolToken(tokens[1]).mint(_commit.amount, msg.sender), "Transfer failed");
+            pool.mintTokens(1, _commit.amount, msg.sender);
         }
     }
 

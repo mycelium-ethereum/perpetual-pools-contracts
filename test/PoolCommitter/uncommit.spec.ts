@@ -65,16 +65,18 @@ describe("PoolCommitter.uncommit", () => {
         shortToken = elements.shortToken
         library = elements.library
         await token.approve(pool.address, ethers.constants.MaxUint256)
-        receipt = await (
-            await committer.commit(commitType, amountCommitted)
-        ).wait()
-        commitID = getEventArgs(receipt, "CreateCommit")?.commitID
         await pool.setKeeper(signers[0].address)
     })
 
     context(
         "When called with valid commitment ID and by the owner of the specified commitment",
         async () => {
+            beforeEach(async () => {
+                receipt = await (
+                    await committer.commit(commitType, amountCommitted)
+                ).wait()
+                commitID = getEventArgs(receipt, "CreateCommit")?.commitID
+            })
             it("deletes the specified commitment", async () => {
                 expect(
                     (await committer.commits(commitID)).amount.eq(
@@ -324,7 +326,7 @@ describe("PoolCommitter.uncommit", () => {
             )
             expect(await token.balanceOf(pool.address)).to.eq(amountCommitted)
         })
-        it.only("refunds short pair tokens to the user", async () => {
+        it("refunds short pair tokens to the user", async () => {
             const pairToken = await (
                 await committer.commit([0], amountCommitted)
             ).wait()
