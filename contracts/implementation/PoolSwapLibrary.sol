@@ -70,7 +70,7 @@ library PoolSwapLibrary {
     @param ratio The value to convert
     @return The converted value
   */
-    function convertDecimalToUInt(bytes16 ratio) internal pure returns (uint256) {
+    function convertDecimalToUInt(bytes16 ratio) public pure returns (uint256) {
         return ABDKMathQuad.toUInt(ratio);
     }
 
@@ -80,7 +80,7 @@ library PoolSwapLibrary {
     @param b The second term
     @return The product of a*b as a decimal
   */
-    function multiplyDecimalByUInt(bytes16 a, uint256 b) internal pure returns (bytes16) {
+    function multiplyDecimalByUInt(bytes16 a, uint256 b) public pure returns (bytes16) {
         return ABDKMathQuad.mul(a, ABDKMathQuad.fromUInt(b));
     }
 
@@ -193,7 +193,7 @@ library PoolSwapLibrary {
 
         return (longBalance, shortBalance, totalFeeAmount);
     }
-        
+
     function getMintAmount(
         uint256 tokenSupply,
         uint112 amountIn,

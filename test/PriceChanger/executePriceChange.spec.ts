@@ -1,12 +1,7 @@
 import { ethers } from "hardhat"
 import chai from "chai"
 import chaiAsPromised from "chai-as-promised"
-import {
-    ERC20,
-    LeveragedPool,
-    PoolSwapLibrary,
-    PoolSwapLibraryMock,
-} from "../../typechain"
+import { ERC20, LeveragedPool, PoolSwapLibrary } from "../../typechain"
 
 import {
     deployPoolAndTokenContracts,
@@ -30,7 +25,7 @@ const frontRunningInterval = 1
 const updateInterval = 2
 const leverage = 10
 
-let libraryMock: PoolSwapLibraryMock
+let library: PoolSwapLibrary
 let pool: LeveragedPool
 let quoteToken: ERC20
 
@@ -48,7 +43,7 @@ const setupHook = async () => {
         feeAddress,
         amountMinted
     )
-    libraryMock = result.libraryMock
+    library = result.library
     pool = result.pool
     quoteToken = result.token
 
@@ -76,8 +71,8 @@ const fundPools = async () => {
     */
 }
 const calculateFee = async (fee: string, amount: BigNumberish) => {
-    return await libraryMock.convertDecimalToUInt(
-        await libraryMock.multiplyDecimalByUInt(fee, amount)
+    return await library.convertDecimalToUInt(
+        await library.multiplyDecimalByUInt(fee, amount)
     )
 }
 
