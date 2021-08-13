@@ -76,17 +76,9 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         if (!factory.isValidPool(_pool)) {
             return false;
         }
-        ILeveragedPool pool = ILeveragedPool(_pool);
 
-        // safety of oracle wrapper is ensured by PoolFactory. Not 0 on deploy and cannot be changed.
-        IOracleWrapper oracleWrapper = IOracleWrapper(pool.oracleWrapper());
-
-        int256 latestPrice = ABDKMathQuad.toInt(
-            ABDKMathQuad.mul(ABDKMathQuad.fromInt(oracleWrapper.getPrice()), fixedPoint)
-        );
-
-        // The update interval has passed and the price has changed
-        return (pool.intervalPassed() && latestPrice != executionPrice[_pool]);
+        // The update interval has passed
+        return ILeveragedPool(_pool).intervalPassed();
     }
 
     /**
