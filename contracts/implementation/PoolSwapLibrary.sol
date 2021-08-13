@@ -14,7 +14,7 @@ library PoolSwapLibrary {
     @param _denominator The "per part" side of the equation. If this is zero, the ratio is zero
     @return the ratio, as an ABDKMathQuad number (IEEE 754 quadruple precision floating point)
    */
-    function getRatio(uint112 _numerator, uint112 _denominator) external pure returns (bytes16) {
+    function getRatio(uint112 _numerator, uint112 _denominator) public pure returns (bytes16) {
         // Catch the divide by zero error.
         if (_denominator == 0) {
             return 0;
@@ -29,7 +29,7 @@ library PoolSwapLibrary {
     @param amountIn The amount of tokens the user is providing. This can be quote tokens or pool tokens.
     @return The amount of tokens to mint/remit to the user.
    */
-    function getAmountOut(bytes16 ratio, uint112 amountIn) external pure returns (uint112) {
+    function getAmountOut(bytes16 ratio, uint112 amountIn) public pure returns (uint112) {
         require(amountIn > 0, "Invalid amount");
         if (ABDKMathQuad.cmp(ratio, 0) == 0 || ABDKMathQuad.cmp(ratio, bytes16("0x1")) == 0) {
             return amountIn;
@@ -125,6 +125,20 @@ library PoolSwapLibrary {
         return
             ABDKMathQuad.toUInt(
                 ABDKMathQuad.mul(ABDKMathQuad.sub(one, lossMultiplier), ABDKMathQuad.fromUInt(balance))
+            );
+    }
+
+    function getMintAmount(
+        uint256 tokenSupply,
+        uint112 amountIn,
+        uint112 balance,
+        uint112 inverseShadowbalance
+    ) external pure returns (uint112) {
+        return
+            getAmountOut(
+                // ratio = (totalSupply + inverseShadowBalance) / balance
+                getRatio(uint112(tokenSupply) + inverseShadowbalance, balance),
+                amountIn
             );
     }
 }
