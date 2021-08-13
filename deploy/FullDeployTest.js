@@ -124,7 +124,7 @@ module.exports = async (hre) => {
 
     const POOL_CODE = "5-TEST/MARKET+POOL"
 
-    const updateInterval = 60 // 10 seconds
+    const updateInterval = 60 // 1 minute
 
     /* deploy LeveragePool */
     const deploymentData = {
