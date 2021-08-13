@@ -69,7 +69,7 @@ contract PriceChanger is IPriceChanger, Ownable {
         // Take into account the leverage
         bytes16 lossMultiplier = PoolSwapLibrary.getLossMultiplier(ratio, direction, leverageAmount);
 
-        if (direction >= 0 && shortBalance > 0) {
+        if (direction > 0 && shortBalance > 0) {
             // Move funds from short to long pair
             uint112 lossAmount = uint112(PoolSwapLibrary.getLossAmount(lossMultiplier, shortBalance));
             shortBalance = shortBalance - lossAmount;
