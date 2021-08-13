@@ -61,7 +61,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         if (commitType == CommitType.LongMint || commitType == CommitType.ShortMint) {
             // minting: pull in the quote token from the commiter
             require(
-                ILeveragedPool(leveragedPool).quoteTokenTransferFrom(msg.sender, address(this), amount),
+                ILeveragedPool(leveragedPool).quoteTokenTransferFrom(msg.sender, address(leveragedPool), amount),
                 "Transfer failed"
             );
         } else if (commitType == CommitType.LongBurn) {

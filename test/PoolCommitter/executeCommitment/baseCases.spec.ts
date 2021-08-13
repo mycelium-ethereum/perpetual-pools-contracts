@@ -34,7 +34,7 @@ const updateInterval = 2
 const frontRunningInterval = 1 // seconds
 const fee = "0x00000000000000000000000000000000"
 const leverage = 2
-const commitType = [2] //long mint;
+const commitType = [0] //short mint;
 
 describe("PoolCommiter - executeCommitment: Basic test cases", () => {
     let token: TestToken
@@ -106,6 +106,7 @@ describe("PoolCommiter - executeCommitment: Basic test cases", () => {
                 commitType,
                 amountCommitted
             )
+            console.log(commit)
             await pool.setKeeper(signers[0].address)
         })
 

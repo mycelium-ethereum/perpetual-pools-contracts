@@ -81,12 +81,27 @@ module.exports = async (hre) => {
         log: true,
     })
 
+    /* deploy priceChangerDeployer */
+    const priceChangerDeployer = await deploy("PriceChangerDeployer", {
+        from: deployer,
+        log: true,
+        libraries: { PoolSwapLibrary: library.address },
+    })
+
+    /* deploy PoolFactory */
+    const poolCommitterDeployer = await deploy("PoolCommitterDeployer", {
+        from: deployer,
+        log: true,
+        libraries: { PoolSwapLibrary: library.address },
+    })
+
     /* deploy PoolFactory */
     const factory = await deploy("PoolFactory", {
         from: deployer,
         log: true,
         libraries: { PoolSwapLibrary: library.address },
-        args: [deployer], // fee receiver
+        // (committer, priceChanger, fee receiver)
+        args: [poolCommitterDeployer.address, priceChangerDeployer.address, deployer], 
     })
 
     /* deploy PoolKeeper */
@@ -109,18 +124,19 @@ module.exports = async (hre) => {
 
     const POOL_CODE = "5-TEST/MARKET+POOL"
 
-    const TEN_MINS = 10 * 60
+    const updateInterval = 60 // 10 seconds
 
     /* deploy LeveragePool */
     const deploymentData = {
         poolCode: POOL_CODE,
         frontRunningInterval: 0,
-        updateInterval: TEN_MINS,
+        updateInterval: updateInterval,
         fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
         leverageAmount: 5,
         quoteToken: token.address,
         oracleWrapper: oracleWrapper.address,
         keeperOracle: keeperOracle.address,
+        
     }
 
     const receipt = await execute(
