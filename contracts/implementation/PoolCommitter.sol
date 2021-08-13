@@ -118,7 +118,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         uint128 nextEarliestCommitUnexecuted;
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
         uint256 frontRunningInterval = pool.frontRunningInterval();
-        uint40 lastPriceTimestamp = pool.lastPriceTimestamp();
+        uint256 lastPriceTimestamp = pool.lastPriceTimestamp();
         for (uint128 i = earliestCommitUnexecuted; i <= latestCommitUnexecuted; i++) {
             IPoolCommitter.Commit memory _commit = commits[i];
             nextEarliestCommitUnexecuted = i;
@@ -152,7 +152,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
     function _executeCommitment(Commit memory _commit) internal {
         require(_commit.owner != address(0), "Invalid commit");
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
-        uint40 lastPriceTimestamp = pool.lastPriceTimestamp();
+        uint256 lastPriceTimestamp = pool.lastPriceTimestamp();
         require(lastPriceTimestamp - _commit.created > pool.frontRunningInterval(), "Commit too new");
         uint112 shortBalance = pool.shortBalance();
         uint112 longBalance = pool.longBalance();
