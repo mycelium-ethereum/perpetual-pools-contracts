@@ -115,10 +115,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
 
         emit NewRound(lastExecutionPrice[_pool], latestPrice, pool.updateInterval(), _pool);
 
-        uint256 gasSpent = startGas - gasleft();
-        uint256 _gasPrice = 1; /* TODO: poll gas price oracle (or BASEFEE) */
-
-        payKeeper(_pool, _gasPrice, gasSpent);
+        uint256 savedLastExecutionTime = lastExecutionTime[_pool];
 
         _executePriceChange(
             uint32(block.timestamp),
@@ -127,6 +124,11 @@ contract PoolKeeper is IPoolKeeper, Ownable {
             lastExecutionPrice[_pool],
             executionPrice[_pool]
         );
+
+        uint256 gasSpent = startGas - gasleft();
+        uint256 _gasPrice = 1; /* TODO: poll gas price oracle (or BASEFEE) */
+
+        payKeeper(_pool, _gasPrice, gasSpent, savedLastExecutionTime);
     }
 
     /**
@@ -138,10 +140,11 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     function payKeeper(
         address _pool,
         uint256 _gasPrice,
-        uint256 _gasSpent
+        uint256 _gasSpent,
+        uint256 _executionTime
     ) internal {
         IERC20 settlementToken = IERC20(ILeveragedPool(_pool).quoteToken());
-        uint256 reward = keeperReward(_pool, _gasPrice, _gasSpent);
+        uint256 reward = keeperReward(_pool, _gasPrice, _gasSpent, _executionTime);
 
         keeperFees[msg.sender] += reward;
     }
@@ -196,9 +199,10 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     function keeperReward(
         address _pool,
         uint256 _gasPrice,
-        uint256 _gasSpent
+        uint256 _gasSpent,
+        uint256 _executionTime
     ) public view returns (uint256) {
-        return keeperGas(_pool, _gasPrice, _gasSpent) + keeperTip(_pool);
+        return keeperGas(_pool, _gasPrice, _gasSpent) + keeperTip(_pool, _executionTime);
     }
 
     /**
@@ -228,9 +232,9 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @param _pool Address of the given pool
      * @return Keeper's tip
      */
-    function keeperTip(address _pool) public view returns (uint256) {
+    function keeperTip(address _pool, uint256 _executionTime) public view returns (uint256) {
         /* the number of blocks that have elapsed since the given pool was last updated */
-        uint256 elapsedBlocks = (lastExecutionTime[_pool] - block.timestamp) / BLOCK_TIME;
+        uint256 elapsedBlocks = (_executionTime - block.timestamp) / BLOCK_TIME;
 
         return BASE_TIP + TIP_DELTA_PER_BLOCK * elapsedBlocks;
     }
