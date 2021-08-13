@@ -106,7 +106,6 @@ describe("PoolCommiter - executeCommitment: Basic test cases", () => {
                 commitType,
                 amountCommitted
             )
-
             await pool.setKeeper(signers[0].address)
         })
 
