@@ -64,7 +64,7 @@ describe("PoolCommitter.uncommit", () => {
         longToken = elements.longToken
         shortToken = elements.shortToken
         library = elements.library
-        await token.approve(pool.address, amountCommitted)
+        await token.approve(pool.address, ethers.constants.MaxUint256)
         receipt = await (
             await committer.commit(commitType, amountCommitted)
         ).wait()
