@@ -87,7 +87,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @return upkeepNeeded Whether or not at least one pool needs upkeeping
      */
     function checkUpkeepMultiplePools(address[] calldata _pools) external view override returns (bool upkeepNeeded) {
-        for (uint8 i = 0; i < _pools.length; i++) {
+        for (uint256 i = 0; i < _pools.length; i++) {
             if (checkUpkeepSinglePool(_pools[i])) {
                 // One has been found that requires upkeeping
                 return true;
