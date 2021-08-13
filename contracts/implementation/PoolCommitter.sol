@@ -220,6 +220,8 @@ contract PoolCommitter is IPoolCommitter, Ownable {
     }
 
     function setQuoteAndPool(address quoteToken, address _leveragedPool) external override onlyFactory {
+        require(quoteToken != address(0), "Quote token address cannot be 0 address");
+        require(_leveragedPool != address(0), "Leveraged pool address cannot be 0 address");
         leveragedPool = _leveragedPool;
         IERC20 _token = IERC20(quoteToken);
         _token.approve(leveragedPool, _token.totalSupply());
