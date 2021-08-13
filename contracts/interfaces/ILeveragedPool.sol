@@ -96,18 +96,11 @@ interface ILeveragedPool {
 
     /**
      * @notice Mints new tokens
-     * @param token The token to mint
-     * @param amountIn The amount the user has committed to minting
-     * @param balance The balance of pair at the start of the execution
-     * @param inverseShadowbalance The amount of tokens burned from total supply
-     * @param tokenOwner The address to send the tokens to
      */
     function mintTokens(
         uint256 token,
-        uint112 amountIn,
-        uint112 balance,
-        uint112 inverseShadowbalance,
-        address tokenOwner
+        uint256 amount,
+        address burner
     ) external;
 
     /**

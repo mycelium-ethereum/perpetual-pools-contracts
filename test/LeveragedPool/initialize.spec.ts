@@ -13,6 +13,8 @@ import {
     TestChainlinkOracle__factory,
     TestOracleWrapper__factory,
     TestOracleWrapper,
+    PriceChangerDeployer__factory,
+    PoolCommitterDeployer__factory,
 } from "../../typechain"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import {
@@ -41,7 +43,6 @@ const fee = "0x00000000000000000000000000000000"
 const leverage = getRandomInt(256, 1)
 
 describe("LeveragedPool - initialize", () => {
-    /*
     let signers: SignerWithAddress[]
     let quoteToken: string
     let short: ERC20
@@ -109,6 +110,24 @@ describe("LeveragedPool - initialize", () => {
                 chainlinkOracle.address
             )
 
+            const priceChangerDeployer = (await ethers.getContractFactory(
+                "PriceChangerDeployer",
+                {
+                    signer: signers[0],
+                    libraries: { PoolSwapLibrary: library.address },
+                }
+            )) as PriceChangerDeployer__factory
+            const priceChanger = await priceChangerDeployer.deploy()
+
+            const poolCommitterDeployer = (await ethers.getContractFactory(
+                "PoolCommitterDeployer",
+                {
+                    signer: signers[0],
+                    libraries: { PoolSwapLibrary: library.address },
+                }
+            )) as PoolCommitterDeployer__factory
+            const poolCommitter = await poolCommitterDeployer.deploy()
+
             const leveragedPoolFactory = (await ethers.getContractFactory(
                 "LeveragedPool",
                 {
@@ -125,6 +144,8 @@ describe("LeveragedPool - initialize", () => {
                 _keeperOracle: keeperOracle.address,
                 _longToken: long.address,
                 _shortToken: short.address,
+                _priceChanger: priceChanger.address,
+                _poolCommitter: poolCommitter.address,
                 _poolCode: POOL_CODE,
                 _frontRunningInterval: frontRunningInterval,
                 _updateInterval: updateInterval,
@@ -160,6 +181,8 @@ describe("LeveragedPool - initialize", () => {
                     _keeperOracle: keeperOracle.address,
                     _longToken: long.address,
                     _shortToken: short.address,
+                    _priceChanger: priceChanger.address,
+                    _poolCommitter: poolCommitter.address,
                     _poolCode: POOL_CODE,
                     _frontRunningInterval: frontRunningInterval,
                     _updateInterval: updateInterval,
@@ -240,9 +263,12 @@ describe("LeveragedPool - initialize", () => {
             expect(event?.args?.poolCode).to.eq(POOL_CODE)
         })
     })
+
     describe("Performs safety checks", () => {
         let leveragedPool: LeveragedPool
         let testFactoryActual: TestPoolFactory
+        let priceChanger: any
+        let poolCommitter: any
         beforeEach(async () => {
             // Deploy the contracts
             const testToken = (await ethers.getContractFactory(
@@ -279,6 +305,24 @@ describe("LeveragedPool - initialize", () => {
                 chainlinkOracle.address
             )
 
+            const priceChangerDeployer = (await ethers.getContractFactory(
+                "PriceChangerDeployer",
+                {
+                    signer: signers[0],
+                    libraries: { PoolSwapLibrary: library.address },
+                }
+            )) as PriceChangerDeployer__factory
+            priceChanger = await priceChangerDeployer.deploy()
+
+            const poolCommitterDeployer = (await ethers.getContractFactory(
+                "PoolCommitterDeployer",
+                {
+                    signer: signers[0],
+                    libraries: { PoolSwapLibrary: library.address },
+                }
+            )) as PoolCommitterDeployer__factory
+            poolCommitter = await poolCommitterDeployer.deploy()
+
             const leveragedPoolFactory = (await ethers.getContractFactory(
                 "LeveragedPool",
                 {
@@ -311,6 +355,8 @@ describe("LeveragedPool - initialize", () => {
                     _keeperOracle: keeperOracle.address,
                     _longToken: long.address,
                     _shortToken: short.address,
+                    _priceChanger: priceChanger.address,
+                    _poolCommitter: poolCommitter.address,
                     _poolCode: POOL_CODE,
                     _frontRunningInterval: frontRunningInterval,
                     _updateInterval: updateInterval,
@@ -349,6 +395,8 @@ describe("LeveragedPool - initialize", () => {
                 _keeperOracle: keeperOracle.address,
                 _longToken: long.address,
                 _shortToken: short.address,
+                _priceChanger: priceChanger.address,
+                _poolCommitter: poolCommitter.address,
                 _poolCode: POOL_CODE,
                 _frontRunningInterval: frontRunningInterval,
                 _updateInterval: updateInterval,
@@ -365,6 +413,8 @@ describe("LeveragedPool - initialize", () => {
                     _keeperOracle: keeperOracle.address,
                     _longToken: long.address,
                     _shortToken: short.address,
+                    _priceChanger: priceChanger.address,
+                    _poolCommitter: poolCommitter.address,
                     _poolCode: POOL_CODE,
                     _frontRunningInterval: frontRunningInterval,
                     _updateInterval: updateInterval,
@@ -384,6 +434,8 @@ describe("LeveragedPool - initialize", () => {
                     _keeperOracle: keeperOracle.address,
                     _longToken: long.address,
                     _shortToken: short.address,
+                    _priceChanger: priceChanger.address,
+                    _poolCommitter: poolCommitter.address,
                     _poolCode: POOL_CODE,
                     _frontRunningInterval: frontRunningInterval,
                     _updateInterval: updateInterval,
@@ -403,6 +455,8 @@ describe("LeveragedPool - initialize", () => {
                     _keeperOracle: ethers.constants.AddressZero,
                     _longToken: long.address,
                     _shortToken: short.address,
+                    _priceChanger: priceChanger.address,
+                    _poolCommitter: poolCommitter.address,
                     _poolCode: POOL_CODE,
                     _frontRunningInterval: frontRunningInterval,
                     _updateInterval: updateInterval,
@@ -422,6 +476,8 @@ describe("LeveragedPool - initialize", () => {
                     _keeperOracle: keeperOracle.address,
                     _longToken: long.address,
                     _shortToken: short.address,
+                    _priceChanger: priceChanger.address,
+                    _poolCommitter: poolCommitter.address,
                     _poolCode: POOL_CODE,
                     _frontRunningInterval: frontRunningInterval,
                     _updateInterval: updateInterval,
@@ -442,6 +498,8 @@ describe("LeveragedPool - initialize", () => {
                     _keeperOracle: keeperOracle.address,
                     _longToken: long.address,
                     _shortToken: short.address,
+                    _priceChanger: priceChanger.address,
+                    _poolCommitter: poolCommitter.address,
                     _poolCode: POOL_CODE,
                     _frontRunningInterval: updateInterval,
                     _updateInterval: frontRunningInterval,
@@ -470,6 +528,8 @@ describe("LeveragedPool - initialize", () => {
                 _keeperOracle: keeperOracle.address,
                 _longToken: long.address,
                 _shortToken: short.address,
+                _priceChanger: priceChanger.address,
+                _poolCommitter: poolCommitter.address,
                 _poolCode: POOL_CODE_2,
                 _frontRunningInterval: frontRunningInterval,
                 _updateInterval: updateInterval,
@@ -485,6 +545,8 @@ describe("LeveragedPool - initialize", () => {
                 _keeperOracle: keeperOracle.address,
                 _longToken: long.address,
                 _shortToken: short.address,
+                _priceChanger: priceChanger.address,
+                _poolCommitter: poolCommitter.address,
                 _poolCode: POOL_CODE,
                 _frontRunningInterval: frontRunningInterval,
                 _updateInterval: updateInterval,
@@ -498,5 +560,4 @@ describe("LeveragedPool - initialize", () => {
             expect(await leveragedPool.poolCode()).to.eq(POOL_CODE)
         })
     })
-    */
 })
