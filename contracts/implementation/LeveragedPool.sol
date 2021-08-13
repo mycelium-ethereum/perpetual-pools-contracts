@@ -126,15 +126,21 @@ contract LeveragedPool is ILeveragedPool, Initializable {
 
     function updateFeeAddress(address account) external override onlyGov {
         require(account != address(0), "Invalid address");
+        address oldFeeAddress = feeAddress;
         feeAddress = account;
+        emit FeeAddressUpdated(oldFeeAddress, feeAddress);
     }
 
     function setKeeper(address _keeper) external override onlyGov {
+        address oldKeeper = keeper;
         keeper = _keeper;
+        emit KeeperAddressChanged(oldKeeper, keeper);
     }
 
     function transferGovernance(address _governance) external override onlyGov {
+        address oldGovAddress = governance;
         governance = _governance;
+        emit GovernanceAddressChanged(oldGovAddress, governance);
     }
 
     /**
