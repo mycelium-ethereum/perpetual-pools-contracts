@@ -16,9 +16,6 @@ import "../interfaces/IOracleWrapper.sol";
 contract PoolCommitter is IPoolCommitter, Ownable {
     // #### Globals
 
-    // Index 0 is the LONG token, index 1 is the SHORT token
-    address[2] public tokens;
-
     address public leveragedPool;
 
     // MAX_INT
@@ -107,10 +104,10 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             );
         } else if (_commit.commitType == CommitType.LongBurn) {
             // long burning: return long pool tokens to commit owner
-            require(PoolToken(tokens[0]).mint(_commit.amount, msg.sender), "Transfer failed");
+            ILeveragedPool(leveragedPool).mintTokens(0, _commit.amount, msg.sender);
         } else if (_commit.commitType == CommitType.ShortBurn) {
             // short burning: return short pool tokens to the commit owner
-            require(PoolToken(tokens[1]).mint(_commit.amount, msg.sender), "Transfer failed");
+            ILeveragedPool(leveragedPool).mintTokens(1, _commit.amount, msg.sender);
         }
     }
 
@@ -162,14 +159,14 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         uint256 _commitType = commitTypeToUint(_commit.commitType);
         shadowPools[_commitType] = shadowPools[_commitType] - _commit.amount;
         if (_commit.commitType == CommitType.LongMint) {
-            pool.mintTokens(
-                0, // long token
+            uint112 mintAmount = PoolSwapLibrary.getMintAmount(
+                PoolToken(pool.poolTokens()[0]).totalSupply(), // long token total supply,
                 _commit.amount, // amount of quote tokens commited to enter
                 longBalance, // total quote tokens in the long pull
-                shadowPools[commitTypeToUint(CommitType.LongBurn)], // total pool tokens commited to be burned
-                _commit.owner
+                shadowPools[commitTypeToUint(CommitType.LongBurn)] // total pool tokens commited to be burned
             );
 
+            pool.mintTokens(0, mintAmount, _commit.owner);
             // update long and short balances
             pool.setNewPoolBalances(longBalance + _commit.amount, shortBalance);
         } else if (_commit.commitType == CommitType.LongBurn) {
@@ -189,13 +186,14 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             pool.setNewPoolBalances(longBalance - amountOut, shortBalance);
             require(pool.quoteTokenTransferFrom(address(this), _commit.owner, amountOut), "Transfer failed");
         } else if (_commit.commitType == CommitType.ShortMint) {
-            pool.mintTokens(
-                1, // short token
+            uint112 mintAmount = PoolSwapLibrary.getMintAmount(
+                PoolToken(pool.poolTokens()[1]).totalSupply(), // short token total supply
                 _commit.amount,
                 shortBalance,
-                shadowPools[commitTypeToUint(CommitType.ShortBurn)],
-                _commit.owner
+                shadowPools[commitTypeToUint(CommitType.ShortBurn)]
             );
+
+            pool.mintTokens(1, mintAmount, _commit.owner);
             pool.setNewPoolBalances(longBalance, shortBalance + _commit.amount);
         } else if (_commit.commitType == CommitType.ShortBurn) {
             uint112 amountOut = PoolSwapLibrary.getAmountOut(
