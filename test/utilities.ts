@@ -1,4 +1,4 @@
-import { ethers } from "hardhat"
+import { ethers, network } from "hardhat"
 import { BigNumberish, ContractReceipt, Event } from "ethers"
 import { BytesLike, Result } from "ethers/lib/utils"
 import { MARKET } from "./constants"
@@ -261,7 +261,8 @@ export const createCommit = async (
  * @returns nothing
  */
 export const timeout = async (milliseconds: number): Promise<void> => {
-    return new Promise((resolve) => setTimeout(resolve, milliseconds))
+    await network.provider.send("evm_increaseTime", [milliseconds / 1000])
+    await network.provider.send("evm_mine", [])
 }
 
 export function callData(
