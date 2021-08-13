@@ -105,7 +105,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         address minter
     ) external override onlyPriceChangerOrCommitter {
         require(token == 0 || token == 1, "Pool: token out of range");
-        require(PoolToken(tokens[token]).mint(amount, burner), "Mint failed");
+        require(PoolToken(tokens[token]).mint(amount, minter), "Mint failed");
     }
 
     function burnTokens(
