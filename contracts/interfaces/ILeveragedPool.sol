@@ -41,7 +41,7 @@ interface ILeveragedPool {
 
     function oracleWrapper() external view returns (address);
 
-    function lastPriceTimestamp() external view returns (uint40);
+    function lastPriceTimestamp() external view returns (uint256);
 
     function updateInterval() external view returns (uint32);
 
