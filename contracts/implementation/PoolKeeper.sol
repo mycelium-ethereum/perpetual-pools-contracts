@@ -1,16 +1,12 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.7.6;
-pragma abicoder v2;
+pragma solidity 0.8.6;
 
 import "../interfaces/IPoolKeeper.sol";
 import "../interfaces/IOracleWrapper.sol";
 import "../interfaces/IPoolFactory.sol";
 import "../interfaces/ILeveragedPool.sol";
-import "../vendors/SafeMath_40.sol";
-import "../vendors/SafeMath_32.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/math/SignedSafeMath.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "abdk-libraries-solidity/ABDKMathQuad.sol";
@@ -19,10 +15,6 @@ import "abdk-libraries-solidity/ABDKMathQuad.sol";
  * @title The manager contract for multiple markets and the pools in them
  */
 contract PoolKeeper is IPoolKeeper, Ownable {
-    using SignedSafeMath for int256;
-    using SafeMath_32 for uint32;
-    using SafeMath_40 for uint40;
-
     /* Constants */
     uint256 public constant BASE_TIP = 1;
     uint256 public constant TIP_DELTA_PER_BLOCK = 1;
@@ -79,17 +71,9 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         if (!factory.isValidPool(_pool)) {
             return false;
         }
-        ILeveragedPool pool = ILeveragedPool(_pool);
 
-        // safety of oracle wrapper is ensured by PoolFactory. Not 0 on deploy and cannot be changed.
-        IOracleWrapper oracleWrapper = IOracleWrapper(pool.oracleWrapper());
-
-        int256 latestPrice = ABDKMathQuad.toInt(
-            ABDKMathQuad.mul(ABDKMathQuad.fromInt(oracleWrapper.getPrice()), fixedPoint)
-        );
-
-        // The update interval has passed and the price has changed
-        return (pool.intervalPassed() && latestPrice != executionPrice[_pool]);
+        // The update interval has passed
+        return ILeveragedPool(_pool).intervalPassed();
     }
 
     /**
