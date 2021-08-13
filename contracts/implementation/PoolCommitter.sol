@@ -61,7 +61,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         if (commitType == CommitType.LongMint || commitType == CommitType.ShortMint) {
             // minting: pull in the quote token from the commiter
             require(
-                ILeveragedPool(leveragedPool).quoteTokenTransferFrom(msg.sender, address(this), amount),
+                ILeveragedPool(leveragedPool).quoteTokenTransferFrom(msg.sender, leveragedPool, amount),
                 "Transfer failed"
             );
         } else if (commitType == CommitType.LongBurn) {
@@ -102,7 +102,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         if (_commit.commitType == CommitType.LongMint || _commit.commitType == CommitType.ShortMint) {
             // minting: return quote tokens to the commit owner
             require(
-                ILeveragedPool(leveragedPool).quoteTokenTransferFrom(address(this), msg.sender, _commit.amount),
+                ILeveragedPool(leveragedPool).quoteTokenTransferFrom(leveragedPool, msg.sender, _commit.amount),
                 "Transfer failed"
             );
         } else if (_commit.commitType == CommitType.LongBurn) {
