@@ -69,7 +69,12 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         tokens[1] = initialization._shortToken;
         priceChanger = initialization._priceChanger;
         poolCommitter = initialization._poolCommitter;
-        emit PoolInitialized(tokens[0], tokens[1], initialization._quoteToken, initialization._poolCode);
+        emit PoolInitialized(
+            initialization._longToken,
+            initialization._shortToken,
+            initialization._quoteToken,
+            initialization._poolCode
+        );
     }
 
     /**
