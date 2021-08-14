@@ -37,7 +37,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     address public override poolCommitter;
     uint256 public override lastPriceTimestamp;
 
-    string public poolName;
+    string public override poolName;
     address public override oracleWrapper;
     address public override keeperOracle;
 
@@ -73,7 +73,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
             initialization._longToken,
             initialization._shortToken,
             initialization._quoteToken,
-            initialization._poolCode
+            initialization._poolName
         );
     }
 

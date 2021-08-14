@@ -64,6 +64,8 @@ interface ILeveragedPool {
 
     function lastPriceTimestamp() external view returns (uint256);
 
+    function poolName() external view returns (string calldata);
+
     function updateInterval() external view returns (uint32);
 
     function shortBalance() external view returns (uint112);
