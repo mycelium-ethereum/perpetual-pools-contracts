@@ -35,7 +35,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     address public override quoteToken;
     address public override priceChanger;
     address public override poolCommitter;
-    uint40 public override lastPriceTimestamp;
+    uint256 public override lastPriceTimestamp;
 
     string public poolName;
     address public override oracleWrapper;
@@ -69,7 +69,12 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         tokens[1] = initialization._shortToken;
         priceChanger = initialization._priceChanger;
         poolCommitter = initialization._poolCommitter;
-        emit PoolInitialized(tokens[0], tokens[1], initialization._quoteToken, initialization._poolName);
+        emit PoolInitialized(
+            initialization._longToken,
+            initialization._shortToken,
+            initialization._quoteToken,
+            initialization._poolCode
+        );
     }
 
     /**
@@ -87,6 +92,8 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         address to,
         uint256 amount
     ) external override onlyPriceChangerOrCommitter returns (bool) {
+        require(from != address(0), "From address cannot be 0 address");
+        require(to != address(0), "To address cannot be 0 address");
         return IERC20(quoteToken).transferFrom(from, to, amount);
     }
 
@@ -104,6 +111,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         uint256 amount,
         address minter
     ) external override onlyPriceChangerOrCommitter {
+        require(minter != address(0), "Minter address cannot be 0 address");
         require(token == 0 || token == 1, "Pool: token out of range");
         require(PoolToken(tokens[token]).mint(amount, minter), "Mint failed");
     }
@@ -113,6 +121,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         uint256 amount,
         address burner
     ) external override onlyPriceChangerOrCommitter {
+        require(burner != address(0), "Burner address cannot be 0 address");
         require(token == 0 || token == 1, "Pool: token out of range");
         require(PoolToken(tokens[token]).burn(amount, burner), "Burn failed");
     }
@@ -125,16 +134,24 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     }
 
     function updateFeeAddress(address account) external override onlyGov {
-        require(account != address(0), "Invalid address");
+        require(account != address(0), "Account cannot be 0 address");
+        address oldFeeAddress = feeAddress;
         feeAddress = account;
+        emit FeeAddressUpdated(oldFeeAddress, feeAddress);
     }
 
     function setKeeper(address _keeper) external override onlyGov {
+        require(_keeper != address(0), "Keeper address cannot be 0 address");
+        address oldKeeper = keeper;
         keeper = _keeper;
+        emit KeeperAddressChanged(oldKeeper, keeper);
     }
 
     function transferGovernance(address _governance) external override onlyGov {
+        require(_governance != address(0), "Governance address cannot be 0 address");
+        address oldGovAddress = governance;
         governance = _governance;
+        emit GovernanceAddressChanged(oldGovAddress, governance);
     }
 
     /**

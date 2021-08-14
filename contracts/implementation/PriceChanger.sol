@@ -45,11 +45,12 @@ contract PriceChanger is IPriceChanger, Ownable {
         bytes16 leverageAmount = ILeveragedPool(leveragedPool).leverageAmount();
 
         // Calculate fees from long and short sides
+        bytes16 sharedFee = fee;
         uint112 longFeeAmount = uint112(
-            PoolSwapLibrary.convertDecimalToUInt(PoolSwapLibrary.multiplyDecimalByUInt(fee, longBalance))
+            PoolSwapLibrary.convertDecimalToUInt(PoolSwapLibrary.multiplyDecimalByUInt(sharedFee, longBalance))
         );
         uint112 shortFeeAmount = uint112(
-            PoolSwapLibrary.convertDecimalToUInt(PoolSwapLibrary.multiplyDecimalByUInt(fee, shortBalance))
+            PoolSwapLibrary.convertDecimalToUInt(PoolSwapLibrary.multiplyDecimalByUInt(sharedFee, shortBalance))
         );
         uint112 totalFeeAmount = 0;
         if (shortBalance >= shortFeeAmount) {
@@ -69,7 +70,7 @@ contract PriceChanger is IPriceChanger, Ownable {
         // Take into account the leverage
         bytes16 lossMultiplier = PoolSwapLibrary.getLossMultiplier(ratio, direction, leverageAmount);
 
-        if (direction >= 0 && shortBalance > 0) {
+        if (direction > 0 && shortBalance > 0) {
             // Move funds from short to long pair
             uint112 lossAmount = uint112(PoolSwapLibrary.getLossAmount(lossMultiplier, shortBalance));
             shortBalance = shortBalance - lossAmount;
