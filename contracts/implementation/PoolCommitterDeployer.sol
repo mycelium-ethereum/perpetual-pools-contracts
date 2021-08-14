@@ -5,7 +5,7 @@ import "./PoolCommitter.sol";
 import "../interfaces/IPoolCommitterDeployer.sol";
 
 /*
-@title The deployer of PriceChanger and PoolCommitter
+@title The deployer of PoolCommitter
 */
 contract PoolCommitterDeployer is IPoolCommitterDeployer {
     function deploy(address factory) external override returns (address poolCommitter) {

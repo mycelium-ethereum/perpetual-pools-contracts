@@ -7,7 +7,6 @@ import {
     ERC20,
     PoolSwapLibrary,
     PoolCommitter,
-    PriceChanger,
 } from "../../../typechain"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { POOL_CODE } from "../../constants"
@@ -41,7 +40,6 @@ describe("LeveragedPool - executeCommitment: Short Mint", () => {
     let commit: CommitEventArgs
     let library: PoolSwapLibrary
     let poolCommiter: PoolCommitter
-    let priceChanger: PriceChanger
 
     describe("Short Mint", () => {
         beforeEach(async () => {
@@ -56,7 +54,6 @@ describe("LeveragedPool - executeCommitment: Short Mint", () => {
             )
             pool = result.pool
             signers = result.signers
-            priceChanger = result.priceChanger
             poolCommiter = result.poolCommiter
 
             await pool.setKeeper(signers[0].address)

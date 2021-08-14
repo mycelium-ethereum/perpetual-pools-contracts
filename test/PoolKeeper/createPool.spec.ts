@@ -11,13 +11,14 @@ import {
     TestOracleWrapper,
     PoolFactory,
     PoolCommitterDeployer__factory,
-    PriceChangerDeployer__factory,
     TestToken__factory,
 } from "../../typechain"
 
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { OPERATOR_ROLE, ADMIN_ROLE, POOL_CODE, MARKET_CODE } from "../constants"
 import { generateRandomAddress } from "../utilities"
+import { deploy } from "@openzeppelin/hardhat-upgrades/dist/utils"
+import { BigNumber } from "ethers"
 
 chai.use(chaiAsPromised)
 const { expect } = chai
@@ -89,21 +90,9 @@ describe("PoolKeeper - createPool", () => {
         let poolCommiterDeployer = await PoolCommiterDeployerFactory.deploy()
         poolCommiterDeployer = await poolCommiterDeployer.deployed()
 
-        const PriceChangerDeployerFactory = (await ethers.getContractFactory(
-            "PriceChangerDeployer",
-            {
-                signer: signers[0],
-                libraries: { PoolSwapLibrary: library.address },
-            }
-        )) as PriceChangerDeployer__factory
-
-        let priceChangerDeployer = await PriceChangerDeployerFactory.deploy()
-        priceChangerDeployer = await priceChangerDeployer.deployed()
-
         factory = await (
             await PoolFactory.deploy(
                 poolCommiterDeployer.address,
-                priceChangerDeployer.address,
                 generateRandomAddress()
             )
         ).deployed()
@@ -124,6 +113,25 @@ describe("PoolKeeper - createPool", () => {
             oracleWrapper: oracleWrapper.address,
             keeperOracle: keeperOracle.address,
         }
+    })
+
+    it("should Revert if leverageAmount == 0 and if leveragedAmount > maxLeverage", async () => {
+        deploymentData.leverageAmount = 0
+        await expect(factory.deployPool(deploymentData)).to.be.revertedWith(
+            "PoolKeeper: leveraged amount invalid"
+        )
+        deploymentData.leverageAmount = (await factory.maxLeverage()) + 1
+        await expect(factory.deployPool(deploymentData)).to.be.revertedWith(
+            "PoolKeeper: leveraged amount invalid"
+        )
+    })
+
+    it("should Revert if fee > one (in ABDK Math IEEE precision)", async () => {
+        const justAboveOne = "0x3fff0000000000000000000000000001"
+        await factory.setFee(justAboveOne)
+        await expect(factory.deployPool(deploymentData)).to.be.revertedWith(
+            "Fee is greater than 100%"
+        )
     })
 
     it("should create a new pool in the given market", async () => {

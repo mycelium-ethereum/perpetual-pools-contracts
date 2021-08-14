@@ -7,6 +7,15 @@ library PoolSwapLibrary {
     bytes16 public constant one = 0x3fff0000000000000000000000000000;
     bytes16 public constant zero = 0x00000000000000000000000000000000;
 
+    struct PriceChangeData {
+        int256 oldPrice;
+        int256 newPrice;
+        uint112 longBalance;
+        uint112 shortBalance;
+        bytes16 leverageAmount;
+        bytes16 fee;
+    }
+
     /**
     @notice Calculates the ratio between two numbers
     @dev Rounds any overflow towards 0. If either parameter is zero, the ratio is 0.
@@ -43,7 +52,7 @@ library PoolSwapLibrary {
     @param y The second number to compare
     @return -1 if x < y, 0 if x = y, or 1 if x > y
    */
-    function compareDecimals(bytes16 x, bytes16 y) external pure returns (int8) {
+    function compareDecimals(bytes16 x, bytes16 y) public pure returns (int8) {
         return ABDKMathQuad.cmp(x, y);
     }
 
@@ -61,7 +70,7 @@ library PoolSwapLibrary {
     @param ratio The value to convert
     @return The converted value
   */
-    function convertDecimalToUInt(bytes16 ratio) external pure returns (uint256) {
+    function convertDecimalToUInt(bytes16 ratio) public pure returns (uint256) {
         return ABDKMathQuad.toUInt(ratio);
     }
 
@@ -71,7 +80,7 @@ library PoolSwapLibrary {
     @param b The second term
     @return The product of a*b as a decimal
   */
-    function multiplyDecimalByUInt(bytes16 a, uint256 b) external pure returns (bytes16) {
+    function multiplyDecimalByUInt(bytes16 a, uint256 b) public pure returns (bytes16) {
         return ABDKMathQuad.mul(a, ABDKMathQuad.fromUInt(b));
     }
 
@@ -81,7 +90,7 @@ library PoolSwapLibrary {
     @param b The divisor
     @return The qotient 
   */
-    function divInt(int256 a, int256 b) external pure returns (bytes16) {
+    function divInt(int256 a, int256 b) public pure returns (bytes16) {
         return ABDKMathQuad.div(ABDKMathQuad.fromInt(a), ABDKMathQuad.fromInt(b));
     }
 
@@ -96,7 +105,7 @@ library PoolSwapLibrary {
         bytes16 ratio,
         int8 direction,
         bytes16 leverage
-    ) external pure returns (bytes16) {
+    ) public pure returns (bytes16) {
         // If decreased:  2 ^ (leverage * log2[(1 * new/old) + [(0 * 1) / new/old]])
         //              = 2 ^ (leverage * log2[(new/old)])
         // If increased:  2 ^ (leverage * log2[(0 * new/old) + [(1 * 1) / new/old]])
@@ -121,11 +130,68 @@ library PoolSwapLibrary {
     @param lossMultiplier The multiplier to use
     @param balance The balance of the losing pool
   */
-    function getLossAmount(bytes16 lossMultiplier, uint112 balance) external pure returns (uint256) {
+    function getLossAmount(bytes16 lossMultiplier, uint112 balance) public pure returns (uint256) {
         return
             ABDKMathQuad.toUInt(
                 ABDKMathQuad.mul(ABDKMathQuad.sub(one, lossMultiplier), ABDKMathQuad.fromUInt(balance))
             );
+    }
+
+    /**
+     * @notice Calculates the effect of a price change. This involves calculating how many funds to transfer from the losing pool to the other.
+     * @dev This function should be called by the LeveragedPool.
+     * @param priceChange The struct containing necessary data to calculate price change
+     */
+    function calculatePriceChange(PriceChangeData memory priceChange)
+        public
+        returns (
+            // pure
+            uint112 newLongBalance,
+            uint112 newShortBalance,
+            uint112 totalFeeAmount
+        )
+    {
+        uint112 shortBalance = priceChange.shortBalance;
+        uint112 longBalance = priceChange.longBalance;
+        bytes16 leverageAmount = priceChange.leverageAmount;
+        int256 oldPrice = priceChange.oldPrice;
+        int256 newPrice = priceChange.newPrice;
+        bytes16 fee = priceChange.fee;
+
+        // Calculate fees from long and short sides
+        uint112 longFeeAmount = uint112(convertDecimalToUInt(multiplyDecimalByUInt(fee, longBalance)));
+        uint112 shortFeeAmount = uint112(convertDecimalToUInt(multiplyDecimalByUInt(fee, shortBalance)));
+        totalFeeAmount = 0;
+        if (shortBalance >= shortFeeAmount) {
+            shortBalance = shortBalance - shortFeeAmount;
+            totalFeeAmount = totalFeeAmount + shortFeeAmount;
+        }
+        if (longBalance >= longFeeAmount) {
+            longBalance = longBalance - longFeeAmount;
+            totalFeeAmount = totalFeeAmount + longFeeAmount;
+        }
+
+        // Use the ratio to determine if the price increased or decreased and therefore which direction
+        // the funds should be transferred towards.
+
+        bytes16 ratio = divInt(newPrice, oldPrice);
+        int8 direction = compareDecimals(ratio, PoolSwapLibrary.one);
+        // Take into account the leverage
+        bytes16 lossMultiplier = getLossMultiplier(ratio, direction, leverageAmount);
+
+        if (direction >= 0 && shortBalance > 0) {
+            // Move funds from short to long pair
+            uint112 lossAmount = uint112(getLossAmount(lossMultiplier, shortBalance));
+            shortBalance = shortBalance - lossAmount;
+            longBalance = longBalance + lossAmount;
+        } else if (direction < 0 && longBalance > 0) {
+            // Move funds from long to short pair
+            uint112 lossAmount = uint112(getLossAmount(lossMultiplier, longBalance));
+            shortBalance = shortBalance + lossAmount;
+            longBalance = longBalance - lossAmount;
+        }
+
+        return (longBalance, shortBalance, totalFeeAmount);
     }
 
     function getMintAmount(

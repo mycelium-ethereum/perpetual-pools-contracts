@@ -7,7 +7,6 @@ import {
     ERC20,
     PoolSwapLibrary,
     PoolCommitter,
-    PriceChanger,
 } from "../../typechain"
 
 import { POOL_CODE, NO_COMMITS_REMAINING } from "../constants"
@@ -35,7 +34,6 @@ const fee = "0x00000000000000000000000000000000"
 const leverage = 1
 
 describe("LeveragedPool - executeAllCommitments", () => {
-    let priceChanger: PriceChanger
     let poolCommiter: PoolCommitter
     let token: TestToken
     let shortToken: ERC20
@@ -57,7 +55,6 @@ describe("LeveragedPool - executeAllCommitments", () => {
         pool = result.pool
         library = result.library
         poolCommiter = result.poolCommiter
-        priceChanger = result.priceChanger
 
         token = result.token
         shortToken = result.shortToken
