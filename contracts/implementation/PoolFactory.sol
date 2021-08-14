@@ -75,8 +75,8 @@ contract PoolFactory is IPoolFactory, Ownable {
     }
 
     function deployPool(PoolDeployment calldata deploymentParameters) external override returns (address) {
-        require(address(poolKeeper) != address(0), "PoolKeeper not set");
-
+        address _poolKeeper = address(poolKeeper);
+        require(_poolKeeper != address(0), "PoolKeeper not set");
         address poolCommitter = poolCommitterDeployer.deploy(address(this));
         bytes32 uniquePoolId = keccak256(
             abi.encode(
@@ -117,7 +117,7 @@ contract PoolFactory is IPoolFactory, Ownable {
         );
         ILeveragedPool.Initialization memory initialization = ILeveragedPool.Initialization(
             owner(), // governance is the owner of pools
-            address(poolKeeper),
+            _poolKeeper,
             deploymentParameters.oracleWrapper,
             deploymentParameters.keeperOracle,
             shortToken,
