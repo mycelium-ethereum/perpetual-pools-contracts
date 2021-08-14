@@ -136,11 +136,9 @@ describe("LeveragedPool - commit", () => {
             expect(getEventArgs(receipt, "CreateCommit")?.amount).to.eq(
                 amountCommitted
             )
-            expect(
-                getEventArgs(receipt, "CreateCommit")?.commitID.gt(
-                    ethers.BigNumber.from(0)
-                )
-            ).to.eq(true)
+            expect(getEventArgs(receipt, "CreateCommit")?.commitID).to.equal(
+                ethers.BigNumber.from(0)
+            )
         })
     })
 
