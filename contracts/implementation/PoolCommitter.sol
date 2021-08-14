@@ -35,10 +35,11 @@ contract PoolCommitter is IPoolCommitter, Ownable {
 
     function commit(CommitType commitType, uint112 amount) external override {
         require(amount > 0, "Amount must not be zero");
-        commitIDCounter = commitIDCounter + 1;
+        uint128 currentCommitIDCounter = commitIDCounter;
+        commitIDCounter = currentCommitIDCounter + 1;
 
         // create commitment
-        commits[commitIDCounter] = Commit({
+        commits[currentCommitIDCounter] = Commit({
             commitType: commitType,
             amount: amount,
             owner: msg.sender,
@@ -48,11 +49,11 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         shadowPools[_commitType] = shadowPools[_commitType] + amount;
 
         if (earliestCommitUnexecuted == NO_COMMITS_REMAINING) {
-            earliestCommitUnexecuted = commitIDCounter;
+            earliestCommitUnexecuted = currentCommitIDCounter;
         }
-        latestCommitUnexecuted = commitIDCounter;
+        latestCommitUnexecuted = currentCommitIDCounter;
 
-        emit CreateCommit(commitIDCounter, amount, commitType);
+        emit CreateCommit(currentCommitIDCounter, amount, commitType);
 
         // pull in tokens
         if (commitType == CommitType.LongMint || commitType == CommitType.ShortMint) {
