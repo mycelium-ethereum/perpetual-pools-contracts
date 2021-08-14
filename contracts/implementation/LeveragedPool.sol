@@ -54,7 +54,6 @@ contract LeveragedPool is ILeveragedPool, Initializable {
             PoolSwapLibrary.compareDecimals(initialization._fee, PoolSwapLibrary.one) == -1,
             "Fee is greater than 100%"
         );
-        require(initialization._leverageAmount > 0, "Leverage cannot be 0");
 
         // set the owner of the pool. This is governance when deployed from the factory
         governance = initialization._owner;
