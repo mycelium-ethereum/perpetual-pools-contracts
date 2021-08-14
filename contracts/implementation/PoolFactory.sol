@@ -21,7 +21,7 @@ contract PoolFactory is IPoolFactory, Ownable {
     IPoolKeeper public poolKeeper;
     IPoolCommitterDeployer public poolCommitterDeployer;
     // default max leverage of 25
-    uint16 public maxLeverage = 25;
+    uint16 public maxLeverage = 10;
     // contract address to receive protocol fees
     address feeReceiver;
     // default fee
