@@ -71,7 +71,10 @@ contract PoolCommitter is IPoolCommitter, Ownable {
     function uncommit(uint128 _commitID) external override {
         Commit memory _commit = commits[_commitID];
         require(msg.sender == _commit.owner, "Unauthorized");
+        _uncommit(_commit, _commitID);
+    }
 
+    function _uncommit(Commit memory _commit, uint128 _commitID) internal {
         // reduce pool commitment amount
         uint256 _commitType = commitTypeToUint(_commit.commitType);
         shadowPools[_commitType] = shadowPools[_commitType] - _commit.amount;
@@ -117,7 +120,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         for (uint128 i = earliestCommitUnexecuted; i <= latestCommitUnexecuted; i++) {
             IPoolCommitter.Commit memory _commit = commits[i];
             nextEarliestCommitUnexecuted = i;
-            // These two checks are so a given call to _executeCommitment won't revert,
+            // These two checks are so a given call to executeCommitment won't revert,
             // allowing us to continue iterations, as well as update nextEarliestCommitUnexecuted.
             if (_commit.owner == address(0)) {
                 // Commit deleted (uncommitted) or already executed
@@ -129,8 +132,12 @@ contract PoolCommitter is IPoolCommitter, Ownable {
                 break;
             }
             emit ExecuteCommit(i);
-            _executeCommitment(_commit);
-            delete commits[i];
+            try IPoolCommitter(address(this)).executeCommitment(_commit) {
+                delete commits[i];
+            } catch {
+                _uncommit(_commit, i);
+                emit FailedCommitExecution(i);
+            }
             if (i == latestCommitUnexecuted) {
                 // We have reached the last one
                 earliestCommitUnexecuted = NO_COMMITS_REMAINING;
@@ -144,7 +151,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
      * @notice Executes a single commitment.
      * @param _commit The commit to execute
      */
-    function _executeCommitment(Commit memory _commit) internal {
+    function executeCommitment(Commit memory _commit) external override onlySelf {
         require(_commit.owner != address(0), "Invalid commit");
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
         uint256 lastPriceTimestamp = pool.lastPriceTimestamp();
@@ -243,6 +250,11 @@ contract PoolCommitter is IPoolCommitter, Ownable {
 
     modifier onlyPool() {
         require(msg.sender == leveragedPool, "msg.sender not leveragedPool");
+        _;
+    }
+
+    modifier onlySelf() {
+        require(msg.sender == address(this), "msg.sender not self");
         _;
     }
 }
