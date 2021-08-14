@@ -144,8 +144,8 @@ library PoolSwapLibrary {
      */
     function calculatePriceChange(PriceChangeData memory priceChange)
         public
+        pure
         returns (
-            // pure
             uint112 newLongBalance,
             uint112 newShortBalance,
             uint112 totalFeeAmount
@@ -162,14 +162,12 @@ library PoolSwapLibrary {
         uint112 longFeeAmount = uint112(convertDecimalToUInt(multiplyDecimalByUInt(fee, longBalance)));
         uint112 shortFeeAmount = uint112(convertDecimalToUInt(multiplyDecimalByUInt(fee, shortBalance)));
         totalFeeAmount = 0;
-        if (shortBalance >= shortFeeAmount) {
-            shortBalance = shortBalance - shortFeeAmount;
-            totalFeeAmount = totalFeeAmount + shortFeeAmount;
-        }
-        if (longBalance >= longFeeAmount) {
-            longBalance = longBalance - longFeeAmount;
-            totalFeeAmount = totalFeeAmount + longFeeAmount;
-        }
+
+        // fee is enforced to be < 1. Therefore, shortFeeAmount < shortBalance, and longFeeAmount < longBalance
+        shortBalance = shortBalance - shortFeeAmount;
+        totalFeeAmount = totalFeeAmount + shortFeeAmount;
+        longBalance = longBalance - longFeeAmount;
+        totalFeeAmount = totalFeeAmount + longFeeAmount;
 
         // Use the ratio to determine if the price increased or decreased and therefore which direction
         // the funds should be transferred towards.
