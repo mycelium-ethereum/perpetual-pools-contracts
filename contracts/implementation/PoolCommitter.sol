@@ -152,10 +152,8 @@ contract PoolCommitter is IPoolCommitter, Ownable {
      * @param _commit The commit to execute
      */
     function executeCommitment(Commit memory _commit) external override onlySelf {
-        require(_commit.owner != address(0), "Invalid commit");
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
         uint256 lastPriceTimestamp = pool.lastPriceTimestamp();
-        require(lastPriceTimestamp - _commit.created > pool.frontRunningInterval(), "Commit too new");
         uint112 shortBalance = pool.shortBalance();
         uint112 longBalance = pool.longBalance();
         uint256 _commitType = commitTypeToUint(_commit.commitType);
