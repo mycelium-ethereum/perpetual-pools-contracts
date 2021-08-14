@@ -91,7 +91,7 @@ interface ILeveragedPool {
         address from,
         address to,
         uint256 amount
-    ) external returns (bool);
+    ) external;
 
     function setNewPoolBalances(uint112 _longBalance, uint112 _shortBalance) external;
 

@@ -6,6 +6,7 @@ import "../interfaces/IPoolCommitter.sol";
 import "./PoolToken.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "./PoolSwapLibrary.sol";
 import "../interfaces/IOracleWrapper.sol";
@@ -14,6 +15,7 @@ import "../interfaces/IOracleWrapper.sol";
 @title The pool controller contract
 */
 contract LeveragedPool is ILeveragedPool, Initializable {
+    using SafeERC20 for IERC20;
     // #### Globals
 
     // Each balance is the amount of quote tokens in the pair
@@ -105,7 +107,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         longBalance = newLongBalance;
         shortBalance = newShortBalance;
         // Pay the fee
-        IERC20(quoteToken).transferFrom(address(this), feeAddress, totalFeeAmount);
+        IERC20(quoteToken).safeTransferFrom(address(this), feeAddress, totalFeeAmount);
         emit PriceChange(_oldPrice, _newPrice);
     }
 
@@ -113,10 +115,10 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         address from,
         address to,
         uint256 amount
-    ) external override onlyPoolCommitter returns (bool) {
+    ) external override onlyPoolCommitter {
         require(from != address(0), "From address cannot be 0 address");
         require(to != address(0), "To address cannot be 0 address");
-        return IERC20(quoteToken).transferFrom(from, to, amount);
+        IERC20(quoteToken).safeTransferFrom(from, to, amount);
     }
 
     function setNewPoolBalances(uint112 _longBalance, uint112 _shortBalance) external override onlyPoolCommitter {

@@ -58,10 +58,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         // pull in tokens
         if (commitType == CommitType.LongMint || commitType == CommitType.ShortMint) {
             // minting: pull in the quote token from the commiter
-            require(
-                ILeveragedPool(leveragedPool).quoteTokenTransferFrom(msg.sender, address(this), amount),
-                "Transfer failed"
-            );
+            ILeveragedPool(leveragedPool).quoteTokenTransferFrom(msg.sender, address(this), amount);
         } else if (commitType == CommitType.LongBurn) {
             // long burning: pull in long pool tokens from commiter
             ILeveragedPool(leveragedPool).burnTokens(0, amount, msg.sender);
@@ -99,10 +96,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         // release tokens
         if (_commit.commitType == CommitType.LongMint || _commit.commitType == CommitType.ShortMint) {
             // minting: return quote tokens to the commit owner
-            require(
-                ILeveragedPool(leveragedPool).quoteTokenTransferFrom(address(this), msg.sender, _commit.amount),
-                "Transfer failed"
-            );
+            ILeveragedPool(leveragedPool).quoteTokenTransferFrom(address(this), msg.sender, _commit.amount);
         } else if (_commit.commitType == CommitType.LongBurn) {
             // long burning: return long pool tokens to commit owner
             ILeveragedPool(leveragedPool).mintTokens(0, _commit.amount, msg.sender);
@@ -185,7 +179,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
 
             // update long and short balances
             pool.setNewPoolBalances(longBalance - amountOut, shortBalance);
-            require(pool.quoteTokenTransferFrom(address(this), _commit.owner, amountOut), "Transfer failed");
+            pool.quoteTokenTransferFrom(address(this), _commit.owner, amountOut);
         } else if (_commit.commitType == CommitType.ShortMint) {
             uint112 mintAmount = PoolSwapLibrary.getMintAmount(
                 PoolToken(pool.poolTokens()[1]).totalSupply(), // short token total supply
@@ -209,7 +203,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
 
             // update long and short balances
             pool.setNewPoolBalances(longBalance, shortBalance - amountOut);
-            require(pool.quoteTokenTransferFrom(address(this), _commit.owner, amountOut), "Transfer failed");
+            pool.quoteTokenTransferFrom(address(this), _commit.owner, amountOut);
         }
     }
 
