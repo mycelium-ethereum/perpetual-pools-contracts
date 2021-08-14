@@ -70,7 +70,7 @@ contract PoolFactory is IPoolFactory, Ownable {
             1,
             2,
             0,
-            0,
+            1,
             address(this),
             address(this)
         );
