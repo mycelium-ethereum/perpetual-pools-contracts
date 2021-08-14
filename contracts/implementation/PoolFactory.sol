@@ -76,9 +76,7 @@ contract PoolFactory is IPoolFactory, Ownable {
             deploymentParameters.leverageAmount >= 1 && deploymentParameters.leverageAmount <= maxLeverage,
             "PoolKeeper: leveraged amount invalid"
         );
-        LeveragedPool pool = LeveragedPool(
-            Clones.clone(address(poolBase))
-        );
+        LeveragedPool pool = LeveragedPool(Clones.clone(address(poolBase)));
         address _pool = address(pool);
         emit DeployPool(_pool, deploymentParameters.poolName);
 
@@ -129,7 +127,7 @@ contract PoolFactory is IPoolFactory, Ownable {
     ) internal returns (address) {
         PoolToken pairToken = PoolToken(Clones.clone(address(pairTokenBase)));
         pairToken.initialize(owner, name, symbol);
-        
+
         return address(pairToken);
     }
 
