@@ -91,33 +91,39 @@ contract PoolFactory is IPoolFactory, Ownable {
             "PoolKeeper: leveraged amount invalid"
         );
         LeveragedPool pool = LeveragedPool(
-            // pools are unique based on poolCode, quoteToken and oracle
+            // pools are unique based on their leverage, quoteToken and oracle
             Clones.cloneDeterministic(address(poolBase), uniquePoolId)
         );
         address _pool = address(pool);
-        emit DeployPool(_pool, deploymentParameters.poolCode);
+        emit DeployPool(_pool, deploymentParameters.poolName);
 
+        address shortToken = deployPairToken(
+            _pool,
+            string(abi.encodePacked(deploymentParameters.poolName, "-LONG")),
+            string(abi.encodePacked("L-", deploymentParameters.poolName)),
+            0,
+            deploymentParameters.leverageAmount,
+            deploymentParameters.quoteToken,
+            deploymentParameters.oracleWrapper
+        );
+        address longToken = deployPairToken(
+            _pool,
+            string(abi.encodePacked(deploymentParameters.poolName, "-SHORT")),
+            string(abi.encodePacked("S-", deploymentParameters.poolName)),
+            1,
+            deploymentParameters.leverageAmount,
+            deploymentParameters.quoteToken,
+            deploymentParameters.oracleWrapper
+        );
         ILeveragedPool.Initialization memory initialization = ILeveragedPool.Initialization(
             owner(), // governance is the owner of pools
             address(poolKeeper),
             deploymentParameters.oracleWrapper,
             deploymentParameters.keeperOracle,
-            deployPairToken(
-                _pool,
-                string(abi.encodePacked(deploymentParameters.poolCode, "-LONG")),
-                string(abi.encodePacked("L-", deploymentParameters.poolCode)),
-                deploymentParameters.quoteToken,
-                deploymentParameters.oracleWrapper
-            ),
-            deployPairToken(
-                _pool,
-                string(abi.encodePacked(deploymentParameters.poolCode, "-SHORT")),
-                string(abi.encodePacked("S-", deploymentParameters.poolCode)),
-                deploymentParameters.quoteToken,
-                deploymentParameters.oracleWrapper
-            ),
+            shortToken,
+            longToken,
             poolCommitter,
-            deploymentParameters.poolCode,
+            deploymentParameters.poolName,
             deploymentParameters.frontRunningInterval,
             deploymentParameters.updateInterval,
             fee,
@@ -126,7 +132,7 @@ contract PoolFactory is IPoolFactory, Ownable {
             deploymentParameters.quoteToken
         );
         // the following two function calls are both due to circular dependencies
-        // aprove the quote token on the pool commiter to finalise linking
+        // approve the quote token on the pool commiter to finalise linking
         // this also stores the pool address in the commiter
         IPoolCommitter(poolCommitter).setQuoteAndPool(deploymentParameters.quoteToken, _pool);
 
@@ -135,6 +141,7 @@ contract PoolFactory is IPoolFactory, Ownable {
         poolKeeper.newPool(_pool);
         pools[numPools] = _pool;
         numPools += 1;
+        poolIdTaken[uniquePoolId] = true;
         isValidPool[_pool] = true;
         return _pool;
     }
@@ -143,12 +150,17 @@ contract PoolFactory is IPoolFactory, Ownable {
         address owner,
         string memory name,
         string memory symbol,
+        uint8 tokenType,
+        uint16 leverageAmount,
         address quoteToken,
         address oracleWrapper
     ) internal returns (address) {
-        // pools are unique based on poolCode, quoteToken and oracle -> pool tokens should be the same
+        // pools are unique based on leverage, quoteToken and oracle -> pool tokens should be the same
         PoolToken pairToken = PoolToken(
-            Clones.cloneDeterministic(address(pairTokenBase), keccak256(abi.encode(name, quoteToken, oracleWrapper)))
+            Clones.cloneDeterministic(
+                address(pairTokenBase),
+                keccak256(abi.encode(tokenType, leverageAmount, quoteToken, oracleWrapper))
+            )
         );
         pairToken.initialize(owner, name, symbol);
         return address(pairToken);

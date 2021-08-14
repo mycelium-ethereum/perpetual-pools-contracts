@@ -10,18 +10,18 @@ interface IPoolKeeper {
      * @notice Creates a notification when a pool is created
      * @param poolAddress The pool address of the newly created pool. This is deterministic and utilizes create2 and the pool code as the salt.
      * @param firstPrice The price of the market oracle when the pool was created.
-     * @param poolCode The code of the pool. This combined with the updateInterval provide the upkeep details.
+     * @param pool The address of the pool. This combined with the updateInterval provide the upkeep details.
      */
-    event PoolAdded(address indexed poolAddress, int256 indexed firstPrice, address poolCode);
+    event PoolAdded(address indexed poolAddress, int256 indexed firstPrice, address pool);
 
     /**
      * @notice Creates notification of a new round for a market/update interval pair
      * @param oldPrice The average price for the penultimate round
      * @param newPrice The average price for the round that's just ended
      * @param updateInterval The length of the round
-     * @param poolCode The code for the pool being updated
+     * @param pool The address of the pool being updated
      */
-    event NewRound(int256 indexed oldPrice, int256 indexed newPrice, uint32 indexed updateInterval, address poolCode);
+    event NewRound(int256 indexed oldPrice, int256 indexed newPrice, uint32 indexed updateInterval, address pool);
 
     /**
      * @notice Creates notification of a price execution for a set of pools
@@ -60,27 +60,27 @@ interface IPoolKeeper {
     /**
      * @notice Check if upkeep is required
      * @dev This should not be called or executed.
-     * @param poolCode The poolCode of the pool to upkeep
+     * @param pool The address of the pool to upkeep
      * @return upkeepNeeded Whether or not upkeep is needed for this single pool
      */
-    function checkUpkeepSinglePool(address poolCode) external view returns (bool upkeepNeeded);
+    function checkUpkeepSinglePool(address pool) external view returns (bool upkeepNeeded);
 
     /**
      * @notice Checks multiple pools if any of them need updating
-     * @param poolCodes The array of pool codes to check
+     * @param pools The array of pool codes to check
      * @return upkeepNeeded Whether or not at least one pool needs upkeeping
      */
-    function checkUpkeepMultiplePools(address[] calldata poolCodes) external view returns (bool upkeepNeeded);
+    function checkUpkeepMultiplePools(address[] calldata pools) external view returns (bool upkeepNeeded);
 
     /**
      * @notice Called by keepers to perform an update on a single pool
-     * @param poolCode The pool code to perform the update for.
+     * @param pool The pool code to perform the update for.
      */
-    function performUpkeepSinglePool(address poolCode) external;
+    function performUpkeepSinglePool(address pool) external;
 
     /**
      * @notice Called by keepers to perform an update on multiple pools
-     * @param poolCodes pool codes to perform the update for.
+     * @param pools pool codes to perform the update for.
      */
-    function performUpkeepMultiplePools(address[] calldata poolCodes) external;
+    function performUpkeepMultiplePools(address[] calldata pools) external;
 }

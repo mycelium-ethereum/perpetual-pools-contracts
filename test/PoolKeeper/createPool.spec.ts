@@ -104,7 +104,7 @@ describe("PoolKeeper - createPool", () => {
         deploymentData = {
             owner: signers[0].address,
             keeper: poolKeeper.address,
-            poolCode: POOL_CODE,
+            poolName: POOL_CODE,
             frontRunningInterval: 3,
             updateInterval: 5,
             leverageAmount: 5,

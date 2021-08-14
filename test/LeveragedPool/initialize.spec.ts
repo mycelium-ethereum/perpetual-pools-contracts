@@ -135,7 +135,7 @@ describe("LeveragedPool - initialize", () => {
                 _longToken: long.address,
                 _shortToken: short.address,
                 _poolCommitter: poolCommitter.address,
-                _poolCode: POOL_CODE,
+                _poolName: POOL_CODE,
                 _frontRunningInterval: frontRunningInterval,
                 _updateInterval: updateInterval,
                 _fee: fee,
@@ -171,7 +171,7 @@ describe("LeveragedPool - initialize", () => {
                     _longToken: long.address,
                     _shortToken: short.address,
                     _poolCommitter: poolCommitter.address,
-                    _poolCode: POOL_CODE,
+                    _poolName: POOL_CODE,
                     _frontRunningInterval: frontRunningInterval,
                     _updateInterval: updateInterval,
                     _fee: fee,
@@ -213,7 +213,7 @@ describe("LeveragedPool - initialize", () => {
         })
 
         it("should set the pool code", async () => {
-            expect(await leveragedPool.poolCode()).to.eq(POOL_CODE)
+            expect(await leveragedPool.poolName()).to.eq(POOL_CODE)
         })
 
         it("should deploy two ERC20 tokens for the long/short pairs", async () => {
@@ -248,7 +248,7 @@ describe("LeveragedPool - initialize", () => {
             expect(!!event?.args?.longToken).to.eq(true)
             expect(!!event?.args?.shortToken).to.eq(true)
             expect(event?.args?.quoteToken).to.eq(quoteToken)
-            expect(event?.args?.poolCode).to.eq(POOL_CODE)
+            expect(event?.args?.poolName).to.eq(POOL_CODE)
         })
     })
 
@@ -334,7 +334,7 @@ describe("LeveragedPool - initialize", () => {
                     _longToken: long.address,
                     _shortToken: short.address,
                     _poolCommitter: poolCommitter.address,
-                    _poolCode: POOL_CODE,
+                    _poolName: POOL_CODE,
                     _frontRunningInterval: frontRunningInterval,
                     _updateInterval: updateInterval,
                     _fee: fee,
@@ -373,7 +373,7 @@ describe("LeveragedPool - initialize", () => {
                 _longToken: long.address,
                 _shortToken: short.address,
                 _poolCommitter: poolCommitter.address,
-                _poolCode: POOL_CODE,
+                _poolName: POOL_CODE,
                 _frontRunningInterval: frontRunningInterval,
                 _updateInterval: updateInterval,
                 _fee: fee,
@@ -390,7 +390,7 @@ describe("LeveragedPool - initialize", () => {
                     _longToken: long.address,
                     _shortToken: short.address,
                     _poolCommitter: poolCommitter.address,
-                    _poolCode: POOL_CODE,
+                    _poolName: POOL_CODE,
                     _frontRunningInterval: frontRunningInterval,
                     _updateInterval: updateInterval,
                     _fee: fee,
@@ -410,7 +410,7 @@ describe("LeveragedPool - initialize", () => {
                     _longToken: long.address,
                     _shortToken: short.address,
                     _poolCommitter: poolCommitter.address,
-                    _poolCode: POOL_CODE,
+                    _poolName: POOL_CODE,
                     _frontRunningInterval: frontRunningInterval,
                     _updateInterval: updateInterval,
                     _fee: fee,
@@ -430,7 +430,7 @@ describe("LeveragedPool - initialize", () => {
                     _longToken: long.address,
                     _shortToken: short.address,
                     _poolCommitter: poolCommitter.address,
-                    _poolCode: POOL_CODE,
+                    _poolName: POOL_CODE,
                     _frontRunningInterval: frontRunningInterval,
                     _updateInterval: updateInterval,
                     _fee: fee,
@@ -450,7 +450,7 @@ describe("LeveragedPool - initialize", () => {
                     _longToken: long.address,
                     _shortToken: short.address,
                     _poolCommitter: poolCommitter.address,
-                    _poolCode: POOL_CODE,
+                    _poolName: POOL_CODE,
                     _frontRunningInterval: frontRunningInterval,
                     _updateInterval: updateInterval,
                     _fee: fee,
@@ -471,7 +471,7 @@ describe("LeveragedPool - initialize", () => {
                     _longToken: long.address,
                     _shortToken: short.address,
                     _poolCommitter: poolCommitter.address,
-                    _poolCode: POOL_CODE,
+                    _poolName: POOL_CODE,
                     _frontRunningInterval: updateInterval,
                     _updateInterval: frontRunningInterval,
                     _fee: fee,
@@ -500,7 +500,7 @@ describe("LeveragedPool - initialize", () => {
                 _longToken: long.address,
                 _shortToken: short.address,
                 _poolCommitter: poolCommitter.address,
-                _poolCode: POOL_CODE_2,
+                _poolName: POOL_CODE_2,
                 _frontRunningInterval: frontRunningInterval,
                 _updateInterval: updateInterval,
                 _fee: fee,
@@ -516,7 +516,7 @@ describe("LeveragedPool - initialize", () => {
                 _longToken: long.address,
                 _shortToken: short.address,
                 _poolCommitter: poolCommitter.address,
-                _poolCode: POOL_CODE,
+                _poolName: POOL_CODE,
                 _frontRunningInterval: frontRunningInterval,
                 _updateInterval: updateInterval,
                 _fee: fee,
@@ -525,8 +525,8 @@ describe("LeveragedPool - initialize", () => {
                 _quoteToken: quoteToken,
             })
 
-            expect(await secondPool.poolCode()).to.eq(POOL_CODE_2)
-            expect(await leveragedPool.poolCode()).to.eq(POOL_CODE)
+            expect(await secondPool.poolName()).to.eq(POOL_CODE_2)
+            expect(await leveragedPool.poolName()).to.eq(POOL_CODE)
         })
     })
 })

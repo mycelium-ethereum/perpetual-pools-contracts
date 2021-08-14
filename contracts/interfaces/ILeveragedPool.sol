@@ -13,7 +13,7 @@ interface ILeveragedPool {
         address _longToken;
         address _shortToken;
         address _poolCommitter;
-        string _poolCode; // The pool identification code. This is unique per pool per pool keeper
+        string _poolName; // The pool identification name
         uint32 _frontRunningInterval; // The minimum number of seconds that must elapse before a commit is forced to wait until the next interval
         uint32 _updateInterval; // The minimum number of seconds that must elapse before a commit can be executed.
         bytes16 _fee; // The fund movement fee. This amount is extracted from the deposited asset with every update and sent to the fee address.
@@ -28,9 +28,9 @@ interface ILeveragedPool {
      * @param longToken The address of the LONG pair token
      * @param shortToken The address of the SHORT pair token
      * @param quoteToken The address of the digital asset that the pool accepts
-     * @param poolCode The pool code for the pool
+     * @param poolName The pool code for the pool
      */
-    event PoolInitialized(address indexed longToken, address indexed shortToken, address quoteToken, string poolCode);
+    event PoolInitialized(address indexed longToken, address indexed shortToken, address quoteToken, string poolName);
 
     event PriceChange(int256 indexed startPrice, int256 indexed endPrice);
 
@@ -62,6 +62,8 @@ interface ILeveragedPool {
     function oracleWrapper() external view returns (address);
 
     function lastPriceTimestamp() external view returns (uint256);
+
+    function poolName() external view returns (string calldata);
 
     function updateInterval() external view returns (uint32);
 

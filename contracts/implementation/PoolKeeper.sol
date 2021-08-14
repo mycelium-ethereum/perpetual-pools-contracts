@@ -29,13 +29,9 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @notice Format: Pool code => executionPrice
      */
     mapping(address => int256) public executionPrice;
-    /**
-     * @notice Format: Pool code => lastExecutionPrice
-     */
-    mapping(address => int256) public lastExecutionPrice;
 
     /**
-     * @notice Format: Pool code => timestamp of last price execution
+     * @notice Format: Pool => timestamp of last price execution
      * @dev Used to allow multiple upkeep registrations to use the same market/update interval price data.
      */
     mapping(address => uint256) public lastExecutionTime;
@@ -62,14 +58,13 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         emit PoolAdded(_poolAddress, firstPrice, _poolAddress);
         poolRoundStart[_poolAddress] = uint40(block.timestamp);
         executionPrice[_poolAddress] = startingPrice;
-        lastExecutionPrice[_poolAddress] = startingPrice;
     }
 
     // Keeper network
     /**
      * @notice Check if upkeep is required
      * @dev This should not be called or executed.
-     * @param _pool The poolCode of the pool to upkeep
+     * @param _pool The address of the pool to upkeep
      * @return upkeepNeeded Whether or not upkeep is needed for this single pool
      */
     function checkUpkeepSinglePool(address _pool) public view override returns (bool upkeepNeeded) {
@@ -83,7 +78,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
 
     /**
      * @notice Checks multiple pools if any of them need updating
-     * @param _pools The array of pool codes to check
+     * @param _pools The array of pools to check
      * @return upkeepNeeded Whether or not at least one pool needs upkeeping
      */
     function checkUpkeepMultiplePools(address[] calldata _pools) external view override returns (bool upkeepNeeded) {
@@ -109,11 +104,11 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         ILeveragedPool pool = ILeveragedPool(_pool);
         int256 latestPrice = IOracleWrapper(pool.oracleWrapper()).getPrice();
         // Start a new round
-        lastExecutionPrice[_pool] = executionPrice[_pool];
+        int256 lastExecutionPrice = executionPrice[_pool];
         executionPrice[_pool] = ABDKMathQuad.toInt(ABDKMathQuad.mul(ABDKMathQuad.fromInt(latestPrice), fixedPoint));
         poolRoundStart[_pool] = block.timestamp;
 
-        emit NewRound(lastExecutionPrice[_pool], latestPrice, pool.updateInterval(), _pool);
+        emit NewRound(lastExecutionPrice, latestPrice, pool.updateInterval(), _pool);
 
         uint256 savedLastExecutionTime = lastExecutionTime[_pool];
 
@@ -121,7 +116,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
             uint32(block.timestamp),
             pool.updateInterval(),
             _pool,
-            lastExecutionPrice[_pool],
+            lastExecutionPrice,
             executionPrice[_pool]
         );
 
@@ -143,7 +138,6 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         uint256 _gasSpent,
         uint256 _executionTime
     ) internal {
-        IERC20 settlementToken = IERC20(ILeveragedPool(_pool).quoteToken());
         uint256 reward = keeperReward(_pool, _gasPrice, _gasSpent, _executionTime);
 
         keeperFees[msg.sender] += reward;
@@ -151,11 +145,11 @@ contract PoolKeeper is IPoolKeeper, Ownable {
 
     /**
      * @notice Called by keepers to perform an update on multiple pools
-     * @param poolCodes pool codes to perform the update for.
+     * @param pools pool codes to perform the update for.
      */
-    function performUpkeepMultiplePools(address[] calldata poolCodes) external override {
-        for (uint256 i = 0; i < poolCodes.length; i++) {
-            performUpkeepSinglePool(poolCodes[i]);
+    function performUpkeepMultiplePools(address[] calldata pools) external override {
+        for (uint256 i = 0; i < pools.length; i++) {
+            performUpkeepSinglePool(pools[i]);
         }
     }
 

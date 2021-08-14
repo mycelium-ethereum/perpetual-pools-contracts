@@ -88,7 +88,7 @@ const setupHook = async () => {
     await oracleWrapper.incrementPrice()
     // Create pool
     const deploymentData = {
-        poolCode: POOL_CODE,
+        poolName: POOL_CODE,
         frontRunningInterval: 1,
         updateInterval: updateInterval,
         leverageAmount: 1,
@@ -100,7 +100,7 @@ const setupHook = async () => {
 
     await oracleWrapper.incrementPrice()
     const deploymentData2 = {
-        poolCode: POOL_CODE_2,
+        poolName: POOL_CODE_2,
         frontRunningInterval: 1,
         updateInterval: updateInterval,
         leverageAmount: 2,
@@ -165,23 +165,12 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
                 ])
             ).wait()
             oldExecutionPrice = await poolKeeper.executionPrice(POOL1_ADDR)
-            oldLastExecutionPrice = await poolKeeper.lastExecutionPrice(
-                POOL1_ADDR
-            )
             event = getEventArgs(result, "ExecutePriceChange")
         })
         it("should emit an event with the details", async () => {
             expect(event?.updateInterval).to.eq(updateInterval)
-            expect(event?.oldPrice).to.eq(oldLastExecutionPrice)
             expect(event?.newPrice).to.eq(oldExecutionPrice)
             expect(event?.pool).to.eq(POOL1_ADDR)
-        })
-        it("should set last execution time", async () => {
-            expect(
-                (await poolKeeper.lastExecutionTime(POOL1_ADDR)).gt(
-                    BigNumber.from(lastTime)
-                )
-            ).to.equal(true)
         })
     })
 
@@ -197,14 +186,12 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
             // delay and upkeep again
             await timeout(updateInterval * 1000 + 1000)
 
+            newLastExecutionPrice = await poolKeeper.executionPrice(POOL1_ADDR)
             await poolKeeper.performUpkeepMultiplePools([
                 POOL1_ADDR,
                 POOL2_ADDR,
             ])
             newExecutionPrice = await poolKeeper.executionPrice(POOL1_ADDR)
-            newLastExecutionPrice = await poolKeeper.lastExecutionPrice(
-                POOL1_ADDR
-            )
             newRoundStart = await poolKeeper.poolRoundStart(POOL1_ADDR)
         })
         it("should clear the old round data", async () => {
