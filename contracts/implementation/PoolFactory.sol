@@ -45,7 +45,7 @@ contract PoolFactory is IPoolFactory, Ownable {
     mapping(address => bool) public override isValidPool;
 
     // #### Functions
-    constructor(address _poolCommitterDeployer, address _feeReceiver) {
+    constructor(address _feeReceiver) {
         // Deploy base contracts
         pairTokenBase = new PoolToken();
         poolBase = new LeveragedPool();
@@ -68,7 +68,6 @@ contract PoolFactory is IPoolFactory, Ownable {
         );
         // Init bases
         poolBase.initialize(baseInitialization);
-        poolCommitterDeployer = IPoolCommitterDeployer(_poolCommitterDeployer);
 
         pairTokenBase.initialize(address(this), "BASE_TOKEN", "BASE");
         feeReceiver = _feeReceiver;
@@ -77,7 +76,7 @@ contract PoolFactory is IPoolFactory, Ownable {
     function deployPool(PoolDeployment calldata deploymentParameters) external override returns (address) {
         address _poolKeeper = address(poolKeeper);
         require(_poolKeeper != address(0), "PoolKeeper not set");
-        address poolCommitter = poolCommitterDeployer.deploy(address(this));
+        address poolCommitter = poolCommitterDeployer.deploy();
         bytes32 uniquePoolId = keccak256(
             abi.encode(
                 deploymentParameters.leverageAmount,
@@ -170,6 +169,7 @@ contract PoolFactory is IPoolFactory, Ownable {
     // either we a) use a proxy and don't have a setter
     // b) go for versioned releases and start with a safety switch we can turn off
     function setPoolKeeper(address _poolKeeper) external override onlyOwner {
+        require(_poolKeeper != address(0), "address cannot be null");
         poolKeeper = IPoolKeeper(_poolKeeper);
     }
 
@@ -178,10 +178,16 @@ contract PoolFactory is IPoolFactory, Ownable {
     }
 
     function setFeeReceiver(address _feeReceiver) external override onlyOwner {
+        require(_feeReceiver != address(0), "address cannot be null");
         feeReceiver = _feeReceiver;
     }
 
     function setFee(bytes16 _fee) external override onlyOwner {
         fee = _fee;
+    }
+
+    function setPoolCommitterDeployer(address _poolCommitterDeployer) external override onlyOwner {
+        require(_poolCommitterDeployer != address(0), "address cannot be null");
+        poolCommitterDeployer = IPoolCommitterDeployer(_poolCommitterDeployer);
     }
 }

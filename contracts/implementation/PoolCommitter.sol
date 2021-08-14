@@ -153,7 +153,6 @@ contract PoolCommitter is IPoolCommitter, Ownable {
      */
     function executeCommitment(Commit memory _commit) external override onlySelf {
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
-        uint256 lastPriceTimestamp = pool.lastPriceTimestamp();
         uint112 shortBalance = pool.shortBalance();
         uint112 longBalance = pool.longBalance();
         uint256 _commitType = commitTypeToUint(_commit.commitType);

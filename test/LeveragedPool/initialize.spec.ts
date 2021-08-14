@@ -13,7 +13,9 @@ import {
     TestChainlinkOracle__factory,
     TestOracleWrapper__factory,
     TestOracleWrapper,
-    PoolCommitterDeployer__factory,
+    PoolFactory__factory,
+    PoolCommitter__factory,
+    PoolCommitter,
 } from "../../typechain"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import {
@@ -108,15 +110,29 @@ describe("LeveragedPool - initialize", () => {
             const keeperOracle = await oracleWrapperFactory.deploy(
                 chainlinkOracle.address
             )
-
-            const poolCommitterDeployer = (await ethers.getContractFactory(
-                "PoolCommitterDeployer",
+            const PoolFactory = (await ethers.getContractFactory(
+                "PoolFactory",
                 {
                     signer: signers[0],
                     libraries: { PoolSwapLibrary: library.address },
                 }
-            )) as PoolCommitterDeployer__factory
-            const poolCommitter = await poolCommitterDeployer.deploy()
+            )) as PoolFactory__factory
+
+            const factory = await (
+                await PoolFactory.deploy(generateRandomAddress())
+            ).deployed()
+
+            const PoolCommiterFactory = (await ethers.getContractFactory(
+                "PoolCommitter",
+                {
+                    signer: signers[0],
+                    libraries: { PoolSwapLibrary: library.address },
+                }
+            )) as PoolCommitter__factory
+
+            const poolCommitter = await (
+                await PoolCommiterFactory.deploy(factory.address)
+            ).deployed()
 
             const leveragedPoolFactory = (await ethers.getContractFactory(
                 "LeveragedPool",
@@ -127,6 +143,7 @@ describe("LeveragedPool - initialize", () => {
             )) as LeveragedPool__factory
             const pool = await leveragedPoolFactory.deploy()
             await pool.deployed()
+
             const initialization = {
                 _owner: signers[0].address,
                 _keeper: generateRandomAddress(),
@@ -255,7 +272,7 @@ describe("LeveragedPool - initialize", () => {
     describe("Performs safety checks", () => {
         let leveragedPool: LeveragedPool
         let testFactoryActual: TestPoolFactory
-        let poolCommitter: any
+        let poolCommitter: PoolCommitter
         beforeEach(async () => {
             // Deploy the contracts
             const testToken = (await ethers.getContractFactory(
@@ -292,14 +309,29 @@ describe("LeveragedPool - initialize", () => {
                 chainlinkOracle.address
             )
 
-            const poolCommitterDeployer = (await ethers.getContractFactory(
-                "PoolCommitterDeployer",
+            const PoolFactory = (await ethers.getContractFactory(
+                "PoolFactory",
                 {
                     signer: signers[0],
                     libraries: { PoolSwapLibrary: library.address },
                 }
-            )) as PoolCommitterDeployer__factory
-            poolCommitter = await poolCommitterDeployer.deploy()
+            )) as PoolFactory__factory
+
+            const factory = await (
+                await PoolFactory.deploy(generateRandomAddress())
+            ).deployed()
+
+            const PoolCommiterFactory = (await ethers.getContractFactory(
+                "PoolCommitter",
+                {
+                    signer: signers[0],
+                    libraries: { PoolSwapLibrary: library.address },
+                }
+            )) as PoolCommitter__factory
+
+            poolCommitter = await (
+                await PoolCommiterFactory.deploy(factory.address)
+            ).deployed()
 
             const leveragedPoolFactory = (await ethers.getContractFactory(
                 "LeveragedPool",
