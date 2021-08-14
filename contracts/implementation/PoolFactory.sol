@@ -28,12 +28,6 @@ contract PoolFactory is IPoolFactory, Ownable {
     bytes16 public fee;
 
     /**
-     * @notice Format: keccack(leverage, quoteToken, oracle) => is taken
-     * @dev ensures that the factory does not deterministically deploy pools that already exist
-     */
-    mapping(bytes32 => bool) public override poolIdTaken;
-
-    /**
      * @notice Format: Pool counter => pool address
      */
     mapping(uint256 => address) public override pools;
@@ -78,21 +72,12 @@ contract PoolFactory is IPoolFactory, Ownable {
         address _poolKeeper = address(poolKeeper);
         require(_poolKeeper != address(0), "PoolKeeper not set");
         address poolCommitter = poolCommitterDeployer.deploy(address(this));
-        bytes32 uniquePoolId = keccak256(
-            abi.encode(
-                deploymentParameters.leverageAmount,
-                deploymentParameters.quoteToken,
-                deploymentParameters.oracleWrapper
-            )
-        );
-        require(!poolIdTaken[uniquePoolId], "Pool ID in use");
         require(
             deploymentParameters.leverageAmount >= 1 && deploymentParameters.leverageAmount <= maxLeverage,
             "PoolKeeper: leveraged amount invalid"
         );
         LeveragedPool pool = LeveragedPool(
-            // pools are unique based on their leverage, quoteToken and oracle
-            Clones.cloneDeterministic(address(poolBase), uniquePoolId)
+            Clones.clone(address(poolBase))
         );
         address _pool = address(pool);
         emit DeployPool(_pool, deploymentParameters.poolName);
@@ -100,20 +85,12 @@ contract PoolFactory is IPoolFactory, Ownable {
         address shortToken = deployPairToken(
             _pool,
             string(abi.encodePacked(deploymentParameters.poolName, "-LONG")),
-            string(abi.encodePacked("L-", deploymentParameters.poolName)),
-            0,
-            deploymentParameters.leverageAmount,
-            deploymentParameters.quoteToken,
-            deploymentParameters.oracleWrapper
+            string(abi.encodePacked("L-", deploymentParameters.poolName))
         );
         address longToken = deployPairToken(
             _pool,
             string(abi.encodePacked(deploymentParameters.poolName, "-SHORT")),
-            string(abi.encodePacked("S-", deploymentParameters.poolName)),
-            1,
-            deploymentParameters.leverageAmount,
-            deploymentParameters.quoteToken,
-            deploymentParameters.oracleWrapper
+            string(abi.encodePacked("S-", deploymentParameters.poolName))
         );
         ILeveragedPool.Initialization memory initialization = ILeveragedPool.Initialization(
             owner(), // governance is the owner of pools
@@ -141,7 +118,6 @@ contract PoolFactory is IPoolFactory, Ownable {
         poolKeeper.newPool(_pool);
         pools[numPools] = _pool;
         numPools += 1;
-        poolIdTaken[uniquePoolId] = true;
         isValidPool[_pool] = true;
         return _pool;
     }
@@ -149,20 +125,11 @@ contract PoolFactory is IPoolFactory, Ownable {
     function deployPairToken(
         address owner,
         string memory name,
-        string memory symbol,
-        uint8 tokenType,
-        uint16 leverageAmount,
-        address quoteToken,
-        address oracleWrapper
+        string memory symbol
     ) internal returns (address) {
-        // pools are unique based on leverage, quoteToken and oracle -> pool tokens should be the same
-        PoolToken pairToken = PoolToken(
-            Clones.cloneDeterministic(
-                address(pairTokenBase),
-                keccak256(abi.encode(tokenType, leverageAmount, quoteToken, oracleWrapper))
-            )
-        );
+        PoolToken pairToken = PoolToken(Clones.clone(address(pairTokenBase)));
         pairToken.initialize(owner, name, symbol);
+        
         return address(pairToken);
     }
 

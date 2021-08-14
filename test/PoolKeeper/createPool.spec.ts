@@ -148,11 +148,4 @@ describe("PoolKeeper - createPool", () => {
         expect(!!event).to.eq(true)
         expect(!!event?.args?.pool).to.eq(true)
     })
-
-    it("should revert if the pool already exists", async () => {
-        await (await factory.deployPool(deploymentData)).wait()
-        await expect(factory.deployPool(deploymentData)).to.be.rejectedWith(
-            Error
-        )
-    })
 })

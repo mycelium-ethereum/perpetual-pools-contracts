@@ -11,8 +11,6 @@ interface IPoolFactory {
     // #### Getters for Globals
     function pools(uint256 id) external view returns (address);
 
-    function poolIdTaken(bytes32 uniquePoolId) external view returns (bool);
-
     function numPools() external view returns (uint256);
 
     function isValidPool(address _pool) external view returns (bool);
