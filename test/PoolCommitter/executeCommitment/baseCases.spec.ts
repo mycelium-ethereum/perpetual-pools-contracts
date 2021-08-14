@@ -8,7 +8,6 @@ import {
     ERC20,
     PoolCommitter,
     PoolKeeper,
-    PriceChanger,
 } from "../../../typechain"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { POOL_CODE } from "../../constants"
@@ -42,7 +41,6 @@ describe("PoolCommiter - executeCommitment: Basic test cases", () => {
     let library: PoolSwapLibrary
     let signers: SignerWithAddress[]
     let poolCommiter: PoolCommitter
-    let priceChanger: PriceChanger
 
     describe("Revert cases", () => {
         before(async () => {
@@ -59,7 +57,6 @@ describe("PoolCommiter - executeCommitment: Basic test cases", () => {
             signers = result.signers
             token = result.token
             library = result.library
-            priceChanger = result.priceChanger
             poolCommiter = result.poolCommiter
         })
         it("should revert if the commitment is too new", async () => {
@@ -98,7 +95,6 @@ describe("PoolCommiter - executeCommitment: Basic test cases", () => {
             token = result.token
             library = result.library
             poolCommiter = result.poolCommiter
-            priceChanger = result.priceChanger
 
             await token.approve(pool.address, amountCommitted)
             commit = await createCommit(

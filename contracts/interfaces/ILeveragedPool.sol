@@ -12,7 +12,6 @@ interface ILeveragedPool {
         address _keeperOracle;
         address _longToken;
         address _shortToken;
-        address _priceChanger;
         address _poolCommitter;
         string _poolCode; // The pool identification code. This is unique per pool per pool keeper
         uint32 _frontRunningInterval; // The minimum number of seconds that must elapse before a commit is forced to wait until the next interval
@@ -32,6 +31,8 @@ interface ILeveragedPool {
      * @param poolCode The pool code for the pool
      */
     event PoolInitialized(address indexed longToken, address indexed shortToken, address quoteToken, string poolCode);
+
+    event PriceChange(int256 indexed startPrice, int256 indexed endPrice);
 
     /**
      * @notice Represents change in fee receiver's address
@@ -57,8 +58,6 @@ interface ILeveragedPool {
     function leverageAmount() external view returns (bytes16);
 
     function poolCommitter() external view returns (address);
-
-    function priceChanger() external view returns (address);
 
     function oracleWrapper() external view returns (address);
 
@@ -86,7 +85,6 @@ interface ILeveragedPool {
      */
     function initialize(Initialization calldata initialization) external;
 
-    // This would call `PriceChanger::executePriceChange` and `PoolCommitter::executeAllCommitments` and would have onlyKeeper modifier
     function poolUpkeep(int256 _oldPrice, int256 _newPrice) external;
 
     function quoteTokenTransferFrom(
@@ -95,7 +93,6 @@ interface ILeveragedPool {
         uint256 amount
     ) external returns (bool);
 
-    // This would be called in `PoolCommitter::executeCommitment` and `PriceChanger::executePriceChange` and would therefore have an onlyCommitterOrPriceChanger modifier or something
     function setNewPoolBalances(uint112 _longBalance, uint112 _shortBalance) external;
 
     function getOraclePrice() external view returns (int256);

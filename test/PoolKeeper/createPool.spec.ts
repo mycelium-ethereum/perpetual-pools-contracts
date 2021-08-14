@@ -11,7 +11,6 @@ import {
     TestOracleWrapper,
     PoolFactory,
     PoolCommitterDeployer__factory,
-    PriceChangerDeployer__factory,
     TestToken__factory,
 } from "../../typechain"
 
@@ -89,21 +88,9 @@ describe("PoolKeeper - createPool", () => {
         let poolCommiterDeployer = await PoolCommiterDeployerFactory.deploy()
         poolCommiterDeployer = await poolCommiterDeployer.deployed()
 
-        const PriceChangerDeployerFactory = (await ethers.getContractFactory(
-            "PriceChangerDeployer",
-            {
-                signer: signers[0],
-                libraries: { PoolSwapLibrary: library.address },
-            }
-        )) as PriceChangerDeployer__factory
-
-        let priceChangerDeployer = await PriceChangerDeployerFactory.deploy()
-        priceChangerDeployer = await priceChangerDeployer.deployed()
-
         factory = await (
             await PoolFactory.deploy(
                 poolCommiterDeployer.address,
-                priceChangerDeployer.address,
                 generateRandomAddress()
             )
         ).deployed()
