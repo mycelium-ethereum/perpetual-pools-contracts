@@ -48,6 +48,11 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         require(initialization._quoteToken != address(0), "Quote token cannot be 0 address");
         require(initialization._oracleWrapper != address(0), "Oracle wrapper cannot be 0 address");
         require(initialization._keeperOracle != address(0), "Keeper oracle cannot be 0 address");
+        require(initialization._owner != address(0), "Owner cannot be 0 address");
+        require(initialization._keeper != address(0), "Keeper cannot be 0 address");
+        require(initialization._longToken != address(0), "Long token cannot be 0 address");
+        require(initialization._shortToken != address(0), "Short token cannot be 0 address");
+        require(initialization._poolCommitter != address(0), "PoolCommitter cannot be 0 address");
         require(initialization._frontRunningInterval < initialization._updateInterval, "frontRunning > updateInterval");
 
         // set the owner of the pool. This is governance when deployed from the factory

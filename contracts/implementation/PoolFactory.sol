@@ -59,13 +59,13 @@ contract PoolFactory is IPoolFactory, Ownable {
 
         ILeveragedPool.Initialization memory baseInitialization = ILeveragedPool.Initialization(
             address(this),
-            address(0),
             address(this),
             address(this),
-            address(0),
-            address(0),
-            address(0),
-            address(0),
+            address(this),
+            address(this),
+            address(this),
+            address(this),
+            address(this),
             "BASE_POOL",
             1,
             2,
