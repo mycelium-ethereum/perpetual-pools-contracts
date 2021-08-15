@@ -122,28 +122,6 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     }
 
     /**
-     * @notice Pay keeper for upkeep
-     * @param _pool Address of the given pool
-     * @param _gasPrice Price of a single gas unit (in ETH)
-     * @param _gasSpent Number of gas units spent
-     */
-    function payKeeper(
-        address _pool,
-        uint256 _gasPrice,
-        uint256 _gasSpent,
-        uint256 _savedPreviousUpdatedTimestamp,
-        uint256 _updateInterval
-    ) internal {
-        uint256 reward = keeperReward(_pool, _gasPrice, _gasSpent, _savedPreviousUpdatedTimestamp, _updateInterval);
-        try ILeveragedPool(_pool).quoteTokenTransfer(msg.sender, reward) {
-            emit KeeperPaid(_pool, msg.sender, reward);
-        } catch Error(string memory reason) {
-            // Usually occurs if pool just started and does not have any funds
-            emit KeeperPaymentError(_pool, reason);
-        }
-    }
-
-    /**
      * @notice Called by keepers to perform an update on multiple pools
      * @param pools pool codes to perform the update for.
      */
@@ -180,6 +158,28 @@ contract PoolKeeper is IPoolKeeper, Ownable {
                     emit PoolUpdateError(pool, reason);
                 }
             }
+        }
+    }
+
+    /**
+     * @notice Pay keeper for upkeep
+     * @param _pool Address of the given pool
+     * @param _gasPrice Price of a single gas unit (in ETH)
+     * @param _gasSpent Number of gas units spent
+     */
+    function payKeeper(
+        address _pool,
+        uint256 _gasPrice,
+        uint256 _gasSpent,
+        uint256 _savedPreviousUpdatedTimestamp,
+        uint256 _updateInterval
+    ) internal {
+        uint256 reward = keeperReward(_pool, _gasPrice, _gasSpent, _savedPreviousUpdatedTimestamp, _updateInterval);
+        try ILeveragedPool(_pool).quoteTokenTransfer(msg.sender, reward) {
+            emit KeeperPaid(_pool, msg.sender, reward);
+        } catch Error(string memory reason) {
+            // Usually occurs if pool just started and does not have any funds
+            emit KeeperPaymentError(_pool, reason);
         }
     }
 

@@ -255,10 +255,8 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
             await timeout(updateInterval * 1000 + 1000)
             const balanceBefore = await token.balanceOf(signers[0].address)
             const poolTokenBalanceBefore = await token.balanceOf(pool.address)
-            await poolKeeper.performUpkeepMultiplePools([
-                POOL1_ADDR,
-                POOL2_ADDR,
-            ])
+            await poolKeeper.performUpkeepSinglePool(POOL1_ADDR)
+
             const balanceAfter = await token.balanceOf(signers[0].address)
             const poolTokenBalanceAfter = await token.balanceOf(pool.address)
             console.log(balanceBefore.toString())
