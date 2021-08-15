@@ -120,7 +120,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         address from,
         address to,
         uint256 amount
-    ) external override onlyPoolCommitter {
+    ) external override onlyPoolCommitterOrKeeper {
         require(from != address(0), "From address cannot be 0 address");
         require(to != address(0), "To address cannot be 0 address");
         IERC20(quoteToken).safeTransferFrom(from, to, amount);
@@ -198,6 +198,11 @@ contract LeveragedPool is ILeveragedPool, Initializable {
 
     modifier onlyPoolCommitter() {
         require(msg.sender == poolCommitter, "msg.sender not poolCommitter");
+        _;
+    }
+
+    modifier onlyPoolCommitterOrKeeper() {
+        require(msg.sender == poolCommitter || msg.sender == keeper, "sender not committer or keeper");
         _;
     }
 

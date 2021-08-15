@@ -96,6 +96,7 @@ const setupHook = async () => {
         oracleWrapper: oracleWrapper.address,
         keeperOracle: keeperOracle.address,
     }
+    await factory.setPool
     await (await factory.deployPool(deploymentData)).wait()
 
     await oracleWrapper.incrementPrice()
@@ -130,7 +131,6 @@ interface Upkeep {
     roundStart: number
 }
 describe("PoolKeeper - performUpkeep: basic functionality", () => {
-    /*
     let oldRound: Upkeep
     let newRound: Upkeep
     let oldExecutionPrice: BigNumber
@@ -194,7 +194,7 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
             newExecutionPrice = await poolKeeper.executionPrice(POOL1_ADDR)
             newRoundStart = await poolKeeper.poolRoundStart(POOL1_ADDR)
         })
-        it("should clear the old round data", async () => {
+        it.only("should clear the old round data", async () => {
             const price = ethers.utils.parseEther(
                 (await oracleWrapper.getPrice()).toString()
             )
@@ -207,5 +207,4 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
             expect(newExecutionPrice.gt(oldExecutionPrice)).to.equal(true)
         })
     })
-    */
 })
