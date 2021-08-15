@@ -5,7 +5,6 @@ import {
     ERC20,
     LeveragedPool,
     PoolCommitter,
-    PriceChanger,
     PoolSwapLibrary,
     TestToken,
 } from "../../typechain"
@@ -38,7 +37,6 @@ describe("PoolCommitter.uncommit", () => {
     let signers: SignerWithAddress[]
     let pool: LeveragedPool
     let committer: PoolCommitter
-    let changer: PriceChanger
     let token: TestToken
     let library: PoolSwapLibrary
     let longToken: ERC20
@@ -59,7 +57,6 @@ describe("PoolCommitter.uncommit", () => {
         signers = elements.signers
         pool = elements.pool
         committer = elements.poolCommiter
-        changer = elements.priceChanger
         token = elements.token
         longToken = elements.longToken
         shortToken = elements.shortToken

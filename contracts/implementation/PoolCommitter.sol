@@ -102,10 +102,10 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             ILeveragedPool(leveragedPool).quoteTokenTransfer(msg.sender, _commit.amount);
         } else if (_commit.commitType == CommitType.LongBurn) {
             // long burning: return long pool tokens to commit owner
-            pool.mintTokens(0, _commit.amount, msg.sender);
+            ILeveragedPool(leveragedPool).mintTokens(0, _commit.amount, msg.sender);
         } else if (_commit.commitType == CommitType.ShortBurn) {
             // short burning: return short pool tokens to the commit owner
-            pool.mintTokens(1, _commit.amount, msg.sender);
+            ILeveragedPool(leveragedPool).mintTokens(1, _commit.amount, msg.sender);
         }
     }
 
