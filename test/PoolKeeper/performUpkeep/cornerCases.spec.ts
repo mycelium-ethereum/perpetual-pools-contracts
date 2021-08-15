@@ -38,6 +38,8 @@ let upkeepOne: any
 let upkeepTwo: any
 let POOL1_ADDR: string
 let POOL2_ADDR: string
+let ethOracleWrapper: ChainlinkOracleWrapper
+let ethOracle: TestChainlinkOracle
 
 let bothUpkeeps: any
 
@@ -60,6 +62,8 @@ const setupHook = async () => {
         signers[0]
     )) as TestChainlinkOracle__factory
     oracle = await oracleFactory.deploy()
+    ethOracle = await(await oracleFactory.deploy()).deployed()
+    await ethOracle.setPrice(3000 * 10 ** 8)
     await oracle.deployed()
     const oracleWrapperFactory = (await ethers.getContractFactory(
         "ChainlinkOracleWrapper",
@@ -67,6 +71,8 @@ const setupHook = async () => {
     )) as ChainlinkOracleWrapper__factory
     oracleWrapper = await oracleWrapperFactory.deploy(oracle.address)
     await oracleWrapper.deployed()
+    ethOracleWrapper = await oracleWrapperFactory.deploy(ethOracle.address)
+    await ethOracleWrapper.deployed()
 
     keeperOracle = await oracleWrapperFactory.deploy(oracle.address)
     await keeperOracle.deployed()
@@ -89,7 +95,7 @@ const setupHook = async () => {
     const factory = await (
         await PoolFactory.deploy(generateRandomAddress())
     ).deployed()
-    poolKeeper = await poolKeeperFactory.deploy(factory.address)
+    poolKeeper = await poolKeeperFactory.deploy(factory.address, ethOracleWrapper.address)
     await poolKeeper.deployed()
     await factory.setPoolKeeper(poolKeeper.address)
 

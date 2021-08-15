@@ -116,6 +116,8 @@ export const deployPoolAndTokenContracts = async (
         signers[0]
     )) as TestChainlinkOracle__factory
     const chainlinkOracle = await chainlinkOracleFactory.deploy()
+    const ethOracle = await (await chainlinkOracleFactory.deploy()).deployed()
+    await ethOracle.setPrice(3000 * 10 ** 8)
 
     // Deploy tokens
     const oracleWrapperFactory = (await ethers.getContractFactory(
@@ -125,6 +127,9 @@ export const deployPoolAndTokenContracts = async (
 
     const oracleWrapper = await oracleWrapperFactory.deploy(
         chainlinkOracle.address
+    )
+    const ethOracleWrapper = await oracleWrapperFactory.deploy(
+        ethOracle.address
     )
 
     /* keeper oracle */
@@ -167,7 +172,7 @@ export const deployPoolAndTokenContracts = async (
     const poolKeeperFactory = (await ethers.getContractFactory("PoolKeeper", {
         signer: signers[0],
     })) as PoolKeeper__factory
-    let poolKeeper = await poolKeeperFactory.deploy(factory.address)
+    let poolKeeper = await poolKeeperFactory.deploy(factory.address, ethOracleWrapper.address)
     poolKeeper = await poolKeeper.deployed()
     await factory.setPoolKeeper(poolKeeper.address)
 

@@ -20,4 +20,6 @@ interface IOracleWrapper {
     @return The latest price
      */
     function getPrice() external view returns (int256);
+
+    function fromWad(int256 wad) external view returns (int256);
 }

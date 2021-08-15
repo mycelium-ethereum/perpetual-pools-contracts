@@ -57,4 +57,8 @@ contract ChainlinkOracleWrapper is IOracleWrapper, Ownable {
     function toWad(int256 raw) internal view returns (int256) {
         return raw * scaler;
     }
+
+    function fromWad(int256 wad) external view override returns (int256) {
+        return wad / scaler;
+    }
 }

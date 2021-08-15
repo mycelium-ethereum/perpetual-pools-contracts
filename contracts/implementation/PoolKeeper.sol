@@ -11,7 +11,6 @@ import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "abdk-libraries-solidity/ABDKMathQuad.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV2V3Interface.sol";
-import "hardhat/console.sol";
 
 /*
  * @title The manager contract for multiple markets and the pools in them
@@ -37,10 +36,14 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     IPoolFactory public factory;
     bytes16 constant fixedPoint = 0x403abc16d674ec800000000000000000; // 1 ether
 
+    IOracleWrapper ethUsdOracle;
+
     // #### Functions
-    constructor(address _factory) {
+    constructor(address _factory, address _ethUsdOracle) {
         require(_factory != address(0), "Factory cannot be 0 address");
+        require(_ethUsdOracle != address(0), "ETH oracle cannot be 0 address");
         factory = IPoolFactory(_factory);
+        ethUsdOracle = IOracleWrapper(_ethUsdOracle);
     }
 
     /**
@@ -132,8 +135,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         uint256 _updateInterval
     ) internal {
         uint256 reward = keeperReward(_pool, _gasPrice, _gasSpent, _savedPreviousUpdatedTimestamp, _updateInterval);
-        uint256 rewardInNormalUnits = ABDKMathQuad.toUInt(ABDKMathQuad.div(ABDKMathQuad.fromUInt(reward), fixedPoint));
-        try ILeveragedPool(_pool).quoteTokenTransfer(msg.sender, rewardInNormalUnits) {
+        try ILeveragedPool(_pool).quoteTokenTransfer(msg.sender, reward) {
             emit KeeperPaid(_pool, msg.sender, reward);
         } catch Error(string memory reason) {
             // Usually occurs if pool just started and does not have any funds
@@ -195,20 +197,20 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         uint256 _savedPreviousUpdatedTimestamp,
         uint256 _poolInterval
     ) public view returns (uint256) {
-        // keeper gas cost in wei
+        // keeper gas cost in wei. WAD formatted
         uint256 _keeperGas = keeperGas(_pool, _gasPrice, _gasSpent);
-        // console.logUint(_keeperGas);
 
         // tip percent in wad units
         bytes16 _tipPercent = ABDKMathQuad.mul(
             ABDKMathQuad.fromUInt(keeperTip(_savedPreviousUpdatedTimestamp, _poolInterval)),
             fixedPoint
         );
-        // console.logUint(ABDKMathQuad.toUInt(_tipPercent));
-
         // amount of settlement tokens to give to the keeper
-        // console.log(ABDKMathQuad.toUInt(ABDKMathQuad.mul(ABDKMathQuad.fromUInt(_keeperGas), _tipPercent)));
-        return ABDKMathQuad.toUInt(ABDKMathQuad.mul(ABDKMathQuad.fromUInt(_keeperGas), _tipPercent));
+        _tipPercent = ABDKMathQuad.div(_tipPercent, ABDKMathQuad.fromUInt(100));
+        int256 wadRewardValue = ABDKMathQuad.toInt(ABDKMathQuad.add(ABDKMathQuad.fromUInt(_keeperGas), ABDKMathQuad.div((ABDKMathQuad.mul(ABDKMathQuad.fromUInt(_keeperGas), _tipPercent)), fixedPoint)));
+        uint256 deWadifiedReward = uint256(IOracleWrapper(ILeveragedPool(_pool).keeperOracle()).fromWad(wadRewardValue));
+        // _keeperGas + _keeperGas * percentTip
+        return deWadifiedReward;
     }
 
     /**
@@ -223,7 +225,9 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         uint256 _gasPrice,
         uint256 _gasSpent
     ) public view returns (uint256) {
-        int256 settlementTokenPrice = IOracleWrapper(ILeveragedPool(_pool).keeperOracle()).getPrice();
+        IOracleWrapper keeperOracle = IOracleWrapper(ILeveragedPool(_pool).keeperOracle());
+        int256 settlementTokenPrice = keeperOracle.getPrice();
+        int256 ethPrice = ethUsdOracle.getPrice();
 
         if (settlementTokenPrice <= 0) {
             return 0;
@@ -232,8 +236,8 @@ contract PoolKeeper is IPoolKeeper, Ownable {
             /* (wei * Settlement / ETH) / fixed point (10^18) = amount in settlement */
             bytes16 _weiSpent = ABDKMathQuad.fromUInt(_gasPrice * _gasSpent);
             bytes16 _settlementTokenPrice = ABDKMathQuad.fromUInt(uint256(settlementTokenPrice));
-            return
-                ABDKMathQuad.toUInt(ABDKMathQuad.div(ABDKMathQuad.mul(_weiSpent, _settlementTokenPrice), fixedPoint));
+            bytes16 _ethPrice = ABDKMathQuad.fromUInt(uint256(ethPrice));
+            return ABDKMathQuad.toUInt((ABDKMathQuad.div(ABDKMathQuad.mul(_weiSpent, _ethPrice), _settlementTokenPrice)));
         }
     }
 

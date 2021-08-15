@@ -12,6 +12,7 @@ import {
     PoolFactory,
     PoolCommitterDeployer__factory,
     TestToken__factory,
+    TestChainlinkOracle,
 } from "../../typechain"
 
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
@@ -29,6 +30,8 @@ describe("PoolKeeper - createPool", () => {
     let poolKeeper: PoolKeeper
     let factory: PoolFactory
     let signers: SignerWithAddress[]
+    let ethOracleWrapper: ChainlinkOracleWrapper
+    let ethOracle: TestChainlinkOracle
     beforeEach(async () => {
         // Deploy the contracts
         signers = await ethers.getSigners()
@@ -46,6 +49,8 @@ describe("PoolKeeper - createPool", () => {
             signers[0]
         )) as TestChainlinkOracle__factory
         const chainlinkOracle = await chainlinkOracleFactory.deploy()
+        ethOracle = await(await chainlinkOracleFactory.deploy()).deployed()
+        await ethOracle.setPrice(3000 * 10 ** 8)
 
         // Deploy tokens
         const oracleWrapperFactory = (await ethers.getContractFactory(
@@ -56,6 +61,8 @@ describe("PoolKeeper - createPool", () => {
             chainlinkOracle.address
         )
         await oracleWrapper.deployed()
+        ethOracleWrapper = await oracleWrapperFactory.deploy(ethOracle.address)
+        await ethOracleWrapper.deployed()
 
         const keeperOracle = await oracleWrapperFactory.deploy(
             chainlinkOracle.address
@@ -97,7 +104,7 @@ describe("PoolKeeper - createPool", () => {
 
         await factory.setPoolCommitterDeployer(poolCommiterDeployer.address)
 
-        poolKeeper = await poolKeeperFactory.deploy(factory.address)
+        poolKeeper = await poolKeeperFactory.deploy(factory.address, ethOracleWrapper.address)
         await poolKeeper.deployed()
 
         await factory.setPoolKeeper(poolKeeper.address)
