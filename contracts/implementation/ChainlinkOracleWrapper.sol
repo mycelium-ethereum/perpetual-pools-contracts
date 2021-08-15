@@ -33,14 +33,14 @@ contract ChainlinkOracleWrapper is IOracleWrapper, Ownable {
     }
 
     /**
-    * @notice returns the oracle price in WAD format
-    */
+     * @notice returns the oracle price in WAD format
+     */
     function getPrice() external view override returns (int256) {
         (
-            uint80 roundID, 
-            int price,
-            uint startedAt,
-            uint timeStamp,
+            uint80 roundID,
+            int256 price,
+            uint256 startedAt,
+            uint256 timeStamp,
             uint80 answeredInRound
         ) = AggregatorV2V3Interface(oracle).latestRoundData();
         require(answeredInRound >= roundID, "COA: Stale answer");
@@ -57,5 +57,4 @@ contract ChainlinkOracleWrapper is IOracleWrapper, Ownable {
     function toWad(int256 raw) internal view returns (int256) {
         return raw * scaler;
     }
-
 }

@@ -132,8 +132,8 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         uint256 _updateInterval
     ) internal {
         uint256 reward = keeperReward(_pool, _gasPrice, _gasSpent, _savedPreviousUpdatedTimestamp, _updateInterval);
-        console.logUint(reward);
-        try ILeveragedPool(_pool).quoteTokenTransfer(msg.sender, reward) {
+        uint256 rewardInNormalUnits = ABDKMathQuad.toUInt(ABDKMathQuad.div(ABDKMathQuad.fromUInt(reward), fixedPoint));
+        try ILeveragedPool(_pool).quoteTokenTransfer(msg.sender, rewardInNormalUnits) {
             emit KeeperPaid(_pool, msg.sender, reward);
         } catch Error(string memory reason) {
             // Usually occurs if pool just started and does not have any funds
@@ -197,16 +197,18 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     ) public view returns (uint256) {
         // keeper gas cost in wei
         uint256 _keeperGas = keeperGas(_pool, _gasPrice, _gasSpent);
-        console.logUint(_keeperGas);
+        // console.logUint(_keeperGas);
 
         // tip percent in wad units
-        bytes16 _tipPercent = ABDKMathQuad.mul(ABDKMathQuad.fromUInt(keeperTip(_savedPreviousUpdatedTimestamp, _poolInterval)), fixedPoint);
+        bytes16 _tipPercent = ABDKMathQuad.mul(
+            ABDKMathQuad.fromUInt(keeperTip(_savedPreviousUpdatedTimestamp, _poolInterval)),
+            fixedPoint
+        );
         // console.logUint(ABDKMathQuad.toUInt(_tipPercent));
 
         // amount of settlement tokens to give to the keeper
-        console.log(ABDKMathQuad.toUInt(ABDKMathQuad.mul(ABDKMathQuad.fromUInt(_keeperGas), _tipPercent)));
+        // console.log(ABDKMathQuad.toUInt(ABDKMathQuad.mul(ABDKMathQuad.fromUInt(_keeperGas), _tipPercent)));
         return ABDKMathQuad.toUInt(ABDKMathQuad.mul(ABDKMathQuad.fromUInt(_keeperGas), _tipPercent));
-
     }
 
     /**
@@ -230,7 +232,8 @@ contract PoolKeeper is IPoolKeeper, Ownable {
             /* (wei * Settlement / ETH) / fixed point (10^18) = amount in settlement */
             bytes16 _weiSpent = ABDKMathQuad.fromUInt(_gasPrice * _gasSpent);
             bytes16 _settlementTokenPrice = ABDKMathQuad.fromUInt(uint256(settlementTokenPrice));
-            return ABDKMathQuad.toUInt(ABDKMathQuad.div(ABDKMathQuad.mul(_weiSpent, _settlementTokenPrice), fixedPoint));
+            return
+                ABDKMathQuad.toUInt(ABDKMathQuad.div(ABDKMathQuad.mul(_weiSpent, _settlementTokenPrice), fixedPoint));
         }
     }
 
@@ -241,8 +244,8 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     function keeperTip(uint256 _savedPreviousUpdatedTimestamp, uint256 _poolInterval) public view returns (uint256) {
         /* the number of blocks that have elapsed since the given pool's updateInterval passed */
         uint256 elapsedBlocks = (block.timestamp - (_savedPreviousUpdatedTimestamp + _poolInterval)) / BLOCK_TIME;
-    
-        return  BASE_TIP + (TIP_DELTA_PER_BLOCK * elapsedBlocks);
+
+        return BASE_TIP + (TIP_DELTA_PER_BLOCK * elapsedBlocks);
     }
 
     /**
