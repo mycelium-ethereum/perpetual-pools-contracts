@@ -1,10 +1,16 @@
 import { ethers } from "hardhat"
 import chai from "chai"
 import chaiAsPromised from "chai-as-promised"
-import { generateRandomAddress, getEventArgs, timeout } from "../../utilities"
+import {
+    createCommit,
+    generateRandomAddress,
+    getEventArgs,
+    timeout,
+} from "../../utilities"
 
 import { MARKET_2, POOL_CODE, POOL_CODE_2 } from "../../constants"
 import {
+    PoolCommitter,
     PoolCommitterDeployer__factory,
     PoolFactory,
     PoolFactory__factory,
@@ -14,10 +20,12 @@ import {
     TestChainlinkOracle__factory,
     TestOracleWrapper,
     TestOracleWrapper__factory,
+    TestToken,
     TestToken__factory,
 } from "../../../typechain"
 import { BigNumber } from "ethers"
 import { Result } from "ethers/lib/utils"
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 
 chai.use(chaiAsPromised)
 const { expect } = chai
@@ -26,23 +34,25 @@ let quoteToken: string
 let oracleWrapper: TestOracleWrapper
 let keeperOracle: TestOracleWrapper
 let poolKeeper: PoolKeeper
-let callData: any
+let pool: any
 let POOL1_ADDR: string
 let POOL2_ADDR: string
+let signers: SignerWithAddress[]
+let token: TestToken
 
 const updateInterval = 10
 
 const setupHook = async () => {
-    const signers = await ethers.getSigners()
+    signers = await ethers.getSigners()
 
     // Deploy quote token
     const testToken = (await ethers.getContractFactory(
         "TestToken",
         signers[0]
     )) as TestToken__factory
-    const token = await testToken.deploy("TEST TOKEN", "TST1")
+    token = await testToken.deploy("TEST TOKEN", "TST1")
     await token.deployed()
-    await token.mint(10000, signers[0].address)
+    await token.mint(ethers.utils.parseEther("10000"), signers[0].address)
     quoteToken = token.address
 
     const chainlinkOracleFactory = (await ethers.getContractFactory(
@@ -77,7 +87,7 @@ const setupHook = async () => {
         libraries: { PoolSwapLibrary: library.address },
     })) as PoolFactory__factory
     // TODO replace addresses with the two new deployers
-    const factory:PoolFactory = await (
+    const factory: PoolFactory = await (
         await PoolFactory.deploy(generateRandomAddress())
     ).deployed()
 
@@ -89,12 +99,12 @@ const setupHook = async () => {
         }
     )) as PoolCommitterDeployer__factory
 
-    let poolCommiterDeployer = await PoolCommiterDeployerFactory.deploy(
+    let poolCommitterDeployer = await PoolCommiterDeployerFactory.deploy(
         factory.address
     )
-    poolCommiterDeployer = await poolCommiterDeployer.deployed()
+    poolCommitterDeployer = await poolCommitterDeployer.deployed()
 
-    await factory.setPoolCommitterDeployer(poolCommiterDeployer.address)
+    await factory.setPoolCommitterDeployer(poolCommitterDeployer.address)
     poolKeeper = await poolKeeperFactory.deploy(factory.address)
     await poolKeeper.deployed()
     await factory.setPoolKeeper(poolKeeper.address)
@@ -128,10 +138,25 @@ const setupHook = async () => {
     POOL1_ADDR = await factory.pools(0)
     POOL2_ADDR = await factory.pools(1)
 
-    callData = ethers.utils.defaultAbiCoder.encode(
-        [ethers.utils.ParamType.from("address[]")],
-        [[POOL1_ADDR, POOL2_ADDR]]
+    console.log(1)
+    pool = await ethers.getContractAt("LeveragedPool", POOL1_ADDR)
+    console.log(2)
+    const poolCommitter: any = await ethers.getContractAt(
+        "PoolCommitter",
+        await pool.poolCommitter()
     )
+    console.log(3)
+    console.log(1)
+    const amountCommitted = ethers.utils.parseEther("2000")
+    console.log(4)
+    await token.approve(pool.address, ethers.utils.parseEther("99999999"))
+    const commit = await createCommit(poolCommitter, [2], amountCommitted)
+    console.log(5)
+    await timeout(updateInterval * 1000 * 2)
+    console.log((await pool.updateInterval()).toString())
+    await pool.setKeeper(signers[0].address)
+    await pool.poolUpkeep(9, 10)
+    console.log(6)
 }
 
 interface Upkeep {
@@ -150,11 +175,12 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
     let newExecutionPrice: BigNumber
     let oldLastExecutionPrice: BigNumber
     let newLastExecutionPrice: BigNumber
-    let oldRoundStart: BigNumber
-    let newRoundStart: BigNumber
+    let oldLastExecutionTime: BigNumber
+    let newLastExecutionTime: BigNumber
     describe("Base cases", () => {
         beforeEach(setupHook)
         it("should not revert if performData is invalid", async () => {
+            await pool.setKeeper(signers[0].address)
             await poolKeeper.performUpkeepMultiplePools([
                 POOL1_ADDR,
                 POOL2_ADDR,
@@ -171,6 +197,7 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
             lastTime = await poolKeeper.lastExecutionTime(POOL1_ADDR)
             await oracleWrapper.incrementPrice()
             await timeout(updateInterval * 1000 + 1000)
+            await pool.setKeeper(signers[0].address)
             const result = await (
                 await poolKeeper.performUpkeepMultiplePools([
                     POOL1_ADDR,
@@ -194,26 +221,44 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
             // process a few upkeeps
             await oracleWrapper.incrementPrice()
 
-            oldRoundStart = await poolKeeper.poolRoundStart(POOL1_ADDR)
+            oldLastExecutionTime = await poolKeeper.lastExecutionTime(
+                POOL1_ADDR
+            )
             oldExecutionPrice = await poolKeeper.executionPrice(POOL1_ADDR)
             // delay and upkeep again
             await timeout(updateInterval * 1000 + 1000)
 
             newLastExecutionPrice = await poolKeeper.executionPrice(POOL1_ADDR)
+            await pool.setKeeper(signers[0].address)
+            console.log("a")
             await poolKeeper.performUpkeepMultiplePools([
                 POOL1_ADDR,
                 POOL2_ADDR,
             ])
+            console.log("b")
             newExecutionPrice = await poolKeeper.executionPrice(POOL1_ADDR)
-            newRoundStart = await poolKeeper.poolRoundStart(POOL1_ADDR)
+            newLastExecutionTime = await poolKeeper.lastExecutionTime(
+                POOL1_ADDR
+            )
         })
-        it.only("should clear the old round data", async () => {
+        it("should clear the old round data", async () => {
             const price = ethers.utils.parseEther(
                 (await oracleWrapper.getPrice()).toString()
             )
-            expect(newRoundStart.gt(oldRoundStart)).to.equal(true)
+            expect(newLastExecutionTime.gt(oldLastExecutionTime)).to.equal(true)
             expect(newExecutionPrice.gt(oldExecutionPrice)).to.equal(true)
             expect(newExecutionPrice).to.equal(price)
+        })
+        it("Should update the keeper's balance", async () => {
+            await timeout(updateInterval * 1000 + 1000)
+            const balanceBefore = await token.balanceOf(signers[0].address)
+            await poolKeeper.performUpkeepMultiplePools([
+                POOL1_ADDR,
+                POOL2_ADDR,
+            ])
+            const balanceAfter = await token.balanceOf(signers[0].address)
+            console.log(balanceBefore.toString())
+            console.log(balanceAfter.toString())
         })
         it("should calculate a new execution price", async () => {
             expect(newLastExecutionPrice).to.eq(oldExecutionPrice)

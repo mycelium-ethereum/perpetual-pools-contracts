@@ -96,8 +96,9 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         IPoolCommitter(poolCommitter).executeAllCommitments();
     }
 
-    function quoteTokenTransfer(address to, uint256 amount) external override onlyPoolCommitter returns (bool) {
-        return IERC20(quoteToken).transfer(to, amount);
+    function quoteTokenTransfer(address to, uint256 amount) external override onlyPoolCommitterOrKeeper {
+        require(to != address(0), "To address cannot be 0 address");
+        IERC20(quoteToken).safeTransfer(to, amount);
     }
 
     function executePriceChange(int256 _oldPrice, int256 _newPrice) internal {

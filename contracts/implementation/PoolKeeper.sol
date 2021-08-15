@@ -12,6 +12,8 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "abdk-libraries-solidity/ABDKMathQuad.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV2V3Interface.sol";
 
+import "hardhat/console.sol";
+
 /*
  * @title The manager contract for multiple markets and the pools in them
  */
@@ -129,8 +131,17 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         uint256 _updateInterval
     ) internal {
         uint256 reward = keeperReward(_pool, _gasPrice, _gasSpent, _savedPreviousUpdatedTimestamp, _updateInterval);
+        console.log("payKeeper");
+        console.log(reward);
 
-        ILeveragedPool(_pool).quoteTokenTransferFrom(_pool, msg.sender, reward);
+        try ILeveragedPool(_pool).quoteTokenTransfer(msg.sender, reward) {
+            console.log("Success");
+            emit KeeperPaid(_pool, msg.sender, reward);
+        } catch Error(string memory reason) {
+            console.log("");
+            // Usually occurs if pool just started and does not have any funds
+            emit KeeperPaymentError(_pool, reason);
+        }
     }
 
     /**
@@ -187,7 +198,9 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         uint256 _savedPreviousUpdatedTimestamp,
         uint256 _poolInterval
     ) public view returns (uint256) {
-        return keeperGas(_pool, _gasPrice, _gasSpent) + convertKeeperTip(keeperTip(_savedPreviousUpdatedTimestamp, _poolInterval), _pool);
+        return
+            keeperGas(_pool, _gasPrice, _gasSpent) +
+            convertKeeperTip(keeperTip(_savedPreviousUpdatedTimestamp, _poolInterval), _pool);
     }
 
     /**
