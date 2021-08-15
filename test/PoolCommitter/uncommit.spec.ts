@@ -4,6 +4,7 @@ import chaiAsPromised from "chai-as-promised"
 import {
     ERC20,
     LeveragedPool,
+    PoolCommitter,
     PoolSwapLibrary,
     TestToken,
 } from "../../typechain"
@@ -32,310 +33,312 @@ const fee = "0x00000000000000000000000000000000"
 const leverage = 1
 const commitType = [2] // Long mint;
 
-describe("LeveragedPool - uncommit", () => {
-    /*
+describe("PoolCommitter.uncommit", () => {
     let signers: SignerWithAddress[]
     let pool: LeveragedPool
+    let committer: PoolCommitter
     let token: TestToken
     let library: PoolSwapLibrary
-    describe("Delete commit", () => {
-        let receipt: ContractReceipt
-        let commitID: string
-        beforeEach(async () => {
-            const elements = await deployPoolAndTokenContracts(
-                POOL_CODE,
-                frontRunningInterval,
-                updateInterval,
-                fee,
-                leverage,
-                feeAddress,
-                amountMinted
-            )
-            signers = elements.signers
-            pool = elements.pool
-            token = elements.token
-            library = elements.library
-            await token.approve(pool.address, amountCommitted)
-            receipt = await (
-                await pool.commit(commitType, amountCommitted)
-            ).wait()
-            commitID = getEventArgs(receipt, "CreateCommit")?.commitID
-        })
-        it("should allow the owner of a commit delete that commit", async () => {
-            expect(
-                (await pool.commits(commitID)).amount.eq(
-                    ethers.BigNumber.from(amountCommitted)
+    let longToken: ERC20
+    let shortToken: ERC20
+    let receipt: ContractReceipt
+    let commitID: string
+
+    beforeEach(async () => {
+        const elements = await deployPoolAndTokenContracts(
+            POOL_CODE,
+            frontRunningInterval,
+            updateInterval,
+            fee,
+            leverage,
+            feeAddress,
+            amountMinted
+        )
+        signers = elements.signers
+        pool = elements.pool
+        committer = elements.poolCommiter
+        token = elements.token
+        longToken = elements.longToken
+        shortToken = elements.shortToken
+        library = elements.library
+        await token.approve(pool.address, ethers.constants.MaxUint256)
+        await pool.setKeeper(signers[0].address)
+    })
+
+    context(
+        "When called with valid commitment ID and by the owner of the specified commitment",
+        async () => {
+            beforeEach(async () => {
+                receipt = await (
+                    await committer.commit(commitType, amountCommitted)
+                ).wait()
+                commitID = getEventArgs(receipt, "CreateCommit")?.commitID
+            })
+            it("deletes the specified commitment", async () => {
+                expect(
+                    (await committer.commits(commitID)).amount.eq(
+                        ethers.BigNumber.from(amountCommitted)
+                    )
+                ).to.eq(true)
+                await committer.uncommit(commitID)
+                expect(
+                    (await committer.commits(commitID)).amount.eq(
+                        ethers.BigNumber.from(0)
+                    )
+                ).to.eq(true)
+            })
+
+            it("removes the specified commit from storage", async () => {
+                await committer.uncommit(commitID)
+                expect((await committer.commits(commitID)).owner).to.eq(
+                    ethers.constants.AddressZero
                 )
-            ).to.eq(true)
-            await pool.uncommit(commitID)
-            expect(
-                (await pool.commits(commitID)).amount.eq(
-                    ethers.BigNumber.from(0)
-                )
-            ).to.eq(true)
-        })
-        it("should remove the commit from storage", async () => {
-            await pool.uncommit(commitID)
-            expect((await pool.commits(commitID)).owner).to.eq(
-                ethers.constants.AddressZero
-            )
-            expect((await pool.commits(commitID)).created).to.eq(0)
-            expect((await pool.commits(commitID)).amount).to.eq(0)
-            expect((await pool.commits(commitID)).commitType).to.eq(0)
-        })
-        it("should emit an event for uncommitting", async () => {
-            const uncommitReceipt = await (await pool.uncommit(commitID)).wait()
-            expect(
-                getEventArgs(uncommitReceipt, "RemoveCommit")?.commitID
-            ).to.eq(commitID)
-            expect(getEventArgs(uncommitReceipt, "RemoveCommit")?.amount).to.eq(
-                getEventArgs(receipt, "CreateCommit")?.amount
-            )
-            expect(
-                getEventArgs(uncommitReceipt, "RemoveCommit")?.commitType
-            ).to.eq(getEventArgs(receipt, "CreateCommit")?.commitType)
-        })
-        it("should revert if the commit doesn't exist", async () => {
+                expect((await committer.commits(commitID)).created).to.eq(0)
+                expect((await committer.commits(commitID)).amount).to.eq(0)
+                expect((await committer.commits(commitID)).commitType).to.eq(0)
+            })
+            it("emits a `RemoveCommit` event with the correct parameters", async () => {
+                const uncommitReceipt = await (
+                    await committer.uncommit(commitID)
+                ).wait()
+                expect(
+                    getEventArgs(uncommitReceipt, "RemoveCommit")?.commitID
+                ).to.eq(commitID)
+                expect(
+                    getEventArgs(uncommitReceipt, "RemoveCommit")?.amount
+                ).to.eq(getEventArgs(receipt, "CreateCommit")?.amount)
+                expect(
+                    getEventArgs(uncommitReceipt, "RemoveCommit")?.commitType
+                ).to.eq(getEventArgs(receipt, "CreateCommit")?.commitType)
+            })
+        }
+    )
+
+    context("When called with an invalid commitment ID", async () => {
+        it("reverts", async () => {
             await expect(
-                pool.uncommit(getRandomInt(10, 100))
-            ).to.be.rejectedWith(Error)
-        })
-        it("should revert if an account other than the owner tries to uncommit a commitment", async () => {
-            await expect(
-                pool.connect(signers[1]).uncommit(commitID)
+                committer.uncommit(getRandomInt(10, 100))
             ).to.be.rejectedWith(Error)
         })
     })
-    describe("Shadow pools", () => {
-        beforeEach(async () => {
-            const elements = await deployPoolAndTokenContracts(
-                POOL_CODE,
-                frontRunningInterval,
-                updateInterval,
-                fee,
-                leverage,
-                feeAddress,
-                amountMinted
+
+    context(
+        "When called with a valid commitment ID and not by the owner of the specified commitment",
+        async () => {
+            it("reverts", async () => {
+                await expect(
+                    committer.connect(signers[1]).uncommit(commitID)
+                ).to.be.rejectedWith(Error)
+            })
+        }
+    )
+
+    context("When specified commitment is a long mint", async () => {
+        it("updates the shadow long mint balance", async () => {
+            const receipt = await (
+                await committer.commit([2], amountCommitted)
+            ).wait()
+            expect(
+                (await committer.shadowPools(2)).eq(
+                    ethers.BigNumber.from(amountCommitted)
+                )
+            ).to.eq(true)
+            await committer.uncommit(
+                getEventArgs(receipt, "CreateCommit")?.commitID
             )
-            signers = elements.signers
-            pool = elements.pool
-            token = elements.token
-            await pool.setKeeper(signers[0].address)
-            await token.approve(pool.address, amountCommitted)
+            expect(
+                (await committer.shadowPools(2)).eq(ethers.BigNumber.from(0))
+            ).to.eq(true)
         })
-        it("should update the shadow short mint balance", async () => {
-            const receipt = await (
-                await pool.commit([0], amountCommitted)
-            ).wait()
 
-            expect(
-                (await pool.shadowPools(0)).eq(
-                    ethers.BigNumber.from(amountCommitted)
-                )
-            ).to.eq(true)
-            await pool.uncommit(getEventArgs(receipt, "CreateCommit")?.commitID)
-            expect(
-                (await pool.shadowPools(0)).eq(ethers.BigNumber.from(0))
-            ).to.eq(true)
-        })
-        it("should update the shadow short burn balance", async () => {
-            const pairToken = await (
-                await pool.commit([0], amountCommitted)
-            ).wait()
-            await timeout(2000)
-            await pool.executePriceChange(1, 2)
-            await pool.executeCommitment([
-                getEventArgs(pairToken, "CreateCommit")?.commitID,
-            ])
+        it("refunds the user's quote tokens", async () => {
             const receipt = await (
-                await pool.commit([1], amountCommitted)
-            ).wait()
-
-            expect(
-                (await pool.shadowPools(1)).eq(
-                    ethers.BigNumber.from(amountCommitted)
-                )
-            ).to.eq(true)
-            await pool.uncommit(getEventArgs(receipt, "CreateCommit")?.commitID)
-            expect(
-                (await pool.shadowPools(1)).eq(ethers.BigNumber.from(0))
-            ).to.eq(true)
-        })
-        it("should update the shadow long mint balance", async () => {
-            const receipt = await (
-                await pool.commit([2], amountCommitted)
-            ).wait()
-            expect(
-                (await pool.shadowPools(2)).eq(
-                    ethers.BigNumber.from(amountCommitted)
-                )
-            ).to.eq(true)
-            await pool.uncommit(getEventArgs(receipt, "CreateCommit")?.commitID)
-            expect(
-                (await pool.shadowPools(2)).eq(ethers.BigNumber.from(0))
-            ).to.eq(true)
-        })
-        it("should update the shadow long burn balance", async () => {
-            const pairToken = await (
-                await pool.commit([2], amountCommitted)
-            ).wait()
-            await timeout(2000)
-            await pool.executePriceChange(1, 2)
-            await pool.executeCommitment([
-                getEventArgs(pairToken, "CreateCommit")?.commitID,
-            ])
-            const receipt = await (
-                await pool.commit([3], amountCommitted)
-            ).wait()
-
-            expect(
-                (await pool.shadowPools(3)).eq(
-                    ethers.BigNumber.from(amountCommitted)
-                )
-            ).to.eq(true)
-            await pool.uncommit(getEventArgs(receipt, "CreateCommit")?.commitID)
-            expect(
-                (await pool.shadowPools(1)).eq(ethers.BigNumber.from(0))
-            ).to.eq(true)
-        })
-    })
-    describe("Token transfers", () => {
-        let shortToken: ERC20
-        let longToken: ERC20
-        beforeEach(async () => {
-            const elements = await deployPoolAndTokenContracts(
-                POOL_CODE,
-                frontRunningInterval,
-                updateInterval,
-                fee,
-                leverage,
-                feeAddress,
-                amountMinted
-            )
-            signers = elements.signers
-            pool = elements.pool
-            await pool.setKeeper(signers[0].address)
-            token = elements.token
-            shortToken = elements.shortToken
-            longToken = elements.longToken
-            await token.approve(pool.address, amountCommitted)
-        })
-        it("should refund the user's quote tokens for long mint commits", async () => {
-            const receipt = await (
-                await pool.commit([0], amountCommitted)
+                await committer.commit([0], amountCommitted)
             ).wait()
             expect(await token.balanceOf(signers[0].address)).to.eq(
                 amountMinted.sub(amountCommitted)
             )
             expect(await token.balanceOf(pool.address)).to.eq(amountCommitted)
 
-            await pool.uncommit(getEventArgs(receipt, "CreateCommit")?.commitID)
+            await committer.uncommit(
+                getEventArgs(receipt, "CreateCommit")?.commitID
+            )
 
             expect(await token.balanceOf(signers[0].address)).to.eq(
                 amountMinted
             )
             expect(await token.balanceOf(pool.address)).to.eq(0)
         })
-        it("should refund the user's quote tokens for short mint commits", async () => {
+    })
+
+    context("When specified commitment is a short mint", async () => {
+        it("updates the shadow short mint balance", async () => {
             const receipt = await (
-                await pool.commit([2], amountCommitted)
+                await committer.commit([0], amountCommitted)
+            ).wait()
+
+            expect(
+                (await committer.shadowPools(0)).eq(
+                    ethers.BigNumber.from(amountCommitted)
+                )
+            ).to.eq(true)
+            await committer.uncommit(
+                getEventArgs(receipt, "CreateCommit")?.commitID
+            )
+            expect(
+                (await committer.shadowPools(0)).eq(ethers.BigNumber.from(0))
+            ).to.eq(true)
+        })
+
+        it("refunds the user's quote tokens", async () => {
+            const receipt = await (
+                await committer.commit([2], amountCommitted)
             ).wait()
             expect(await token.balanceOf(signers[0].address)).to.eq(
                 amountMinted.sub(amountCommitted)
             )
             expect(await token.balanceOf(pool.address)).to.eq(amountCommitted)
 
-            await pool.uncommit(getEventArgs(receipt, "CreateCommit")?.commitID)
+            await committer.uncommit(
+                getEventArgs(receipt, "CreateCommit")?.commitID
+            )
 
             expect(await token.balanceOf(signers[0].address)).to.eq(
                 amountMinted
             )
             expect(await token.balanceOf(pool.address)).to.eq(0)
         })
-        it("should not transfer quote tokens for short burn commits", async () => {
+    })
+
+    context("When specified commitment is a long burn", async () => {
+        it("updates the shadow long burn balance", async () => {
             const pairToken = await (
-                await pool.commit([0], amountCommitted)
+                await committer.commit([2], amountCommitted)
             ).wait()
             await timeout(2000)
-            await pool.executePriceChange(1, 2)
-            await pool.executeCommitment([
-                getEventArgs(pairToken, "CreateCommit")?.commitID,
-            ])
+            await pool.poolUpkeep(1, 2)
             const receipt = await (
-                await pool.commit([1], amountCommitted)
+                await committer.commit([3], amountCommitted)
+            ).wait()
+
+            expect(
+                (await committer.shadowPools(3)).eq(
+                    ethers.BigNumber.from(amountCommitted)
+                )
+            ).to.eq(true)
+            await committer.uncommit(
+                getEventArgs(receipt, "CreateCommit")?.commitID
+            )
+            expect(
+                (await committer.shadowPools(1)).eq(ethers.BigNumber.from(0))
+            ).to.eq(true)
+        })
+
+        it("does not transfer quote tokens", async () => {
+            const pairToken = await (
+                await committer.commit([2], amountCommitted)
+            ).wait()
+            await timeout(2000)
+            await pool.poolUpkeep(1, 2)
+            const receipt = await (
+                await committer.commit([3], amountCommitted)
             ).wait()
             expect(await token.balanceOf(signers[0].address)).to.eq(
                 amountMinted.sub(amountCommitted)
             )
             expect(await token.balanceOf(pool.address)).to.eq(amountCommitted)
 
-            await pool.uncommit(getEventArgs(receipt, "CreateCommit")?.commitID)
+            await committer.uncommit(
+                getEventArgs(receipt, "CreateCommit")?.commitID
+            )
 
             expect(await token.balanceOf(signers[0].address)).to.eq(
                 amountMinted.sub(amountCommitted)
             )
             expect(await token.balanceOf(pool.address)).to.eq(amountCommitted)
         })
-        it("should not transfer quote tokens for long burn commits", async () => {
-            const pairToken = await (
-                await pool.commit([2], amountCommitted)
-            ).wait()
-            await timeout(2000)
-            await pool.executePriceChange(1, 2)
-            await pool.executeCommitment([
-                getEventArgs(pairToken, "CreateCommit")?.commitID,
-            ])
-            const receipt = await (
-                await pool.commit([3], amountCommitted)
-            ).wait()
-            expect(await token.balanceOf(signers[0].address)).to.eq(
-                amountMinted.sub(amountCommitted)
-            )
-            expect(await token.balanceOf(pool.address)).to.eq(amountCommitted)
 
-            await pool.uncommit(getEventArgs(receipt, "CreateCommit")?.commitID)
-
-            expect(await token.balanceOf(signers[0].address)).to.eq(
-                amountMinted.sub(amountCommitted)
-            )
-            expect(await token.balanceOf(pool.address)).to.eq(amountCommitted)
-        })
-        it("should refund short pair tokens to the user for short burn commits", async () => {
+        it("refunds long pair tokens to the user", async () => {
             const pairToken = await (
-                await pool.commit([0], amountCommitted)
+                await committer.commit([2], amountCommitted)
             ).wait()
             await timeout(2000)
-            await pool.executePriceChange(1, 2)
-            await pool.executeCommitment([
-                getEventArgs(pairToken, "CreateCommit")?.commitID,
-            ])
+            await pool.poolUpkeep(1, 2)
             const receipt = await (
-                await pool.commit([1], amountCommitted)
-            ).wait()
-            expect(await shortToken.balanceOf(signers[0].address)).to.eq(0)
-            await pool.uncommit(getEventArgs(receipt, "CreateCommit")?.commitID)
-            expect(await shortToken.balanceOf(signers[0].address)).to.eq(
-                amountCommitted
-            )
-        })
-        it("should refund long pair tokens to the user for long burn commits", async () => {
-            const pairToken = await (
-                await pool.commit([2], amountCommitted)
-            ).wait()
-            await timeout(2000)
-            await pool.executePriceChange(1, 2)
-            await pool.executeCommitment([
-                getEventArgs(pairToken, "CreateCommit")?.commitID,
-            ])
-            const receipt = await (
-                await pool.commit([3], amountCommitted)
+                await committer.commit([3], amountCommitted)
             ).wait()
             expect(await longToken.balanceOf(signers[0].address)).to.eq(0)
-            await pool.uncommit(getEventArgs(receipt, "CreateCommit")?.commitID)
+            await committer.uncommit(
+                getEventArgs(receipt, "CreateCommit")?.commitID
+            )
             expect(await longToken.balanceOf(signers[0].address)).to.eq(
                 amountCommitted
             )
         })
     })
-    */
+
+    context("When specified commitment is a short burn", async () => {
+        it("updates the shadow short burn balance", async () => {
+            const pairToken = await (
+                await committer.commit([0], amountCommitted)
+            ).wait()
+            await timeout(2000)
+            await pool.poolUpkeep(1, 2)
+            const receipt = await (
+                await committer.commit([1], amountCommitted)
+            ).wait()
+
+            expect(
+                (await committer.shadowPools(1)).eq(
+                    ethers.BigNumber.from(amountCommitted)
+                )
+            ).to.eq(true)
+            await committer.uncommit(
+                getEventArgs(receipt, "CreateCommit")?.commitID
+            )
+            expect(
+                (await committer.shadowPools(1)).eq(ethers.BigNumber.from(0))
+            ).to.eq(true)
+        })
+        it("does not transfer quote tokens", async () => {
+            const pairToken = await (
+                await committer.commit([0], amountCommitted)
+            ).wait()
+            await timeout(2000)
+            await pool.poolUpkeep(1, 2)
+            const receipt = await (
+                await committer.commit([1], amountCommitted)
+            ).wait()
+            expect(await token.balanceOf(signers[0].address)).to.eq(
+                amountMinted.sub(amountCommitted)
+            )
+            expect(await token.balanceOf(pool.address)).to.eq(amountCommitted)
+
+            await committer.uncommit(
+                getEventArgs(receipt, "CreateCommit")?.commitID
+            )
+
+            expect(await token.balanceOf(signers[0].address)).to.eq(
+                amountMinted.sub(amountCommitted)
+            )
+            expect(await token.balanceOf(pool.address)).to.eq(amountCommitted)
+        })
+        it("refunds short pair tokens to the user", async () => {
+            const pairToken = await (
+                await committer.commit([0], amountCommitted)
+            ).wait()
+            await timeout(2000)
+            await pool.poolUpkeep(1, 2)
+            const receipt = await (
+                await committer.commit([1], amountCommitted)
+            ).wait()
+            expect(await shortToken.balanceOf(signers[0].address)).to.eq(0)
+            await committer.uncommit(
+                getEventArgs(receipt, "CreateCommit")?.commitID
+            )
+            expect(await shortToken.balanceOf(signers[0].address)).to.eq(
+                amountCommitted
+            )
+        })
+    })
 })

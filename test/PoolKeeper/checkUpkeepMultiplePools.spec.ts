@@ -76,11 +76,11 @@ const setupHook = async () => {
         libraries: { PoolSwapLibrary: library.address },
     })) as PoolFactory__factory
     factory = await (
-        await PoolFactory.deploy(
-            generateRandomAddress(),
-            generateRandomAddress()
-        )
+        await PoolFactory.deploy(generateRandomAddress())
     ).deployed()
+
+    await factory.setPoolCommitterDeployer(generateRandomAddress())
+
     poolKeeper = await poolKeeperFactory.deploy(factory.address)
     await poolKeeper.deployed()
     await factory.connect(signers[0]).setPoolKeeper(poolKeeper.address)

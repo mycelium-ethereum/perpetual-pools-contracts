@@ -21,7 +21,7 @@ contract PoolFactory is IPoolFactory, Ownable {
     IPoolKeeper public poolKeeper;
     IPoolCommitterDeployer public poolCommitterDeployer;
     // default max leverage of 25
-    uint16 public maxLeverage = 25;
+    uint16 public maxLeverage = 10;
     // contract address to receive protocol fees
     address feeReceiver;
     // default fee
@@ -39,7 +39,7 @@ contract PoolFactory is IPoolFactory, Ownable {
     mapping(address => bool) public override isValidPool;
 
     // #### Functions
-    constructor(address _poolCommitterDeployer, address _feeReceiver) {
+    constructor(address _feeReceiver) {
         // Deploy base contracts
         pairTokenBase = new PoolToken();
         poolBase = new LeveragedPool();
@@ -53,8 +53,8 @@ contract PoolFactory is IPoolFactory, Ownable {
             address(this),
             address(this),
             "BASE_POOL",
-            1,
-            2,
+            15,
+            30,
             0,
             1,
             address(this),
@@ -62,7 +62,6 @@ contract PoolFactory is IPoolFactory, Ownable {
         );
         // Init bases
         poolBase.initialize(baseInitialization);
-        poolCommitterDeployer = IPoolCommitterDeployer(_poolCommitterDeployer);
 
         pairTokenBase.initialize(address(this), "BASE_TOKEN", "BASE");
         feeReceiver = _feeReceiver;
@@ -71,7 +70,7 @@ contract PoolFactory is IPoolFactory, Ownable {
     function deployPool(PoolDeployment calldata deploymentParameters) external override returns (address) {
         address _poolKeeper = address(poolKeeper);
         require(_poolKeeper != address(0), "PoolKeeper not set");
-        address poolCommitter = poolCommitterDeployer.deploy(address(this));
+        address poolCommitter = poolCommitterDeployer.deploy();
         require(
             deploymentParameters.leverageAmount >= 1 && deploymentParameters.leverageAmount <= maxLeverage,
             "PoolKeeper: leveraged amount invalid"
@@ -135,6 +134,7 @@ contract PoolFactory is IPoolFactory, Ownable {
     // either we a) use a proxy and don't have a setter
     // b) go for versioned releases and start with a safety switch we can turn off
     function setPoolKeeper(address _poolKeeper) external override onlyOwner {
+        require(_poolKeeper != address(0), "address cannot be null");
         poolKeeper = IPoolKeeper(_poolKeeper);
     }
 
@@ -143,10 +143,16 @@ contract PoolFactory is IPoolFactory, Ownable {
     }
 
     function setFeeReceiver(address _feeReceiver) external override onlyOwner {
+        require(_feeReceiver != address(0), "address cannot be null");
         feeReceiver = _feeReceiver;
     }
 
     function setFee(bytes16 _fee) external override onlyOwner {
         fee = _fee;
+    }
+
+    function setPoolCommitterDeployer(address _poolCommitterDeployer) external override onlyOwner {
+        require(_poolCommitterDeployer != address(0), "address cannot be null");
+        poolCommitterDeployer = IPoolCommitterDeployer(_poolCommitterDeployer);
     }
 }

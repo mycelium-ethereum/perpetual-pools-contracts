@@ -89,6 +89,8 @@ interface ILeveragedPool {
 
     function poolUpkeep(int256 _oldPrice, int256 _newPrice) external;
 
+    function quoteTokenTransfer(address to, uint256 amount) external returns (bool);
+
     function quoteTokenTransferFrom(
         address from,
         address to,

@@ -58,7 +58,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         // pull in tokens
         if (commitType == CommitType.LongMint || commitType == CommitType.ShortMint) {
             // minting: pull in the quote token from the commiter
-            ILeveragedPool(leveragedPool).quoteTokenTransferFrom(msg.sender, address(this), amount);
+            ILeveragedPool(leveragedPool).quoteTokenTransferFrom(msg.sender, leveragedPool, amount);
         } else if (commitType == CommitType.LongBurn) {
             // long burning: pull in long pool tokens from commiter
             ILeveragedPool(leveragedPool).burnTokens(0, amount, msg.sender);
@@ -71,7 +71,10 @@ contract PoolCommitter is IPoolCommitter, Ownable {
     function uncommit(uint128 _commitID) external override {
         Commit memory _commit = commits[_commitID];
         require(msg.sender == _commit.owner, "Unauthorized");
+        _uncommit(_commit, _commitID);
+    }
 
+    function _uncommit(Commit memory _commit, uint128 _commitID) internal {
         // reduce pool commitment amount
         uint256 _commitType = commitTypeToUint(_commit.commitType);
         shadowPools[_commitType] = shadowPools[_commitType] - _commit.amount;
@@ -96,7 +99,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         // release tokens
         if (_commit.commitType == CommitType.LongMint || _commit.commitType == CommitType.ShortMint) {
             // minting: return quote tokens to the commit owner
-            ILeveragedPool(leveragedPool).quoteTokenTransferFrom(address(this), msg.sender, _commit.amount);
+            ILeveragedPool(leveragedPool).quoteTokenTransfer(msg.sender, _commit.amount);
         } else if (_commit.commitType == CommitType.LongBurn) {
             // long burning: return long pool tokens to commit owner
             ILeveragedPool(leveragedPool).mintTokens(0, _commit.amount, msg.sender);
@@ -117,7 +120,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         for (uint128 i = earliestCommitUnexecuted; i <= latestCommitUnexecuted; i++) {
             IPoolCommitter.Commit memory _commit = commits[i];
             nextEarliestCommitUnexecuted = i;
-            // These two checks are so a given call to _executeCommitment won't revert,
+            // These two checks are so a given call to executeCommitment won't revert,
             // allowing us to continue iterations, as well as update nextEarliestCommitUnexecuted.
             if (_commit.owner == address(0)) {
                 // Commit deleted (uncommitted) or already executed
@@ -129,8 +132,12 @@ contract PoolCommitter is IPoolCommitter, Ownable {
                 break;
             }
             emit ExecuteCommit(i);
-            _executeCommitment(_commit);
-            delete commits[i];
+            try IPoolCommitter(address(this)).executeCommitment(_commit) {
+                delete commits[i];
+            } catch {
+                _uncommit(_commit, i);
+                emit FailedCommitExecution(i);
+            }
             if (i == latestCommitUnexecuted) {
                 // We have reached the last one
                 earliestCommitUnexecuted = NO_COMMITS_REMAINING;
@@ -144,11 +151,8 @@ contract PoolCommitter is IPoolCommitter, Ownable {
      * @notice Executes a single commitment.
      * @param _commit The commit to execute
      */
-    function _executeCommitment(Commit memory _commit) internal {
-        require(_commit.owner != address(0), "Invalid commit");
+    function executeCommitment(Commit memory _commit) external override onlySelf {
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
-        uint256 lastPriceTimestamp = pool.lastPriceTimestamp();
-        require(lastPriceTimestamp - _commit.created > pool.frontRunningInterval(), "Commit too new");
         uint112 shortBalance = pool.shortBalance();
         uint112 longBalance = pool.longBalance();
         uint256 _commitType = commitTypeToUint(_commit.commitType);
@@ -179,7 +183,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
 
             // update long and short balances
             pool.setNewPoolBalances(longBalance - amountOut, shortBalance);
-            pool.quoteTokenTransferFrom(address(this), _commit.owner, amountOut);
+            pool.quoteTokenTransfer(_commit.owner, amountOut);
         } else if (_commit.commitType == CommitType.ShortMint) {
             uint112 mintAmount = PoolSwapLibrary.getMintAmount(
                 PoolToken(pool.poolTokens()[1]).totalSupply(), // short token total supply
@@ -203,7 +207,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
 
             // update long and short balances
             pool.setNewPoolBalances(longBalance, shortBalance - amountOut);
-            pool.quoteTokenTransferFrom(address(this), _commit.owner, amountOut);
+            pool.quoteTokenTransfer(_commit.owner, amountOut);
         }
     }
 
@@ -243,6 +247,11 @@ contract PoolCommitter is IPoolCommitter, Ownable {
 
     modifier onlyPool() {
         require(msg.sender == leveragedPool, "msg.sender not leveragedPool");
+        _;
+    }
+
+    modifier onlySelf() {
+        require(msg.sender == address(this), "msg.sender not self");
         _;
     }
 }
