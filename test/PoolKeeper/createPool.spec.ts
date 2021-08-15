@@ -78,6 +78,9 @@ describe("PoolKeeper - createPool", () => {
             signer: signers[0],
             libraries: { PoolSwapLibrary: library.address },
         })) as PoolFactory__factory
+        factory = await (
+            await PoolFactory.deploy(generateRandomAddress())
+        ).deployed()
 
         const PoolCommiterDeployerFactory = (await ethers.getContractFactory(
             "PoolCommitterDeployer",
@@ -87,15 +90,13 @@ describe("PoolKeeper - createPool", () => {
             }
         )) as PoolCommitterDeployer__factory
 
-        let poolCommiterDeployer = await PoolCommiterDeployerFactory.deploy()
+        let poolCommiterDeployer = await PoolCommiterDeployerFactory.deploy(
+            factory.address
+        )
         poolCommiterDeployer = await poolCommiterDeployer.deployed()
 
-        factory = await (
-            await PoolFactory.deploy(
-                poolCommiterDeployer.address,
-                generateRandomAddress()
-            )
-        ).deployed()
+        await factory.setPoolCommitterDeployer(poolCommiterDeployer.address)
+
         poolKeeper = await poolKeeperFactory.deploy(factory.address)
         await poolKeeper.deployed()
 

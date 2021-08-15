@@ -87,10 +87,7 @@ const setupHook = async () => {
     })) as PoolFactory__factory
     // TODO replace addresses with the two new deployers
     const factory = await (
-        await PoolFactory.deploy(
-            generateRandomAddress(),
-            generateRandomAddress()
-        )
+        await PoolFactory.deploy(generateRandomAddress())
     ).deployed()
     poolKeeper = await poolKeeperFactory.deploy(factory.address)
     await poolKeeper.deployed()
