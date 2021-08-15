@@ -5,6 +5,8 @@ import { generateRandomAddress, getEventArgs, timeout } from "../../utilities"
 
 import { MARKET_2, POOL_CODE, POOL_CODE_2 } from "../../constants"
 import {
+    PoolCommitterDeployer__factory,
+    PoolFactory,
     PoolFactory__factory,
     PoolKeeper,
     PoolKeeper__factory,
@@ -75,11 +77,24 @@ const setupHook = async () => {
         libraries: { PoolSwapLibrary: library.address },
     })) as PoolFactory__factory
     // TODO replace addresses with the two new deployers
-    const factory = await (
+    const factory:PoolFactory = await (
         await PoolFactory.deploy(generateRandomAddress())
     ).deployed()
 
-    await factory.setPoolCommitterDeployer(generateRandomAddress())
+    const PoolCommiterDeployerFactory = (await ethers.getContractFactory(
+        "PoolCommitterDeployer",
+        {
+            signer: signers[0],
+            libraries: { PoolSwapLibrary: library.address },
+        }
+    )) as PoolCommitterDeployer__factory
+
+    let poolCommiterDeployer = await PoolCommiterDeployerFactory.deploy(
+        factory.address
+    )
+    poolCommiterDeployer = await poolCommiterDeployer.deployed()
+
+    await factory.setPoolCommitterDeployer(poolCommiterDeployer.address)
     poolKeeper = await poolKeeperFactory.deploy(factory.address)
     await poolKeeper.deployed()
     await factory.setPoolKeeper(poolKeeper.address)
@@ -95,7 +110,6 @@ const setupHook = async () => {
         oracleWrapper: oracleWrapper.address,
         keeperOracle: keeperOracle.address,
     }
-    await factory.setPool
     await (await factory.deployPool(deploymentData)).wait()
 
     await oracleWrapper.incrementPrice()
