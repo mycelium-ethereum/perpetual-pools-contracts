@@ -96,8 +96,19 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         IPoolCommitter(poolCommitter).executeAllCommitments();
     }
 
-    function quoteTokenTransfer(address to, uint256 amount) external override onlyPoolCommitter returns (bool) {
-        return IERC20(quoteToken).transfer(to, amount);
+    function quoteTokenTransfer(address to, uint256 amount) external override onlyPoolCommitterOrKeeper {
+        require(to != address(0), "To address cannot be 0 address");
+        IERC20(quoteToken).safeTransfer(to, amount);
+    }
+
+    function quoteTokenTransferFrom(
+        address from,
+        address to,
+        uint256 amount
+    ) external override onlyPoolCommitter {
+        require(from != address(0), "From address cannot be 0 address");
+        require(to != address(0), "To address cannot be 0 address");
+        IERC20(quoteToken).safeTransferFrom(from, to, amount);
     }
 
     function executePriceChange(int256 _oldPrice, int256 _newPrice) internal {
@@ -118,16 +129,6 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         // Pay the fee
         IERC20(quoteToken).safeTransferFrom(address(this), feeAddress, totalFeeAmount);
         emit PriceChange(_oldPrice, _newPrice);
-    }
-
-    function quoteTokenTransferFrom(
-        address from,
-        address to,
-        uint256 amount
-    ) external override onlyPoolCommitter {
-        require(from != address(0), "From address cannot be 0 address");
-        require(to != address(0), "To address cannot be 0 address");
-        IERC20(quoteToken).safeTransferFrom(from, to, amount);
     }
 
     function setNewPoolBalances(uint112 _longBalance, uint112 _shortBalance) external override onlyPoolCommitter {
@@ -202,6 +203,11 @@ contract LeveragedPool is ILeveragedPool, Initializable {
 
     modifier onlyPoolCommitter() {
         require(msg.sender == poolCommitter, "msg.sender not poolCommitter");
+        _;
+    }
+
+    modifier onlyPoolCommitterOrKeeper() {
+        require(msg.sender == poolCommitter || msg.sender == keeper, "sender not committer or keeper");
         _;
     }
 

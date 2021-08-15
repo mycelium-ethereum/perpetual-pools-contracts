@@ -36,6 +36,10 @@ interface IPoolKeeper {
         address pool
     );
 
+    event KeeperPaid(address indexed _pool, address indexed keeper, uint256 reward);
+
+    event KeeperPaymentError(address indexed _pool, string reason);
+
     /**
      * @notice Creates a notification of a failed pool update
      * @param pool The pool that failed to update

@@ -10,6 +10,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "abdk-libraries-solidity/ABDKMathQuad.sol";
+import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV2V3Interface.sol";
 
 /*
  * @title The manager contract for multiple markets and the pools in them
@@ -31,8 +32,6 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @dev Used to allow multiple upkeep registrations to use the same market/update interval price data.
      */
     mapping(address => uint256) public lastExecutionTime;
-
-    mapping(address => uint256) public keeperFees;
 
     IPoolFactory public factory;
     bytes16 constant fixedPoint = 0x403abc16d674ec800000000000000000; // 1 ether
@@ -131,7 +130,12 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     ) internal {
         uint256 reward = keeperReward(_pool, _gasPrice, _gasSpent, _savedPreviousUpdatedTimestamp, _updateInterval);
 
-        keeperFees[msg.sender] += reward;
+        try ILeveragedPool(_pool).quoteTokenTransfer(msg.sender, reward) {
+            emit KeeperPaid(_pool, msg.sender, reward);
+        } catch Error(string memory reason) {
+            // Usually occurs if pool just started and does not have any funds
+            emit KeeperPaymentError(_pool, reason);
+        }
     }
 
     /**
@@ -188,7 +192,9 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         uint256 _savedPreviousUpdatedTimestamp,
         uint256 _poolInterval
     ) public view returns (uint256) {
-        return keeperGas(_pool, _gasPrice, _gasSpent) + keeperTip(_savedPreviousUpdatedTimestamp, _poolInterval);
+        return
+            keeperGas(_pool, _gasPrice, _gasSpent) +
+            convertKeeperTip(keeperTip(_savedPreviousUpdatedTimestamp, _poolInterval), _pool);
     }
 
     /**
@@ -209,6 +215,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
             return 0;
         } else {
             /* safe due to explicit bounds check above */
+            /* ETH * Settlement / ETH = Settlment amount */
             return _gasPrice * _gasSpent * uint256(settlementTokenPrice);
         }
     }
@@ -222,6 +229,18 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         uint256 elapsedBlocks = (block.timestamp - (_savedPreviousUpdatedTimestamp + _poolInterval)) / BLOCK_TIME;
 
         return BASE_TIP + TIP_DELTA_PER_BLOCK * elapsedBlocks;
+    }
+
+    /**
+     * @dev Assumes `pool::keeperOracle` is a USD stablecoin oracle.
+     * @notice Converts a tip amount into an appropriate value using the oracle's `decimals` value.
+     * @param _tip The calculated tip amount
+     * @param _pool The pool that is being upkept
+     */
+    function convertKeeperTip(uint256 _tip, address _pool) internal view returns (uint256) {
+        uint256 decimals = AggregatorV2V3Interface(IOracleWrapper(ILeveragedPool(_pool).keeperOracle()).oracle())
+            .decimals();
+        return _tip * (10**decimals);
     }
 
     function setFactory(address _factory) external override onlyOwner {
