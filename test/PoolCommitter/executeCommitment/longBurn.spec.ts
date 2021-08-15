@@ -6,7 +6,6 @@ import {
     TestToken,
     ERC20,
     PoolSwapLibrary,
-    PriceChanger,
     PoolCommitter,
 } from "../../../typechain"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
@@ -37,7 +36,6 @@ describe("LeveragedPool - executeCommitment: Long Burn", () => {
     let token: TestToken
 
     let longToken: ERC20
-    let priceChanger: PriceChanger
     let poolCommiter: PoolCommitter
     let pool: LeveragedPool
     let signers: SignerWithAddress[]
@@ -60,7 +58,6 @@ describe("LeveragedPool - executeCommitment: Long Burn", () => {
             library = result.library
             longToken = result.longToken
             poolCommiter = result.poolCommiter
-            priceChanger = result.priceChanger
             await pool.setKeeper(signers[0].address)
             await token.approve(pool.address, amountMinted)
             commit = await createCommit(poolCommiter, [2], amountCommitted)

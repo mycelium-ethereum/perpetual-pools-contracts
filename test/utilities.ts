@@ -1,28 +1,22 @@
-import { ethers } from "hardhat"
+import { ethers, network } from "hardhat"
 import { BigNumberish, ContractReceipt, Event } from "ethers"
 import { BytesLike, Result } from "ethers/lib/utils"
 import { MARKET } from "./constants"
 import {
     ERC20,
     LeveragedPool,
-    TestPoolFactory__factory,
     TestOracleWrapper__factory,
     TestToken,
     TestToken__factory,
     PoolSwapLibrary,
     PoolSwapLibrary__factory,
-    LeveragedPool__factory,
     TestChainlinkOracle__factory,
     PoolKeeper,
     PoolFactory__factory,
     PoolKeeper__factory,
     PoolFactory,
     PoolCommitter,
-    PriceChanger,
-    PoolCommitter__factory,
-    PriceChanger__factory,
     PoolCommitterDeployer__factory,
-    PriceChangerDeployer__factory,
 } from "../typechain"
 
 import { abi as ERC20Abi } from "../artifacts/@openzeppelin/contracts/token/ERC20/ERC20.sol/ERC20.json"
@@ -88,7 +82,6 @@ export const deployPoolAndTokenContracts = async (
     longToken: ERC20
     library: PoolSwapLibrary
     poolCommiter: PoolCommitter
-    priceChanger: PriceChanger
     poolKeeper: PoolKeeper
 }> => {
     const signers = await ethers.getSigners()
@@ -146,6 +139,10 @@ export const deployPoolAndTokenContracts = async (
         libraries: { PoolSwapLibrary: library.address },
     })) as PoolFactory__factory
 
+    const factory = await (
+        await PoolFactory.deploy(generateRandomAddress())
+    ).deployed()
+
     const PoolCommiterDeployerFactory = (await ethers.getContractFactory(
         "PoolCommitterDeployer",
         {
@@ -154,27 +151,12 @@ export const deployPoolAndTokenContracts = async (
         }
     )) as PoolCommitterDeployer__factory
 
-    let poolCommiterDeployer = await PoolCommiterDeployerFactory.deploy()
+    let poolCommiterDeployer = await PoolCommiterDeployerFactory.deploy(
+        factory.address
+    )
     poolCommiterDeployer = await poolCommiterDeployer.deployed()
 
-    const PriceChangerDeployerFactory = (await ethers.getContractFactory(
-        "PriceChangerDeployer",
-        {
-            signer: signers[0],
-            libraries: { PoolSwapLibrary: library.address },
-        }
-    )) as PriceChangerDeployer__factory
-
-    let priceChangerDeployer = await PriceChangerDeployerFactory.deploy()
-    priceChangerDeployer = await priceChangerDeployer.deployed()
-
-    const factory = await (
-        await PoolFactory.deploy(
-            poolCommiterDeployer.address,
-            priceChangerDeployer.address,
-            generateRandomAddress()
-        )
-    ).deployed()
+    await factory.setPoolCommitterDeployer(poolCommiterDeployer.address)
 
     const poolKeeperFactory = (await ethers.getContractFactory("PoolKeeper", {
         signer: signers[0],
@@ -185,13 +167,10 @@ export const deployPoolAndTokenContracts = async (
 
     // deploy the pool using the factory, not separately
     const deployParams = {
-        owner: signers[0].address,
-        keeper: poolKeeper.address,
-        poolCode: POOL_CODE,
+        poolName: POOL_CODE,
         frontRunningInterval: frontRunningInterval,
         updateInterval: updateInterval,
         leverageAmount: leverage,
-        feeAddress: feeAddress,
         quoteToken: token.address,
         oracleWrapper: oracleWrapper.address,
         keeperOracle: keeperOracle.address,
@@ -208,9 +187,7 @@ export const deployPoolAndTokenContracts = async (
     const shortToken = await ethers.getContractAt(ERC20Abi, shortTokenAddr)
 
     let commiter = await pool.poolCommitter()
-    let changer = await pool.priceChanger()
     const poolCommiter = await ethers.getContractAt("PoolCommitter", commiter)
-    const priceChanger = await ethers.getContractAt("PriceChanger", changer)
 
     return {
         signers,
@@ -224,8 +201,6 @@ export const deployPoolAndTokenContracts = async (
         longToken,
         //@ts-ignore
         poolCommiter,
-        //@ts-ignore
-        priceChanger,
         //@ts-ignore
         poolKeeper,
     }
@@ -261,7 +236,8 @@ export const createCommit = async (
  * @returns nothing
  */
 export const timeout = async (milliseconds: number): Promise<void> => {
-    return new Promise((resolve) => setTimeout(resolve, milliseconds))
+    await network.provider.send("evm_increaseTime", [milliseconds / 1000])
+    await network.provider.send("evm_mine", [])
 }
 
 export function callData(

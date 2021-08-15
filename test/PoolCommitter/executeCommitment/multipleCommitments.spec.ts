@@ -7,7 +7,6 @@ import {
     ERC20,
     PoolSwapLibrary,
     PoolCommitter,
-    PriceChanger,
 } from "../../../typechain"
 
 import { POOL_CODE } from "../../constants"
@@ -38,7 +37,6 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
     let pool: LeveragedPool
     let library: PoolSwapLibrary
     let poolCommiter: PoolCommitter
-    let priceChanger: PriceChanger
 
     describe("Long mint->Long Burn", () => {
         const commits: CommitEventArgs[] | undefined = []
@@ -57,7 +55,6 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
             token = result.token
             shortToken = result.shortToken
             poolCommiter = result.poolCommiter
-            priceChanger = result.priceChanger
 
             await token.approve(pool.address, amountMinted)
 
@@ -123,7 +120,6 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
             token = result.token
             shortToken = result.shortToken
             poolCommiter = result.poolCommiter
-            priceChanger = result.priceChanger
             await pool.setKeeper(result.signers[0].address)
 
             await token.approve(pool.address, amountMinted)

@@ -87,11 +87,7 @@ const setupHook = async () => {
     })) as PoolFactory__factory
     // TODO replace addresses with the two new deployers
     const factory = await (
-        await PoolFactory.deploy(
-            generateRandomAddress(),
-            generateRandomAddress(),
-            generateRandomAddress()
-        )
+        await PoolFactory.deploy(generateRandomAddress())
     ).deployed()
     poolKeeper = await poolKeeperFactory.deploy(factory.address)
     await poolKeeper.deployed()
@@ -99,7 +95,7 @@ const setupHook = async () => {
 
     // Create pool
     const deploymentData = {
-        poolCode: POOL_CODE,
+        poolName: POOL_CODE,
         frontRunningInterval: 1,
         updateInterval: updateInterval,
         leverageAmount: 1,
@@ -110,7 +106,7 @@ const setupHook = async () => {
     await (await factory.deployPool(deploymentData)).wait()
 
     const deploymentData2 = {
-        poolCode: POOL_CODE_2,
+        poolName: POOL_CODE_2,
         frontRunningInterval: 1,
         updateInterval: updateInterval,
         leverageAmount: 2,
@@ -157,6 +153,7 @@ describe("PoolKeeper - performUpkeepMultiplePools: corner cases", () => {
             await (await oracleWrapper.incrementPrice()).wait()
             await poolKeeper.performUpkeepMultiplePools(bothUpkeeps)
             await timeout(updateInterval * 1000 + 1000) // TODO why this <- ?
+            oldLastExecutionPrice = await poolKeeper.executionPrice(POOL1_ADDR)
 
             const upOne = await (
                 await poolKeeper.performUpkeepSinglePool(POOL1_ADDR)
@@ -168,9 +165,6 @@ describe("PoolKeeper - performUpkeepMultiplePools: corner cases", () => {
 
             upkeepOneEvent = getEventArgs(upOne, "ExecutePriceChange")
             upkeepTwoEvent = getEventArgs(upTwo, "ExecutePriceChange")
-            oldLastExecutionPrice = await poolKeeper.lastExecutionPrice(
-                POOL1_ADDR
-            )
             oldExecutionPrice = await poolKeeper.executionPrice(POOL1_ADDR)
         })
         it("should use the same price data for a second upkeep group in the same market", async () => {

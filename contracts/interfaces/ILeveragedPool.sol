@@ -12,9 +12,8 @@ interface ILeveragedPool {
         address _keeperOracle;
         address _longToken;
         address _shortToken;
-        address _priceChanger;
         address _poolCommitter;
-        string _poolCode; // The pool identification code. This is unique per pool per pool keeper
+        string _poolName; // The pool identification name
         uint32 _frontRunningInterval; // The minimum number of seconds that must elapse before a commit is forced to wait until the next interval
         uint32 _updateInterval; // The minimum number of seconds that must elapse before a commit can be executed.
         bytes16 _fee; // The fund movement fee. This amount is extracted from the deposited asset with every update and sent to the fee address.
@@ -29,19 +28,42 @@ interface ILeveragedPool {
      * @param longToken The address of the LONG pair token
      * @param shortToken The address of the SHORT pair token
      * @param quoteToken The address of the digital asset that the pool accepts
-     * @param poolCode The pool code for the pool
+     * @param poolName The pool code for the pool
      */
-    event PoolInitialized(address indexed longToken, address indexed shortToken, address quoteToken, string poolCode);
+    event PoolInitialized(address indexed longToken, address indexed shortToken, address quoteToken, string poolName);
+
+    event PriceChange(int256 indexed startPrice, int256 indexed endPrice);
+
+    /**
+     * @notice Represents change in fee receiver's address
+     * @param oldAddress Previous address
+     * @param newAddress Address after change
+     */
+    event FeeAddressUpdated(address oldAddress, address newAddress);
+
+    /**
+     * @notice Represents change in keeper's address
+     * @param oldAddress Previous address
+     * @param newAddress Address after change
+     */
+    event KeeperAddressChanged(address oldAddress, address newAddress);
+
+    /**
+     * @notice Represents change in governance address
+     * @param oldAddress Previous address
+     * @param newAddress Address after change
+     */
+    event GovernanceAddressChanged(address oldAddress, address newAddress);
 
     function leverageAmount() external view returns (bytes16);
 
     function poolCommitter() external view returns (address);
 
-    function priceChanger() external view returns (address);
-
     function oracleWrapper() external view returns (address);
 
-    function lastPriceTimestamp() external view returns (uint40);
+    function lastPriceTimestamp() external view returns (uint256);
+
+    function poolName() external view returns (string calldata);
 
     function updateInterval() external view returns (uint32);
 
@@ -65,7 +87,6 @@ interface ILeveragedPool {
      */
     function initialize(Initialization calldata initialization) external;
 
-    // This would call `PriceChanger::executePriceChange` and `PoolCommitter::executeAllCommitments` and would have onlyKeeper modifier
     function poolUpkeep(int256 _oldPrice, int256 _newPrice) external;
 
     function quoteTokenTransfer(address to, uint256 amount) external returns (bool);
@@ -74,9 +95,8 @@ interface ILeveragedPool {
         address from,
         address to,
         uint256 amount
-    ) external returns (bool);
+    ) external;
 
-    // This would be called in `PoolCommitter::executeCommitment` and `PriceChanger::executePriceChange` and would therefore have an onlyCommitterOrPriceChanger modifier or something
     function setNewPoolBalances(uint112 _longBalance, uint112 _shortBalance) external;
 
     function getOraclePrice() external view returns (int256);

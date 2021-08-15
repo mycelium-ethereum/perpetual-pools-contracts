@@ -78,11 +78,7 @@ const setupHook = async () => {
         libraries: { PoolSwapLibrary: library.address },
     })) as PoolFactory__factory
     factory = await (
-        await PoolFactory.deploy(
-            generateRandomAddress(),
-            generateRandomAddress(),
-            generateRandomAddress()
-        )
+        await PoolFactory.deploy(generateRandomAddress())
     ).deployed()
     poolKeeper = await poolKeeperFactory.deploy(factory.address)
     await poolKeeper.deployed()
@@ -90,7 +86,7 @@ const setupHook = async () => {
 
     // Create pool
     const deploymentData = {
-        poolCode: POOL_CODE,
+        poolName: POOL_CODE,
         frontRunningInterval: 1,
         updateInterval: 2,
         leverageAmount: 1,
@@ -101,7 +97,7 @@ const setupHook = async () => {
     await factory.deployPool(deploymentData)
 
     const deploymentData2 = {
-        poolCode: POOL_CODE_2,
+        poolName: POOL_CODE_2,
         frontRunningInterval: 1,
         updateInterval: 2,
         leverageAmount: 2,

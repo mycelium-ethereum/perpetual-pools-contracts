@@ -5,10 +5,21 @@ import "./PoolCommitter.sol";
 import "../interfaces/IPoolCommitterDeployer.sol";
 
 /*
-@title The deployer of PriceChanger and PoolCommitter
+@title The deployer of the PoolCommitter contract
 */
 contract PoolCommitterDeployer is IPoolCommitterDeployer {
-    function deploy(address factory) external override returns (address poolCommitter) {
+    address public factory;
+
+    constructor(address _factory) {
+        factory = _factory;
+    }
+
+    function deploy() external override onlyFactory returns (address poolCommitter) {
         poolCommitter = address(new PoolCommitter(factory));
+    }
+
+    modifier onlyFactory() {
+        require(msg.sender == factory, "msg.sender not factory");
+        _;
     }
 }

@@ -18,7 +18,7 @@ interface IPoolFactory {
     function isValidPool(address _pool) external view returns (bool);
 
     struct PoolDeployment {
-        string poolCode; // The pool identification code. This is unique per pool per pool keeper
+        string poolName; // The name to identify a pool by
         uint32 frontRunningInterval; // The minimum number of seconds that must elapse before a commit can be executed. Must be smaller than or equal to the update interval to prevent deadlock.
         uint32 updateInterval; // The minimum number of seconds that must elapse before a price change
         uint16 leverageAmount; // The amount of exposure to price movements for the pool
@@ -42,4 +42,6 @@ interface IPoolFactory {
     function setFeeReceiver(address _feeReceiver) external;
 
     function setFee(bytes16 _fee) external;
+
+    function setPoolCommitterDeployer(address _poolCommitterDeployer) external;
 }
