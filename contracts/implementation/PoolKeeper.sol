@@ -51,7 +51,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         address oracleWrapper = ILeveragedPool(_poolAddress).oracleWrapper();
         int256 firstPrice = IOracleWrapper(oracleWrapper).getPrice();
         int256 startingPrice = ABDKMathQuad.toInt(ABDKMathQuad.mul(ABDKMathQuad.fromInt(firstPrice), fixedPoint));
-        emit PoolAdded(_poolAddress, firstPrice, _poolAddress);
+        emit PoolAdded(_poolAddress, firstPrice);
         executionPrice[_poolAddress] = startingPrice;
         lastExecutionTime[_poolAddress] = block.timestamp;
     }
