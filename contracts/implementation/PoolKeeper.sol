@@ -18,7 +18,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     /* Constants */
     uint256 public constant BASE_TIP = 1;
     uint256 public constant TIP_DELTA_PER_BLOCK = 1;
-    uint256 public constant BLOCK_TIME = 13;
+    uint256 public constant BLOCK_TIME = 13; /* in seconds */
 
     // #### Global variables
     /**
