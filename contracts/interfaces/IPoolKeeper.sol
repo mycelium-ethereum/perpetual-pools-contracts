@@ -45,7 +45,7 @@ interface IPoolKeeper {
      * @param pool The pool that failed to update
      * @param reason The reason for the error
      */
-    event PoolUpdateError(address pool, string reason);
+    event PoolUpdateError(address indexed pool, string reason);
 
     // #### Functions
     /**
