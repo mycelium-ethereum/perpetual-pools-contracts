@@ -18,6 +18,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     /* Constants */
     uint256 public constant BASE_TIP = 1;
     uint256 public constant TIP_DELTA_PER_BLOCK = 1;
+    uint256 public constant BLOCK_TIME = 13;
 
     // #### Global variables
     /**
@@ -29,7 +30,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @notice Format: Pool => timestamp of last price execution
      * @dev Used to allow multiple upkeep registrations to use the same market/update interval price data.
      */
-    mapping(address => uint256) public lastExecutionBlock;
+    mapping(address => uint256) public lastExecutionTime;
 
     mapping(address => uint256) public keeperFees;
 
@@ -52,7 +53,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         int256 startingPrice = ABDKMathQuad.toInt(ABDKMathQuad.mul(ABDKMathQuad.fromInt(firstPrice), fixedPoint));
         emit PoolAdded(_poolAddress, firstPrice, _poolAddress);
         executionPrice[_poolAddress] = startingPrice;
-        lastExecutionBlock[_poolAddress] = block.number;
+        lastExecutionTime[_poolAddress] = block.timestamp;
     }
 
     // Keeper network
@@ -104,14 +105,15 @@ contract PoolKeeper is IPoolKeeper, Ownable {
 
         emit NewRound(lastExecutionPrice, latestPrice, pool.updateInterval(), _pool);
 
-        uint256 savedLastExecutionBlock = lastExecutionBlock[_pool];
+        uint256 savedPreviousUpdatedTimestamp = pool.lastPriceTimestamp();
+        uint256 updateInterval = pool.updateInterval();
 
-        _executePriceChange(block.number, pool.updateInterval(), _pool, lastExecutionPrice, executionPrice[_pool]);
+        _executePriceChange(block.timestamp, uint32(updateInterval), _pool, lastExecutionPrice, executionPrice[_pool]);
 
         uint256 gasSpent = startGas - gasleft();
         uint256 _gasPrice = 1; /* TODO: poll gas price oracle (or BASEFEE) */
 
-        payKeeper(_pool, _gasPrice, gasSpent, savedLastExecutionBlock);
+        payKeeper(_pool, _gasPrice, gasSpent, savedPreviousUpdatedTimestamp, updateInterval);
     }
 
     /**
@@ -124,9 +126,10 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         address _pool,
         uint256 _gasPrice,
         uint256 _gasSpent,
-        uint256 _executionBlock
+        uint256 _savedPreviousUpdatedTimestamp,
+        uint256 _updateInterval
     ) internal {
-        uint256 reward = keeperReward(_pool, _gasPrice, _gasSpent, _executionBlock);
+        uint256 reward = keeperReward(_pool, _gasPrice, _gasSpent, _savedPreviousUpdatedTimestamp, _updateInterval);
 
         keeperFees[msg.sender] += reward;
     }
@@ -158,9 +161,9 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     ) internal {
         if (oldPrice > 0) {
             // TODO why is this check here?
-            if (lastExecutionBlock[pool] < roundStart) {
+            if (lastExecutionTime[pool] < roundStart) {
                 // Make sure this round is after last execution time
-                lastExecutionBlock[pool] = block.number;
+                lastExecutionTime[pool] = block.timestamp;
                 emit ExecutePriceChange(oldPrice, latestPrice, updateInterval, pool);
                 // This allows us to still batch multiple calls to executePriceChange, even if some are invalid
                 // Without reverting the entire transaction
@@ -182,9 +185,10 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         address _pool,
         uint256 _gasPrice,
         uint256 _gasSpent,
-        uint256 _executionBlock
+        uint256 _savedPreviousUpdatedTimestamp,
+        uint256 _poolInterval
     ) public view returns (uint256) {
-        return keeperGas(_pool, _gasPrice, _gasSpent) + keeperTip(_pool, _executionBlock);
+        return keeperGas(_pool, _gasPrice, _gasSpent) + keeperTip(_savedPreviousUpdatedTimestamp, _poolInterval);
     }
 
     /**
@@ -211,13 +215,11 @@ contract PoolKeeper is IPoolKeeper, Ownable {
 
     /**
      * @notice Tip a keeper will receive for successfully updating the specified pool
-     * @param _pool Address of the given pool
-     * @param _executionBlock The block in which the last execution took place
      * @return Keeper's tip
      */
-    function keeperTip(address _pool, uint256 _executionBlock) public view returns (uint256) {
-        /* the number of blocks that have elapsed since the given pool was last updated */
-        uint256 elapsedBlocks = (_executionBlock - block.number);
+    function keeperTip(uint256 _savedPreviousUpdatedTimestamp, uint256 _poolInterval) public view returns (uint256) {
+        /* the number of blocks that have elapsed since the given pool's updateInterval passed */
+        uint256 elapsedBlocks = (block.timestamp - (_savedPreviousUpdatedTimestamp + _poolInterval)) / BLOCK_TIME;
 
         return BASE_TIP + TIP_DELTA_PER_BLOCK * elapsedBlocks;
     }
