@@ -25,7 +25,7 @@ describe("PoolFactory - deployPool", () => {
     let factory: PoolFactory
     let poolKeeper: PoolKeeper
     let oracleWrapper: TestOracleWrapper
-    let keeperOracle: TestOracleWrapper
+    let settlementEthOracleWrapper: TestOracleWrapper
     let poolTx: Result | undefined
     let pool: LeveragedPool
     before(async () => {
@@ -53,10 +53,10 @@ describe("PoolFactory - deployPool", () => {
         )
         await oracleWrapper.deployed()
 
-        keeperOracle = await oracleWrapperFactory.deploy(
+        settlementEthOracleWrapper = await oracleWrapperFactory.deploy(
             chainlinkOracle.address
         )
-        await keeperOracle.deployed()
+        await settlementEthOracleWrapper.deployed()
 
         const PoolFactory = (await ethers.getContractFactory("PoolFactory", {
             signer: signers[0],
@@ -82,7 +82,7 @@ describe("PoolFactory - deployPool", () => {
             leverageAmount: 5,
             quoteToken: generateRandomAddress(),
             oracleWrapper: oracleWrapper.address,
-            keeperOracle: keeperOracle.address,
+            settlementEthOracleWrapper: settlementEthOracleWrapper.address,
         }
         poolTx = getEventArgs(
             await (await factory.deployPool(deploymentData)).wait(),
@@ -102,7 +102,7 @@ describe("PoolFactory - deployPool", () => {
             _owner: generateRandomAddress(),
             _keeper: generateRandomAddress(),
             _oracleWrapper: generateRandomAddress(),
-            _keeperOracle: generateRandomAddress(),
+            _settlementEthOracleWrapper: generateRandomAddress(),
             _longToken: generateRandomAddress(),
             _shortToken: generateRandomAddress(),
             _poolName: POOL_CODE,
@@ -123,7 +123,7 @@ describe("PoolFactory - deployPool", () => {
             leverageAmount: 5,
             quoteToken: generateRandomAddress(),
             oracleWrapper: oracleWrapper.address,
-            keeperOracle: keeperOracle.address,
+            settlementEthOracleWrapper: settlementEthOracleWrapper.address,
         }
         const secondPool = getEventArgs(
             await (await factory.deployPool(deploymentData)).wait(),
@@ -159,7 +159,7 @@ describe("PoolFactory - deployPool", () => {
             leverageAmount: 5,
             quoteToken: generateRandomAddress(),
             oracleWrapper: oracleWrapper.address,
-            keeperOracle: keeperOracle.address,
+            settlementEthOracleWrapper: settlementEthOracleWrapper.address,
         }
         const secondPool = getEventArgs(
             await (await factory.deployPool(deploymentData)).wait(),
@@ -182,7 +182,7 @@ describe("PoolFactory - deployPool", () => {
                 leverageAmount: 0,
                 quoteToken: generateRandomAddress(),
                 oracleWrapper: oracleWrapper.address,
-                keeperOracle: keeperOracle.address,
+                settlementEthOracleWrapper: settlementEthOracleWrapper.address,
             }
 
             await expect(factory.deployPool(deploymentData)).to.be.revertedWith(
@@ -198,7 +198,7 @@ describe("PoolFactory - deployPool", () => {
                 leverageAmount: 100, // default max leverage is 25
                 quoteToken: generateRandomAddress(),
                 oracleWrapper: oracleWrapper.address,
-                keeperOracle: keeperOracle.address,
+                settlementEthOracleWrapper: settlementEthOracleWrapper.address,
             }
 
             await expect(factory.deployPool(deploymentData)).to.be.revertedWith(

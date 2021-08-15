@@ -9,7 +9,7 @@ interface ILeveragedPool {
         address _owner;
         address _keeper; // The address of the PoolKeeper contract
         address _oracleWrapper;
-        address _keeperOracle;
+        address _settlementEthOracleWrapper;
         address _longToken;
         address _shortToken;
         address _poolCommitter;
@@ -75,9 +75,7 @@ interface ILeveragedPool {
 
     function poolTokens() external view returns (address[2] memory);
 
-    function keeperOracle() external view returns (address);
-
-    function quoteToken() external view returns (address);
+    function settlementEthOracleWrapper() external view returns (address);
 
     // #### Functions
     /**

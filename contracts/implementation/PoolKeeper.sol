@@ -209,7 +209,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         uint256 _gasPrice,
         uint256 _gasSpent
     ) public view returns (uint256) {
-        int256 settlementTokenPrice = IOracleWrapper(ILeveragedPool(_pool).keeperOracle()).getPrice();
+        int256 settlementTokenPrice = IOracleWrapper(ILeveragedPool(_pool).settlementEthOracleWrapper()).getPrice();
 
         if (settlementTokenPrice <= 0) {
             return 0;
@@ -232,14 +232,15 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     }
 
     /**
-     * @dev Assumes `pool::keeperOracle` is a USD stablecoin oracle.
+     * @dev Assumes `pool::settlementEthOracleWrapper` is a USD stablecoin oracle.
      * @notice Converts a tip amount into an appropriate value using the oracle's `decimals` value.
      * @param _tip The calculated tip amount
      * @param _pool The pool that is being upkept
      */
     function convertKeeperTip(uint256 _tip, address _pool) internal view returns (uint256) {
-        uint256 decimals = AggregatorV2V3Interface(IOracleWrapper(ILeveragedPool(_pool).keeperOracle()).oracle())
-            .decimals();
+        uint256 decimals = AggregatorV2V3Interface(
+            IOracleWrapper(ILeveragedPool(_pool).settlementEthOracleWrapper()).oracle()
+        ).decimals();
         return _tip * (10**decimals);
     }
 
