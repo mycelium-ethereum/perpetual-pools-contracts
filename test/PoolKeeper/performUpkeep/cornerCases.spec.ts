@@ -16,8 +16,8 @@ import {
     PoolSwapLibrary__factory,
     TestChainlinkOracle,
     TestChainlinkOracle__factory,
-    TestOracleWrapper,
-    TestOracleWrapper__factory,
+    ChainlinkOracleWrapper,
+    ChainlinkOracleWrapper__factory,
     TestToken__factory,
 } from "../../../typechain"
 import { MARKET, POOL_CODE_2, MARKET_2, POOL_CODE } from "../../constants"
@@ -28,8 +28,8 @@ chai.use(chaiAsPromised)
 const { expect } = chai
 
 let quoteToken: string
-let oracleWrapper: TestOracleWrapper
-let keeperOracle: TestOracleWrapper
+let oracleWrapper: ChainlinkOracleWrapper
+let keeperOracle: ChainlinkOracleWrapper
 let poolKeeper: PoolKeeper
 let factory: PoolFactory
 let oracle: TestChainlinkOracle
@@ -62,9 +62,9 @@ const setupHook = async () => {
     oracle = await oracleFactory.deploy()
     await oracle.deployed()
     const oracleWrapperFactory = (await ethers.getContractFactory(
-        "TestOracleWrapper",
+        "ChainlinkOracleWrapper",
         signers[0]
-    )) as TestOracleWrapper__factory
+    )) as ChainlinkOracleWrapper__factory
     oracleWrapper = await oracleWrapperFactory.deploy(oracle.address)
     await oracleWrapper.deployed()
 

@@ -62,14 +62,14 @@ module.exports = async (hre) => {
         ethers.utils.parseEther("1000")
     )
 
-    /* deploy TestOracleWrapper */
-    const oracleWrapper = await deploy("TestOracleWrapper", {
+    /* deploy ChainlinkOracleWrapper */
+    const oracleWrapper = await deploy("ChainlinkOracleWrapper", {
         from: deployer,
         log: true,
         args: [chainlinkOracle.address],
     })
-    /* deploy TestOracleWrapper for keeper */
-    const keeperOracle = await deploy("TestOracleWrapper", {
+    /* deploy ChainlinkOracleWrapper for keeper */
+    const keeperOracle = await deploy("ChainlinkOracleWrapper", {
         from: deployer,
         log: true,
         args: [chainlinkOracle.address],

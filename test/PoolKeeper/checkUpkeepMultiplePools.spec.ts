@@ -6,8 +6,8 @@ import { generateRandomAddress } from "../utilities"
 import { MARKET_2, POOL_CODE, POOL_CODE_2 } from "../constants"
 import {
     TestChainlinkOracle,
-    TestOracleWrapper,
-    TestOracleWrapper__factory,
+    ChainlinkOracleWrapper,
+    ChainlinkOracleWrapper__factory,
     TestChainlinkOracle__factory,
     PoolFactory__factory,
     PoolKeeper,
@@ -21,8 +21,8 @@ chai.use(chaiAsPromised)
 const { expect } = chai
 
 let quoteToken: string
-let oracleWrapper: TestOracleWrapper
-let keeperOracle: TestOracleWrapper
+let oracleWrapper: ChainlinkOracleWrapper
+let keeperOracle: ChainlinkOracleWrapper
 let oracle: TestChainlinkOracle
 let poolKeeper: PoolKeeper
 let factory: PoolFactory
@@ -52,9 +52,9 @@ const setupHook = async () => {
     oracle = await oracleFactory.deploy()
     await oracle.deployed()
     const oracleWrapperFactory = (await ethers.getContractFactory(
-        "TestOracleWrapper",
+        "ChainlinkOracleWrapper",
         signers[0]
-    )) as TestOracleWrapper__factory
+    )) as ChainlinkOracleWrapper__factory
     oracleWrapper = await oracleWrapperFactory.deploy(oracle.address)
     await oracleWrapper.deployed()
 

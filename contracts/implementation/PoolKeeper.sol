@@ -11,14 +11,15 @@ import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "abdk-libraries-solidity/ABDKMathQuad.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV2V3Interface.sol";
+import "hardhat/console.sol";
 
 /*
  * @title The manager contract for multiple markets and the pools in them
  */
 contract PoolKeeper is IPoolKeeper, Ownable {
     /* Constants */
-    uint256 public constant BASE_TIP = 1;
-    uint256 public constant TIP_DELTA_PER_BLOCK = 1;
+    uint256 public constant BASE_TIP = 5; // 5% base tip
+    uint256 public constant TIP_DELTA_PER_BLOCK = 5; // 5% increase per block
     uint256 public constant BLOCK_TIME = 13; /* in seconds */
 
     // #### Global variables
@@ -110,7 +111,9 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         _executePriceChange(block.timestamp, uint32(updateInterval), _pool, lastExecutionPrice, executionPrice[_pool]);
 
         uint256 gasSpent = startGas - gasleft();
-        uint256 _gasPrice = 1; /* TODO: poll gas price oracle (or BASEFEE) */
+        // TODO: poll gas price oracle (or BASEFEE)
+        // _gasPrice = 10 gwei = 10000000000 wei
+        uint256 _gasPrice = 10000000000;
 
         payKeeper(_pool, _gasPrice, gasSpent, savedPreviousUpdatedTimestamp, updateInterval);
     }
@@ -129,7 +132,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         uint256 _updateInterval
     ) internal {
         uint256 reward = keeperReward(_pool, _gasPrice, _gasSpent, _savedPreviousUpdatedTimestamp, _updateInterval);
-
+        console.logUint(reward);
         try ILeveragedPool(_pool).quoteTokenTransfer(msg.sender, reward) {
             emit KeeperPaid(_pool, msg.sender, reward);
         } catch Error(string memory reason) {
@@ -183,7 +186,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @param _pool Address of the given pool
      * @param _gasPrice Price of a single gas unit (in ETH)
      * @param _gasSpent Number of gas units spent
-     * @return Keeper's reward
+     * @return Number of settlement tokens to give to the keeper for work performed
      */
     function keeperReward(
         address _pool,
@@ -192,9 +195,18 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         uint256 _savedPreviousUpdatedTimestamp,
         uint256 _poolInterval
     ) public view returns (uint256) {
-        return
-            keeperGas(_pool, _gasPrice, _gasSpent) +
-            convertKeeperTip(keeperTip(_savedPreviousUpdatedTimestamp, _poolInterval), _pool);
+        // keeper gas cost in wei
+        uint256 _keeperGas = keeperGas(_pool, _gasPrice, _gasSpent);
+        console.logUint(_keeperGas);
+
+        // tip percent in wad units
+        bytes16 _tipPercent = ABDKMathQuad.mul(ABDKMathQuad.fromUInt(keeperTip(_savedPreviousUpdatedTimestamp, _poolInterval)), fixedPoint);
+        // console.logUint(ABDKMathQuad.toUInt(_tipPercent));
+
+        // amount of settlement tokens to give to the keeper
+        console.log(ABDKMathQuad.toUInt(ABDKMathQuad.mul(ABDKMathQuad.fromUInt(_keeperGas), _tipPercent)));
+        return ABDKMathQuad.toUInt(ABDKMathQuad.mul(ABDKMathQuad.fromUInt(_keeperGas), _tipPercent));
+
     }
 
     /**
@@ -215,20 +227,22 @@ contract PoolKeeper is IPoolKeeper, Ownable {
             return 0;
         } else {
             /* safe due to explicit bounds check above */
-            /* ETH * Settlement / ETH = Settlment amount */
-            return _gasPrice * _gasSpent * uint256(settlementTokenPrice);
+            /* (wei * Settlement / ETH) / fixed point (10^18) = amount in settlement */
+            bytes16 _weiSpent = ABDKMathQuad.fromUInt(_gasPrice * _gasSpent);
+            bytes16 _settlementTokenPrice = ABDKMathQuad.fromUInt(uint256(settlementTokenPrice));
+            return ABDKMathQuad.toUInt(ABDKMathQuad.div(ABDKMathQuad.mul(_weiSpent, _settlementTokenPrice), fixedPoint));
         }
     }
 
     /**
      * @notice Tip a keeper will receive for successfully updating the specified pool
-     * @return Keeper's tip
+     * @return percent of the keeperGas cost to add to payment, as a percentt
      */
     function keeperTip(uint256 _savedPreviousUpdatedTimestamp, uint256 _poolInterval) public view returns (uint256) {
         /* the number of blocks that have elapsed since the given pool's updateInterval passed */
         uint256 elapsedBlocks = (block.timestamp - (_savedPreviousUpdatedTimestamp + _poolInterval)) / BLOCK_TIME;
-
-        return BASE_TIP + TIP_DELTA_PER_BLOCK * elapsedBlocks;
+    
+        return  BASE_TIP + (TIP_DELTA_PER_BLOCK * elapsedBlocks);
     }
 
     /**

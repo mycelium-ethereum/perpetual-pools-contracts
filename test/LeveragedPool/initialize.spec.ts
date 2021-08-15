@@ -11,8 +11,8 @@ import {
     PoolSwapLibrary,
     ERC20,
     TestChainlinkOracle__factory,
-    TestOracleWrapper__factory,
-    TestOracleWrapper,
+    ChainlinkOracleWrapper__factory,
+    ChainlinkOracleWrapper,
     PoolFactory__factory,
     PoolCommitter__factory,
     PoolCommitter,
@@ -48,8 +48,8 @@ describe("LeveragedPool - initialize", () => {
     let quoteToken: string
     let short: ERC20
     let long: ERC20
-    let oracleWrapper: TestOracleWrapper
-    let keeperOracle: TestOracleWrapper
+    let oracleWrapper: ChainlinkOracleWrapper
+    let keeperOracle: ChainlinkOracleWrapper
 
     before(async () => {
         signers = await ethers.getSigners()
@@ -100,9 +100,9 @@ describe("LeveragedPool - initialize", () => {
 
             // Deploy tokens
             const oracleWrapperFactory = (await ethers.getContractFactory(
-                "TestOracleWrapper",
+                "ChainlinkOracleWrapper",
                 signers[0]
-            )) as TestOracleWrapper__factory
+            )) as ChainlinkOracleWrapper__factory
             const oracleWrapper = await oracleWrapperFactory.deploy(
                 chainlinkOracle.address
             )
@@ -298,9 +298,9 @@ describe("LeveragedPool - initialize", () => {
 
             // Deploy tokens
             const oracleWrapperFactory = (await ethers.getContractFactory(
-                "TestOracleWrapper",
+                "ChainlinkOracleWrapper",
                 signers[0]
-            )) as TestOracleWrapper__factory
+            )) as ChainlinkOracleWrapper__factory
             oracleWrapper = await oracleWrapperFactory.deploy(
                 chainlinkOracle.address
             )

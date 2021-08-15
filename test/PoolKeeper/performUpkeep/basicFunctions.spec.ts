@@ -5,6 +5,7 @@ import {
     createCommit,
     generateRandomAddress,
     getEventArgs,
+    incrementPrice,
     timeout,
 } from "../../utilities"
 
@@ -18,10 +19,11 @@ import {
     PoolKeeper__factory,
     PoolSwapLibrary__factory,
     TestChainlinkOracle__factory,
-    TestOracleWrapper,
-    TestOracleWrapper__factory,
+    ChainlinkOracleWrapper,
+    ChainlinkOracleWrapper__factory,
     TestToken,
     TestToken__factory,
+    TestChainlinkOracle,
 } from "../../../typechain"
 import { BigNumber } from "ethers"
 import { Result } from "ethers/lib/utils"
@@ -31,8 +33,9 @@ chai.use(chaiAsPromised)
 const { expect } = chai
 
 let quoteToken: string
-let oracleWrapper: TestOracleWrapper
-let keeperOracle: TestOracleWrapper
+let chainlinkOracle: TestChainlinkOracle
+let oracleWrapper: ChainlinkOracleWrapper
+let keeperOracle: ChainlinkOracleWrapper
 let poolKeeper: PoolKeeper
 let pool: any
 let POOL1_ADDR: string
@@ -59,13 +62,13 @@ const setupHook = async () => {
         "TestChainlinkOracle",
         signers[0]
     )) as TestChainlinkOracle__factory
-    const chainlinkOracle = await chainlinkOracleFactory.deploy()
+    chainlinkOracle = await chainlinkOracleFactory.deploy()
 
     // Deploy oracle. Using a test oracle for predictability
     const oracleWrapperFactory = (await ethers.getContractFactory(
-        "TestOracleWrapper",
+        "ChainlinkOracleWrapper",
         signers[0]
-    )) as TestOracleWrapper__factory
+    )) as ChainlinkOracleWrapper__factory
     oracleWrapper = await oracleWrapperFactory.deploy(chainlinkOracle.address)
     await oracleWrapper.deployed()
 
@@ -109,7 +112,9 @@ const setupHook = async () => {
     await poolKeeper.deployed()
     await factory.setPoolKeeper(poolKeeper.address)
 
-    await oracleWrapper.incrementPrice()
+    //await oracleWrapper.incrementPrice()
+    await incrementPrice(chainlinkOracle)
+
     // Create pool
     const deploymentData = {
         poolName: POOL_CODE,
@@ -122,7 +127,9 @@ const setupHook = async () => {
     }
     await (await factory.deployPool(deploymentData)).wait()
 
-    await oracleWrapper.incrementPrice()
+    // await oracleWrapper.incrementPrice()
+    await incrementPrice(chainlinkOracle)
+
     const deploymentData2 = {
         poolName: POOL_CODE_2,
         frontRunningInterval: 1,
@@ -187,7 +194,8 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
             await setupHook()
             // process a few upkeeps
             lastTime = await poolKeeper.lastExecutionTime(POOL1_ADDR)
-            await oracleWrapper.incrementPrice()
+            // await oracleWrapper.incrementPrice()
+            await incrementPrice(chainlinkOracle)
             await timeout(updateInterval * 1000 + 1000)
             await pool.setKeeper(poolKeeper.address)
             const result = await (
@@ -211,7 +219,8 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
             // Check starting conditions
             await setupHook()
             // process a few upkeeps
-            await oracleWrapper.incrementPrice()
+            // await oracleWrapper.incrementPrice()
+            await incrementPrice(chainlinkOracle)
 
             oldLastExecutionTime = await poolKeeper.lastExecutionTime(
                 POOL1_ADDR
