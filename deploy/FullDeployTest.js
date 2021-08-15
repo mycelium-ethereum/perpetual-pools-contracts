@@ -81,11 +81,16 @@ module.exports = async (hre) => {
         log: true,
     })
 
-    /* deploy priceChangerDeployer */
-    const priceChangerDeployer = await deploy("PriceChangerDeployer", {
+
+    /* deploy PoolFactory */
+    const factory = await deploy("PoolFactory", {
         from: deployer,
         log: true,
         libraries: { PoolSwapLibrary: library.address },
+        // (fee receiver)
+        args: [
+            deployer,
+        ],
     })
 
     /* deploy PoolFactory */
@@ -93,19 +98,7 @@ module.exports = async (hre) => {
         from: deployer,
         log: true,
         libraries: { PoolSwapLibrary: library.address },
-    })
-
-    /* deploy PoolFactory */
-    const factory = await deploy("PoolFactory", {
-        from: deployer,
-        log: true,
-        libraries: { PoolSwapLibrary: library.address },
-        // (committer, priceChanger, fee receiver)
-        args: [
-            poolCommitterDeployer.address,
-            priceChangerDeployer.address,
-            deployer,
-        ],
+        args: [factory.address],
     })
 
     /* deploy PoolKeeper */
@@ -126,22 +119,46 @@ module.exports = async (hre) => {
         poolKeeper.address
     )
 
-    const POOL_CODE = "5-TEST/MARKET+POOL"
+    const POOL_CODE = "CODE1"
 
     const updateInterval = 60 // 1 minute
+    const frontRunningInterval = 1 // seconds
+    const leverage = 1;
 
     /* deploy LeveragePool */
     const deploymentData = {
-        poolCode: POOL_CODE,
-        frontRunningInterval: 0,
+        poolName: POOL_CODE,
+        frontRunningInterval: frontRunningInterval,
         updateInterval: updateInterval,
-        fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
-        leverageAmount: 5,
+        leverageAmount: leverage,
         quoteToken: token.address,
         oracleWrapper: oracleWrapper.address,
         keeperOracle: keeperOracle.address,
     }
 
+    console.log("Setting factory fee")
+    const fee = "0x00000000000000000000000000000000"
+    await execute(
+        "PoolFactory",
+        {
+            from: deployer,
+            log: true,
+        },
+        "setFee",
+        fee 
+    )
+
+    console.log("Setting factory committer deployer", poolCommitterDeployer.address)
+    await execute(
+        "PoolFactory",
+        {
+            from: deployer,
+            log: true,
+        },
+        "setPoolCommitterDeployer",
+       poolCommitterDeployer.address
+    )
+    
     const receipt = await execute(
         "PoolFactory",
         {
@@ -151,7 +168,7 @@ module.exports = async (hre) => {
         "deployPool",
         deploymentData
     )
-
+    
     const event = receipt?.events?.find((el) => el.event === "DeployPool")
 
     console.log(`Deployed PoolFactory: ${factory.address}`)
