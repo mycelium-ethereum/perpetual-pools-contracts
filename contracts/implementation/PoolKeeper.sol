@@ -52,6 +52,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         int256 startingPrice = ABDKMathQuad.toInt(ABDKMathQuad.mul(ABDKMathQuad.fromInt(firstPrice), fixedPoint));
         emit PoolAdded(_poolAddress, firstPrice, _poolAddress);
         executionPrice[_poolAddress] = startingPrice;
+        lastExecutionBlock[_poolAddress] = block.number;
     }
 
     // Keeper network
