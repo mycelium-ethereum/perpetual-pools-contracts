@@ -96,7 +96,6 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         IPoolCommitter(poolCommitter).executeAllCommitments();
     }
 
-<<<<<<< HEAD
     function quoteTokenTransfer(address to, uint256 amount)
         external
         override
@@ -104,7 +103,8 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         returns (bool)
     {
         return IERC20(quoteToken).transfer(to, amount);
-=======
+    }
+
     function executePriceChange(int256 _oldPrice, int256 _newPrice) internal {
         PoolSwapLibrary.PriceChangeData memory priceChangeData = PoolSwapLibrary.PriceChangeData(
             _oldPrice,
@@ -123,7 +123,6 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         // Pay the fee
         IERC20(quoteToken).safeTransferFrom(address(this), feeAddress, totalFeeAmount);
         emit PriceChange(_oldPrice, _newPrice);
->>>>>>> c04fc78c48e39d2f6b0f61d3e5b92d1e7c58437b
     }
 
     function quoteTokenTransferFrom(
