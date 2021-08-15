@@ -207,8 +207,15 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         );
         // amount of settlement tokens to give to the keeper
         _tipPercent = ABDKMathQuad.div(_tipPercent, ABDKMathQuad.fromUInt(100));
-        int256 wadRewardValue = ABDKMathQuad.toInt(ABDKMathQuad.add(ABDKMathQuad.fromUInt(_keeperGas), ABDKMathQuad.div((ABDKMathQuad.mul(ABDKMathQuad.fromUInt(_keeperGas), _tipPercent)), fixedPoint)));
-        uint256 deWadifiedReward = uint256(IOracleWrapper(ILeveragedPool(_pool).keeperOracle()).fromWad(wadRewardValue));
+        int256 wadRewardValue = ABDKMathQuad.toInt(
+            ABDKMathQuad.add(
+                ABDKMathQuad.fromUInt(_keeperGas),
+                ABDKMathQuad.div((ABDKMathQuad.mul(ABDKMathQuad.fromUInt(_keeperGas), _tipPercent)), fixedPoint)
+            )
+        );
+        uint256 deWadifiedReward = uint256(
+            IOracleWrapper(ILeveragedPool(_pool).keeperOracle()).fromWad(wadRewardValue)
+        );
         // _keeperGas + _keeperGas * percentTip
         return deWadifiedReward;
     }
@@ -237,7 +244,8 @@ contract PoolKeeper is IPoolKeeper, Ownable {
             bytes16 _weiSpent = ABDKMathQuad.fromUInt(_gasPrice * _gasSpent);
             bytes16 _settlementTokenPrice = ABDKMathQuad.fromUInt(uint256(settlementTokenPrice));
             bytes16 _ethPrice = ABDKMathQuad.fromUInt(uint256(ethPrice));
-            return ABDKMathQuad.toUInt((ABDKMathQuad.div(ABDKMathQuad.mul(_weiSpent, _ethPrice), _settlementTokenPrice)));
+            return
+                ABDKMathQuad.toUInt((ABDKMathQuad.div(ABDKMathQuad.mul(_weiSpent, _ethPrice), _settlementTokenPrice)));
         }
     }
 

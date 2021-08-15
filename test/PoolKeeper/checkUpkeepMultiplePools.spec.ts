@@ -52,7 +52,7 @@ const setupHook = async () => {
         signers[0]
     )) as TestChainlinkOracle__factory
     oracle = await oracleFactory.deploy()
-    ethOracle = await(await oracleFactory.deploy()).deployed()
+    ethOracle = await (await oracleFactory.deploy()).deployed()
     await ethOracle.setPrice(3000 * 10 ** 8)
     await oracle.deployed()
     const oracleWrapperFactory = (await ethers.getContractFactory(
@@ -87,7 +87,10 @@ const setupHook = async () => {
 
     await factory.setPoolCommitterDeployer(generateRandomAddress())
 
-    poolKeeper = await poolKeeperFactory.deploy(factory.address, ethOracleWrapper.address)
+    poolKeeper = await poolKeeperFactory.deploy(
+        factory.address,
+        ethOracleWrapper.address
+    )
     await poolKeeper.deployed()
     await factory.connect(signers[0]).setPoolKeeper(poolKeeper.address)
 

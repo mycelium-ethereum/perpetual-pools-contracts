@@ -64,17 +64,21 @@ const setupHook = async () => {
         "TestChainlinkOracle",
         signers[0]
     )) as TestChainlinkOracle__factory
-    settlementChainlinkOracle = await(await chainlinkOracleFactory.deploy()).deployed()
-    await settlementChainlinkOracle.setPrice(1 * 10**8)
-    ETHOracle = await(await chainlinkOracleFactory.deploy()).deployed()
-    await ETHOracle.setPrice(3000 * 10**8)
+    settlementChainlinkOracle = await (
+        await chainlinkOracleFactory.deploy()
+    ).deployed()
+    await settlementChainlinkOracle.setPrice(1 * 10 ** 8)
+    ETHOracle = await (await chainlinkOracleFactory.deploy()).deployed()
+    await ETHOracle.setPrice(3000 * 10 ** 8)
 
     // Deploy oracle. Using a test oracle for predictability
     const oracleWrapperFactory = (await ethers.getContractFactory(
         "ChainlinkOracleWrapper",
         signers[0]
     )) as ChainlinkOracleWrapper__factory
-    settlementOracleWrapper = await oracleWrapperFactory.deploy(settlementChainlinkOracle.address)
+    settlementOracleWrapper = await oracleWrapperFactory.deploy(
+        settlementChainlinkOracle.address
+    )
     await settlementOracleWrapper.deployed()
 
     ethOracleWrapper = await oracleWrapperFactory.deploy(ETHOracle.address)
@@ -113,7 +117,10 @@ const setupHook = async () => {
     poolCommitterDeployer = await poolCommitterDeployer.deployed()
 
     await factory.setPoolCommitterDeployer(poolCommitterDeployer.address)
-    poolKeeper = await poolKeeperFactory.deploy(factory.address, ethOracleWrapper.address)
+    poolKeeper = await poolKeeperFactory.deploy(
+        factory.address,
+        ethOracleWrapper.address
+    )
     await poolKeeper.deployed()
     await factory.setPoolKeeper(poolKeeper.address)
 
@@ -149,7 +156,7 @@ const setupHook = async () => {
         "PoolCommitter",
         await pool.poolCommitter()
     )
-    const amountCommitted = 2000 * 10**8
+    const amountCommitted = 2000 * 10 ** 8
     await token.approve(pool.address, ethers.utils.parseEther("99999999"))
     const commit = await createCommit(poolCommitter, [2], amountCommitted)
     await timeout(updateInterval * 1000 * 2)
