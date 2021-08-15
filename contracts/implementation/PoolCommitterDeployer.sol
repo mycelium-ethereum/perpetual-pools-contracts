@@ -8,7 +8,7 @@ import "../interfaces/IPoolCommitterDeployer.sol";
 @title The deployer of PoolCommitter
 */
 contract PoolCommitterDeployer is IPoolCommitterDeployer {
-    function deploy(address factory) external override returns (address poolCommitter) {
-        poolCommitter = address(new PoolCommitter(factory));
+    function deploy(address factory) external override returns (address) {
+        return address(new PoolCommitter(factory));
     }
 }
