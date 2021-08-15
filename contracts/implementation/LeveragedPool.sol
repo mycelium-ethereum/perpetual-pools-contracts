@@ -101,6 +101,16 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         IERC20(quoteToken).safeTransfer(to, amount);
     }
 
+    function quoteTokenTransferFrom(
+        address from,
+        address to,
+        uint256 amount
+    ) external override onlyPoolCommitter {
+        require(from != address(0), "From address cannot be 0 address");
+        require(to != address(0), "To address cannot be 0 address");
+        IERC20(quoteToken).safeTransferFrom(from, to, amount);
+    }
+
     function executePriceChange(int256 _oldPrice, int256 _newPrice) internal {
         PoolSwapLibrary.PriceChangeData memory priceChangeData = PoolSwapLibrary.PriceChangeData(
             _oldPrice,
@@ -119,16 +129,6 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         // Pay the fee
         IERC20(quoteToken).safeTransferFrom(address(this), feeAddress, totalFeeAmount);
         emit PriceChange(_oldPrice, _newPrice);
-    }
-
-    function quoteTokenTransferFrom(
-        address from,
-        address to,
-        uint256 amount
-    ) external override onlyPoolCommitterOrKeeper {
-        require(from != address(0), "From address cannot be 0 address");
-        require(to != address(0), "To address cannot be 0 address");
-        IERC20(quoteToken).safeTransferFrom(from, to, amount);
     }
 
     function setNewPoolBalances(uint112 _longBalance, uint112 _shortBalance) external override onlyPoolCommitter {

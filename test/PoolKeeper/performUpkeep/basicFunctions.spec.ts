@@ -138,25 +138,17 @@ const setupHook = async () => {
     POOL1_ADDR = await factory.pools(0)
     POOL2_ADDR = await factory.pools(1)
 
-    console.log(1)
     pool = await ethers.getContractAt("LeveragedPool", POOL1_ADDR)
-    console.log(2)
     const poolCommitter: any = await ethers.getContractAt(
         "PoolCommitter",
         await pool.poolCommitter()
     )
-    console.log(3)
-    console.log(1)
     const amountCommitted = ethers.utils.parseEther("2000")
-    console.log(4)
     await token.approve(pool.address, ethers.utils.parseEther("99999999"))
     const commit = await createCommit(poolCommitter, [2], amountCommitted)
-    console.log(5)
     await timeout(updateInterval * 1000 * 2)
-    console.log((await pool.updateInterval()).toString())
     await pool.setKeeper(signers[0].address)
     await pool.poolUpkeep(9, 10)
-    console.log(6)
 }
 
 interface Upkeep {
@@ -180,7 +172,7 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
     describe("Base cases", () => {
         beforeEach(setupHook)
         it("should not revert if performData is invalid", async () => {
-            await pool.setKeeper(signers[0].address)
+            await pool.setKeeper(poolKeeper.address)
             await poolKeeper.performUpkeepMultiplePools([
                 POOL1_ADDR,
                 POOL2_ADDR,
@@ -197,7 +189,7 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
             lastTime = await poolKeeper.lastExecutionTime(POOL1_ADDR)
             await oracleWrapper.incrementPrice()
             await timeout(updateInterval * 1000 + 1000)
-            await pool.setKeeper(signers[0].address)
+            await pool.setKeeper(poolKeeper.address)
             const result = await (
                 await poolKeeper.performUpkeepMultiplePools([
                     POOL1_ADDR,
@@ -229,13 +221,11 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
             await timeout(updateInterval * 1000 + 1000)
 
             newLastExecutionPrice = await poolKeeper.executionPrice(POOL1_ADDR)
-            await pool.setKeeper(signers[0].address)
-            console.log("a")
+            await pool.setKeeper(poolKeeper.address)
             await poolKeeper.performUpkeepMultiplePools([
                 POOL1_ADDR,
                 POOL2_ADDR,
             ])
-            console.log("b")
             newExecutionPrice = await poolKeeper.executionPrice(POOL1_ADDR)
             newLastExecutionTime = await poolKeeper.lastExecutionTime(
                 POOL1_ADDR
@@ -252,13 +242,15 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
         it("Should update the keeper's balance", async () => {
             await timeout(updateInterval * 1000 + 1000)
             const balanceBefore = await token.balanceOf(signers[0].address)
+            const poolTokenBalanceBefore = await token.balanceOf(pool.address)
             await poolKeeper.performUpkeepMultiplePools([
                 POOL1_ADDR,
                 POOL2_ADDR,
             ])
             const balanceAfter = await token.balanceOf(signers[0].address)
-            console.log(balanceBefore.toString())
-            console.log(balanceAfter.toString())
+            const poolTokenBalanceAfter = await token.balanceOf(pool.address)
+            expect(balanceAfter).to.be.gt(balanceBefore)
+            expect(poolTokenBalanceAfter).to.be.lt(poolTokenBalanceBefore)
         })
         it("should calculate a new execution price", async () => {
             expect(newLastExecutionPrice).to.eq(oldExecutionPrice)
