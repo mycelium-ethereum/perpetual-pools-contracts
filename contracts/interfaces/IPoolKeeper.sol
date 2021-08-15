@@ -8,11 +8,10 @@ interface IPoolKeeper {
     // #### Events
     /**
      * @notice Creates a notification when a pool is created
-     * @param poolAddress The pool address of the newly created pool. This is deterministic and utilizes create2 and the pool code as the salt.
+     * @param poolAddress The pool address of the newly created pool.
      * @param firstPrice The price of the market oracle when the pool was created.
-     * @param pool The address of the pool. This combined with the updateInterval provide the upkeep details.
      */
-    event PoolAdded(address indexed poolAddress, int256 indexed firstPrice, address pool);
+    event PoolAdded(address indexed poolAddress, int256 indexed firstPrice);
 
     /**
      * @notice Creates notification of a new round for a market/update interval pair
