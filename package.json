@@ -6,6 +6,7 @@
     "scripts": {
         "build": "npm run clean && npm run compile",
         "clean": "npx hardhat clean",
+        "refresh": "rm -rf artifacts/ typechain && yarn compile && npx hardhat typechain",
         "compile": "npx hardhat compile",
         "test": "npx hardhat test",
         "coverage": "npm run build && npx hardhat coverage --temp artifacts --network coverage",

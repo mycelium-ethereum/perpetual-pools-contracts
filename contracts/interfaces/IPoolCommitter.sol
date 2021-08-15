@@ -23,6 +23,8 @@ interface IPoolCommitter {
 
     event ExecuteCommit(uint128 commitID);
 
+    event FailedCommitExecution(uint128 commitID);
+
     // #### Functions
 
     function commit(CommitType commitType, uint112 amount) external;
@@ -30,6 +32,8 @@ interface IPoolCommitter {
     function uncommit(uint128 commitID) external;
 
     function executeAllCommitments() external;
+
+    function executeCommitment(Commit memory _commit) external;
 
     function getCommit(uint128 _commitID) external view returns (Commit memory);
 

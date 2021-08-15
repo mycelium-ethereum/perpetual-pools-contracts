@@ -11,13 +11,14 @@ import {
     TestOracleWrapper,
     PoolFactory,
     PoolCommitterDeployer__factory,
-    PriceChangerDeployer__factory,
     TestToken__factory,
 } from "../../typechain"
 
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { OPERATOR_ROLE, ADMIN_ROLE, POOL_CODE, MARKET_CODE } from "../constants"
 import { generateRandomAddress } from "../utilities"
+import { deploy } from "@openzeppelin/hardhat-upgrades/dist/utils"
+import { BigNumber } from "ethers"
 
 chai.use(chaiAsPromised)
 const { expect } = chai
@@ -77,6 +78,9 @@ describe("PoolKeeper - createPool", () => {
             signer: signers[0],
             libraries: { PoolSwapLibrary: library.address },
         })) as PoolFactory__factory
+        factory = await (
+            await PoolFactory.deploy(generateRandomAddress())
+        ).deployed()
 
         const PoolCommiterDeployerFactory = (await ethers.getContractFactory(
             "PoolCommitterDeployer",
@@ -86,27 +90,13 @@ describe("PoolKeeper - createPool", () => {
             }
         )) as PoolCommitterDeployer__factory
 
-        let poolCommiterDeployer = await PoolCommiterDeployerFactory.deploy()
+        let poolCommiterDeployer = await PoolCommiterDeployerFactory.deploy(
+            factory.address
+        )
         poolCommiterDeployer = await poolCommiterDeployer.deployed()
 
-        const PriceChangerDeployerFactory = (await ethers.getContractFactory(
-            "PriceChangerDeployer",
-            {
-                signer: signers[0],
-                libraries: { PoolSwapLibrary: library.address },
-            }
-        )) as PriceChangerDeployer__factory
+        await factory.setPoolCommitterDeployer(poolCommiterDeployer.address)
 
-        let priceChangerDeployer = await PriceChangerDeployerFactory.deploy()
-        priceChangerDeployer = await priceChangerDeployer.deployed()
-
-        factory = await (
-            await PoolFactory.deploy(
-                poolCommiterDeployer.address,
-                priceChangerDeployer.address,
-                generateRandomAddress()
-            )
-        ).deployed()
         poolKeeper = await poolKeeperFactory.deploy(factory.address)
         await poolKeeper.deployed()
 
@@ -115,7 +105,7 @@ describe("PoolKeeper - createPool", () => {
         deploymentData = {
             owner: signers[0].address,
             keeper: poolKeeper.address,
-            poolCode: POOL_CODE,
+            poolName: POOL_CODE,
             frontRunningInterval: 3,
             updateInterval: 5,
             leverageAmount: 5,
@@ -124,6 +114,25 @@ describe("PoolKeeper - createPool", () => {
             oracleWrapper: oracleWrapper.address,
             keeperOracle: keeperOracle.address,
         }
+    })
+
+    it("should Revert if leverageAmount == 0 and if leveragedAmount > maxLeverage", async () => {
+        deploymentData.leverageAmount = 0
+        await expect(factory.deployPool(deploymentData)).to.be.revertedWith(
+            "PoolKeeper: leveraged amount invalid"
+        )
+        deploymentData.leverageAmount = (await factory.maxLeverage()) + 1
+        await expect(factory.deployPool(deploymentData)).to.be.revertedWith(
+            "PoolKeeper: leveraged amount invalid"
+        )
+    })
+
+    it("should Revert if fee > one (in ABDK Math IEEE precision)", async () => {
+        const justAboveOne = "0x3fff0000000000000000000000000001"
+        await factory.setFee(justAboveOne)
+        await expect(factory.deployPool(deploymentData)).to.be.revertedWith(
+            "Fee is greater than 100%"
+        )
     })
 
     it("should create a new pool in the given market", async () => {
@@ -139,12 +148,5 @@ describe("PoolKeeper - createPool", () => {
         const event = receipt?.events?.find((el) => el.event === "DeployPool")
         expect(!!event).to.eq(true)
         expect(!!event?.args?.pool).to.eq(true)
-    })
-
-    it("should revert if the pool already exists", async () => {
-        await (await factory.deployPool(deploymentData)).wait()
-        await expect(factory.deployPool(deploymentData)).to.be.rejectedWith(
-            Error
-        )
     })
 })

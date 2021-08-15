@@ -10,6 +10,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "abdk-libraries-solidity/ABDKMathQuad.sol";
+import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV2V3Interface.sol";
 
 /*
  * @title The manager contract for multiple markets and the pools in them
@@ -18,29 +19,19 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     /* Constants */
     uint256 public constant BASE_TIP = 1;
     uint256 public constant TIP_DELTA_PER_BLOCK = 1;
-    uint256 public constant BLOCK_TIME = 14; /* in seconds */
+    uint256 public constant BLOCK_TIME = 13; /* in seconds */
 
     // #### Global variables
-    /**
-     * @notice Format: Pool code => roundStart
-     */
-    mapping(address => uint256) public poolRoundStart;
     /**
      * @notice Format: Pool code => executionPrice
      */
     mapping(address => int256) public executionPrice;
-    /**
-     * @notice Format: Pool code => lastExecutionPrice
-     */
-    mapping(address => int256) public lastExecutionPrice;
 
     /**
-     * @notice Format: Pool code => timestamp of last price execution
+     * @notice Format: Pool => timestamp of last price execution
      * @dev Used to allow multiple upkeep registrations to use the same market/update interval price data.
      */
     mapping(address => uint256) public lastExecutionTime;
-
-    mapping(address => uint256) public keeperFees;
 
     IPoolFactory public factory;
     bytes16 constant fixedPoint = 0x403abc16d674ec800000000000000000; // 1 ether
@@ -59,43 +50,34 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         address oracleWrapper = ILeveragedPool(_poolAddress).oracleWrapper();
         int256 firstPrice = IOracleWrapper(oracleWrapper).getPrice();
         int256 startingPrice = ABDKMathQuad.toInt(ABDKMathQuad.mul(ABDKMathQuad.fromInt(firstPrice), fixedPoint));
-        emit PoolAdded(_poolAddress, firstPrice, _poolAddress);
-        poolRoundStart[_poolAddress] = uint40(block.timestamp);
+        emit PoolAdded(_poolAddress, firstPrice);
         executionPrice[_poolAddress] = startingPrice;
-        lastExecutionPrice[_poolAddress] = startingPrice;
+        lastExecutionTime[_poolAddress] = block.timestamp;
     }
 
     // Keeper network
     /**
      * @notice Check if upkeep is required
      * @dev This should not be called or executed.
-     * @param _pool The poolCode of the pool to upkeep
+     * @param _pool The address of the pool to upkeep
      * @return upkeepNeeded Whether or not upkeep is needed for this single pool
      */
     function checkUpkeepSinglePool(address _pool) public view override returns (bool upkeepNeeded) {
         if (!factory.isValidPool(_pool)) {
             return false;
         }
-        ILeveragedPool pool = ILeveragedPool(_pool);
 
-        // safety of oracle wrapper is ensured by PoolFactory. Not 0 on deploy and cannot be changed.
-        IOracleWrapper oracleWrapper = IOracleWrapper(pool.oracleWrapper());
-
-        int256 latestPrice = ABDKMathQuad.toInt(
-            ABDKMathQuad.mul(ABDKMathQuad.fromInt(oracleWrapper.getPrice()), fixedPoint)
-        );
-
-        // The update interval has passed and the price has changed
-        return (pool.intervalPassed() && latestPrice != executionPrice[_pool]);
+        // The update interval has passed
+        return ILeveragedPool(_pool).intervalPassed();
     }
 
     /**
      * @notice Checks multiple pools if any of them need updating
-     * @param _pools The array of pool codes to check
+     * @param _pools The array of pools to check
      * @return upkeepNeeded Whether or not at least one pool needs upkeeping
      */
     function checkUpkeepMultiplePools(address[] calldata _pools) external view override returns (bool upkeepNeeded) {
-        for (uint8 i = 0; i < _pools.length; i++) {
+        for (uint256 i = 0; i < _pools.length; i++) {
             if (checkUpkeepSinglePool(_pools[i])) {
                 // One has been found that requires upkeeping
                 return true;
@@ -117,24 +99,20 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         ILeveragedPool pool = ILeveragedPool(_pool);
         int256 latestPrice = IOracleWrapper(pool.oracleWrapper()).getPrice();
         // Start a new round
-        lastExecutionPrice[_pool] = executionPrice[_pool];
+        int256 lastExecutionPrice = executionPrice[_pool];
         executionPrice[_pool] = ABDKMathQuad.toInt(ABDKMathQuad.mul(ABDKMathQuad.fromInt(latestPrice), fixedPoint));
-        poolRoundStart[_pool] = block.timestamp;
 
-        emit NewRound(lastExecutionPrice[_pool], latestPrice, pool.updateInterval(), _pool);
+        emit NewRound(lastExecutionPrice, latestPrice, pool.updateInterval(), _pool);
 
-        _executePriceChange(
-            uint32(block.timestamp),
-            pool.updateInterval(),
-            _pool,
-            lastExecutionPrice[_pool],
-            executionPrice[_pool]
-        );
+        uint256 savedPreviousUpdatedTimestamp = pool.lastPriceTimestamp();
+        uint256 updateInterval = pool.updateInterval();
+
+        _executePriceChange(block.timestamp, uint32(updateInterval), _pool, lastExecutionPrice, executionPrice[_pool]);
 
         uint256 gasSpent = startGas - gasleft();
         uint256 _gasPrice = 1; /* TODO: poll gas price oracle (or BASEFEE) */
 
-        payKeeper(_pool, _gasPrice, gasSpent);
+        payKeeper(_pool, _gasPrice, gasSpent, savedPreviousUpdatedTimestamp, updateInterval);
     }
 
     /**
@@ -146,27 +124,33 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     function payKeeper(
         address _pool,
         uint256 _gasPrice,
-        uint256 _gasSpent
+        uint256 _gasSpent,
+        uint256 _savedPreviousUpdatedTimestamp,
+        uint256 _updateInterval
     ) internal {
-        IERC20 settlementToken = IERC20(ILeveragedPool(_pool).quoteToken());
-        uint256 reward = keeperReward(_pool, _gasPrice, _gasSpent);
+        uint256 reward = keeperReward(_pool, _gasPrice, _gasSpent, _savedPreviousUpdatedTimestamp, _updateInterval);
 
-        keeperFees[msg.sender] += reward;
+        try ILeveragedPool(_pool).quoteTokenTransfer(msg.sender, reward) {
+            emit KeeperPaid(_pool, msg.sender, reward);
+        } catch Error(string memory reason) {
+            // Usually occurs if pool just started and does not have any funds
+            emit KeeperPaymentError(_pool, reason);
+        }
     }
 
     /**
      * @notice Called by keepers to perform an update on multiple pools
-     * @param poolCodes pool codes to perform the update for.
+     * @param pools pool codes to perform the update for.
      */
-    function performUpkeepMultiplePools(address[] calldata poolCodes) external override {
-        for (uint256 i = 0; i < poolCodes.length; i++) {
-            performUpkeepSinglePool(poolCodes[i]);
+    function performUpkeepMultiplePools(address[] calldata pools) external override {
+        for (uint256 i = 0; i < pools.length; i++) {
+            performUpkeepSinglePool(pools[i]);
         }
     }
 
     /**
      * @notice Executes a price change
-     * @param roundStart The start time of the round
+     * @param roundStart The start block of the round
      * @param updateInterval The update interval of the pools
      * @param pool The pool to update
      * @param oldPrice The previously executed price
@@ -183,7 +167,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
             // TODO why is this check here?
             if (lastExecutionTime[pool] < roundStart) {
                 // Make sure this round is after last execution time
-                lastExecutionTime[pool] = uint40(block.timestamp);
+                lastExecutionTime[pool] = block.timestamp;
                 emit ExecutePriceChange(oldPrice, latestPrice, updateInterval, pool);
                 // This allows us to still batch multiple calls to executePriceChange, even if some are invalid
                 // Without reverting the entire transaction
@@ -204,9 +188,13 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     function keeperReward(
         address _pool,
         uint256 _gasPrice,
-        uint256 _gasSpent
+        uint256 _gasSpent,
+        uint256 _savedPreviousUpdatedTimestamp,
+        uint256 _poolInterval
     ) public view returns (uint256) {
-        return keeperGas(_pool, _gasPrice, _gasSpent) + keeperTip(_pool);
+        return
+            keeperGas(_pool, _gasPrice, _gasSpent) +
+            convertKeeperTip(keeperTip(_savedPreviousUpdatedTimestamp, _poolInterval), _pool);
     }
 
     /**
@@ -227,20 +215,32 @@ contract PoolKeeper is IPoolKeeper, Ownable {
             return 0;
         } else {
             /* safe due to explicit bounds check above */
+            /* ETH * Settlement / ETH = Settlment amount */
             return _gasPrice * _gasSpent * uint256(settlementTokenPrice);
         }
     }
 
     /**
      * @notice Tip a keeper will receive for successfully updating the specified pool
-     * @param _pool Address of the given pool
      * @return Keeper's tip
      */
-    function keeperTip(address _pool) public view returns (uint256) {
-        /* the number of blocks that have elapsed since the given pool was last updated */
-        uint256 elapsedBlocks = (lastExecutionTime[_pool] - block.timestamp) / BLOCK_TIME;
+    function keeperTip(uint256 _savedPreviousUpdatedTimestamp, uint256 _poolInterval) public view returns (uint256) {
+        /* the number of blocks that have elapsed since the given pool's updateInterval passed */
+        uint256 elapsedBlocks = (block.timestamp - (_savedPreviousUpdatedTimestamp + _poolInterval)) / BLOCK_TIME;
 
         return BASE_TIP + TIP_DELTA_PER_BLOCK * elapsedBlocks;
+    }
+
+    /**
+     * @dev Assumes `pool::keeperOracle` is a USD stablecoin oracle.
+     * @notice Converts a tip amount into an appropriate value using the oracle's `decimals` value.
+     * @param _tip The calculated tip amount
+     * @param _pool The pool that is being upkept
+     */
+    function convertKeeperTip(uint256 _tip, address _pool) internal view returns (uint256) {
+        uint256 decimals = AggregatorV2V3Interface(IOracleWrapper(ILeveragedPool(_pool).keeperOracle()).oracle())
+            .decimals();
+        return _tip * (10**decimals);
     }
 
     function setFactory(address _factory) external override onlyOwner {

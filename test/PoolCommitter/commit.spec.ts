@@ -6,7 +6,6 @@ import {
     LeveragedPool,
     PoolCommitter,
     PoolSwapLibrary,
-    PriceChanger,
     TestToken,
 } from "../../typechain"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
@@ -42,7 +41,6 @@ describe("LeveragedPool - commit", () => {
     let shortToken: ERC20
     let longToken: ERC20
     let poolCommiter: PoolCommitter
-    let priceChanger: PriceChanger
 
     describe("Create commit", () => {
         let receipt: ContractReceipt
@@ -60,7 +58,6 @@ describe("LeveragedPool - commit", () => {
             pool = result.pool
             token = result.token
             library = result.library
-            priceChanger = result.priceChanger
             poolCommiter = result.poolCommiter
             await token.approve(pool.address, amountCommitted)
             receipt = await (
@@ -139,11 +136,9 @@ describe("LeveragedPool - commit", () => {
             expect(getEventArgs(receipt, "CreateCommit")?.amount).to.eq(
                 amountCommitted
             )
-            expect(
-                getEventArgs(receipt, "CreateCommit")?.commitID.gt(
-                    ethers.BigNumber.from(0)
-                )
-            ).to.eq(true)
+            expect(getEventArgs(receipt, "CreateCommit")?.commitID).to.equal(
+                ethers.BigNumber.from(0)
+            )
         })
     })
 
@@ -162,7 +157,6 @@ describe("LeveragedPool - commit", () => {
             pool = result.pool
             token = result.token
             library = result.library
-            priceChanger = result.priceChanger
             poolCommiter = result.poolCommiter
             await token.approve(pool.address, amountMinted)
         })
@@ -229,7 +223,6 @@ describe("LeveragedPool - commit", () => {
             library = result.library
             shortToken = result.shortToken
             longToken = result.longToken
-            priceChanger = result.priceChanger
             poolCommiter = result.poolCommiter
 
             await token.approve(pool.address, amountCommitted)
@@ -242,14 +235,14 @@ describe("LeveragedPool - commit", () => {
             await pool.setKeeper(signers[0].address)
             await pool.poolUpkeep(1, 2)
 
-            expect(
-                (await token.balanceOf(poolCommiter.address)).toHexString()
-            ).to.eq(amountCommitted.toHexString())
+            expect((await token.balanceOf(pool.address)).toHexString()).to.eq(
+                amountCommitted.toHexString()
+            )
             await poolCommiter.commit([1], amountCommitted)
 
-            expect(
-                (await token.balanceOf(poolCommiter.address)).toHexString()
-            ).to.eq(amountCommitted.toHexString())
+            expect((await token.balanceOf(pool.address)).toHexString()).to.eq(
+                amountCommitted.toHexString()
+            )
         })
         it("should not require a quote token transfer for long burn commits", async () => {
             const receipt = await (
@@ -258,13 +251,13 @@ describe("LeveragedPool - commit", () => {
             await timeout(2000)
             await pool.setKeeper(signers[0].address)
             await pool.poolUpkeep(1, 2)
-            expect(
-                (await token.balanceOf(poolCommiter.address)).toHexString()
-            ).to.eq(amountCommitted.toHexString())
+            expect((await token.balanceOf(pool.address)).toHexString()).to.eq(
+                amountCommitted.toHexString()
+            )
             await poolCommiter.commit([3], amountCommitted)
-            expect(
-                (await token.balanceOf(poolCommiter.address)).toHexString()
-            ).to.eq(amountCommitted.toHexString())
+            expect((await token.balanceOf(pool.address)).toHexString()).to.eq(
+                amountCommitted.toHexString()
+            )
         })
         it("should burn the user's short pair tokens for short burn commits", async () => {
             // Acquire pool tokens
@@ -297,19 +290,15 @@ describe("LeveragedPool - commit", () => {
             expect(await longToken.balanceOf(signers[0].address)).to.eq(0)
         })
         it("should transfer the user's quote tokens into the pool for long mint commits", async () => {
-            expect(await token.balanceOf(poolCommiter.address)).to.eq(0)
+            expect(await token.balanceOf(pool.address)).to.eq(0)
             await poolCommiter.commit([2], amountCommitted)
-            expect(await token.balanceOf(poolCommiter.address)).to.eq(
-                amountCommitted
-            )
+            expect(await token.balanceOf(pool.address)).to.eq(amountCommitted)
         })
 
         it("should transfer the user's quote tokens into the pool for short mint commits", async () => {
-            expect(await token.balanceOf(poolCommiter.address)).to.eq(0)
+            expect(await token.balanceOf(pool.address)).to.eq(0)
             await poolCommiter.commit([0], amountCommitted)
-            expect(await token.balanceOf(poolCommiter.address)).to.eq(
-                amountCommitted
-            )
+            expect(await token.balanceOf(pool.address)).to.eq(amountCommitted)
         })
     })
 })
