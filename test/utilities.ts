@@ -5,20 +5,17 @@ import { MARKET } from "./constants"
 import {
     ERC20,
     LeveragedPool,
-    TestPoolFactory__factory,
     TestOracleWrapper__factory,
     TestToken,
     TestToken__factory,
     PoolSwapLibrary,
     PoolSwapLibrary__factory,
-    LeveragedPool__factory,
     TestChainlinkOracle__factory,
     PoolKeeper,
     PoolFactory__factory,
     PoolKeeper__factory,
     PoolFactory,
     PoolCommitter,
-    PoolCommitter__factory,
     PoolCommitterDeployer__factory,
 } from "../typechain"
 
@@ -142,6 +139,10 @@ export const deployPoolAndTokenContracts = async (
         libraries: { PoolSwapLibrary: library.address },
     })) as PoolFactory__factory
 
+    const factory = await (
+        await PoolFactory.deploy(generateRandomAddress())
+    ).deployed()
+
     const PoolCommiterDeployerFactory = (await ethers.getContractFactory(
         "PoolCommitterDeployer",
         {
@@ -150,15 +151,12 @@ export const deployPoolAndTokenContracts = async (
         }
     )) as PoolCommitterDeployer__factory
 
-    let poolCommiterDeployer = await PoolCommiterDeployerFactory.deploy()
+    let poolCommiterDeployer = await PoolCommiterDeployerFactory.deploy(
+        factory.address
+    )
     poolCommiterDeployer = await poolCommiterDeployer.deployed()
 
-    const factory = await (
-        await PoolFactory.deploy(
-            poolCommiterDeployer.address,
-            generateRandomAddress()
-        )
-    ).deployed()
+    await factory.setPoolCommitterDeployer(poolCommiterDeployer.address)
 
     const poolKeeperFactory = (await ethers.getContractFactory("PoolKeeper", {
         signer: signers[0],
@@ -169,13 +167,10 @@ export const deployPoolAndTokenContracts = async (
 
     // deploy the pool using the factory, not separately
     const deployParams = {
-        owner: signers[0].address,
-        keeper: poolKeeper.address,
         poolName: POOL_CODE,
         frontRunningInterval: frontRunningInterval,
         updateInterval: updateInterval,
         leverageAmount: leverage,
-        feeAddress: feeAddress,
         quoteToken: token.address,
         oracleWrapper: oracleWrapper.address,
         keeperOracle: keeperOracle.address,
