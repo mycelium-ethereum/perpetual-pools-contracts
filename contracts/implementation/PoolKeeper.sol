@@ -10,6 +10,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "abdk-libraries-solidity/ABDKMathQuad.sol";
+import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV2V3Interface.sol";
 
 /*
  * @title The manager contract for multiple markets and the pools in them
@@ -196,7 +197,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         uint256 _gasSpent,
         uint256 _executionTime
     ) public view returns (uint256) {
-        return keeperGas(_pool, _gasPrice, _gasSpent) + keeperTip(_pool, _executionTime);
+        return keeperGas(_pool, _gasPrice, _gasSpent) + convertKeeperTip(keeperTip(_pool, _executionTime), _pool);
     }
 
     /**
@@ -217,6 +218,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
             return 0;
         } else {
             /* safe due to explicit bounds check above */
+            /* ETH * Settlement / ETH = Settlment amount */
             return _gasPrice * _gasSpent * uint256(settlementTokenPrice);
         }
     }
@@ -231,6 +233,18 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         uint256 elapsedBlocks = (_executionTime - block.timestamp) / BLOCK_TIME;
 
         return BASE_TIP + TIP_DELTA_PER_BLOCK * elapsedBlocks;
+    }
+
+    /**
+     * @dev Assumes `pool::keeperOracle` is a USD stablecoin oracle.
+     * @notice Converts a tip amount into an appropriate value using the oracle's `decimals` value.
+     * @param _tip The calculated tip amount
+     * @param _pool The pool that is being upkept
+     */
+    function convertKeeperTip(uint256 _tip, address _pool) internal view returns (uint256) {
+        uint256 decimals = AggregatorV2V3Interface(IOracleWrapper(ILeveragedPool(_pool).keeperOracle()).oracle())
+            .decimals();
+        return _tip * (10**decimals);
     }
 
     function setFactory(address _factory) external override onlyOwner {
