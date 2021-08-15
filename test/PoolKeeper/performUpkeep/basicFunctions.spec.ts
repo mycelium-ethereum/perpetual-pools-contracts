@@ -9,7 +9,12 @@ import {
     timeout,
 } from "../../utilities"
 
-import { MARKET_2, POOL_CODE, POOL_CODE_2 } from "../../constants"
+import {
+    MARKET_2,
+    POOL_CODE,
+    POOL_CODE_2,
+    SINGLE_POOL_UPKEEP_GAS_COST,
+} from "../../constants"
 import {
     PoolCommitter,
     PoolCommitterDeployer__factory,
@@ -39,6 +44,7 @@ let settlementOracleWrapper: ChainlinkOracleWrapper
 let ethOracleWrapper: ChainlinkOracleWrapper
 let poolKeeper: PoolKeeper
 let pool: any
+let pool2: any
 let POOL1_ADDR: string
 let POOL2_ADDR: string
 let signers: SignerWithAddress[]
@@ -47,6 +53,7 @@ let token: TestToken
 const updateInterval = 10
 
 const setupHook = async () => {
+    /* NOTE: settlementToken in this test is the same as the derivative oracle */
     signers = await ethers.getSigners()
 
     // Deploy quote token
@@ -56,8 +63,8 @@ const setupHook = async () => {
     )) as TestToken__factory
     token = await testToken.deploy("TEST TOKEN", "TST1")
     await token.deployed()
-    const tenKIn8Decimals = 10000 * 10 ** 8
-    await token.mint(tenKIn8Decimals, signers[0].address)
+    const mintAmount = ethers.utils.parseEther("1000") // An arbitrarily large amount
+    await token.mint(mintAmount, signers[0].address)
     quoteToken = token.address
 
     const chainlinkOracleFactory = (await ethers.getContractFactory(
@@ -152,13 +159,19 @@ const setupHook = async () => {
     POOL2_ADDR = await factory.pools(1)
 
     pool = await ethers.getContractAt("LeveragedPool", POOL1_ADDR)
+    pool2 = await ethers.getContractAt("LeveragedPool", POOL2_ADDR)
     const poolCommitter: any = await ethers.getContractAt(
         "PoolCommitter",
         await pool.poolCommitter()
     )
-    const amountCommitted = 2000 * 10 ** 8
-    await token.approve(pool.address, ethers.utils.parseEther("99999999"))
-    const commit = await createCommit(poolCommitter, [2], amountCommitted)
+    const poolCommitter2: any = await ethers.getContractAt(
+        "PoolCommitter",
+        await pool2.poolCommitter()
+    )
+    await token.approve(pool.address, mintAmount)
+    await token.approve(pool2.address, mintAmount)
+    await createCommit(poolCommitter, [2], mintAmount.div(2))
+    await createCommit(poolCommitter2, [2], mintAmount.div(2))
     await timeout(updateInterval * 1000 * 2)
     await pool.setKeeper(signers[0].address)
     await pool.poolUpkeep(9, 10)
@@ -233,6 +246,7 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
             await timeout(updateInterval * 1000 + 1000)
 
             newLastExecutionPrice = await poolKeeper.executionPrice(POOL1_ADDR)
+            await settlementChainlinkOracle.setPrice("90000000")
             await pool.setKeeper(poolKeeper.address)
             await poolKeeper.performUpkeepMultiplePools([
                 POOL1_ADDR,
@@ -248,25 +262,49 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
                 (await settlementOracleWrapper.getPrice()).toString()
             )
             expect(newLastExecutionTime.gt(oldLastExecutionTime)).to.equal(true)
-            expect(newExecutionPrice.gt(oldExecutionPrice)).to.equal(true)
+            expect(newExecutionPrice).to.be.lt(oldExecutionPrice)
             expect(newExecutionPrice).to.equal(price)
         })
-        it.only("Should update the keeper's balance", async () => {
+        it("Should update the keeper's balance", async () => {
             await timeout(updateInterval * 1000 + 1000)
             const balanceBefore = await token.balanceOf(signers[0].address)
             const poolTokenBalanceBefore = await token.balanceOf(pool.address)
-            await poolKeeper.performUpkeepSinglePool(POOL1_ADDR)
+            await poolKeeper.performUpkeepMultiplePools([
+                POOL1_ADDR,
+                POOL2_ADDR,
+            ])
 
             const balanceAfter = await token.balanceOf(signers[0].address)
             const poolTokenBalanceAfter = await token.balanceOf(pool.address)
-            console.log(balanceBefore.toString())
-            console.log(balanceAfter.toString())
+            const tenGwei = BigNumber.from("10").pow(9)
+            const oneWei = BigNumber.from("10").pow(18)
+            const threeKEth = BigNumber.from("3000").mul(
+                BigNumber.from(10).pow(9)
+            )
+            const estimatedKeeperReward = BigNumber.from(
+                SINGLE_POOL_UPKEEP_GAS_COST
+            )
+                .mul(tenGwei)
+                .mul(threeKEth)
+                .mul(2)
+                .div(oneWei)
+            // EstimatedKeeperReward +/- 25% since it is quite hard to estimate
+            const lowerBound: any = estimatedKeeperReward.sub(
+                estimatedKeeperReward.div(4)
+            )
+            const upperBound: any = estimatedKeeperReward.add(
+                estimatedKeeperReward.div(4)
+            )
+            expect(balanceAfter.sub(balanceBefore)).to.be.within(
+                lowerBound,
+                upperBound
+            )
             expect(balanceAfter).to.be.gt(balanceBefore)
             expect(poolTokenBalanceAfter).to.be.lt(poolTokenBalanceBefore)
         })
         it("should calculate a new execution price", async () => {
             expect(newLastExecutionPrice).to.eq(oldExecutionPrice)
-            expect(newExecutionPrice.gt(oldExecutionPrice)).to.equal(true)
+            expect(newExecutionPrice).to.be.lt(oldExecutionPrice)
         })
     })
 })
