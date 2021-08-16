@@ -86,6 +86,7 @@ const setupHook = async () => {
     await library.deployed()
     const poolKeeperFactory = (await ethers.getContractFactory("PoolKeeper", {
         signer: signers[0],
+        libraries: { PoolSwapLibrary: library.address },
     })) as PoolKeeper__factory
     const PoolFactory = (await ethers.getContractFactory("PoolFactory", {
         signer: signers[0],

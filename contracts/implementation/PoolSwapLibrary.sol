@@ -6,6 +6,7 @@ import "abdk-libraries-solidity/ABDKMathQuad.sol";
 library PoolSwapLibrary {
     bytes16 public constant one = 0x3fff0000000000000000000000000000;
     bytes16 public constant zero = 0x00000000000000000000000000000000;
+    uint256 public constant MAX_DECIMALS = 18;
 
     struct PriceChangeData {
         int256 oldPrice;
@@ -204,5 +205,10 @@ library PoolSwapLibrary {
                 getRatio(uint112(tokenSupply) + inverseShadowbalance, balance),
                 amountIn
             );
+    }
+
+    function fromWad(uint256 _wadValue, uint256 _decimals) external pure returns (uint256) {
+        uint256 scaler = uint256(10**(MAX_DECIMALS - _decimals));
+        return _wadValue / scaler;
     }
 }

@@ -6,6 +6,8 @@ import "../interfaces/IOracleWrapper.sol";
 import "../interfaces/IPoolFactory.sol";
 import "../interfaces/ILeveragedPool.sol";
 import "../interfaces/IERC20DecimalsWrapper.sol";
+import "../interfaces/IERC20DecimalsWrapper.sol";
+import "./PoolSwapLibrary.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
@@ -212,14 +214,9 @@ contract PoolKeeper is IPoolKeeper, Ownable {
             )
         );
         uint256 decimals = IERC20DecimalsWrapper(ILeveragedPool(_pool).quoteToken()).decimals();
-        uint256 deWadifiedReward = fromWad(uint256(wadRewardValue), decimals);
+        uint256 deWadifiedReward = PoolSwapLibrary.fromWad(uint256(wadRewardValue), decimals);
         // _keeperGas + _keeperGas * percentTip
         return deWadifiedReward;
-    }
-
-    function fromWad(uint256 _wadValue, uint256 _decimals) internal pure returns (uint256) {
-        uint256 scaler = uint256(10**(MAX_DECIMALS - _decimals));
-        return _wadValue / scaler;
     }
 
     /**
