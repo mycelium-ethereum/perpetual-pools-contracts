@@ -39,21 +39,21 @@ interface ILeveragedPool {
      * @param oldAddress Previous address
      * @param newAddress Address after change
      */
-    event FeeAddressUpdated(address oldAddress, address newAddress);
+    event FeeAddressUpdated(address indexed oldAddress, address indexed newAddress);
 
     /**
      * @notice Represents change in keeper's address
      * @param oldAddress Previous address
      * @param newAddress Address after change
      */
-    event KeeperAddressChanged(address oldAddress, address newAddress);
+    event KeeperAddressChanged(address indexed oldAddress, address indexed newAddress);
 
     /**
      * @notice Represents change in governance address
      * @param oldAddress Previous address
      * @param newAddress Address after change
      */
-    event GovernanceAddressChanged(address oldAddress, address newAddress);
+    event GovernanceAddressChanged(address indexed oldAddress, address indexed newAddress);
 
     function leverageAmount() external view returns (bytes16);
 
