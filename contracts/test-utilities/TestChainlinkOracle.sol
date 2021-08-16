@@ -22,18 +22,18 @@ contract TestChainlinkOracle {
         external
         view
         returns (
-            uint80 roundId,
-            int256 answer,
-            uint256 startedAt,
-            uint256 updatedAt,
-            uint80 answeredInRound
+            uint80,
+            int256,
+            uint256,
+            uint256,
+            uint80
         )
     {
-        roundId = ROUND_ID;
-        answer = price;
-        startedAt = 0;
-        updatedAt = block.timestamp;
-        answeredInRound = ROUND_ID;
+        uint80 roundId = ROUND_ID;
+        int256 answer = price;
+        uint256 startedAt = 0;
+        uint256 updatedAt = block.timestamp;
+        uint80 answeredInRound = ROUND_ID;
 
         return (roundId, answer, startedAt, updatedAt, answeredInRound);
     }
