@@ -5,6 +5,9 @@ import "../interfaces/IPoolKeeper.sol";
 import "../interfaces/IOracleWrapper.sol";
 import "../interfaces/IPoolFactory.sol";
 import "../interfaces/ILeveragedPool.sol";
+import "../interfaces/IERC20DecimalsWrapper.sol";
+import "../interfaces/IERC20DecimalsWrapper.sol";
+import "./PoolSwapLibrary.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
@@ -17,9 +20,10 @@ import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV2V3Interface.sol";
  */
 contract PoolKeeper is IPoolKeeper, Ownable {
     /* Constants */
-    uint256 public constant BASE_TIP = 1;
-    uint256 public constant TIP_DELTA_PER_BLOCK = 1;
+    uint256 public constant BASE_TIP = 5; // 5% base tip
+    uint256 public constant TIP_DELTA_PER_BLOCK = 5; // 5% increase per block
     uint256 public constant BLOCK_TIME = 13; /* in seconds */
+    uint256 public constant MAX_DECIMALS = 18;
 
     // #### Global variables
     /**
@@ -108,9 +112,21 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         }
 
         uint256 gasSpent = startGas - gasleft();
-        uint256 _gasPrice = 1; /* TODO: poll gas price oracle (or BASEFEE) */
+        // TODO: poll gas price oracle (or BASEFEE)
+        // _gasPrice = 10 gwei = 10000000000 wei
+        uint256 _gasPrice = 10 gwei;
 
         payKeeper(_pool, _gasPrice, gasSpent, savedPreviousUpdatedTimestamp, updateInterval);
+    }
+
+    /**
+     * @notice Called by keepers to perform an update on multiple pools
+     * @param pools pool codes to perform the update for.
+     */
+    function performUpkeepMultiplePools(address[] calldata pools) external override {
+        for (uint256 i = 0; i < pools.length; i++) {
+            performUpkeepSinglePool(pools[i]);
+        }
     }
 
     /**
@@ -127,7 +143,6 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         uint256 _updateInterval
     ) internal {
         uint256 reward = keeperReward(_pool, _gasPrice, _gasSpent, _savedPreviousUpdatedTimestamp, _updateInterval);
-
         try ILeveragedPool(_pool).quoteTokenTransfer(msg.sender, reward) {
             emit KeeperPaid(_pool, msg.sender, reward);
         } catch Error(string memory reason) {
@@ -137,21 +152,11 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     }
 
     /**
-     * @notice Called by keepers to perform an update on multiple pools
-     * @param pools pool codes to perform the update for.
-     */
-    function performUpkeepMultiplePools(address[] calldata pools) external override {
-        for (uint256 i = 0; i < pools.length; i++) {
-            performUpkeepSinglePool(pools[i]);
-        }
-    }
-
-    /**
      * @notice Payment keeper receives for performing upkeep on a given pool
      * @param _pool Address of the given pool
      * @param _gasPrice Price of a single gas unit (in ETH)
      * @param _gasSpent Number of gas units spent
-     * @return Keeper's reward
+     * @return Number of settlement tokens to give to the keeper for work performed
      */
     function keeperReward(
         address _pool,
@@ -160,9 +165,26 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         uint256 _savedPreviousUpdatedTimestamp,
         uint256 _poolInterval
     ) public view returns (uint256) {
-        return
-            keeperGas(_pool, _gasPrice, _gasSpent) +
-            convertKeeperTip(keeperTip(_savedPreviousUpdatedTimestamp, _poolInterval), _pool);
+        // keeper gas cost in wei. WAD formatted
+        uint256 _keeperGas = keeperGas(_pool, _gasPrice, _gasSpent);
+
+        // tip percent in wad units
+        bytes16 _tipPercent = ABDKMathQuad.mul(
+            ABDKMathQuad.fromUInt(keeperTip(_savedPreviousUpdatedTimestamp, _poolInterval)),
+            fixedPoint
+        );
+        // amount of settlement tokens to give to the keeper
+        _tipPercent = ABDKMathQuad.div(_tipPercent, ABDKMathQuad.fromUInt(100));
+        int256 wadRewardValue = ABDKMathQuad.toInt(
+            ABDKMathQuad.add(
+                ABDKMathQuad.fromUInt(_keeperGas),
+                ABDKMathQuad.div((ABDKMathQuad.mul(ABDKMathQuad.fromUInt(_keeperGas), _tipPercent)), fixedPoint)
+            )
+        );
+        uint256 decimals = IERC20DecimalsWrapper(ILeveragedPool(_pool).quoteToken()).decimals();
+        uint256 deWadifiedReward = PoolSwapLibrary.fromWad(uint256(wadRewardValue), decimals);
+        // _keeperGas + _keeperGas * percentTip
+        return deWadifiedReward;
     }
 
     /**
@@ -183,32 +205,23 @@ contract PoolKeeper is IPoolKeeper, Ownable {
             return 0;
         } else {
             /* safe due to explicit bounds check above */
-            /* ETH * Settlement / ETH = Settlment amount */
-            return _gasPrice * _gasSpent * uint256(settlementTokenPrice);
+            /* (wei * Settlement / ETH) / fixed point (10^18) = amount in settlement */
+            bytes16 _weiSpent = ABDKMathQuad.fromUInt(_gasPrice * _gasSpent);
+            bytes16 _settlementTokenPrice = ABDKMathQuad.fromUInt(uint256(settlementTokenPrice));
+            return
+                ABDKMathQuad.toUInt(ABDKMathQuad.div(ABDKMathQuad.mul(_weiSpent, _settlementTokenPrice), fixedPoint));
         }
     }
 
     /**
      * @notice Tip a keeper will receive for successfully updating the specified pool
-     * @return Keeper's tip
+     * @return percent of the `keeperGas` cost to add to payment, as a percent
      */
     function keeperTip(uint256 _savedPreviousUpdatedTimestamp, uint256 _poolInterval) public view returns (uint256) {
         /* the number of blocks that have elapsed since the given pool's updateInterval passed */
         uint256 elapsedBlocks = (block.timestamp - (_savedPreviousUpdatedTimestamp + _poolInterval)) / BLOCK_TIME;
 
         return BASE_TIP + TIP_DELTA_PER_BLOCK * elapsedBlocks;
-    }
-
-    /**
-     * @dev Assumes `pool::settlementEthOracle` is a SettlementToken/ETH price oracle
-     * @notice Converts a tip amount into an appropriate value using the oracle's `decimals` value.
-     * @param _tip The calculated tip amount
-     * @param _pool The pool that is being upkept
-     */
-    function convertKeeperTip(uint256 _tip, address _pool) internal view returns (uint256) {
-        uint256 decimals = AggregatorV2V3Interface(IOracleWrapper(ILeveragedPool(_pool).settlementEthOracle()).oracle())
-            .decimals();
-        return _tip * (10**decimals);
     }
 
     function setFactory(address _factory) external override onlyOwner {

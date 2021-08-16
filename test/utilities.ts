@@ -1,11 +1,16 @@
 import { ethers, network } from "hardhat"
-import { BigNumberish, ContractReceipt, Event } from "ethers"
+import {
+    BigNumberish,
+    ContractReceipt,
+    ContractTransaction,
+    Event,
+} from "ethers"
 import { BytesLike, Result } from "ethers/lib/utils"
 import { MARKET } from "./constants"
 import {
     ERC20,
     LeveragedPool,
-    TestOracleWrapper__factory,
+    ChainlinkOracleWrapper__factory,
     TestToken,
     TestToken__factory,
     PoolSwapLibrary,
@@ -17,6 +22,7 @@ import {
     PoolFactory,
     PoolCommitter,
     PoolCommitterDeployer__factory,
+    TestChainlinkOracle,
 } from "../typechain"
 
 import { abi as ERC20Abi } from "../artifacts/@openzeppelin/contracts/token/ERC20/ERC20.sol/ERC20.json"
@@ -110,15 +116,20 @@ export const deployPoolAndTokenContracts = async (
         signers[0]
     )) as TestChainlinkOracle__factory
     const chainlinkOracle = await chainlinkOracleFactory.deploy()
+    const ethOracle = await (await chainlinkOracleFactory.deploy()).deployed()
+    await ethOracle.setPrice(3000 * 10 ** 8)
 
     // Deploy tokens
     const oracleWrapperFactory = (await ethers.getContractFactory(
-        "TestOracleWrapper",
+        "ChainlinkOracleWrapper",
         signers[0]
-    )) as TestOracleWrapper__factory
+    )) as ChainlinkOracleWrapper__factory
 
     const oracleWrapper = await oracleWrapperFactory.deploy(
         chainlinkOracle.address
+    )
+    const ethOracleWrapper = await oracleWrapperFactory.deploy(
+        ethOracle.address
     )
 
     /* keeper oracle */
@@ -160,6 +171,7 @@ export const deployPoolAndTokenContracts = async (
 
     const poolKeeperFactory = (await ethers.getContractFactory("PoolKeeper", {
         signer: signers[0],
+        libraries: { PoolSwapLibrary: library.address },
     })) as PoolKeeper__factory
     let poolKeeper = await poolKeeperFactory.deploy(factory.address)
     poolKeeper = await poolKeeper.deployed()
@@ -252,4 +264,12 @@ export function callData(
         ],
         [2, MARKET, poolNumbers.map((x) => factory.pools(x))]
     )
+}
+
+export async function incrementPrice(
+    oracle: TestChainlinkOracle
+): Promise<ContractTransaction> {
+    let oldPrice = await oracle.price()
+    let newPrice = oldPrice.add("100000000") // 1 * 10^18 (for default chainlink oracle decimals)
+    return oracle.setPrice(newPrice)
 }
