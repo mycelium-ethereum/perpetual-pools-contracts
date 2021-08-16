@@ -74,11 +74,12 @@ describe("PoolCommiter - executeCommitment: Basic test cases", () => {
             await timeout(300 * 1000)
             await pool.poolUpkeep(lastPrice, lastPrice)
             const shortTokensSupplyAfterSecond = await shortToken.totalSupply()
-            
-            expect(shortTokensSupplyAfterSecond).to.be.gt(shortTokensSupplyAfter)
+
+            expect(shortTokensSupplyAfterSecond).to.be.gt(
+                shortTokensSupplyAfter
+            )
         })
     })
-
 
     describe("Revert cases", () => {
         before(async () => {
