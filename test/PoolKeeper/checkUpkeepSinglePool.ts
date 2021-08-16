@@ -89,8 +89,7 @@ const setupHook = async () => {
         await PoolFactory.deploy(generateRandomAddress())
     ).deployed()
     poolKeeper = await poolKeeperFactory.deploy(
-        factory.address,
-        ethOracleWrapper.address
+        factory.address
     )
     await poolKeeper.deployed()
     await factory.connect(signers[0]).setPoolKeeper(poolKeeper.address)

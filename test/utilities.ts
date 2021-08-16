@@ -173,8 +173,7 @@ export const deployPoolAndTokenContracts = async (
         signer: signers[0],
     })) as PoolKeeper__factory
     let poolKeeper = await poolKeeperFactory.deploy(
-        factory.address,
-        ethOracleWrapper.address
+        factory.address
     )
     poolKeeper = await poolKeeper.deployed()
     await factory.setPoolKeeper(poolKeeper.address)

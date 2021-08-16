@@ -105,8 +105,7 @@ describe("PoolKeeper - createPool", () => {
         await factory.setPoolCommitterDeployer(poolCommiterDeployer.address)
 
         poolKeeper = await poolKeeperFactory.deploy(
-            factory.address,
-            ethOracleWrapper.address
+            factory.address
         )
         await poolKeeper.deployed()
 

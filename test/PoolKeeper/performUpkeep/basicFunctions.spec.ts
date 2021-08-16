@@ -38,8 +38,9 @@ chai.use(chaiAsPromised)
 const { expect } = chai
 
 let quoteToken: string
-let settlementChainlinkOracle: TestChainlinkOracle
-let ETHOracle: TestChainlinkOracle
+let derivativeChainlinkOracle: TestChainlinkOracle
+let derivativeOracleWrapper: ChainlinkOracleWrapper
+let settlementEthChainlinkOracle: TestChainlinkOracle
 let settlementEthOracleWrapper: ChainlinkOracleWrapper
 let ethOracleWrapper: ChainlinkOracleWrapper
 let poolKeeper: PoolKeeper
@@ -71,12 +72,16 @@ const setupHook = async () => {
         "TestChainlinkOracle",
         signers[0]
     )) as TestChainlinkOracle__factory
-    settlementChainlinkOracle = await (
+    derivativeChainlinkOracle = await (
         await chainlinkOracleFactory.deploy()
     ).deployed()
-    await settlementChainlinkOracle.setPrice(1 * 10 ** 8)
-    ETHOracle = await (await chainlinkOracleFactory.deploy()).deployed()
-    await ETHOracle.setPrice(3000 * 10 ** 8)
+    // $1
+    await derivativeChainlinkOracle.setPrice(1 * 10 ** 8)
+    settlementEthChainlinkOracle = await (
+        await chainlinkOracleFactory.deploy()
+    ).deployed()
+    // 3000 STL/ETH
+    await settlementEthChainlinkOracle.setPrice(3000 * 10 ** 8)
 
     // Deploy oracle. Using a test oracle for predictability
     const oracleWrapperFactory = (await ethers.getContractFactory(
@@ -84,15 +89,12 @@ const setupHook = async () => {
         signers[0]
     )) as ChainlinkOracleWrapper__factory
     // TODO fix
-    settlementEthOracleWrapper = await oracleWrapperFactory.deploy(
-        settlementChainlinkOracle.address
+    derivativeOracleWrapper = await oracleWrapperFactory.deploy(
+        derivativeChainlinkOracle.address
     )
-    await settlementEthOracleWrapper.deployed()
 
-    ethOracleWrapper = await oracleWrapperFactory.deploy(ETHOracle.address)
-    await ethOracleWrapper.deployed()
     settlementEthOracleWrapper = await oracleWrapperFactory.deploy(
-        settlementChainlinkOracle.address
+        settlementEthChainlinkOracle.address
     )
     await settlementEthOracleWrapper.deployed()
 
@@ -130,13 +132,11 @@ const setupHook = async () => {
 
     await factory.setPoolCommitterDeployer(poolCommitterDeployer.address)
     poolKeeper = await poolKeeperFactory.deploy(
-        factory.address,
-        ethOracleWrapper.address
+        factory.address
     )
     await poolKeeper.deployed()
     await factory.setPoolKeeper(poolKeeper.address)
 
-    // TODO fix so that oracleWrapper is derivative oracle, and settlementEthOracle is the same
     // Create pool
     const deploymentData = {
         poolName: POOL_CODE,
@@ -144,7 +144,7 @@ const setupHook = async () => {
         updateInterval: updateInterval,
         leverageAmount: 1,
         quoteToken: quoteToken,
-        oracleWrapper: settlementEthOracleWrapper.address,
+        oracleWrapper: derivativeOracleWrapper.address,
         settlementEthOracleWrapper: settlementEthOracleWrapper.address,
     }
     await (await factory.deployPool(deploymentData)).wait()
@@ -155,7 +155,7 @@ const setupHook = async () => {
         updateInterval: updateInterval,
         leverageAmount: 2,
         quoteToken: quoteToken,
-        oracleWrapper: settlementEthOracleWrapper.address,
+        oracleWrapper: derivativeOracleWrapper.address,
         settlementEthOracleWrapper: settlementEthOracleWrapper.address,
     }
     await (await factory.deployPool(deploymentData2)).wait()
@@ -252,7 +252,7 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
             await timeout(updateInterval * 1000 + 1000)
 
             newLastExecutionPrice = await poolKeeper.executionPrice(POOL1_ADDR)
-            await settlementChainlinkOracle.setPrice("90000000")
+            await derivativeChainlinkOracle.setPrice("90000000")
             await pool.setKeeper(poolKeeper.address)
             await poolKeeper.performUpkeepMultiplePools([
                 POOL1_ADDR,
@@ -271,7 +271,7 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
             expect(newExecutionPrice).to.be.lt(oldExecutionPrice)
             expect(newExecutionPrice).to.equal(price)
         })
-        it("Should update the keeper's balance", async () => {
+        it.only("Should update the keeper's balance", async () => {
             await timeout(updateInterval * 1000 + 1000)
             const balanceBefore = await token.balanceOf(signers[0].address)
             const poolTokenBalanceBefore = await token.balanceOf(pool.address)
