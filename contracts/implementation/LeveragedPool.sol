@@ -11,8 +11,6 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./PoolSwapLibrary.sol";
 import "../interfaces/IOracleWrapper.sol";
 
-import "hardhat/console.sol";
-
 /*
 @title The pool controller contract
 */
