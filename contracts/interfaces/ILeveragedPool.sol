@@ -59,6 +59,8 @@ interface ILeveragedPool {
 
     function poolCommitter() external view returns (address);
 
+    function quoteToken() external view returns (address);
+
     function oracleWrapper() external view returns (address);
 
     function lastPriceTimestamp() external view returns (uint256);

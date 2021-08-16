@@ -64,6 +64,7 @@ const setupHook = async () => {
     )) as TestToken__factory
     token = await testToken.deploy("TEST TOKEN", "TST1")
     await token.deployed()
+    await token.setDecimals(8)
     const mintAmount = ethers.utils.parseEther("1000") // An arbitrarily large amount
     await token.mint(mintAmount, signers[0].address)
     quoteToken = token.address

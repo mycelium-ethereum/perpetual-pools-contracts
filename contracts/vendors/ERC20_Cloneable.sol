@@ -5,6 +5,8 @@ import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
+import "hardhat/console.sol";
+
 /**
  * @dev Minimal Clones compatible implementation of the {IERC20} interface.
  * @dev Based Openzeppelin 3.4 ERC20 contract
@@ -54,7 +56,7 @@ contract ERC20_Cloneable is Context, IERC20, Initializable {
     constructor(string memory name_, string memory symbol_) {
         _name = name_;
         _symbol = symbol_;
-        _decimals = 18;
+        _decimals = 8;
     }
 
     function initialize(

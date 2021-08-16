@@ -5,6 +5,7 @@ import "../interfaces/IPoolKeeper.sol";
 import "../interfaces/IOracleWrapper.sol";
 import "../interfaces/IPoolFactory.sol";
 import "../interfaces/ILeveragedPool.sol";
+import "../interfaces/IERC20DecimalsWrapper.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
@@ -22,6 +23,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     uint256 public constant BASE_TIP = 5; // 5% base tip
     uint256 public constant TIP_DELTA_PER_BLOCK = 5; // 5% increase per block
     uint256 public constant BLOCK_TIME = 13; /* in seconds */
+    uint256 public constant MAX_DECIMALS = 18;
 
     // #### Global variables
     /**
@@ -211,11 +213,15 @@ contract PoolKeeper is IPoolKeeper, Ownable {
                 ABDKMathQuad.div((ABDKMathQuad.mul(ABDKMathQuad.fromUInt(_keeperGas), _tipPercent)), fixedPoint)
             )
         );
-        uint256 deWadifiedReward = uint256(
-            IOracleWrapper(ILeveragedPool(_pool).settlementEthOracleWrapper()).fromWad(wadRewardValue)
-        );
+        uint256 decimals = IERC20DecimalsWrapper(ILeveragedPool(_pool).quoteToken()).decimals();
+        uint256 deWadifiedReward = fromWad(uint256(wadRewardValue), decimals);
         // _keeperGas + _keeperGas * percentTip
         return deWadifiedReward;
+    }
+
+    function fromWad(uint256 _wadValue, uint256 _decimals) internal pure returns (uint256) {
+        uint256 scaler = uint256(10**(MAX_DECIMALS - _decimals));
+        return _wadValue / scaler;
     }
 
     /**
