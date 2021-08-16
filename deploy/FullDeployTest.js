@@ -116,7 +116,7 @@ module.exports = async (hre) => {
         poolKeeper.address
     )
 
-    const POOL_CODE = "CODE1"
+    const POOL_CODE = "tETH"
 
     const updateInterval = 60 // 1 minute
     const frontRunningInterval = 1 // seconds
