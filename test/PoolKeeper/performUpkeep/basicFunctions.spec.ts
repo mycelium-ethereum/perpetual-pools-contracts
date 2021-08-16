@@ -265,7 +265,7 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
             expect(newExecutionPrice).to.be.lt(oldExecutionPrice)
             expect(newExecutionPrice).to.equal(price)
         })
-        it("Should update the keeper's balance", async () => {
+        it.only("Should update the keeper's balance", async () => {
             await timeout(updateInterval * 1000 + 1000)
             const balanceBefore = await token.balanceOf(signers[0].address)
             const poolTokenBalanceBefore = await token.balanceOf(pool.address)
