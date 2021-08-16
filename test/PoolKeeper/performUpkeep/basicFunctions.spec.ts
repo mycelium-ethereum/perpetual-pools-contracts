@@ -131,9 +131,7 @@ const setupHook = async () => {
     poolCommitterDeployer = await poolCommitterDeployer.deployed()
 
     await factory.setPoolCommitterDeployer(poolCommitterDeployer.address)
-    poolKeeper = await poolKeeperFactory.deploy(
-        factory.address
-    )
+    poolKeeper = await poolKeeperFactory.deploy(factory.address)
     await poolKeeper.deployed()
     await factory.setPoolKeeper(poolKeeper.address)
 
@@ -265,13 +263,13 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
         })
         it("should clear the old round data", async () => {
             const price = ethers.utils.parseEther(
-                (await settlementEthOracleWrapper.getPrice()).toString()
+                (await derivativeOracleWrapper.getPrice()).toString()
             )
             expect(newLastExecutionTime.gt(oldLastExecutionTime)).to.equal(true)
             expect(newExecutionPrice).to.be.lt(oldExecutionPrice)
             expect(newExecutionPrice).to.equal(price)
         })
-        it.only("Should update the keeper's balance", async () => {
+        it("Should update the keeper's balance", async () => {
             await timeout(updateInterval * 1000 + 1000)
             const balanceBefore = await token.balanceOf(signers[0].address)
             const poolTokenBalanceBefore = await token.balanceOf(pool.address)

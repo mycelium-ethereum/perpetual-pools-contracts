@@ -97,9 +97,7 @@ const setupHook = async () => {
     const factory = await (
         await PoolFactory.deploy(generateRandomAddress())
     ).deployed()
-    poolKeeper = await poolKeeperFactory.deploy(
-        factory.address
-    )
+    poolKeeper = await poolKeeperFactory.deploy(factory.address)
     await poolKeeper.deployed()
     await factory.setPoolKeeper(poolKeeper.address)
 
