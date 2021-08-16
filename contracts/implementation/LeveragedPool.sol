@@ -3,7 +3,7 @@ pragma solidity 0.8.6;
 
 import "../interfaces/ILeveragedPool.sol";
 import "../interfaces/IPoolCommitter.sol";
-import "./PoolToken.sol";
+import "../interfaces/IPoolToken.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -143,7 +143,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     ) external override onlyPoolCommitter {
         require(minter != address(0), "Minter address cannot be 0 address");
         require(token == 0 || token == 1, "Pool: token out of range");
-        require(PoolToken(tokens[token]).mint(amount, minter), "Mint failed");
+        require(IPoolToken(tokens[token]).mint(amount, minter), "Mint failed");
     }
 
     function burnTokens(
@@ -153,7 +153,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     ) external override onlyPoolCommitter {
         require(burner != address(0), "Burner address cannot be 0 address");
         require(token == 0 || token == 1, "Pool: token out of range");
-        require(PoolToken(tokens[token]).burn(amount, burner), "Burn failed");
+        require(IPoolToken(tokens[token]).burn(amount, burner), "Burn failed");
     }
 
     /**
