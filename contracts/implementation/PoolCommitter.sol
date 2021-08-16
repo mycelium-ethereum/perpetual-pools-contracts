@@ -69,6 +69,14 @@ contract PoolCommitter is IPoolCommitter, Ownable {
 
     function uncommit(uint128 _commitID) external override {
         Commit memory _commit = commits[_commitID];
+        ILeveragedPool pool = ILeveragedPool(leveragedPool);
+        uint256 lastPriceTimestamp = pool.lastPriceTimestamp();
+        uint256 frontRunningInterval = pool.frontRunningInterval();
+        uint256 updateInterval = pool.updateInterval();
+        require(
+            lastPriceTimestamp + updateInterval - frontRunningInterval > block.timestamp,
+            "Must uncommit before frontRunningInterval"
+        );
         require(msg.sender == _commit.owner, "Unauthorized");
         _uncommit(_commit, _commitID);
     }
