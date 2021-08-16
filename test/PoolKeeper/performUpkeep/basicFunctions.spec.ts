@@ -40,7 +40,7 @@ const { expect } = chai
 let quoteToken: string
 let settlementChainlinkOracle: TestChainlinkOracle
 let ETHOracle: TestChainlinkOracle
-let settlementOracleWrapper: ChainlinkOracleWrapper
+let settlementEthOracleWrapper: ChainlinkOracleWrapper
 let ethOracleWrapper: ChainlinkOracleWrapper
 let poolKeeper: PoolKeeper
 let pool: any
@@ -83,13 +83,18 @@ const setupHook = async () => {
         "ChainlinkOracleWrapper",
         signers[0]
     )) as ChainlinkOracleWrapper__factory
-    settlementOracleWrapper = await oracleWrapperFactory.deploy(
+    // TODO fix
+    settlementEthOracleWrapper = await oracleWrapperFactory.deploy(
         settlementChainlinkOracle.address
     )
-    await settlementOracleWrapper.deployed()
+    await settlementEthOracleWrapper.deployed()
 
     ethOracleWrapper = await oracleWrapperFactory.deploy(ETHOracle.address)
     await ethOracleWrapper.deployed()
+    settlementEthOracleWrapper = await oracleWrapperFactory.deploy(
+        settlementChainlinkOracle.address
+    )
+    await settlementEthOracleWrapper.deployed()
 
     // Deploy pool keeper
     const libraryFactory = (await ethers.getContractFactory(
@@ -131,6 +136,7 @@ const setupHook = async () => {
     await poolKeeper.deployed()
     await factory.setPoolKeeper(poolKeeper.address)
 
+    // TODO fix so that oracleWrapper is derivative oracle, and settlementEthOracle is the same
     // Create pool
     const deploymentData = {
         poolName: POOL_CODE,
@@ -138,8 +144,8 @@ const setupHook = async () => {
         updateInterval: updateInterval,
         leverageAmount: 1,
         quoteToken: quoteToken,
-        oracleWrapper: settlementOracleWrapper.address,
-        keeperOracle: settlementOracleWrapper.address,
+        oracleWrapper: settlementEthOracleWrapper.address,
+        settlementEthOracleWrapper: settlementEthOracleWrapper.address,
     }
     await (await factory.deployPool(deploymentData)).wait()
 
@@ -149,8 +155,8 @@ const setupHook = async () => {
         updateInterval: updateInterval,
         leverageAmount: 2,
         quoteToken: quoteToken,
-        oracleWrapper: settlementOracleWrapper.address,
-        keeperOracle: settlementOracleWrapper.address,
+        oracleWrapper: settlementEthOracleWrapper.address,
+        settlementEthOracleWrapper: settlementEthOracleWrapper.address,
     }
     await (await factory.deployPool(deploymentData2)).wait()
 
@@ -259,7 +265,7 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
         })
         it("should clear the old round data", async () => {
             const price = ethers.utils.parseEther(
-                (await settlementOracleWrapper.getPrice()).toString()
+                (await settlementEthOracleWrapper.getPrice()).toString()
             )
             expect(newLastExecutionTime.gt(oldLastExecutionTime)).to.equal(true)
             expect(newExecutionPrice).to.be.lt(oldExecutionPrice)

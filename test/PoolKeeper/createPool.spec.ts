@@ -64,10 +64,10 @@ describe("PoolKeeper - createPool", () => {
         ethOracleWrapper = await oracleWrapperFactory.deploy(ethOracle.address)
         await ethOracleWrapper.deployed()
 
-        const keeperOracle = await oracleWrapperFactory.deploy(
+        const settlementEthOracleWrapper = await oracleWrapperFactory.deploy(
             chainlinkOracle.address
         )
-        await keeperOracle.deployed()
+        await settlementEthOracleWrapper.deployed()
 
         const libraryFactory = (await ethers.getContractFactory(
             "PoolSwapLibrary",
@@ -122,7 +122,7 @@ describe("PoolKeeper - createPool", () => {
             feeAddress: generateRandomAddress(),
             quoteToken: token.address,
             oracleWrapper: oracleWrapper.address,
-            keeperOracle: keeperOracle.address,
+            settlementEthOracleWrapper: settlementEthOracleWrapper.address,
         }
     })
 

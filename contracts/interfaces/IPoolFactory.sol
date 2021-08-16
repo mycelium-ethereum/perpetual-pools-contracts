@@ -22,7 +22,7 @@ interface IPoolFactory {
         uint16 leverageAmount; // The amount of exposure to price movements for the pool
         address quoteToken; // The digital asset that the pool accepts
         address oracleWrapper; // The IOracleWrapper implementation for fetching feed data
-        address keeperOracle;
+        address settlementEthOracleWrapper;
     }
 
     // #### Functions
