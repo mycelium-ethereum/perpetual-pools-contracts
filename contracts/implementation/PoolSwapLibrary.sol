@@ -2,6 +2,7 @@
 pragma solidity 0.8.6;
 
 import "abdk-libraries-solidity/ABDKMathQuad.sol";
+import "hardhat/console.sol";
 
 library PoolSwapLibrary {
     bytes16 public constant one = 0x3fff0000000000000000000000000000;
@@ -49,7 +50,7 @@ library PoolSwapLibrary {
     ) public pure returns (uint112, uint112) {
         bytes16 ratioShort = getRatio(shortBalance, shortBalance + longBalance);
 
-        uint112 shortFees = uint112(convertDecimalToUInt(multiplyDecimalByUInt(ratioShort, shortBalance)));
+        uint112 shortFees = uint112(convertDecimalToUInt(multiplyDecimalByUInt(ratioShort, reward)));
 
         uint112 shortBalanceAfterFees = shortBalance - shortFees;
         uint112 longBalanceAfterFees = longBalance - (reward - shortFees);
