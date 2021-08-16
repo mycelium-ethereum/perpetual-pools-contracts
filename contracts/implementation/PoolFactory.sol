@@ -5,6 +5,7 @@ import "../interfaces/IPoolFactory.sol";
 import "../interfaces/ILeveragedPool.sol";
 import "../interfaces/IPoolCommitterDeployer.sol";
 import "../interfaces/IPoolCommitter.sol";
+import "../interfaces/IERC20DecimalsWrapper.sol";
 import "./LeveragedPool.sol";
 import "./PoolToken.sol";
 import "./PoolKeeper.sol";
@@ -75,6 +76,7 @@ contract PoolFactory is IPoolFactory, Ownable {
             deploymentParameters.leverageAmount >= 1 && deploymentParameters.leverageAmount <= maxLeverage,
             "PoolKeeper: leveraged amount invalid"
         );
+        require(IERC20DecimalsWrapper(deploymentParameters.quoteToken).decimals() > 1, "Token needs decimals function");
         LeveragedPool pool = LeveragedPool(Clones.clone(address(poolBase)));
         address _pool = address(pool);
         emit DeployPool(_pool, deploymentParameters.poolName);
@@ -93,7 +95,7 @@ contract PoolFactory is IPoolFactory, Ownable {
             owner(), // governance is the owner of pools
             _poolKeeper,
             deploymentParameters.oracleWrapper,
-            deploymentParameters.keeperOracle,
+            deploymentParameters.settlementEthOracle,
             shortToken,
             longToken,
             poolCommitter,

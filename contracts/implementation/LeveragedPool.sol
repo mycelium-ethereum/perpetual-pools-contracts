@@ -39,7 +39,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
 
     string public override poolName;
     address public override oracleWrapper;
-    address public override keeperOracle;
+    address public override settlementEthOracle;
 
     // #### Functions
 
@@ -47,7 +47,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         require(initialization._feeAddress != address(0), "Fee address cannot be 0 address");
         require(initialization._quoteToken != address(0), "Quote token cannot be 0 address");
         require(initialization._oracleWrapper != address(0), "Oracle wrapper cannot be 0 address");
-        require(initialization._keeperOracle != address(0), "Keeper oracle cannot be 0 address");
+        require(initialization._settlementEthOracle != address(0), "Keeper oracle cannot be 0 address");
         require(initialization._owner != address(0), "Owner cannot be 0 address");
         require(initialization._keeper != address(0), "Keeper cannot be 0 address");
         require(initialization._longToken != address(0), "Long token cannot be 0 address");
@@ -66,7 +66,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         // Setup variables
         keeper = initialization._keeper;
         oracleWrapper = initialization._oracleWrapper;
-        keeperOracle = initialization._keeperOracle;
+        settlementEthOracle = initialization._settlementEthOracle;
         quoteToken = initialization._quoteToken;
         frontRunningInterval = initialization._frontRunningInterval;
         updateInterval = initialization._updateInterval;
@@ -127,7 +127,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         longBalance = newLongBalance;
         shortBalance = newShortBalance;
         // Pay the fee
-        IERC20(quoteToken).safeTransferFrom(address(this), feeAddress, totalFeeAmount);
+        IERC20(quoteToken).safeTransfer(feeAddress, totalFeeAmount);
         emit PriceChange(_oldPrice, _newPrice);
     }
 
