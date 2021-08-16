@@ -140,11 +140,6 @@ describe("PoolKeeper - checkUpkeepSinglePool", () => {
         await poolKeeper.performUpkeepSinglePool(poolAddress)
         expect(await poolKeeper.checkUpkeepSinglePool(poolAddress)).to.eq(false)
     })
-    it("should return false if the check data provided is invalid", async () => {
-        await forwardTime(5)
-        let poolAddress = await factory.pools(0)
-        expect(await poolKeeper.checkUpkeepSinglePool(poolAddress)).to.eq(false)
-    })
 
     it("should increase the keeper fee balance", async () => {
         await forwardTime(5)
