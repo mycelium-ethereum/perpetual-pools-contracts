@@ -32,7 +32,7 @@ const { expect } = chai
 
 let quoteToken: string
 let oracleWrapper: TestOracleWrapper
-let settlementEthOracleWrapper: TestOracleWrapper
+let settlementEthOracle: TestOracleWrapper
 let poolKeeper: PoolKeeper
 let pool: any
 let POOL1_ADDR: string
@@ -69,10 +69,10 @@ const setupHook = async () => {
     oracleWrapper = await oracleWrapperFactory.deploy(chainlinkOracle.address)
     await oracleWrapper.deployed()
 
-    settlementEthOracleWrapper = await oracleWrapperFactory.deploy(
+    settlementEthOracle = await oracleWrapperFactory.deploy(
         chainlinkOracle.address
     )
-    await settlementEthOracleWrapper.deployed()
+    await settlementEthOracle.deployed()
 
     // Deploy pool keeper
     const libraryFactory = (await ethers.getContractFactory(
@@ -120,7 +120,7 @@ const setupHook = async () => {
         leverageAmount: 1,
         quoteToken: quoteToken,
         oracleWrapper: oracleWrapper.address,
-        settlementEthOracleWrapper: settlementEthOracleWrapper.address,
+        settlementEthOracle: settlementEthOracle.address,
     }
     await (await factory.deployPool(deploymentData)).wait()
 
@@ -132,7 +132,7 @@ const setupHook = async () => {
         leverageAmount: 2,
         quoteToken: quoteToken,
         oracleWrapper: oracleWrapper.address,
-        settlementEthOracleWrapper: settlementEthOracleWrapper.address,
+        settlementEthOracle: settlementEthOracle.address,
     }
     await (await factory.deployPool(deploymentData2)).wait()
 

@@ -69,7 +69,7 @@ module.exports = async (hre) => {
         args: [chainlinkOracle.address],
     })
     /* deploy TestOracleWrapper for keeper */
-    const settlementEthOracleWrapper = await deploy("TestOracleWrapper", {
+    const settlementEthOracle = await deploy("TestOracleWrapper", {
         from: deployer,
         log: true,
         args: [chainlinkOracle.address],
@@ -120,7 +120,7 @@ module.exports = async (hre) => {
         leverageAmount: 5,
         quoteToken: token.address,
         oracleWrapper: oracleWrapper.address,
-        settlementEthOracleWrapper: settlementEthOracleWrapper.address,
+        settlementEthOracle: settlementEthOracle.address,
     }
 
     const receipt = await execute(

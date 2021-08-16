@@ -122,7 +122,7 @@ export const deployPoolAndTokenContracts = async (
     )
 
     /* keeper oracle */
-    const settlementEthOracleWrapper = await oracleWrapperFactory.deploy(
+    const settlementEthOracle = await oracleWrapperFactory.deploy(
         chainlinkOracle.address
     )
 
@@ -173,7 +173,7 @@ export const deployPoolAndTokenContracts = async (
         leverageAmount: leverage,
         quoteToken: token.address,
         oracleWrapper: oracleWrapper.address,
-        settlementEthOracleWrapper: settlementEthOracleWrapper.address,
+        settlementEthOracle: settlementEthOracle.address,
     }
 
     await factory.setFee(fee)
