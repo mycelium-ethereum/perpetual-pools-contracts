@@ -16,6 +16,8 @@ import {
     PoolSwapLibrary__factory,
     TestToken__factory,
     PoolFactory,
+    PoolCommitterDeployer,
+    PoolCommitterDeployer__factory,
 } from "../../typechain"
 
 chai.use(chaiAsPromised)
@@ -84,6 +86,20 @@ const setupHook = async () => {
     await poolKeeper.deployed()
     await factory.connect(signers[0]).setPoolKeeper(poolKeeper.address)
 
+    const PoolCommiterDeployerFactory = (await ethers.getContractFactory(
+        "PoolCommitterDeployer",
+        {
+            signer: signers[0],
+            libraries: { PoolSwapLibrary: library.address },
+        }
+    )) as PoolCommitterDeployer__factory
+
+    let poolCommiterDeployer = await PoolCommiterDeployerFactory.deploy(
+        factory.address
+    )
+    poolCommiterDeployer = await poolCommiterDeployer.deployed()
+
+    await factory.setPoolCommitterDeployer(poolCommiterDeployer.address)
     // Create pool
     const deploymentData = {
         poolName: POOL_CODE,
@@ -108,7 +124,6 @@ const setupHook = async () => {
     await factory.deployPool(deploymentData2)
 }
 describe("PoolKeeper - checkUpkeepSinglePool", () => {
-    /*
     beforeEach(async () => {
         await setupHook()
     })
@@ -136,15 +151,14 @@ describe("PoolKeeper - checkUpkeepSinglePool", () => {
         await oracleWrapper.incrementPrice()
         let keeperAddress = await signers[0].getAddress()
 
-        let preUpkeepFee = await poolKeeper.keeperFees(keeperAddress)
+        let preUpkeepFee = await signers[0].getBalance()
 
         // perform upkeep
         let poolAddress = await factory.pools(0)
         let res = await poolKeeper.performUpkeepSinglePool(poolAddress)
 
-        let postUpkeepFee = await poolKeeper.keeperFees(keeperAddress)
+        let postUpkeepFee = await signers[0].getBalance()
 
         expect(postUpkeepFee).to.gt(preUpkeepFee)
     })
-    */
 })
