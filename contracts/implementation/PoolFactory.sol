@@ -11,6 +11,7 @@ import "./PoolToken.sol";
 import "./PoolKeeper.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "hardhat/console.sol";
 
 /*
 @title The oracle management contract
@@ -71,12 +72,13 @@ contract PoolFactory is IPoolFactory, Ownable {
     function deployPool(PoolDeployment calldata deploymentParameters) external override returns (address) {
         address _poolKeeper = address(poolKeeper);
         require(_poolKeeper != address(0), "PoolKeeper not set");
+        require(address(poolCommitterDeployer) != address(0), "PoolCommitterDeployer not set");
         address poolCommitter = poolCommitterDeployer.deploy();
         require(
             deploymentParameters.leverageAmount >= 1 && deploymentParameters.leverageAmount <= maxLeverage,
             "PoolKeeper: leveraged amount invalid"
         );
-        require(IERC20DecimalsWrapper(deploymentParameters.quoteToken).decimals() > 1, "Token needs decimals function");
+        require(IERC20DecimalsWrapper(deploymentParameters.quoteToken).decimals() <= 18, "Token decimals > 18");
         LeveragedPool pool = LeveragedPool(Clones.clone(address(poolBase)));
         address _pool = address(pool);
         emit DeployPool(_pool, deploymentParameters.poolName);
