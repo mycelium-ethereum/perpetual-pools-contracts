@@ -143,11 +143,11 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         uint256 _updateInterval
     ) internal {
         uint256 reward = keeperReward(_pool, _gasPrice, _gasSpent, _savedPreviousUpdatedTimestamp, _updateInterval);
-        try ILeveragedPool(_pool).quoteTokenTransfer(msg.sender, reward) {
+        if (ILeveragedPool(_pool).payKeeper(msg.sender, reward)) {
             emit KeeperPaid(_pool, msg.sender, reward);
-        } catch Error(string memory reason) {
+        } else {
             // Usually occurs if pool just started and does not have any funds
-            emit KeeperPaymentError(_pool, reason);
+            emit KeeperPaymentError(_pool);
         }
     }
 

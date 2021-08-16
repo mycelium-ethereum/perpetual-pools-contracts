@@ -33,6 +33,32 @@ library PoolSwapLibrary {
     }
 
     /**
+     * @notice Gets the short and long balances after the keeper rewards have been paid out
+     *         Keeper rewards are paid proportionally to the short and long pool
+     * @dev Assumes shortBalance + longBalance >= reward
+     * @param reward Amount of keeper reward
+     * @param shortBalance Short balance of the pool
+     * @param longBalance Long balance of the pool
+     * @return shortBalanceAfterFees Short balance of the pool after the keeper reward has been paid
+     * @return longBalanceAfterFees Long balance of the pool after the keeper reward has been paid
+     */
+    function getBalancesAfterFees(
+        uint112 reward,
+        uint112 shortBalance,
+        uint112 longBalance
+    ) public pure returns (uint112, uint112) {
+        bytes16 ratioShort = getRatio(shortBalance, shortBalance + longBalance);
+
+        uint112 shortFees = uint112(convertDecimalToUInt(multiplyDecimalByUInt(ratioShort, shortBalance)));
+
+        uint112 shortBalanceAfterFees = shortBalance - shortFees;
+        uint112 longBalanceAfterFees = longBalance - (reward - shortFees);
+
+        // Return shortBalance and longBalance after rewards are paid out
+        return (shortBalanceAfterFees, longBalanceAfterFees);
+    }
+
+    /**
     @notice Gets the amount of tokens a user is entitled to according to the ratio
     @dev This is useful for getting the amount of pool tokens to mint, and the amount of quote tokens to remit when minting and burning. Can also be used to provide the user with an estimate of their commit results.
     @param ratio The ratio to calculate. Use the getRatio function to calculate this

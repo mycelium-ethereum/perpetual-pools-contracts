@@ -97,6 +97,8 @@ interface ILeveragedPool {
         uint256 amount
     ) external;
 
+    function payKeeper(address to, uint256 amount) external returns (bool);
+
     function quoteTokenTransfer(address to, uint256 amount) external;
 
     function setNewPoolBalances(uint112 _longBalance, uint112 _shortBalance) external;

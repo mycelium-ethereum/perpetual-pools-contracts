@@ -98,7 +98,30 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         IPoolCommitter(poolCommitter).executeAllCommitments();
     }
 
-    function quoteTokenTransfer(address to, uint256 amount) external override onlyPoolCommitterOrKeeper {
+    function payKeeper(address to, uint256 amount) external override onlyPoolKeeper returns (bool) {
+        require(to != address(0), "To address cannot be 0 address");
+        uint112 _shortBalance = shortBalance;
+        uint112 _longBalance = longBalance;
+
+        if (amount >= _shortBalance + _longBalance) {
+            return false;
+        }
+
+        (uint112 shortBalanceAfterRewards, uint112 longBalanceAfterRewards) = PoolSwapLibrary.getBalancesAfterFees(
+            uint112(amount),
+            shortBalance,
+            longBalance
+        );
+
+        shortBalance = shortBalanceAfterRewards;
+        longBalance = longBalanceAfterRewards;
+
+        IERC20(quoteToken).safeTransfer(to, amount);
+
+        return true;
+    }
+
+    function quoteTokenTransfer(address to, uint256 amount) external override onlyPoolCommitter {
         require(to != address(0), "To address cannot be 0 address");
         IERC20(quoteToken).safeTransfer(to, amount);
     }
@@ -214,8 +237,8 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         _;
     }
 
-    modifier onlyPoolCommitterOrKeeper() {
-        require(msg.sender == poolCommitter || msg.sender == keeper, "sender not committer or keeper");
+    modifier onlyPoolKeeper() {
+        require(msg.sender == keeper, "sender not keeper");
         _;
     }
 
