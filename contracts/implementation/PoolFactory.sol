@@ -11,7 +11,6 @@ import "./PoolToken.sol";
 import "./PoolKeeper.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "hardhat/console.sol";
 
 /*
 @title The oracle management contract
