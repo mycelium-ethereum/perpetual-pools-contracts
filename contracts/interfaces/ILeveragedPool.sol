@@ -8,8 +8,8 @@ interface ILeveragedPool {
     struct Initialization {
         address _owner;
         address _keeper; // The address of the PoolKeeper contract
-        address _oracleWrapper;
-        address _settlementEthOracle;
+        address _oracleWrapper; // The oracle wrapper for the derivative price feed
+        address _settlementEthOracle; // The oracle wrapper for the SettlementToken/ETH price feed
         address _longToken;
         address _shortToken;
         address _poolCommitter;
@@ -19,7 +19,7 @@ interface ILeveragedPool {
         bytes16 _fee; // The fund movement fee. This amount is extracted from the deposited asset with every update and sent to the fee address.
         uint16 _leverageAmount; // The amount of exposure to price movements for the pool
         address _feeAddress; // The address that the fund movement fee is sent to
-        address _quoteToken; //  The digital asset that the pool accepts
+        address _quoteToken; //  The digital asset that the pool accepts. Must have
     }
 
     // #### Events
@@ -33,6 +33,8 @@ interface ILeveragedPool {
     event PoolInitialized(address indexed longToken, address indexed shortToken, address quoteToken, string poolName);
 
     event PriceChange(int256 indexed startPrice, int256 indexed endPrice);
+
+    event PriceChangeError(int256 indexed startPrice, int256 indexed endPrice);
 
     /**
      * @notice Represents change in fee receiver's address

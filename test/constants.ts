@@ -14,4 +14,4 @@ export const POOL_CODE_2 = "CODE2"
 export const NO_COMMITS_REMAINING = "340282366920938463463374607431768211455"
 
 // Calculated by commenting out the keeper reward logic and calling performUpkeepSinglePool
-export const SINGLE_POOL_UPKEEP_GAS_COST = "142121"
+export const SINGLE_POOL_UPKEEP_GAS_COST = "103358"

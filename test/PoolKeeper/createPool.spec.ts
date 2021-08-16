@@ -79,6 +79,7 @@ describe("PoolKeeper - createPool", () => {
             "PoolKeeper",
             {
                 signer: signers[0],
+                libraries: { PoolSwapLibrary: library.address },
             }
         )) as PoolKeeper__factory
         const PoolFactory = (await ethers.getContractFactory("PoolFactory", {

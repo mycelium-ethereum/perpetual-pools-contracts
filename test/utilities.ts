@@ -171,6 +171,7 @@ export const deployPoolAndTokenContracts = async (
 
     const poolKeeperFactory = (await ethers.getContractFactory("PoolKeeper", {
         signer: signers[0],
+        libraries: { PoolSwapLibrary: library.address },
     })) as PoolKeeper__factory
     let poolKeeper = await poolKeeperFactory.deploy(factory.address)
     poolKeeper = await poolKeeper.deployed()
