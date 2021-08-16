@@ -192,6 +192,11 @@ library PoolSwapLibrary {
         return (longBalance, shortBalance, totalFeeAmount);
     }
 
+    /**
+     * @notice Returns true if the function is being called BEFORE the frontRunningInterval starts,
+     *         which is allowed for uncommitment.
+     * @dev If you try to uncommit AFTER the frontRunningInterval, it should revert.
+     */
     function isBeforeFrontRunningInterval(uint256 lastPriceTimestamp, uint256 updateInterval, uint256 frontRunningInterval) external view returns (bool) {
         return lastPriceTimestamp + updateInterval - frontRunningInterval > block.timestamp;
     }
