@@ -259,18 +259,6 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         return BASE_TIP + (TIP_DELTA_PER_BLOCK * elapsedBlocks);
     }
 
-    /**
-     * @dev Assumes `pool::settlementEthOracle` is a SettlementToken/ETH price oracle
-     * @notice Converts a tip amount into an appropriate value using the oracle's `decimals` value.
-     * @param _tip The calculated tip amount
-     * @param _pool The pool that is being upkept
-     */
-    function convertKeeperTip(uint256 _tip, address _pool) internal view returns (uint256) {
-        uint256 decimals = AggregatorV2V3Interface(IOracleWrapper(ILeveragedPool(_pool).settlementEthOracle()).oracle())
-            .decimals();
-        return _tip * (10**decimals);
-    }
-
     function setFactory(address _factory) external override onlyOwner {
         factory = IPoolFactory(_factory);
     }
