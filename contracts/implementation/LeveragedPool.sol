@@ -67,7 +67,6 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         keeper = initialization._keeper;
         oracleWrapper = initialization._oracleWrapper;
         settlementEthOracle = initialization._settlementEthOracle;
-        settlementEthOracle = initialization._settlementEthOracle;
         quoteToken = initialization._quoteToken;
         frontRunningInterval = initialization._frontRunningInterval;
         updateInterval = initialization._updateInterval;

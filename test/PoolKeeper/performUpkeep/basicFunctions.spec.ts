@@ -282,18 +282,19 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
 
             const balanceAfter = await token.balanceOf(signers[0].address)
             const poolTokenBalanceAfter = await token.balanceOf(pool.address)
-            const tenGwei = BigNumber.from("10").pow(9)
-            const oneWei = BigNumber.from("10").pow(18)
-            const threeKEth = BigNumber.from("3000").mul(
-                BigNumber.from(10).pow(9)
+            const tenGwei = BigNumber.from("10").pow(9).mul(10)
+            const tenToTheEighteen = BigNumber.from("10").pow(18)
+            const settlementPerEth = BigNumber.from("3000").mul(
+                BigNumber.from(10).pow(8)
             )
+
             const estimatedKeeperReward = BigNumber.from(
                 SINGLE_POOL_UPKEEP_GAS_COST
             )
                 .mul(tenGwei)
-                .mul(threeKEth)
-                .mul(2)
-                .div(oneWei)
+                .mul(settlementPerEth)
+                .mul(2) // Mul by 2 because there are two pools
+                .div(tenToTheEighteen)
             // EstimatedKeeperReward +/- 25% since it is quite hard to estimate
             const lowerBound: any = estimatedKeeperReward.sub(
                 estimatedKeeperReward.div(4)
