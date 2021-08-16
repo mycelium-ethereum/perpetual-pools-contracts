@@ -27,12 +27,6 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      */
     mapping(address => int256) public executionPrice;
 
-    /**
-     * @notice Format: Pool => timestamp of last price execution
-     * @dev Used to allow multiple upkeep registrations to use the same market/update interval price data.
-     */
-    mapping(address => uint256) public lastExecutionTime;
-
     IPoolFactory public factory;
     bytes16 constant fixedPoint = 0x403abc16d674ec800000000000000000; // 1 ether
 
@@ -52,7 +46,6 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         int256 startingPrice = ABDKMathQuad.toInt(ABDKMathQuad.mul(ABDKMathQuad.fromInt(firstPrice), fixedPoint));
         emit PoolAdded(_poolAddress, firstPrice);
         executionPrice[_poolAddress] = startingPrice;
-        lastExecutionTime[_poolAddress] = block.timestamp;
     }
 
     // Keeper network
@@ -93,6 +86,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     function performUpkeepSinglePool(address _pool) public override {
         uint256 startGas = gasleft();
 
+        // validate the pool, check that the interval time has passed
         if (!checkUpkeepSinglePool(_pool)) {
             return;
         }
@@ -102,12 +96,16 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         int256 lastExecutionPrice = executionPrice[_pool];
         executionPrice[_pool] = ABDKMathQuad.toInt(ABDKMathQuad.mul(ABDKMathQuad.fromInt(latestPrice), fixedPoint));
 
-        emit NewRound(lastExecutionPrice, latestPrice, pool.updateInterval(), _pool);
-
         uint256 savedPreviousUpdatedTimestamp = pool.lastPriceTimestamp();
         uint256 updateInterval = pool.updateInterval();
 
-        _executePriceChange(block.timestamp, uint32(updateInterval), _pool, lastExecutionPrice, executionPrice[_pool]);
+        // This allows us to still batch multiple calls to executePriceChange, even if some are invalid
+        // Without reverting the entire transaction
+        try ILeveragedPool(pool).poolUpkeep(lastExecutionPrice, executionPrice[_pool]) {} catch Error(
+            string memory reason
+        ) {
+            emit PoolUpkeepError(_pool, reason);
+        }
 
         uint256 gasSpent = startGas - gasleft();
         uint256 _gasPrice = 1; /* TODO: poll gas price oracle (or BASEFEE) */
@@ -145,36 +143,6 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     function performUpkeepMultiplePools(address[] calldata pools) external override {
         for (uint256 i = 0; i < pools.length; i++) {
             performUpkeepSinglePool(pools[i]);
-        }
-    }
-
-    /**
-     * @notice Executes a price change
-     * @param roundStart The start block of the round
-     * @param updateInterval The update interval of the pools
-     * @param pool The pool to update
-     * @param oldPrice The previously executed price
-     * @param latestPrice The price for the current interval
-     */
-    function _executePriceChange(
-        uint256 roundStart,
-        uint32 updateInterval,
-        address pool,
-        int256 oldPrice,
-        int256 latestPrice
-    ) internal {
-        if (oldPrice > 0) {
-            // TODO why is this check here?
-            if (lastExecutionTime[pool] < roundStart) {
-                // Make sure this round is after last execution time
-                lastExecutionTime[pool] = block.timestamp;
-                emit ExecutePriceChange(oldPrice, latestPrice, updateInterval, pool);
-                // This allows us to still batch multiple calls to executePriceChange, even if some are invalid
-                // Without reverting the entire transaction
-                try ILeveragedPool(pool).poolUpkeep(oldPrice, latestPrice) {} catch Error(string memory reason) {
-                    emit PoolUpdateError(pool, reason);
-                }
-            }
         }
     }
 
