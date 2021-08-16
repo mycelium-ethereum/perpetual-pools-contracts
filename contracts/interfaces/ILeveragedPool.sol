@@ -34,6 +34,8 @@ interface ILeveragedPool {
 
     event PriceChange(int256 indexed startPrice, int256 indexed endPrice);
 
+    event PriceChangeError(int256 indexed startPrice, int256 indexed endPrice);
+
     /**
      * @notice Represents change in fee receiver's address
      * @param oldAddress Previous address
