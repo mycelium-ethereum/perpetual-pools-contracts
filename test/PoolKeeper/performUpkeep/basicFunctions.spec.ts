@@ -41,7 +41,7 @@ let quoteToken: string
 let derivativeChainlinkOracle: TestChainlinkOracle
 let derivativeOracleWrapper: ChainlinkOracleWrapper
 let settlementEthChainlinkOracle: TestChainlinkOracle
-let settlementEthOracleWrapper: ChainlinkOracleWrapper
+let settlementEthOracle: ChainlinkOracleWrapper
 let ethOracleWrapper: ChainlinkOracleWrapper
 let poolKeeper: PoolKeeper
 let pool: any
@@ -94,10 +94,10 @@ const setupHook = async () => {
         derivativeChainlinkOracle.address
     )
 
-    settlementEthOracleWrapper = await oracleWrapperFactory.deploy(
+    settlementEthOracle = await oracleWrapperFactory.deploy(
         settlementEthChainlinkOracle.address
     )
-    await settlementEthOracleWrapper.deployed()
+    await settlementEthOracle.deployed()
 
     // Deploy pool keeper
     const libraryFactory = (await ethers.getContractFactory(
@@ -144,7 +144,7 @@ const setupHook = async () => {
         leverageAmount: 1,
         quoteToken: quoteToken,
         oracleWrapper: derivativeOracleWrapper.address,
-        settlementEthOracleWrapper: settlementEthOracleWrapper.address,
+        settlementEthOracle: settlementEthOracle.address,
     }
     await (await factory.deployPool(deploymentData)).wait()
 
@@ -155,7 +155,7 @@ const setupHook = async () => {
         leverageAmount: 2,
         quoteToken: quoteToken,
         oracleWrapper: derivativeOracleWrapper.address,
-        settlementEthOracleWrapper: settlementEthOracleWrapper.address,
+        settlementEthOracle: settlementEthOracle.address,
     }
     await (await factory.deployPool(deploymentData2)).wait()
 

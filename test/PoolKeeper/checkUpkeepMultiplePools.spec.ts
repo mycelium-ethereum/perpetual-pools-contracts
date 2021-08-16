@@ -22,8 +22,7 @@ const { expect } = chai
 
 let quoteToken: string
 let oracleWrapper: ChainlinkOracleWrapper
-let ethOracleWrapper: ChainlinkOracleWrapper
-let settlementEthOracleWrapper: ChainlinkOracleWrapper
+let settlementEthOracle: ChainlinkOracleWrapper
 let oracle: TestChainlinkOracle
 let ethOracle: TestChainlinkOracle
 let poolKeeper: PoolKeeper
@@ -52,8 +51,6 @@ const setupHook = async () => {
         signers[0]
     )) as TestChainlinkOracle__factory
     oracle = await oracleFactory.deploy()
-    ethOracle = await (await oracleFactory.deploy()).deployed()
-    await ethOracle.setPrice(3000 * 10 ** 8)
     await oracle.deployed()
     const oracleWrapperFactory = (await ethers.getContractFactory(
         "ChainlinkOracleWrapper",
@@ -61,13 +58,9 @@ const setupHook = async () => {
     )) as ChainlinkOracleWrapper__factory
     oracleWrapper = await oracleWrapperFactory.deploy(oracle.address)
     await oracleWrapper.deployed()
-    ethOracleWrapper = await oracleWrapperFactory.deploy(ethOracle.address)
-    await ethOracleWrapper.deployed()
 
-    settlementEthOracleWrapper = await oracleWrapperFactory.deploy(
-        oracle.address
-    )
-    await settlementEthOracleWrapper.deployed()
+    settlementEthOracle = await oracleWrapperFactory.deploy(oracle.address)
+    await settlementEthOracle.deployed()
 
     // Deploy pool keeper
     const libraryFactory = (await ethers.getContractFactory(
@@ -101,7 +94,7 @@ const setupHook = async () => {
         leverageAmount: 1,
         quoteToken: quoteToken,
         oracleWrapper: oracleWrapper.address,
-        settlementEthOracleWrapper: settlementEthOracleWrapper.address,
+        settlementEthOracle: settlementEthOracle.address,
     }
     await factory.deployPool(deploymentData)
 
@@ -112,7 +105,7 @@ const setupHook = async () => {
         leverageAmount: 2,
         quoteToken: quoteToken,
         oracleWrapper: oracleWrapper.address,
-        settlementEthOracleWrapper: settlementEthOracleWrapper.address,
+        settlementEthOracle: settlementEthOracle.address,
     }
     await factory.deployPool(deploymentData2)
 }

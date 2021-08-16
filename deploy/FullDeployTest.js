@@ -120,7 +120,7 @@ module.exports = async (hre) => {
         leverageAmount: 5,
         quoteToken: token.address,
         oracleWrapper: oracleWrapper.address,
-        settlementEthOracleWrapper: keeperOracle.address,
+        settlementEthOracle: keeperOracle.address,
     }
 
     const receipt = await execute(

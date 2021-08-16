@@ -95,7 +95,7 @@ contract PoolFactory is IPoolFactory, Ownable {
             owner(), // governance is the owner of pools
             _poolKeeper,
             deploymentParameters.oracleWrapper,
-            deploymentParameters.settlementEthOracleWrapper,
+            deploymentParameters.settlementEthOracle,
             shortToken,
             longToken,
             poolCommitter,
