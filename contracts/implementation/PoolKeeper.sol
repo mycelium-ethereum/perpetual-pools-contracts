@@ -116,7 +116,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         uint256 gasSpent = startGas - gasleft();
         // TODO: poll gas price oracle (or BASEFEE)
         // _gasPrice = 10 gwei = 10000000000 wei
-        uint256 _gasPrice = 10000000000;
+        uint256 _gasPrice = 10 gwei;
 
         payKeeper(_pool, _gasPrice, gasSpent, savedPreviousUpdatedTimestamp, updateInterval);
     }
@@ -253,7 +253,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         /* the number of blocks that have elapsed since the given pool's updateInterval passed */
         uint256 elapsedBlocks = (block.timestamp - (_savedPreviousUpdatedTimestamp + _poolInterval)) / BLOCK_TIME;
 
-        return BASE_TIP + (TIP_DELTA_PER_BLOCK * elapsedBlocks);
+        return BASE_TIP + TIP_DELTA_PER_BLOCK * elapsedBlocks;
     }
 
     function setFactory(address _factory) external override onlyOwner {
