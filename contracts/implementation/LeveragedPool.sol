@@ -92,7 +92,9 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     function poolUpkeep(int256 _oldPrice, int256 _newPrice) external override onlyKeeper {
         require(intervalPassed(), "Update interval hasn't passed");
         lastPriceTimestamp = uint40(block.timestamp);
+        // perform price change and update pool balances
         executePriceChange(_oldPrice, _newPrice);
+        // execute pending commitments to enter and exit the pool
         IPoolCommitter(poolCommitter).executeAllCommitments();
     }
 
@@ -112,23 +114,29 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     }
 
     function executePriceChange(int256 _oldPrice, int256 _newPrice) internal {
-        PoolSwapLibrary.PriceChangeData memory priceChangeData = PoolSwapLibrary.PriceChangeData(
-            _oldPrice,
-            _newPrice,
-            longBalance,
-            shortBalance,
-            leverageAmount,
-            fee
-        );
-        (uint112 newLongBalance, uint112 newShortBalance, uint112 totalFeeAmount) = PoolSwapLibrary
-            .calculatePriceChange(priceChangeData);
+        // prevent a division by 0 in computing the price change
+        // prevent negative pricing
+        if (_oldPrice <= 0 || _newPrice <= 0) {
+            emit PriceChangeError(_oldPrice, _newPrice);
+        } else {
+            PoolSwapLibrary.PriceChangeData memory priceChangeData = PoolSwapLibrary.PriceChangeData(
+                _oldPrice,
+                _newPrice,
+                longBalance,
+                shortBalance,
+                leverageAmount,
+                fee
+            );
+            (uint112 newLongBalance, uint112 newShortBalance, uint112 totalFeeAmount) = PoolSwapLibrary
+                .calculatePriceChange(priceChangeData);
 
-        // Update pool balances
-        longBalance = newLongBalance;
-        shortBalance = newShortBalance;
-        // Pay the fee
-        IERC20(quoteToken).safeTransferFrom(address(this), feeAddress, totalFeeAmount);
-        emit PriceChange(_oldPrice, _newPrice);
+            // Update pool balances
+            longBalance = newLongBalance;
+            shortBalance = newShortBalance;
+            // Pay the fee
+            IERC20(quoteToken).safeTransfer(feeAddress, totalFeeAmount);
+            emit PriceChange(_oldPrice, _newPrice);
+        }
     }
 
     function setNewPoolBalances(uint112 _longBalance, uint112 _shortBalance) external override onlyPoolCommitter {

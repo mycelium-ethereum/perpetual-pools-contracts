@@ -13,29 +13,6 @@ interface IPoolKeeper {
      */
     event PoolAdded(address indexed poolAddress, int256 indexed firstPrice);
 
-    /**
-     * @notice Creates notification of a new round for a market/update interval pair
-     * @param oldPrice The average price for the penultimate round
-     * @param newPrice The average price for the round that's just ended
-     * @param updateInterval The length of the round
-     * @param pool The address of the pool being updated
-     */
-    event NewRound(int256 indexed oldPrice, int256 indexed newPrice, uint32 indexed updateInterval, address pool);
-
-    /**
-     * @notice Creates notification of a price execution for a set of pools
-     * @param oldPrice The average price for the penultimate round
-     * @param newPrice The average price for the round that's just ended
-     * @param updateInterval The length of the round
-     * @param pool The pool that is being updated
-     * */
-    event ExecutePriceChange(
-        int256 indexed oldPrice,
-        int256 indexed newPrice,
-        uint32 indexed updateInterval,
-        address pool
-    );
-
     event KeeperPaid(address indexed _pool, address indexed keeper, uint256 reward);
 
     event KeeperPaymentError(address indexed _pool, string reason);
@@ -45,7 +22,7 @@ interface IPoolKeeper {
      * @param pool The pool that failed to update
      * @param reason The reason for the error
      */
-    event PoolUpdateError(address indexed pool, string reason);
+    event PoolUpkeepError(address indexed pool, string reason);
 
     // #### Functions
     /**
