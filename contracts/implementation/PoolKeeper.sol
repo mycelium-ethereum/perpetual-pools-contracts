@@ -23,7 +23,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
 
     // #### Global variables
     /**
-     * @notice Format: Pool code => executionPrice
+     * @notice Format: Pool address => last executionPrice
      */
     mapping(address => int256) public executionPrice;
 

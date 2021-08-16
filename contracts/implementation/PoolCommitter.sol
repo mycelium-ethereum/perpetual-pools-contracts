@@ -218,11 +218,11 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         return commits[_commitID];
     }
 
-    function setQuoteAndPool(address quoteToken, address _leveragedPool) external override onlyFactory {
-        require(quoteToken != address(0), "Quote token address cannot be 0 address");
+    function setQuoteAndPool(address _quoteToken, address _leveragedPool) external override onlyFactory {
+        require(_quoteToken != address(0), "Quote token address cannot be 0 address");
         require(_leveragedPool != address(0), "Leveraged pool address cannot be 0 address");
         leveragedPool = _leveragedPool;
-        IERC20 _token = IERC20(quoteToken);
+        IERC20 _token = IERC20(_quoteToken);
         _token.approve(leveragedPool, _token.totalSupply());
     }
 

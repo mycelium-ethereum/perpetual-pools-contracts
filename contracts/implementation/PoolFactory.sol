@@ -105,7 +105,7 @@ contract PoolFactory is IPoolFactory, Ownable {
             feeReceiver,
             deploymentParameters.quoteToken
         );
-        // the following two function calls are both due to circular dependencies
+
         // approve the quote token on the pool commiter to finalise linking
         // this also stores the pool address in the commiter
         IPoolCommitter(poolCommitter).setQuoteAndPool(deploymentParameters.quoteToken, _pool);
