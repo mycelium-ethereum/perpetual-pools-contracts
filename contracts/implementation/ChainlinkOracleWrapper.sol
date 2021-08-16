@@ -28,7 +28,7 @@ contract ChainlinkOracleWrapper is IOracleWrapper, Ownable {
         // reset the scaler for consistency
         uint8 _decimals = AggregatorV2V3Interface(oracle).decimals();
         require(_decimals <= MAX_DECIMALS, "COA: too many decimals");
-        // scalar is always <= 10^18 and >= 1 so this cast is safe
+        // scaler is always <= 10^18 and >= 1 so this cast is safe
         scaler = int256(10**(MAX_DECIMALS - _decimals));
     }
 

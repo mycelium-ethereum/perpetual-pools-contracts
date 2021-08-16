@@ -247,7 +247,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
 
     /**
      * @notice Tip a keeper will receive for successfully updating the specified pool
-     * @return percent of the keeperGas cost to add to payment, as a percentt
+     * @return percent of the `keeperGas` cost to add to payment, as a percent
      */
     function keeperTip(uint256 _savedPreviousUpdatedTimestamp, uint256 _poolInterval) public view returns (uint256) {
         /* the number of blocks that have elapsed since the given pool's updateInterval passed */
