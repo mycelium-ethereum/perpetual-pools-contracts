@@ -15,6 +15,7 @@ import {
     PoolKeeper__factory,
     PoolSwapLibrary__factory,
     TestToken__factory,
+    TestToken,
     PoolFactory,
     PoolCommitterDeployer,
     PoolCommitterDeployer__factory,
@@ -32,6 +33,7 @@ let poolKeeper: PoolKeeper
 let factory: PoolFactory
 let ethOracleWrapper: ChainlinkOracleWrapper
 let ethOracle: TestChainlinkOracle
+let token: TestToken
 
 const forwardTime = async (seconds: number) => {
     await network.provider.send("evm_increaseTime", [seconds])
@@ -45,7 +47,7 @@ const setupHook = async () => {
         "TestToken",
         signers[0]
     )) as TestToken__factory
-    const token = await testToken.deploy("TEST TOKEN", "TST1")
+    token = await testToken.deploy("TEST TOKEN", "TST1")
     await token.deployed()
     await token.mint(10000, signers[0].address)
     quoteToken = token.address
@@ -173,13 +175,13 @@ describe("PoolKeeper - checkUpkeepSinglePool", () => {
 
         let keeperAddress = await signers[0].getAddress()
 
-        let preUpkeepFee = await signers[0].getBalance()
+        let preUpkeepFee = await token.balanceOf(keeperAddress)
 
         // perform upkeep
         let poolAddress = await factory.pools(0)
         let res = await poolKeeper.performUpkeepSinglePool(poolAddress)
 
-        let postUpkeepFee = await signers[0].getBalance()
+        let postUpkeepFee = await token.balanceOf(keeperAddress)
 
         expect(postUpkeepFee).to.gt(preUpkeepFee)
     })
