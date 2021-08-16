@@ -25,7 +25,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
 
     // #### Global variables
     /**
-     * @notice Format: Pool code => executionPrice
+     * @notice Format: Pool address => last executionPrice
      */
     mapping(address => int256) public executionPrice;
 
@@ -64,7 +64,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @param _pool The address of the pool to upkeep
      * @return upkeepNeeded Whether or not upkeep is needed for this single pool
      */
-    function checkUpkeepSinglePool(address _pool) public view override returns (bool upkeepNeeded) {
+    function checkUpkeepSinglePool(address _pool) public view override returns (bool) {
         if (!factory.isValidPool(_pool)) {
             return false;
         }
@@ -78,7 +78,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @param _pools The array of pools to check
      * @return upkeepNeeded Whether or not at least one pool needs upkeeping
      */
-    function checkUpkeepMultiplePools(address[] calldata _pools) external view override returns (bool upkeepNeeded) {
+    function checkUpkeepMultiplePools(address[] calldata _pools) external view override returns (bool) {
         for (uint256 i = 0; i < _pools.length; i++) {
             if (checkUpkeepSinglePool(_pools[i])) {
                 // One has been found that requires upkeeping

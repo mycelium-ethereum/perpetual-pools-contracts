@@ -45,7 +45,7 @@ interface IPoolKeeper {
      * @param pool The pool that failed to update
      * @param reason The reason for the error
      */
-    event PoolUpdateError(address pool, string reason);
+    event PoolUpdateError(address indexed pool, string reason);
 
     // #### Functions
     /**
@@ -66,14 +66,14 @@ interface IPoolKeeper {
      * @param pool The address of the pool to upkeep
      * @return upkeepNeeded Whether or not upkeep is needed for this single pool
      */
-    function checkUpkeepSinglePool(address pool) external view returns (bool upkeepNeeded);
+    function checkUpkeepSinglePool(address pool) external view returns (bool);
 
     /**
      * @notice Checks multiple pools if any of them need updating
      * @param pools The array of pool codes to check
      * @return upkeepNeeded Whether or not at least one pool needs upkeeping
      */
-    function checkUpkeepMultiplePools(address[] calldata pools) external view returns (bool upkeepNeeded);
+    function checkUpkeepMultiplePools(address[] calldata pools) external view returns (bool);
 
     /**
      * @notice Called by keepers to perform an update on a single pool
