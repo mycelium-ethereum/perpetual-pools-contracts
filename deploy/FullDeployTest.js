@@ -81,16 +81,13 @@ module.exports = async (hre) => {
         log: true,
     })
 
-
     /* deploy PoolFactory */
     const factory = await deploy("PoolFactory", {
         from: deployer,
         log: true,
         libraries: { PoolSwapLibrary: library.address },
         // (fee receiver)
-        args: [
-            deployer,
-        ],
+        args: [deployer],
     })
 
     /* deploy PoolFactory */
@@ -123,7 +120,7 @@ module.exports = async (hre) => {
 
     const updateInterval = 60 // 1 minute
     const frontRunningInterval = 1 // seconds
-    const leverage = 1;
+    const leverage = 1
 
     /* deploy LeveragePool */
     const deploymentData = {
@@ -145,10 +142,13 @@ module.exports = async (hre) => {
             log: true,
         },
         "setFee",
-        fee 
+        fee
     )
 
-    console.log("Setting factory committer deployer", poolCommitterDeployer.address)
+    console.log(
+        "Setting factory committer deployer",
+        poolCommitterDeployer.address
+    )
     await execute(
         "PoolFactory",
         {
@@ -156,9 +156,9 @@ module.exports = async (hre) => {
             log: true,
         },
         "setPoolCommitterDeployer",
-       poolCommitterDeployer.address
+        poolCommitterDeployer.address
     )
-    
+
     const receipt = await execute(
         "PoolFactory",
         {
@@ -168,7 +168,7 @@ module.exports = async (hre) => {
         "deployPool",
         deploymentData
     )
-    
+
     const event = receipt?.events?.find((el) => el.event === "DeployPool")
 
     console.log(`Deployed PoolFactory: ${factory.address}`)
