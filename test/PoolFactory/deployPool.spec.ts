@@ -8,8 +8,8 @@ import {
     PoolKeeper,
     PoolKeeper__factory,
     PoolSwapLibrary__factory,
-    TestOracleWrapper,
-    TestOracleWrapper__factory,
+    ChainlinkOracleWrapper,
+    ChainlinkOracleWrapper__factory,
     TestChainlinkOracle__factory,
     PoolToken__factory,
 } from "../../typechain"
@@ -24,8 +24,8 @@ describe("PoolFactory - deployPool", () => {
     /*
     let factory: PoolFactory
     let poolKeeper: PoolKeeper
-    let oracleWrapper: TestOracleWrapper
-    let settlementEthOracle: TestOracleWrapper
+    let oracleWrapper: ChainlinkOracleWrapper
+    let settlementEthOracle: ChainlinkOracleWrapper
     let poolTx: Result | undefined
     let pool: LeveragedPool
     before(async () => {
@@ -45,9 +45,9 @@ describe("PoolFactory - deployPool", () => {
         const chainlinkOracle = await chainlinkOracleFactory.deploy()
 
         const oracleWrapperFactory = (await ethers.getContractFactory(
-            "TestOracleWrapper",
+            "ChainlinkOracleWrapper",
             signers[0]
-        )) as TestOracleWrapper__factory
+        )) as ChainlinkOracleWrapper__factory
         oracleWrapper = await oracleWrapperFactory.deploy(
             chainlinkOracle.address
         )

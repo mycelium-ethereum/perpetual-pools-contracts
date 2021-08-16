@@ -67,6 +67,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         keeper = initialization._keeper;
         oracleWrapper = initialization._oracleWrapper;
         settlementEthOracle = initialization._settlementEthOracle;
+        settlementEthOracle = initialization._settlementEthOracle;
         quoteToken = initialization._quoteToken;
         frontRunningInterval = initialization._frontRunningInterval;
         updateInterval = initialization._updateInterval;
@@ -127,7 +128,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         longBalance = newLongBalance;
         shortBalance = newShortBalance;
         // Pay the fee
-        IERC20(quoteToken).safeTransfer(feeAddress, totalFeeAmount);
+        IERC20(quoteToken).safeTransferFrom(address(this), feeAddress, totalFeeAmount);
         emit PriceChange(_oldPrice, _newPrice);
     }
 

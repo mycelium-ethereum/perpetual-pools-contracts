@@ -59,6 +59,8 @@ interface ILeveragedPool {
 
     function poolCommitter() external view returns (address);
 
+    function quoteToken() external view returns (address);
+
     function oracleWrapper() external view returns (address);
 
     function lastPriceTimestamp() external view returns (uint256);
@@ -76,8 +78,6 @@ interface ILeveragedPool {
     function poolTokens() external view returns (address[2] memory);
 
     function settlementEthOracle() external view returns (address);
-
-    function quoteToken() external view returns (address);
 
     // #### Functions
     /**

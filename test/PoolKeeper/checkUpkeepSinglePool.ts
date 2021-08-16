@@ -7,8 +7,8 @@ import { generateRandomAddress } from "../utilities"
 import { MARKET_2, POOL_CODE, POOL_CODE_2 } from "../constants"
 import {
     TestChainlinkOracle,
-    TestOracleWrapper,
-    TestOracleWrapper__factory,
+    ChainlinkOracleWrapper,
+    ChainlinkOracleWrapper__factory,
     TestChainlinkOracle__factory,
     PoolFactory__factory,
     PoolKeeper,
@@ -25,11 +25,13 @@ const { expect } = chai
 
 let signers: any
 let quoteToken: string
-let oracleWrapper: TestOracleWrapper
-let settlementEthOracle: TestOracleWrapper
+let oracleWrapper: ChainlinkOracleWrapper
+let settlementEthOracle: ChainlinkOracleWrapper
 let oracle: TestChainlinkOracle
 let poolKeeper: PoolKeeper
 let factory: PoolFactory
+let ethOracleWrapper: ChainlinkOracleWrapper
+let ethOracle: TestChainlinkOracle
 
 const forwardTime = async (seconds: number) => {
     await network.provider.send("evm_increaseTime", [seconds])
@@ -55,12 +57,16 @@ const setupHook = async () => {
     )) as TestChainlinkOracle__factory
     oracle = await oracleFactory.deploy()
     await oracle.deployed()
+    ethOracle = await (await oracleFactory.deploy()).deployed()
+    await ethOracle.setPrice(3000 * 10 ** 8)
     const oracleWrapperFactory = (await ethers.getContractFactory(
-        "TestOracleWrapper",
+        "ChainlinkOracleWrapper",
         signers[0]
-    )) as TestOracleWrapper__factory
+    )) as ChainlinkOracleWrapper__factory
     oracleWrapper = await oracleWrapperFactory.deploy(oracle.address)
     await oracleWrapper.deployed()
+    ethOracleWrapper = await oracleWrapperFactory.deploy(ethOracle.address)
+    await ethOracleWrapper.deployed()
 
     settlementEthOracle = await oracleWrapperFactory.deploy(oracle.address)
     await settlementEthOracle.deployed()
