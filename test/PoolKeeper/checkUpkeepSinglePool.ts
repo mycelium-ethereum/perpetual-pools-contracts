@@ -2,7 +2,7 @@ import { ethers, network } from "hardhat"
 import chai from "chai"
 import { Bytes, BytesLike } from "ethers"
 import chaiAsPromised from "chai-as-promised"
-import { generateRandomAddress } from "../utilities"
+import { generateRandomAddress, incrementPrice } from "../utilities"
 
 import { MARKET_2, POOL_CODE, POOL_CODE_2 } from "../constants"
 import {
@@ -135,13 +135,27 @@ describe("PoolKeeper - checkUpkeepSinglePool", () => {
     })
     it("should return true if the trigger condition is met", async () => {
         await forwardTime(5)
-        await oracleWrapper.incrementPrice()
+
+        /* induce price increase */
+        let underlyingOracle: TestChainlinkOracle = (await ethers.getContractAt(
+            "TestChainlinkOracle",
+            await oracleWrapper.oracle()
+        )) as TestChainlinkOracle
+        await incrementPrice(underlyingOracle)
+
         let poolAddress = await factory.pools(0)
         expect(await poolKeeper.checkUpkeepSinglePool(poolAddress)).to.eq(true)
     })
     it("should return false if the trigger condition isn't met", async () => {
         await forwardTime(5)
-        await oracleWrapper.incrementPrice()
+
+        /* induce price increase */
+        let underlyingOracle: TestChainlinkOracle = (await ethers.getContractAt(
+            "TestChainlinkOracle",
+            await oracleWrapper.oracle()
+        )) as TestChainlinkOracle
+        await incrementPrice(underlyingOracle)
+
         let poolAddress = await factory.pools(0)
         await poolKeeper.performUpkeepSinglePool(poolAddress)
         expect(await poolKeeper.checkUpkeepSinglePool(poolAddress)).to.eq(false)
@@ -149,7 +163,14 @@ describe("PoolKeeper - checkUpkeepSinglePool", () => {
 
     it("should increase the keeper fee balance", async () => {
         await forwardTime(5)
-        await oracleWrapper.incrementPrice()
+
+        /* induce price increase */
+        let underlyingOracle: TestChainlinkOracle = (await ethers.getContractAt(
+            "TestChainlinkOracle",
+            await oracleWrapper.oracle()
+        )) as TestChainlinkOracle
+        await incrementPrice(underlyingOracle)
+
         let keeperAddress = await signers[0].getAddress()
 
         let preUpkeepFee = await signers[0].getBalance()
