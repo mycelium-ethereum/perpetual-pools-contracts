@@ -198,11 +198,10 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
                 ])
             ).wait()
             newExecutionPrice = await poolKeeper.executionPrice(POOL1_ADDR)
-            event = getEventArgs(result, "PriceChange")
+            event = getEventArgs(result, "KeeperPaid")
         })
-        it.skip("should emit an event with the details", async () => {
-            expect(event?._newPrice).to.eq(newExecutionPrice)
-            expect(event?._oldPrice).to.eq(oldExecutionPrice)
+        it("should emit an event with the details", async () => {
+            expect(event?.keeper).to.eq(signers[0].address)
         })
     })
 
