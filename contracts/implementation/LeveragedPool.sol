@@ -33,7 +33,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     address public governance;
     address public keeper;
     address public feeAddress;
-    IERC20 public quoteToken;
+    address public override quoteToken;
     address public override poolCommitter;
     uint256 public override lastPriceTimestamp;
 
@@ -67,7 +67,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         keeper = initialization._keeper;
         oracleWrapper = initialization._oracleWrapper;
         settlementEthOracle = initialization._settlementEthOracle;
-        quoteToken = IERC20(initialization._quoteToken);
+        quoteToken = initialization._quoteToken;
         frontRunningInterval = initialization._frontRunningInterval;
         updateInterval = initialization._updateInterval;
         fee = initialization._fee;
@@ -98,7 +98,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
 
     function quoteTokenTransfer(address to, uint256 amount) external override onlyPoolCommitterOrKeeper {
         require(to != address(0), "To address cannot be 0 address");
-        quoteToken.safeTransfer(to, amount);
+        IERC20(quoteToken).safeTransfer(to, amount);
     }
 
     function quoteTokenTransferFrom(
@@ -108,7 +108,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     ) external override onlyPoolCommitter {
         require(from != address(0), "From address cannot be 0 address");
         require(to != address(0), "To address cannot be 0 address");
-        quoteToken.safeTransferFrom(from, to, amount);
+        IERC20(quoteToken).safeTransferFrom(from, to, amount);
     }
 
     function executePriceChange(int256 _oldPrice, int256 _newPrice) internal {
@@ -127,7 +127,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         longBalance = newLongBalance;
         shortBalance = newShortBalance;
         // Pay the fee
-        quoteToken.safeTransferFrom(address(this), feeAddress, totalFeeAmount);
+        IERC20(quoteToken).safeTransfer(feeAddress, totalFeeAmount);
         emit PriceChange(_oldPrice, _newPrice);
     }
 

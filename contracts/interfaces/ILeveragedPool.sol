@@ -77,6 +77,8 @@ interface ILeveragedPool {
 
     function settlementEthOracle() external view returns (address);
 
+    function quoteToken() external view returns (address);
+
     // #### Functions
     /**
      * @notice Configures the pool on deployment. The pools are EIP 1167 clones.
