@@ -215,4 +215,8 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         require(msg.sender == governance, "msg.sender not governance");
         _;
     }
+
+    function echidna_check_sum_of_balances() public view returns (bool) {
+        return longBalance + shortBalance == IERC20(quoteToken).balanceOf(address(this));
+    }
 }
