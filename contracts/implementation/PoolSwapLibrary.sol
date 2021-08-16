@@ -146,9 +146,9 @@ library PoolSwapLibrary {
         public
         pure
         returns (
-            uint112 newLongBalance,
-            uint112 newShortBalance,
-            uint112 totalFeeAmount
+            uint112,
+            uint112,
+            uint112
         )
     {
         uint112 shortBalance = priceChange.shortBalance;
@@ -161,7 +161,7 @@ library PoolSwapLibrary {
         // Calculate fees from long and short sides
         uint112 longFeeAmount = uint112(convertDecimalToUInt(multiplyDecimalByUInt(fee, longBalance)));
         uint112 shortFeeAmount = uint112(convertDecimalToUInt(multiplyDecimalByUInt(fee, shortBalance)));
-        totalFeeAmount = 0;
+        uint112 totalFeeAmount = 0;
 
         // fee is enforced to be < 1. Therefore, shortFeeAmount < shortBalance, and longFeeAmount < longBalance
         shortBalance = shortBalance - shortFeeAmount;
