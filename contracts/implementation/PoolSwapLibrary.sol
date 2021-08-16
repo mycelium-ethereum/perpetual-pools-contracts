@@ -192,6 +192,10 @@ library PoolSwapLibrary {
         return (longBalance, shortBalance, totalFeeAmount);
     }
 
+    function isBeforeFrontRunningInterval(uint256 lastPriceTimestamp, uint256 updateInterval, uint256 frontRunningInterval) external view returns (bool) {
+        return lastPriceTimestamp + updateInterval - frontRunningInterval > block.timestamp;
+    }
+
     function getMintAmount(
         uint256 tokenSupply,
         uint112 amountIn,

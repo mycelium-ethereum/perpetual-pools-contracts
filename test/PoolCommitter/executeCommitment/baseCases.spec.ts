@@ -42,6 +42,44 @@ describe("PoolCommiter - executeCommitment: Basic test cases", () => {
     let signers: SignerWithAddress[]
     let poolCommiter: PoolCommitter
 
+    context("When committing during the frontRunningInterval", () => {
+        it("Does not execute until the next update interval", async () => {
+            const elements = await deployPoolAndTokenContracts(
+                POOL_CODE,
+                100,
+                250,
+                fee,
+                leverage,
+                feeAddress,
+                amountMinted
+            )
+            signers = elements.signers
+            pool = elements.pool
+            const committer = elements.poolCommiter
+            token = elements.token
+            const shortToken = elements.shortToken
+            await token.approve(pool.address, ethers.constants.MaxUint256)
+            await pool.setKeeper(signers[0].address)
+            // Wait until somewhere between `frontRunningInterval <-> updateInterval`
+            await timeout(175 * 1000)
+            await committer.commitIDCounter()
+            await committer.commit([0], amountCommitted)
+
+            const shortTokensSupplyBefore = await shortToken.totalSupply()
+            // Now wait for updateInterval to pass
+            await timeout(76 * 1000)
+            await pool.poolUpkeep(lastPrice, lastPrice)
+            const shortTokensSupplyAfter = await shortToken.totalSupply()
+            expect(shortTokensSupplyAfter).to.equal(shortTokensSupplyBefore)
+            await timeout(300 * 1000)
+            await pool.poolUpkeep(lastPrice, lastPrice)
+            const shortTokensSupplyAfterSecond = await shortToken.totalSupply()
+            
+            expect(shortTokensSupplyAfterSecond).to.be.gt(shortTokensSupplyAfter)
+        })
+    })
+
+
     describe("Revert cases", () => {
         before(async () => {
             const result = await deployPoolAndTokenContracts(
