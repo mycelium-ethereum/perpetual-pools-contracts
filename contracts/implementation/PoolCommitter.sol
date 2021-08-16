@@ -3,7 +3,6 @@ pragma solidity 0.8.6;
 
 import "../interfaces/IPoolCommitter.sol";
 import "../interfaces/ILeveragedPool.sol";
-import "./PoolToken.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
@@ -159,7 +158,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         shadowPools[_commitType] = shadowPools[_commitType] - _commit.amount;
         if (_commit.commitType == CommitType.LongMint) {
             uint112 mintAmount = PoolSwapLibrary.getMintAmount(
-                PoolToken(pool.poolTokens()[0]).totalSupply(), // long token total supply,
+                IERC20(pool.poolTokens()[0]).totalSupply(), // long token total supply,
                 _commit.amount, // amount of quote tokens commited to enter
                 longBalance, // total quote tokens in the long pull
                 shadowPools[commitTypeToUint(CommitType.LongBurn)] // total pool tokens commited to be burned
@@ -173,7 +172,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
                 PoolSwapLibrary.getRatio(
                     longBalance,
                     uint112(
-                        uint112(PoolToken(pool.poolTokens()[0]).totalSupply()) +
+                        uint112(IERC20(pool.poolTokens()[0]).totalSupply()) +
                             shadowPools[commitTypeToUint(CommitType.LongBurn)] +
                             _commit.amount
                     )
@@ -186,7 +185,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             pool.quoteTokenTransfer(_commit.owner, amountOut);
         } else if (_commit.commitType == CommitType.ShortMint) {
             uint112 mintAmount = PoolSwapLibrary.getMintAmount(
-                PoolToken(pool.poolTokens()[1]).totalSupply(), // short token total supply
+                IERC20(pool.poolTokens()[1]).totalSupply(), // short token total supply
                 _commit.amount,
                 shortBalance,
                 shadowPools[commitTypeToUint(CommitType.ShortBurn)]
@@ -198,7 +197,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             uint112 amountOut = PoolSwapLibrary.getAmountOut(
                 PoolSwapLibrary.getRatio(
                     shortBalance,
-                    uint112(PoolToken(pool.poolTokens()[1]).totalSupply()) +
+                    uint112(IERC20(pool.poolTokens()[1]).totalSupply()) +
                         shadowPools[commitTypeToUint(CommitType.ShortBurn)] +
                         _commit.amount
                 ),
