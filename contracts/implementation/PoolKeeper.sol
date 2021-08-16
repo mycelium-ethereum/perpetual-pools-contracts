@@ -13,8 +13,6 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "abdk-libraries-solidity/ABDKMathQuad.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV2V3Interface.sol";
 
-import "hardhat/console.sol";
-
 /*
  * @title The manager contract for multiple markets and the pools in them
  */
