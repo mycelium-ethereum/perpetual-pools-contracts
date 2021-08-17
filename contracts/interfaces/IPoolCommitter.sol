@@ -11,6 +11,7 @@ interface IPoolCommitter {
         LongBurn
     }
 
+    // Commit information
     struct Commit {
         uint256 amount;
         CommitType commitType;

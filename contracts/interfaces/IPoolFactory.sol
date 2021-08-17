@@ -14,6 +14,11 @@ interface IPoolFactory {
     }
 
     // #### Events
+    /**
+     * @notice Creates a notification when a pool is deployed
+     * @param pool Address of the new pool
+     * @param ticker Ticker of the neew pool
+     */
     event DeployPool(address indexed pool, string ticker);
 
     // #### Getters for Globals
