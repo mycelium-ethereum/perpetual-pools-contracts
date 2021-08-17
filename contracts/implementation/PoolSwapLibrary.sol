@@ -2,7 +2,6 @@
 pragma solidity 0.8.6;
 
 import "abdk-libraries-solidity/ABDKMathQuad.sol";
-import "hardhat/console.sol";
 
 library PoolSwapLibrary {
     bytes16 public constant one = 0x3fff0000000000000000000000000000;
