@@ -116,7 +116,7 @@ library PoolSwapLibrary {
      * @notice Divides two integers
      * @param a The dividend
      * @param b The divisor
-     * @return The quotient 
+     * @return The quotient
      */
     function divInt(int256 a, int256 b) public pure returns (bytes16) {
         return ABDKMathQuad.div(ABDKMathQuad.fromInt(a), ABDKMathQuad.fromInt(b));
@@ -233,6 +233,14 @@ library PoolSwapLibrary {
         return lastPriceTimestamp + updateInterval - frontRunningInterval > block.timestamp;
     }
 
+    /**
+     * @notice Gets the number of pool tokens to be minted based on existing tokens
+     * @param tokenSupply Total supply of pool tokens
+     * @param amountIn Commitment amount of collateral tokens going into the pool
+     * @param balance Balance of the pool (no. of underlying collateral tokens in pool)
+     * @param inverseShadowbalance Balance the shadow pool at time of mint
+     * @return Number of pool tokens to be minted
+     */
     function getMintAmount(
         uint256 tokenSupply,
         uint256 amountIn,
@@ -247,6 +255,10 @@ library PoolSwapLibrary {
             );
     }
 
+    /**
+     * @notice Converts from a WAD to normal value
+     * @return Converted non-WAD value
+     */
     function fromWad(uint256 _wadValue, uint256 _decimals) external pure returns (uint256) {
         uint256 scaler = uint256(10**(MAX_DECIMALS - _decimals));
         return _wadValue / scaler;
