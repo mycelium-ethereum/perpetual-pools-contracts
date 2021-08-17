@@ -133,8 +133,7 @@ describe("LeveragedPool - executeAllCommitments", () => {
             const shortBalanceBefore = await pool.shortBalance()
 
             // Halve price
-            const currentPrice = (await chainlinkOracle.latestRoundData())
-                .answer
+            const currentPrice = (await chainlinkOracle.latestRoundData())[1]
             await chainlinkOracle.setPrice(currentPrice.div(2))
 
             // Perform upkeep

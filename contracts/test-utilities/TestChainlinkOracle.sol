@@ -23,7 +23,7 @@ contract TestChainlinkOracle {
         view
         returns (
             uint80,
-            int256 answer,
+            int256,
             uint256,
             uint256,
             uint80
