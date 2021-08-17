@@ -107,16 +107,16 @@ contract LeveragedPool is ILeveragedPool, Initializable {
      */
     function payKeeperFromBalances(address to, uint256 amount) external override onlyPoolKeeper returns (bool) {
         require(to != address(0), "To address cannot be 0 address");
-        uint112 _shortBalance = shortBalance;
-        uint112 _longBalance = longBalance;
+        uint256 _shortBalance = shortBalance;
+        uint256 _longBalance = longBalance;
 
         // If the rewards are more than the balances of the pool, the keeper does not get paid
         if (amount >= _shortBalance + _longBalance) {
             return false;
         }
 
-        (uint112 shortBalanceAfterRewards, uint112 longBalanceAfterRewards) = PoolSwapLibrary.getBalancesAfterFees(
-            uint112(amount),
+        (uint256 shortBalanceAfterRewards, uint256 longBalanceAfterRewards) = PoolSwapLibrary.getBalancesAfterFees(
+            uint256(amount),
             _shortBalance,
             _longBalance
         );

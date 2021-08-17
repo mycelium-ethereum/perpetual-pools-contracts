@@ -44,16 +44,16 @@ library PoolSwapLibrary {
      * @return longBalanceAfterFees Long balance of the pool after the keeper reward has been paid
      */
     function getBalancesAfterFees(
-        uint112 reward,
-        uint112 shortBalance,
-        uint112 longBalance
-    ) public pure returns (uint112, uint112) {
+        uint256 reward,
+        uint256 shortBalance,
+        uint256 longBalance
+    ) public pure returns (uint256, uint256) {
         bytes16 ratioShort = getRatio(shortBalance, shortBalance + longBalance);
 
-        uint112 shortFees = uint112(convertDecimalToUInt(multiplyDecimalByUInt(ratioShort, reward)));
+        uint256 shortFees = convertDecimalToUInt(multiplyDecimalByUInt(ratioShort, reward));
 
-        uint112 shortBalanceAfterFees = shortBalance - shortFees;
-        uint112 longBalanceAfterFees = longBalance - (reward - shortFees);
+        uint256 shortBalanceAfterFees = shortBalance - shortFees;
+        uint256 longBalanceAfterFees = longBalance - (reward - shortFees);
 
         // Return shortBalance and longBalance after rewards are paid out
         return (shortBalanceAfterFees, longBalanceAfterFees);
