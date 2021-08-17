@@ -9,15 +9,13 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./PoolSwapLibrary.sol";
 import "../interfaces/IOracleWrapper.sol";
 
-/*
-@title The pool controller contract
-*/
+/// @title The pool controller contract
 contract PoolCommitter is IPoolCommitter, Ownable {
     // #### Globals
 
     address public leveragedPool;
 
-    // MAX_INT
+    // MAX_UINT128
     uint128 public constant NO_COMMITS_REMAINING = type(uint128).max;
     uint128 public earliestCommitUnexecuted = NO_COMMITS_REMAINING;
     uint128 public latestCommitUnexecuted;
@@ -156,7 +154,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
     }
 
     /**
-     * @notice Executes a single commitment.
+     * @notice Executes a single commitment
      * @param _commit The commit to execute
      */
     function executeCommitment(Commit memory _commit) external override onlySelf {

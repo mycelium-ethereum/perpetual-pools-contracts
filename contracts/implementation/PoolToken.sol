@@ -4,10 +4,8 @@ pragma solidity 0.8.6;
 import "../vendors/ERC20_Cloneable.sol";
 import "../interfaces/IPoolToken.sol";
 
-/*
- * @title The pool token
- * @dev ERC_20_Cloneable contains onlyOwner code implemented for use with the cloneable setup
- */
+/// @title The pool token; used for ownership/shares of the underlying tokens of the long/short pool
+/// @dev ERC_20_Cloneable contains onlyOwner code implemented for use with the cloneable setup
 contract PoolToken is ERC20_Cloneable, IPoolToken {
     // #### Global state
 

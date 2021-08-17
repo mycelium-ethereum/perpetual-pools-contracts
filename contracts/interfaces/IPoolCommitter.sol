@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.6;
 
-/*
-@title The interface for the contract that handles pool commitments
-*/
+/// @title The interface for the contract that handles pool commitments
 interface IPoolCommitter {
     enum CommitType {
         ShortMint,

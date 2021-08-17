@@ -1,15 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.6;
 
-/*
-@title The manager contract interface for multiple markets and the pools in them
-*/
+/// @title The manager contract interface for multiple markets and the pools in them
 interface IPoolKeeper {
     // #### Events
     /**
      * @notice Creates a notification when a pool is created
-     * @param poolAddress The pool address of the newly created pool.
-     * @param firstPrice The price of the market oracle when the pool was created.
+     * @param poolAddress The pool address of the newly created pool
+     * @param firstPrice The price of the market oracle when the pool was created
      */
     event PoolAdded(address indexed poolAddress, int256 indexed firstPrice);
 
@@ -26,8 +24,8 @@ interface IPoolKeeper {
 
     // #### Functions
     /**
-     * @notice When a pool is created, this function is called by the factory to initiate price tracking.
-     * @param _poolAddress The address of the newly-created pool.
+     * @notice When a pool is created, this function is called by the factory to initiate price tracking
+     * @param _poolAddress The address of the newly-created pool
      */
     function newPool(address _poolAddress) external;
 
@@ -54,13 +52,13 @@ interface IPoolKeeper {
 
     /**
      * @notice Called by keepers to perform an update on a single pool
-     * @param pool The pool code to perform the update for.
+     * @param pool The pool code to perform the update for
      */
     function performUpkeepSinglePool(address pool) external;
 
     /**
      * @notice Called by keepers to perform an update on multiple pools
-     * @param pools pool codes to perform the update for.
+     * @param pools Pool codes to perform the update for
      */
     function performUpkeepMultiplePools(address[] calldata pools) external;
 }

@@ -15,9 +15,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "abdk-libraries-solidity/ABDKMathQuad.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV2V3Interface.sol";
 
-/*
- * @title The manager contract for multiple markets and the pools in them
- */
+/// @title The manager contract for multiple markets and the pools in them
 contract PoolKeeper is IPoolKeeper, Ownable {
     /* Constants */
     uint256 public constant BASE_TIP = 5; // 5% base tip
@@ -41,8 +39,8 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     }
 
     /**
-     * @notice When a pool is created, this function is called by the factory to initiate price tracking.
-     * @param _poolAddress The address of the newly-created pool.
+     * @notice When a pool is created, this function is called by the factory to initiate price trackings
+     * @param _poolAddress The address of the newly-created pools
      */
     function newPool(address _poolAddress) external override onlyFactory {
         address oracleWrapper = ILeveragedPool(_poolAddress).oracleWrapper();
@@ -55,7 +53,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     // Keeper network
     /**
      * @notice Check if upkeep is required
-     * @dev This should not be called or executed.
+     * @dev This should not be called or executed
      * @param _pool The address of the pool to upkeep
      * @return upkeepNeeded Whether or not upkeep is needed for this single pool
      */
@@ -85,7 +83,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
 
     /**
      * @notice Called by keepers to perform an update on a single pool
-     * @param _pool The pool code to perform the update for.
+     * @param _pool The pool code to perform the update for
      */
     function performUpkeepSinglePool(address _pool) public override {
         uint256 startGas = gasleft();
@@ -121,7 +119,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
 
     /**
      * @notice Called by keepers to perform an update on multiple pools
-     * @param pools pool codes to perform the update for.
+     * @param pools pool codes to perform the update for
      */
     function performUpkeepMultiplePools(address[] calldata pools) external override {
         for (uint256 i = 0; i < pools.length; i++) {
