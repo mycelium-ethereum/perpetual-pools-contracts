@@ -9,15 +9,13 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./PoolSwapLibrary.sol";
 import "../interfaces/IOracleWrapper.sol";
 
-/*
-@title The pool controller contract
-*/
+/// @title The pool controller contract
 contract PoolCommitter is IPoolCommitter, Ownable {
     // #### Globals
 
     address public leveragedPool;
 
-    // MAX_INT
+    // MAX_UINT128
     uint128 public constant NO_COMMITS_REMAINING = type(uint128).max;
     uint128 public earliestCommitUnexecuted = NO_COMMITS_REMAINING;
     uint128 public latestCommitUnexecuted;
@@ -32,6 +30,12 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         factory = _factory;
     }
 
+    /**
+     * @notice Commit to minting/burning long/short tokens after the next price change
+     * @param commitType Type of commit you're doing (Long vs Short, Mint vs Burn)
+     * @param amount Amount of quote tokens you want to commit to minting; OR amount of pool
+     *               tokens you want to burn
+     */
     function commit(CommitType commitType, uint256 amount) external override {
         require(amount > 0, "Amount must not be zero");
         uint128 currentCommitIDCounter = commitIDCounter;
@@ -68,6 +72,10 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         }
     }
 
+    /**
+     * @notice Uncommit to minting/burning long/short tokens before the frontrunning interval ticks over
+     * @param _commitID ID of the commit to uncommit (contained within the commits mapping)
+     */
     function uncommit(uint128 _commitID) external override {
         Commit memory _commit = commits[_commitID];
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
@@ -117,6 +125,9 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         }
     }
 
+    /**
+     * @notice Execute all the pending commits of a market
+     */
     function executeAllCommitments() external override onlyPool {
         if (earliestCommitUnexecuted == NO_COMMITS_REMAINING) {
             return;
@@ -156,7 +167,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
     }
 
     /**
-     * @notice Executes a single commitment.
+     * @notice Executes a single commitment
      * @param _commit The commit to execute
      */
     function executeCommitment(Commit memory _commit) external override onlySelf {

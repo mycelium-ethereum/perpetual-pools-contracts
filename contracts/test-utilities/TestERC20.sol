@@ -3,10 +3,8 @@ pragma solidity 0.8.6;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-/*
-@title An ERC20 token to be used when testing a pool
-@dev Don't use this for anything real. There's no access controls on mint and burn.
-*/
+/// @title An ERC20 token to be used when testing a pool
+/// @dev Don't use this for anything real. There's no access controls on mint and burn.
 contract TestToken is ERC20 {
     uint8 internal _decimals = 18;
 

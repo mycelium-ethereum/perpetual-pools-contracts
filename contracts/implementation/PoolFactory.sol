@@ -12,20 +12,19 @@ import "./PoolKeeper.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-/*
-@title The oracle management contract
-*/
+/// @title The oracle management contract
 contract PoolFactory is IPoolFactory, Ownable {
     // #### Globals
     PoolToken public pairTokenBase;
     LeveragedPool public poolBase;
     IPoolKeeper public poolKeeper;
     IPoolCommitterDeployer public poolCommitterDeployer;
-    // default max leverage of 25
+
+    // Default max leverage of 10
     uint16 public maxLeverage = 10;
-    // contract address to receive protocol fees
+    // Contract address to receive protocol fees
     address feeReceiver;
-    // default fee
+    // Default fee; quadruple precision (128 bit) floating point number (64.64)
     bytes16 public fee;
 
     /**
@@ -68,6 +67,11 @@ contract PoolFactory is IPoolFactory, Ownable {
         feeReceiver = _feeReceiver;
     }
 
+    /**
+     * @notice Deploy a leveraged pool with given parameters
+     * @param deploymentParameters Deployment parameters of the market. Some may be reconfigurable
+     * @return Address of the created pool
+     */
     function deployPool(PoolDeployment calldata deploymentParameters) external override returns (address) {
         address _poolKeeper = address(poolKeeper);
         require(_poolKeeper != address(0), "PoolKeeper not set");
@@ -122,6 +126,12 @@ contract PoolFactory is IPoolFactory, Ownable {
         return _pool;
     }
 
+    /**
+     * @notice Deploy a contract for pool tokens
+     * @param name Name of the token
+     * @param symbol Symbol of the token
+     * @return Address of the pool token
+     */
     function deployPairToken(
         address owner,
         string memory name,

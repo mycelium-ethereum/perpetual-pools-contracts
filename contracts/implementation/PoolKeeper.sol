@@ -15,9 +15,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "abdk-libraries-solidity/ABDKMathQuad.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV2V3Interface.sol";
 
-/*
- * @title The manager contract for multiple markets and the pools in them
- */
+/// @title The manager contract for multiple markets and the pools in them
 contract PoolKeeper is IPoolKeeper, Ownable {
     /* Constants */
     uint256 public constant BASE_TIP = 5; // 5% base tip
@@ -41,8 +39,8 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     }
 
     /**
-     * @notice When a pool is created, this function is called by the factory to initiate price tracking.
-     * @param _poolAddress The address of the newly-created pool.
+     * @notice When a pool is created, this function is called by the factory to initiate price trackings
+     * @param _poolAddress The address of the newly-created pools
      */
     function newPool(address _poolAddress) external override onlyFactory {
         address oracleWrapper = ILeveragedPool(_poolAddress).oracleWrapper();
@@ -55,7 +53,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     // Keeper network
     /**
      * @notice Check if upkeep is required
-     * @dev This should not be called or executed.
+     * @dev This should not be called or executed
      * @param _pool The address of the pool to upkeep
      * @return upkeepNeeded Whether or not upkeep is needed for this single pool
      */
@@ -85,7 +83,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
 
     /**
      * @notice Called by keepers to perform an update on a single pool
-     * @param _pool The pool code to perform the update for.
+     * @param _pool The pool code to perform the update for
      */
     function performUpkeepSinglePool(address _pool) public override {
         uint256 startGas = gasleft();
@@ -122,7 +120,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
 
     /**
      * @notice Called by keepers to perform an update on multiple pools
-     * @param pools pool codes to perform the update for.
+     * @param pools pool codes to perform the update for
      */
     function performUpkeepMultiplePools(address[] calldata pools) external override {
         for (uint256 i = 0; i < pools.length; i++) {
@@ -135,6 +133,8 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @param _pool Address of the given pool
      * @param _gasPrice Price of a single gas unit (in ETH)
      * @param _gasSpent Number of gas units spent
+     * @param _savedPreviousUpdatedTimestamp Last timestamp when the pool's price execution happened
+     * @param _updateInterval Pool interval of the given pool
      */
     function payKeeper(
         address _pool,
@@ -157,6 +157,8 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @param _pool Address of the given pool
      * @param _gasPrice Price of a single gas unit (in ETH)
      * @param _gasSpent Number of gas units spent
+     * @param _savedPreviousUpdatedTimestamp Last timestamp when the pool's price execution happened
+     * @param _poolInterval Pool interval of the given pool
      * @return Number of settlement tokens to give to the keeper for work performed
      */
     function keeperReward(
@@ -216,7 +218,9 @@ contract PoolKeeper is IPoolKeeper, Ownable {
 
     /**
      * @notice Tip a keeper will receive for successfully updating the specified pool
-     * @return percent of the `keeperGas` cost to add to payment, as a percent
+     * @param _savedPreviousUpdatedTimestamp Last timestamp when the pool's price execution happened
+     * @param _poolInterval Pool interval of the given pool
+     * @return Percent of the `keeperGas` cost to add to payment, as a percent
      */
     function keeperTip(uint256 _savedPreviousUpdatedTimestamp, uint256 _poolInterval) public view returns (uint256) {
         /* the number of blocks that have elapsed since the given pool's updateInterval passed */
