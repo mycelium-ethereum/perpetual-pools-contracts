@@ -106,7 +106,6 @@ contract LeveragedPool is ILeveragedPool, Initializable {
      *         long and short pool, and true if the keeper can successfully be paid out
      */
     function payKeeperFromBalances(address to, uint256 amount) external override onlyPoolKeeper returns (bool) {
-        require(to != address(0), "To address cannot be 0 address");
         uint256 _shortBalance = shortBalance;
         uint256 _longBalance = longBalance;
 
