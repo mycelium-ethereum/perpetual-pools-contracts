@@ -142,14 +142,14 @@ describe("PoolKeeper - checkUpkeepSinglePool", () => {
             await forwardTime(5)
 
             /* induce price increase */
-            let underlyingOracle: TestChainlinkOracle =
+            const underlyingOracle: TestChainlinkOracle =
                 (await ethers.getContractAt(
                     "TestChainlinkOracle",
                     await oracleWrapper.oracle()
                 )) as TestChainlinkOracle
             await incrementPrice(underlyingOracle)
 
-            let poolAddress = await factory.pools(0)
+            const poolAddress = await factory.pools(0)
             expect(await poolKeeper.checkUpkeepSinglePool(poolAddress)).to.eq(
                 true
             )
@@ -161,14 +161,14 @@ describe("PoolKeeper - checkUpkeepSinglePool", () => {
             await forwardTime(5)
 
             /* induce price increase */
-            let underlyingOracle: TestChainlinkOracle =
+            const underlyingOracle: TestChainlinkOracle =
                 (await ethers.getContractAt(
                     "TestChainlinkOracle",
                     await oracleWrapper.oracle()
                 )) as TestChainlinkOracle
             await incrementPrice(underlyingOracle)
 
-            let poolAddress = await factory.pools(0)
+            const poolAddress = await factory.pools(0)
             await poolKeeper.performUpkeepSinglePool(poolAddress)
             expect(await poolKeeper.checkUpkeepSinglePool(poolAddress)).to.eq(
                 false
