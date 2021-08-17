@@ -36,6 +36,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         require(amount > 0, "Amount must not be zero");
         uint128 currentCommitIDCounter = commitIDCounter;
         commitIDCounter = currentCommitIDCounter + 1;
+        ILeveragedPool pool = ILeveragedPool(leveragedPool);
 
         // create commitment
         commits[currentCommitIDCounter] = Commit({
@@ -57,18 +58,26 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         // pull in tokens
         if (commitType == CommitType.LongMint || commitType == CommitType.ShortMint) {
             // minting: pull in the quote token from the commiter
-            ILeveragedPool(leveragedPool).quoteTokenTransferFrom(msg.sender, leveragedPool, amount);
+            pool.quoteTokenTransferFrom(msg.sender, leveragedPool, amount);
         } else if (commitType == CommitType.LongBurn) {
             // long burning: pull in long pool tokens from commiter
-            ILeveragedPool(leveragedPool).burnTokens(0, amount, msg.sender);
+            pool.burnTokens(0, amount, msg.sender);
         } else if (commitType == CommitType.ShortBurn) {
             // short burning: pull in short pool tokens from commiter
-            ILeveragedPool(leveragedPool).burnTokens(1, amount, msg.sender);
+            pool.burnTokens(1, amount, msg.sender);
         }
     }
 
     function uncommit(uint128 _commitID) external override {
         Commit memory _commit = commits[_commitID];
+        ILeveragedPool pool = ILeveragedPool(leveragedPool);
+        uint256 lastPriceTimestamp = pool.lastPriceTimestamp();
+        uint256 frontRunningInterval = pool.frontRunningInterval();
+        uint256 updateInterval = pool.updateInterval();
+        require(
+            PoolSwapLibrary.isBeforeFrontRunningInterval(lastPriceTimestamp, updateInterval, frontRunningInterval),
+            "Must uncommit before frontRunningInterval"
+        );
         require(msg.sender == _commit.owner, "Unauthorized");
         _uncommit(_commit, _commitID);
     }
