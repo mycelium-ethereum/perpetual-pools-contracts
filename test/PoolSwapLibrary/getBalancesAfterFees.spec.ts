@@ -41,22 +41,4 @@ describe("PoolSwapLibrary - getBalancesAfterFees", () => {
             ethers.utils.parseEther("95").toString()
         )
     })
-    it("should return 0 if keeper rewards are greater than the total balances", async () => {
-        const keeperReward = ethers.utils.parseEther("210")
-        const shortBalance = ethers.utils.parseEther("100")
-        const longBalance = ethers.utils.parseEther("100")
-
-        const afterRewardBalances = await library.getBalancesAfterFees(
-            keeperReward,
-            shortBalance,
-            longBalance
-        )
-
-        expect(afterRewardBalances[0]).to.eq(
-            ethers.utils.parseEther(shortBalance.toString())
-        )
-        expect(afterRewardBalances[1]).to.eq(
-            ethers.utils.parseEther(longBalance.toString())
-        )
-    })
 })
