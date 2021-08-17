@@ -116,7 +116,9 @@ export const deployPoolAndTokenContracts = async (
         "TestChainlinkOracle",
         signers[0]
     )) as TestChainlinkOracle__factory
-    const chainlinkOracle = await (await chainlinkOracleFactory.deploy()).deployed()
+    const chainlinkOracle = await (
+        await chainlinkOracleFactory.deploy()
+    ).deployed()
     const ethOracle = await (await chainlinkOracleFactory.deploy()).deployed()
     await ethOracle.setPrice(3000 * 10 ** 8)
 
@@ -215,7 +217,7 @@ export const deployPoolAndTokenContracts = async (
         //@ts-ignore
         poolCommitter,
         poolKeeper,
-        chainlinkOracle
+        chainlinkOracle,
     }
 }
 
@@ -235,7 +237,9 @@ export const createCommit = async (
     commitType: BigNumberish,
     amount: BigNumberish
 ): Promise<any> /*Promise<CommitEventArgs>*/ => {
-    const receipt = await (await poolCommitter.commit(commitType, amount)).wait()
+    const receipt = await (
+        await poolCommitter.commit(commitType, amount)
+    ).wait()
     return {
         commitID: getEventArgs(receipt, "CreateCommit")?.commitID,
         amount: getEventArgs(receipt, "CreateCommit")?.amount,

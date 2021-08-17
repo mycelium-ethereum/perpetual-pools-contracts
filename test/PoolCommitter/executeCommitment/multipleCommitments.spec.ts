@@ -70,28 +70,30 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
 
             await pool.poolUpkeep(lastPrice, lastPrice + 10)
 
-            commits.push(await createCommit(poolCommitter, [2], amountCommitted))
+            commits.push(
+                await createCommit(poolCommitter, [2], amountCommitted)
+            )
             commits.push(
                 await createCommit(poolCommitter, [3], amountCommitted.div(2))
             )
         })
         it("should reduce the balances of the shadows pools involved", async () => {
             // Short mint and burn pools
-            expect(await poolCommitter.shadowPools(commits[0].commitType)).to.eq(
-                amountCommitted
-            )
-            expect(await poolCommitter.shadowPools(commits[1].commitType)).to.eq(
-                amountCommitted.div(2)
-            )
+            expect(
+                await poolCommitter.shadowPools(commits[0].commitType)
+            ).to.eq(amountCommitted)
+            expect(
+                await poolCommitter.shadowPools(commits[1].commitType)
+            ).to.eq(amountCommitted.div(2))
             await timeout(2000)
             await pool.poolUpkeep(lastPrice, lastPrice + 10)
 
-            expect(await poolCommitter.shadowPools(commits[0].commitType)).to.eq(
-                0
-            )
-            expect(await poolCommitter.shadowPools(commits[1].commitType)).to.eq(
-                0
-            )
+            expect(
+                await poolCommitter.shadowPools(commits[0].commitType)
+            ).to.eq(0)
+            expect(
+                await poolCommitter.shadowPools(commits[1].commitType)
+            ).to.eq(0)
         })
         it("should adjust the balances of the live pools involved", async () => {
             expect(await pool.longBalance()).to.eq(amountCommitted)
@@ -135,28 +137,30 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
 
             await pool.poolUpkeep(lastPrice, 10)
 
-            commits.push(await createCommit(poolCommitter, [0], amountCommitted))
+            commits.push(
+                await createCommit(poolCommitter, [0], amountCommitted)
+            )
             commits.push(
                 await createCommit(poolCommitter, [1], amountCommitted.div(2))
             )
         })
         it("should reduce the balances of the shadows pools involved", async () => {
             // Short mint and burn pools
-            expect(await poolCommitter.shadowPools(commits[0].commitType)).to.eq(
-                amountCommitted
-            )
-            expect(await poolCommitter.shadowPools(commits[1].commitType)).to.eq(
-                amountCommitted.div(2)
-            )
+            expect(
+                await poolCommitter.shadowPools(commits[0].commitType)
+            ).to.eq(amountCommitted)
+            expect(
+                await poolCommitter.shadowPools(commits[1].commitType)
+            ).to.eq(amountCommitted.div(2))
             await timeout(2000)
             await pool.poolUpkeep(lastPrice, 10)
 
-            expect(await poolCommitter.shadowPools(commits[0].commitType)).to.eq(
-                0
-            )
-            expect(await poolCommitter.shadowPools(commits[1].commitType)).to.eq(
-                0
-            )
+            expect(
+                await poolCommitter.shadowPools(commits[0].commitType)
+            ).to.eq(0)
+            expect(
+                await poolCommitter.shadowPools(commits[1].commitType)
+            ).to.eq(0)
         })
         it("should adjust the balances of the live pools involved", async () => {
             expect(await pool.shortBalance()).to.eq(amountCommitted)
