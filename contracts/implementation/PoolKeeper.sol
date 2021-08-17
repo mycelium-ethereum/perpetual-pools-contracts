@@ -132,6 +132,8 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @param _pool Address of the given pool
      * @param _gasPrice Price of a single gas unit (in ETH)
      * @param _gasSpent Number of gas units spent
+     * @param _savedPreviousUpdatedTimestamp Last timestamp when the pool's price execution happened
+     * @param _updateInterval Pool interval of the given pool
      */
     function payKeeper(
         address _pool,
@@ -154,6 +156,8 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @param _pool Address of the given pool
      * @param _gasPrice Price of a single gas unit (in ETH)
      * @param _gasSpent Number of gas units spent
+     * @param _savedPreviousUpdatedTimestamp Last timestamp when the pool's price execution happened
+     * @param _poolInterval Pool interval of the given pool
      * @return Number of settlement tokens to give to the keeper for work performed
      */
     function keeperReward(
@@ -213,7 +217,9 @@ contract PoolKeeper is IPoolKeeper, Ownable {
 
     /**
      * @notice Tip a keeper will receive for successfully updating the specified pool
-     * @return percent of the `keeperGas` cost to add to payment, as a percent
+     * @param _savedPreviousUpdatedTimestamp Last timestamp when the pool's price execution happened
+     * @param _poolInterval Pool interval of the given pool
+     * @return Percent of the `keeperGas` cost to add to payment, as a percent
      */
     function keeperTip(uint256 _savedPreviousUpdatedTimestamp, uint256 _poolInterval) public view returns (uint256) {
         /* the number of blocks that have elapsed since the given pool's updateInterval passed */
