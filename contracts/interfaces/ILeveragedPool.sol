@@ -71,9 +71,9 @@ interface ILeveragedPool {
 
     function updateInterval() external view returns (uint32);
 
-    function shortBalance() external view returns (uint112);
+    function shortBalance() external view returns (uint256);
 
-    function longBalance() external view returns (uint112);
+    function longBalance() external view returns (uint256);
 
     function frontRunningInterval() external view returns (uint32);
 
@@ -99,7 +99,7 @@ interface ILeveragedPool {
 
     function quoteTokenTransfer(address to, uint256 amount) external;
 
-    function setNewPoolBalances(uint112 _longBalance, uint112 _shortBalance) external;
+    function setNewPoolBalances(uint256 _longBalance, uint256 _shortBalance) external;
 
     function getOraclePrice() external view returns (int256);
 

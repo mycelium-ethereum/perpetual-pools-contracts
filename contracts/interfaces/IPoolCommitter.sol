@@ -12,14 +12,14 @@ interface IPoolCommitter {
         LongBurn
     }
     struct Commit {
-        uint112 amount;
+        uint256 amount;
         CommitType commitType;
         uint40 created;
         address owner;
     }
-    event CreateCommit(uint128 indexed commitID, uint128 indexed amount, CommitType commitType);
+    event CreateCommit(uint128 indexed commitID, uint256 indexed amount, CommitType commitType);
 
-    event RemoveCommit(uint128 indexed commitID, uint128 indexed amount, CommitType indexed commitType);
+    event RemoveCommit(uint128 indexed commitID, uint256 indexed amount, CommitType indexed commitType);
 
     event ExecuteCommit(uint128 commitID);
 
@@ -27,7 +27,7 @@ interface IPoolCommitter {
 
     // #### Functions
 
-    function commit(CommitType commitType, uint112 amount) external;
+    function commit(CommitType commitType, uint256 amount) external;
 
     function uncommit(uint128 commitID) external;
 
