@@ -12,7 +12,7 @@ import "./PoolKeeper.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-/// @title The oracle management contract
+/// @title The pool factory contract
 contract PoolFactory is IPoolFactory, Ownable {
     // #### Globals
     PoolToken public pairTokenBase;
