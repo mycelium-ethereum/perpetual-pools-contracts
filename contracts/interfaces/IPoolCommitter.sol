@@ -21,7 +21,7 @@ interface IPoolCommitter {
     /**
      * @notice Creates a notification when a commit is created
      * @param commitID ID of the commit
-     * @param amount Amount of the commit 
+     * @param amount Amount of the commit
      * @param commitType Type of the commit (Short v Long, Mint v Burn)
      */
     event CreateCommit(uint128 indexed commitID, uint256 indexed amount, CommitType indexed commitType);
@@ -29,7 +29,7 @@ interface IPoolCommitter {
     /**
      * @notice Creates a notification when a commit is removed (uncommitted)
      * @param commitID ID of the commit
-     * @param amount Amount of the commit 
+     * @param amount Amount of the commit
      * @param commitType Type of the commit (Short v Long, Mint v Burn)
      */
     event RemoveCommit(uint128 indexed commitID, uint256 indexed amount, CommitType indexed commitType);
