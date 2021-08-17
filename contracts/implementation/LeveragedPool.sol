@@ -98,11 +98,19 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         IPoolCommitter(poolCommitter).executeAllCommitments();
     }
 
-    function payKeeper(address to, uint256 amount) external override onlyPoolKeeper returns (bool) {
+    /**
+     * @notice Pay keeper some amount in the collateral token for the perpetual pools market
+     * @param to Address of the pool keeper to pay
+     * @param amount Amount to pay the pool keeper
+     * @return Whether the keeper is going to be paid; false if the amount exceeds the balances of the
+     *         long and short pool, and true if the keeper can successfully be paid out
+     */
+    function payKeeperFromBalances(address to, uint256 amount) external override onlyPoolKeeper returns (bool) {
         require(to != address(0), "To address cannot be 0 address");
         uint112 _shortBalance = shortBalance;
         uint112 _longBalance = longBalance;
 
+        // If the rewards are more than the balances of the pool, the keeper does not get paid
         if (amount >= _shortBalance + _longBalance) {
             return false;
         }
@@ -116,6 +124,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         shortBalance = shortBalanceAfterRewards;
         longBalance = longBalanceAfterRewards;
 
+        // Pay keeper
         IERC20(quoteToken).safeTransfer(to, amount);
 
         return true;
