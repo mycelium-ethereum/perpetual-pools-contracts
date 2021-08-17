@@ -101,8 +101,6 @@ describe("LeveragedPool - executeAllCommitments", () => {
             const shortTokenSupplyBefore = await shortToken.totalSupply()
 
             // Not enough time passed
-            console.log("")
-            console.log("Before performUpkeepSinglePool")
             await pool.setKeeper(poolKeeper.address)
 			await poolKeeper.performUpkeepSinglePool(pool.address)
 
@@ -187,11 +185,16 @@ describe("LeveragedPool - executeAllCommitments", () => {
             const expectedBalanceAfter = committerBalanceBefore.add(amountCommitted.mul(2))
             const lowerBound:any = expectedBalanceAfter.sub(epsilon)
             const upperBound:any = expectedBalanceAfter.add(epsilon)
-            console.log(committerBalanceBefore.toString())
-            console.log(committerBalanceAfter.toString())
-            console.log(expectedBalanceAfter.toString())
             expect(committerBalanceAfter).to.be.within(lowerBound, upperBound)
-            // await poolCommitter.uncommit(shortBurnCommitId)
+            // "Unauthorized" is from the first check on the commit.
+            // Since the commit no longer exists it will revert on this.
+            await expect(poolCommitter.uncommit(shortBurnCommitId)).to.be.revertedWith("Unauthorized")
+
+            const longTokens = await longToken.balanceOf(signers[0].address)
+            // LONG BURN (undo all the long mints)
+            await createCommit(poolCommitter, [3], longTokens)
+            const longTokensAfter = await longToken.balanceOf(signers[0].address)
+            expect(longTokensAfter).to.equal(0)
 		})
     })
 })
