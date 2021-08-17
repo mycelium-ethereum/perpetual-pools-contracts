@@ -7,6 +7,9 @@ import {
     ERC20,
     PoolSwapLibrary,
     PoolCommitter,
+    PoolKeeper,
+    ChainlinkOracleWrapper,
+    TestChainlinkOracle,
 } from "../typechain"
 
 import { POOL_CODE, NO_COMMITS_REMAINING } from "./constants"
@@ -40,6 +43,8 @@ describe("LeveragedPool - executeAllCommitments", () => {
     let longToken: ERC20
     let pool: LeveragedPool
     let library: PoolSwapLibrary
+    let poolKeeper: PoolKeeper
+    let derivativeOracle: TestChainlinkOracle
 
     const commits: CommitEventArgs[] | undefined = []
 
@@ -57,7 +62,9 @@ describe("LeveragedPool - executeAllCommitments", () => {
 			)
 			pool = result.pool
 			library = result.library
-			poolCommiter = result.poolCommiter
+            poolCommiter = result.poolCommiter
+            poolKeeper = result.poolKeeper
+            derivativeOracle = result.derivativeOracle
 
 			token = result.token
 			shortToken = result.shortToken
@@ -79,19 +86,38 @@ describe("LeveragedPool - executeAllCommitments", () => {
             expect((await poolCommiter.commits(commit.commitID)).amount).to.eq(
                 amountCommitted
             )
+			await pool.poolUpkeep(lastPrice, lastPrice)
 
 			// Long mint commit
 			await createCommit(poolCommiter, [2], amountCommitted)
+			// Short mint commit
 			await createCommit(poolCommiter, [0], amountCommitted)
 
 			await shortToken.approve(pool.address, amountMinted)
-			await longToken.approve(pool.address, await longToken.totalSupply())
-			await timeout(2000)
+            await longToken.approve(pool.address, await longToken.totalSupply())
 
-			// No price change so only commits are executed
-			await pool.poolUpkeep(lastPrice, lastPrice)
+            const longTokenSupplyBefore = await longToken.totalSupply()
+            const shortTokenSupplyBefore = await shortToken.totalSupply()
 
-			// End state: `amountCommitted` worth of Long and short token minted. Price = lastPrice
+			// Not enough time passed
+            await pool.setKeeper(poolKeeper.address)
+			await poolKeeper.performUpkeepSinglePool(pool.address)
+
+            const longTokenSupplyAfter = await longToken.totalSupply()
+            const shortTokenSupplyAfter = await shortToken.totalSupply()
+
+            expect(longTokenSupplyAfter).to.equal(longTokenSupplyBefore)
+            expect(shortTokenSupplyAfter).to.equal(shortTokenSupplyBefore)
+
+            await timeout(updateInterval * 1000)
+
+			await poolKeeper.performUpkeepSinglePool(pool.address)
+
+            const longTokenSupplyAfterSecond = await longToken.totalSupply()
+            const shortTokenSupplyAfterSecond = await shortToken.totalSupply()
+
+            expect(longTokenSupplyAfterSecond).to.be.gt(longTokenSupplyAfter)
+            expect(shortTokenSupplyAfterSecond).to.be.gt(shortTokenSupplyAfter)
 		})
     })
 })

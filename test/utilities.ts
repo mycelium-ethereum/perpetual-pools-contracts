@@ -89,6 +89,7 @@ export const deployPoolAndTokenContracts = async (
     library: PoolSwapLibrary
     poolCommiter: PoolCommitter
     poolKeeper: PoolKeeper
+    derivativeOracle: TestChainlinkOracle
 }> => {
     const signers = await ethers.getSigners()
     // Deploy test ERC20 token
@@ -213,8 +214,8 @@ export const deployPoolAndTokenContracts = async (
         longToken,
         //@ts-ignore
         poolCommiter,
-        //@ts-ignore
         poolKeeper,
+        chainlinkOracle
     }
 }
 
