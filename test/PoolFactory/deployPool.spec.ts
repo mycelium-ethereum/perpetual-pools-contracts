@@ -83,7 +83,7 @@ describe("PoolFactory - deployPool", () => {
         )) as TestToken__factory
         token = await testToken.deploy("TEST TOKEN", "TST1")
         await token.deployed()
-        const PoolCommiterDeployerFactory = (await ethers.getContractFactory(
+        const poolCommitterDeployerFactory = (await ethers.getContractFactory(
             "PoolCommitterDeployer",
             {
                 signer: signers[0],
@@ -91,11 +91,11 @@ describe("PoolFactory - deployPool", () => {
             }
         )) as PoolCommitterDeployer__factory
 
-        let poolCommiterDeployer = await PoolCommiterDeployerFactory.deploy(
+        let poolCommitterDeployer = await poolCommitterDeployerFactory.deploy(
             factory.address
         )
-        poolCommiterDeployer = await poolCommiterDeployer.deployed()
-        await factory.setPoolCommitterDeployer(poolCommiterDeployer.address)
+        poolCommitterDeployer = await poolCommitterDeployer.deployed()
+        await factory.setPoolCommitterDeployer(poolCommitterDeployer.address)
 
         await factory.setPoolKeeper(poolKeeper.address)
         const deploymentData = {

@@ -87,8 +87,9 @@ export const deployPoolAndTokenContracts = async (
     shortToken: ERC20
     longToken: ERC20
     library: PoolSwapLibrary
-    poolCommiter: PoolCommitter
+    poolCommitter: PoolCommitter
     poolKeeper: PoolKeeper
+    chainlinkOracle: TestChainlinkOracle
 }> => {
     const signers = await ethers.getSigners()
     // Deploy test ERC20 token
@@ -115,7 +116,9 @@ export const deployPoolAndTokenContracts = async (
         "TestChainlinkOracle",
         signers[0]
     )) as TestChainlinkOracle__factory
-    const chainlinkOracle = await chainlinkOracleFactory.deploy()
+    const chainlinkOracle = await (
+        await chainlinkOracleFactory.deploy()
+    ).deployed()
     const ethOracle = await (await chainlinkOracleFactory.deploy()).deployed()
     await ethOracle.setPrice(3000 * 10 ** 8)
 
@@ -134,7 +137,7 @@ export const deployPoolAndTokenContracts = async (
 
     /* keeper oracle */
     const settlementEthOracle = await oracleWrapperFactory.deploy(
-        chainlinkOracle.address
+        ethOracle.address
     )
 
     // Deploy and initialise pool
@@ -154,7 +157,7 @@ export const deployPoolAndTokenContracts = async (
         await PoolFactory.deploy(generateRandomAddress())
     ).deployed()
 
-    const PoolCommiterDeployerFactory = (await ethers.getContractFactory(
+    const poolCommitterDeployerFactory = (await ethers.getContractFactory(
         "PoolCommitterDeployer",
         {
             signer: signers[0],
@@ -162,12 +165,12 @@ export const deployPoolAndTokenContracts = async (
         }
     )) as PoolCommitterDeployer__factory
 
-    let poolCommiterDeployer = await PoolCommiterDeployerFactory.deploy(
+    let poolCommitterDeployer = await poolCommitterDeployerFactory.deploy(
         factory.address
     )
-    poolCommiterDeployer = await poolCommiterDeployer.deployed()
+    poolCommitterDeployer = await poolCommitterDeployer.deployed()
 
-    await factory.setPoolCommitterDeployer(poolCommiterDeployer.address)
+    await factory.setPoolCommitterDeployer(poolCommitterDeployer.address)
 
     const poolKeeperFactory = (await ethers.getContractFactory("PoolKeeper", {
         signer: signers[0],
@@ -199,7 +202,7 @@ export const deployPoolAndTokenContracts = async (
     const shortToken = await ethers.getContractAt(ERC20Abi, shortTokenAddr)
 
     let commiter = await pool.poolCommitter()
-    const poolCommiter = await ethers.getContractAt("PoolCommitter", commiter)
+    const poolCommitter = await ethers.getContractAt("PoolCommitter", commiter)
 
     return {
         signers,
@@ -212,9 +215,9 @@ export const deployPoolAndTokenContracts = async (
         //@ts-ignore
         longToken,
         //@ts-ignore
-        poolCommiter,
-        //@ts-ignore
+        poolCommitter,
         poolKeeper,
+        chainlinkOracle,
     }
 }
 
@@ -230,11 +233,13 @@ export interface CommitEventArgs {
  * @param amount The amount to commit to
  */
 export const createCommit = async (
-    poolCommiter: PoolCommitter,
+    poolCommitter: PoolCommitter,
     commitType: BigNumberish,
     amount: BigNumberish
 ): Promise<any> /*Promise<CommitEventArgs>*/ => {
-    const receipt = await (await poolCommiter.commit(commitType, amount)).wait()
+    const receipt = await (
+        await poolCommitter.commit(commitType, amount)
+    ).wait()
     return {
         commitID: getEventArgs(receipt, "CreateCommit")?.commitID,
         amount: getEventArgs(receipt, "CreateCommit")?.amount,

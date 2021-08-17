@@ -122,7 +122,7 @@ describe("LeveragedPool - initialize", () => {
                 await PoolFactory.deploy(generateRandomAddress())
             ).deployed()
 
-            const PoolCommiterFactory = (await ethers.getContractFactory(
+            const poolCommitterFactory = (await ethers.getContractFactory(
                 "PoolCommitter",
                 {
                     signer: signers[0],
@@ -131,7 +131,7 @@ describe("LeveragedPool - initialize", () => {
             )) as PoolCommitter__factory
 
             const poolCommitter = await (
-                await PoolCommiterFactory.deploy(factory.address)
+                await poolCommitterFactory.deploy(factory.address)
             ).deployed()
 
             const leveragedPoolFactory = (await ethers.getContractFactory(
@@ -321,7 +321,7 @@ describe("LeveragedPool - initialize", () => {
                 await PoolFactory.deploy(generateRandomAddress())
             ).deployed()
 
-            const PoolCommiterFactory = (await ethers.getContractFactory(
+            const poolCommitterFactory = (await ethers.getContractFactory(
                 "PoolCommitter",
                 {
                     signer: signers[0],
@@ -330,7 +330,7 @@ describe("LeveragedPool - initialize", () => {
             )) as PoolCommitter__factory
 
             poolCommitter = await (
-                await PoolCommiterFactory.deploy(factory.address)
+                await poolCommitterFactory.deploy(factory.address)
             ).deployed()
 
             const leveragedPoolFactory = (await ethers.getContractFactory(

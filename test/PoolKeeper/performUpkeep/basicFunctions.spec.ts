@@ -119,7 +119,7 @@ const setupHook = async () => {
         await PoolFactory.deploy(generateRandomAddress())
     ).deployed()
 
-    const PoolCommiterDeployerFactory = (await ethers.getContractFactory(
+    const poolCommitterDeployerFactory = (await ethers.getContractFactory(
         "PoolCommitterDeployer",
         {
             signer: signers[0],
@@ -127,7 +127,7 @@ const setupHook = async () => {
         }
     )) as PoolCommitterDeployer__factory
 
-    let poolCommitterDeployer = await PoolCommiterDeployerFactory.deploy(
+    let poolCommitterDeployer = await poolCommitterDeployerFactory.deploy(
         factory.address
     )
     poolCommitterDeployer = await poolCommitterDeployer.deployed()
