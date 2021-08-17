@@ -1,4 +1,4 @@
-# Tracer Pool Swaps
+# Tracer Perpetual Pools
 
 Project base generated with the Typescript Solidity Dev Starter Kit. See [Blog Post](https://medium.com/@rahulsethuram/the-new-solidity-dev-stack-buidler-ethers-waffle-typescript-tutorial-f07917de48ae) for more details
 ## Frontend Notes
@@ -10,43 +10,19 @@ The environment variables used in this project are documented in the `example.en
 
 ## Using this Project
 
-Install the dependencies with `npm install`. 
-Build everything with `npm run build`. 
+Install the dependencies with `yarn`. 
+Build everything with `yarn compile`. 
+Run the tests with `yarn test`.
 
 ## Available Functionality
 
 ### Build Contracts and Generate Typechain Typeings
 You'll need to run this before running tests if typescript throws an error about not finding the typechain artifacts.
 
-`npm run compile`
-
-### Run Contract Tests & Get Callstacks
-
-In one terminal run `npx hardhat node`
-
-Then in another run `npm run test`. 
-
-Notes:
-- You will need a valid api key for Alchemy api for the tests to succeed. This is due to the integration with chainlink - the test environment forks mainnet at block `12474747`.
-- The gas usage table may be incomplete (the gas report currently needs to run with the `--network localhost` flag; see below).
-
-### Run Contract Tests and Generate Gas Usage Report
-
-In one terminal run `npx hardhat node`
-
-Then in another run `npm run test -- --network localhost`
-
-Notes:
-
-- When running with this `localhost` option, you get a gas report but may not get good callstacks
-- See [here](https://github.com/cgewecke/eth-gas-reporter#installation-and-config) for how to configure the gas usage report.
+`yarn refresh`
 
 ### Run Slither for static analysis report
 If you have `slither` installed and on your PATH, you can run `npm run slither` to get a report on the current codebase.
-
-### Run Coverage Report for Tests
-
-`npx hardhat coverage`
 
  
 ### Deploy to Ethereum
@@ -54,6 +30,7 @@ If you have `slither` installed and on your PATH, you can run `npm run slither` 
 Create/modify network config in `hardhat.config.ts` and add API key and private key, then run:
 
 `npx hardhat run --network rinkeby scripts/deploy.ts`
+**Note:** As of this commit, deploys are out of sync with the current contract set-up and therefore will not work.
 
 ### Verify on Etherscan
 
