@@ -36,7 +36,7 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
     let shortToken: ERC20
     let pool: LeveragedPool
     let library: PoolSwapLibrary
-    let poolCommiter: PoolCommitter
+    let poolCommitter: PoolCommitter
 
     describe("Long mint->Long Burn", () => {
         const commits: CommitEventArgs[] | undefined = []
@@ -54,12 +54,12 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
             library = result.library
             token = result.token
             shortToken = result.shortToken
-            poolCommiter = result.poolCommiter
+            poolCommitter = result.poolCommitter
 
             await token.approve(pool.address, amountMinted)
 
             const commit = await createCommit(
-                poolCommiter,
+                poolCommitter,
                 [2],
                 amountCommitted
             )
@@ -70,26 +70,26 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
 
             await pool.poolUpkeep(lastPrice, lastPrice + 10)
 
-            commits.push(await createCommit(poolCommiter, [2], amountCommitted))
+            commits.push(await createCommit(poolCommitter, [2], amountCommitted))
             commits.push(
-                await createCommit(poolCommiter, [3], amountCommitted.div(2))
+                await createCommit(poolCommitter, [3], amountCommitted.div(2))
             )
         })
         it("should reduce the balances of the shadows pools involved", async () => {
             // Short mint and burn pools
-            expect(await poolCommiter.shadowPools(commits[0].commitType)).to.eq(
+            expect(await poolCommitter.shadowPools(commits[0].commitType)).to.eq(
                 amountCommitted
             )
-            expect(await poolCommiter.shadowPools(commits[1].commitType)).to.eq(
+            expect(await poolCommitter.shadowPools(commits[1].commitType)).to.eq(
                 amountCommitted.div(2)
             )
             await timeout(2000)
             await pool.poolUpkeep(lastPrice, lastPrice + 10)
 
-            expect(await poolCommiter.shadowPools(commits[0].commitType)).to.eq(
+            expect(await poolCommitter.shadowPools(commits[0].commitType)).to.eq(
                 0
             )
-            expect(await poolCommiter.shadowPools(commits[1].commitType)).to.eq(
+            expect(await poolCommitter.shadowPools(commits[1].commitType)).to.eq(
                 0
             )
         })
@@ -119,13 +119,13 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
             library = result.library
             token = result.token
             shortToken = result.shortToken
-            poolCommiter = result.poolCommiter
+            poolCommitter = result.poolCommitter
             await pool.setKeeper(result.signers[0].address)
 
             await token.approve(pool.address, amountMinted)
 
             const commit = await createCommit(
-                poolCommiter,
+                poolCommitter,
                 [0],
                 amountCommitted
             )
@@ -135,26 +135,26 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
 
             await pool.poolUpkeep(lastPrice, 10)
 
-            commits.push(await createCommit(poolCommiter, [0], amountCommitted))
+            commits.push(await createCommit(poolCommitter, [0], amountCommitted))
             commits.push(
-                await createCommit(poolCommiter, [1], amountCommitted.div(2))
+                await createCommit(poolCommitter, [1], amountCommitted.div(2))
             )
         })
         it("should reduce the balances of the shadows pools involved", async () => {
             // Short mint and burn pools
-            expect(await poolCommiter.shadowPools(commits[0].commitType)).to.eq(
+            expect(await poolCommitter.shadowPools(commits[0].commitType)).to.eq(
                 amountCommitted
             )
-            expect(await poolCommiter.shadowPools(commits[1].commitType)).to.eq(
+            expect(await poolCommitter.shadowPools(commits[1].commitType)).to.eq(
                 amountCommitted.div(2)
             )
             await timeout(2000)
             await pool.poolUpkeep(lastPrice, 10)
 
-            expect(await poolCommiter.shadowPools(commits[0].commitType)).to.eq(
+            expect(await poolCommitter.shadowPools(commits[0].commitType)).to.eq(
                 0
             )
-            expect(await poolCommiter.shadowPools(commits[1].commitType)).to.eq(
+            expect(await poolCommitter.shadowPools(commits[1].commitType)).to.eq(
                 0
             )
         })

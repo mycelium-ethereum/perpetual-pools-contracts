@@ -39,7 +39,7 @@ describe("LeveragedPool - executeCommitment: Long Mint", () => {
     let signers: SignerWithAddress[]
     let commit: CommitEventArgs
     let library: PoolSwapLibrary
-    let poolCommiter: PoolCommitter
+    let poolCommitter: PoolCommitter
 
     describe("Long Mint", () => {
         beforeEach(async () => {
@@ -54,13 +54,13 @@ describe("LeveragedPool - executeCommitment: Long Mint", () => {
             )
             pool = result.pool
             signers = result.signers
-            poolCommiter = result.poolCommiter
+            poolCommitter = result.poolCommitter
             await pool.setKeeper(signers[0].address)
             token = result.token
             library = result.library
             longToken = result.longToken
             await token.approve(pool.address, amountMinted)
-            commit = await createCommit(poolCommiter, [2], amountCommitted)
+            commit = await createCommit(poolCommitter, [2], amountCommitted)
         })
         it("should adjust the live long pool balance", async () => {
             expect(await pool.longBalance()).to.eq(0)
@@ -69,12 +69,12 @@ describe("LeveragedPool - executeCommitment: Long Mint", () => {
             expect(await pool.longBalance()).to.eq(amountCommitted)
         })
         it("should reduce the shadow long mint pool balance", async () => {
-            expect(await poolCommiter.shadowPools(commit.commitType)).to.eq(
+            expect(await poolCommitter.shadowPools(commit.commitType)).to.eq(
                 amountCommitted
             )
             await timeout(2000)
             await pool.poolUpkeep(9, 10)
-            expect(await poolCommiter.shadowPools(commit.commitType)).to.eq(0)
+            expect(await poolCommitter.shadowPools(commit.commitType)).to.eq(0)
         })
         it("should mint long pair tokens", async () => {
             expect(await longToken.balanceOf(signers[0].address)).to.eq(0)

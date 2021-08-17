@@ -12,7 +12,7 @@ import {
     TestChainlinkOracle,
 } from "../typechain"
 
-import { POOL_CODE, NO_COMMITS_REMAINING } from "./constants"
+import { POOL_CODE, NO_COMMITS_REMAINING, SINGLE_POOL_UPKEEP_GAS_COST } from "./constants"
 import {
     deployPoolAndTokenContracts,
     getRandomInt,
@@ -37,7 +37,7 @@ const fee = "0x00000000000000000000000000000000"
 const leverage = 1
 
 describe("LeveragedPool - executeAllCommitments", () => {
-    let poolCommiter: PoolCommitter
+    let poolCommitter: PoolCommitter
     let token: TestToken
     let shortToken: ERC20
     let longToken: ERC20
@@ -62,11 +62,12 @@ describe("LeveragedPool - executeAllCommitments", () => {
 			)
 			pool = result.pool
 			library = result.library
-            poolCommiter = result.poolCommiter
+            poolCommitter = result.poolCommitter
             poolKeeper = result.poolKeeper
             chainlinkOracle = result.chainlinkOracle
 
-			token = result.token
+            token = result.token
+            await token.setDecimals(8)
 			shortToken = result.shortToken
 			longToken = result.longToken
 
@@ -74,7 +75,7 @@ describe("LeveragedPool - executeAllCommitments", () => {
             await timeout(updateInterval * 1000)
 			const commitType = [2] //long mint;
             const commit = await createCommit(
-                poolCommiter,
+                poolCommitter,
                 commitType,
                 amountCommitted
             )
@@ -83,15 +84,15 @@ describe("LeveragedPool - executeAllCommitments", () => {
                 pool.connect(signers[1]).poolUpkeep(9, 10)
             ).to.be.revertedWith("msg.sender not keeper")
             // Doesn't delete commit
-            expect((await poolCommiter.commits(commit.commitID)).amount).to.eq(
+            expect((await poolCommitter.commits(commit.commitID)).amount).to.eq(
                 amountCommitted
             )
 			await pool.poolUpkeep(lastPrice, lastPrice)
 
 			// Long mint commit
-			await createCommit(poolCommiter, [2], amountCommitted)
+			await createCommit(poolCommitter, [2], amountCommitted)
 			// Short mint commit
-			await createCommit(poolCommiter, [0], amountCommitted)
+			await createCommit(poolCommitter, [0], amountCommitted)
 
 			await shortToken.approve(pool.address, amountMinted)
             await longToken.approve(pool.address, await longToken.totalSupply())
@@ -99,7 +100,9 @@ describe("LeveragedPool - executeAllCommitments", () => {
             const longTokenSupplyBefore = await longToken.totalSupply()
             const shortTokenSupplyBefore = await shortToken.totalSupply()
 
-			// Not enough time passed
+            // Not enough time passed
+            console.log("")
+            console.log("Before performUpkeepSinglePool")
             await pool.setKeeper(poolKeeper.address)
 			await poolKeeper.performUpkeepSinglePool(pool.address)
 
@@ -142,17 +145,53 @@ describe("LeveragedPool - executeAllCommitments", () => {
             expect(longBalanceAfter).to.equal(longBalanceBefore.div(2))
             expect(shortBalanceAfter).to.equal(shortBalanceBefore.add(longBalanceBefore.div(2)))
 
-            const shortBurnCommitId = await poolCommiter.commitIDCounter()
+            const shortBurnCommitId = await poolCommitter.commitIDCounter()
             // Short burn
-			await createCommit(poolCommiter, [1], amountCommitted)
+			await createCommit(poolCommitter, [1], amountCommitted)
             // Short tokens should be decreased by amountCommitted, to 0
             expect(await shortToken.totalSupply()).to.equal(0)
 
-            // TODO ADD BACK WHEN FIX IS MERGED PR 121
-            // await expect(poolCommiter.uncommit(shortBurnCommitId)).to.be.revertedWith("Must uncommit before frontRunningInterval")
 
+            // Inside the frontRunningInterval, so uncommit will revert
             await timeout((updateInterval - frontRunningInterval / 2) * 1000 )
+            await expect(poolCommitter.uncommit(shortBurnCommitId)).to.be.revertedWith("Must uncommit before frontRunningInterval")
+            await timeout(updateInterval * 1000)
 
+            const committerBalanceBefore = await token.balanceOf(signers[0].address)
+            const keeperBalBefore = await token.balanceOf(signers[1].address)
+
+            const receipt = await (await poolKeeper.connect(signers[1]).performUpkeepSinglePool(pool.address)).wait()
+
+            const keeperBalAfter = await token.balanceOf(signers[1].address)
+            const committerBalanceAfter = await token.balanceOf(signers[0].address)
+
+            // Calculate the keeper reward as gas used * gas price * ETH price (in settlement tokens)
+            const tenGwei = BigNumber.from("10").pow(9).mul(10)
+            const tenToTheEighteen = BigNumber.from("10").pow(18)
+            const settlementPerEth = BigNumber.from("3000").mul(
+                BigNumber.from(10).pow(8)
+            )
+            const estimatedKeeperReward = receipt.gasUsed.mul(tenGwei).mul(settlementPerEth).div(tenToTheEighteen)
+            
+            const keeperLowerBound: any = estimatedKeeperReward.sub(
+                estimatedKeeperReward.div(4)
+            )
+            const keeperUpperBound: any = estimatedKeeperReward.add(
+                estimatedKeeperReward.div(4)
+            )
+            // Keeper balance should change by estimated keeper reward (approximately)
+            expect(keeperBalAfter.sub(keeperBalBefore)).to.be.within(keeperLowerBound, keeperUpperBound)
+
+            // 0.001 * 10 ^ 8
+            const epsilon = "100000"
+            const expectedBalanceAfter = committerBalanceBefore.add(amountCommitted.mul(2))
+            const lowerBound:any = expectedBalanceAfter.sub(epsilon)
+            const upperBound:any = expectedBalanceAfter.add(epsilon)
+            console.log(committerBalanceBefore.toString())
+            console.log(committerBalanceAfter.toString())
+            console.log(expectedBalanceAfter.toString())
+            expect(committerBalanceAfter).to.be.within(lowerBound, upperBound)
+            // await poolCommitter.uncommit(shortBurnCommitId)
 		})
     })
 })

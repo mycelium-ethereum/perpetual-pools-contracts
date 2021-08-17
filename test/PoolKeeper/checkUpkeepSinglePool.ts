@@ -95,7 +95,7 @@ const setupHook = async () => {
     await poolKeeper.deployed()
     await factory.connect(signers[0]).setPoolKeeper(poolKeeper.address)
 
-    const PoolCommiterDeployerFactory = (await ethers.getContractFactory(
+    const poolCommitterDeployerFactory = (await ethers.getContractFactory(
         "PoolCommitterDeployer",
         {
             signer: signers[0],
@@ -103,12 +103,12 @@ const setupHook = async () => {
         }
     )) as PoolCommitterDeployer__factory
 
-    let poolCommiterDeployer = await PoolCommiterDeployerFactory.deploy(
+    let poolCommitterDeployer = await poolCommitterDeployerFactory.deploy(
         factory.address
     )
-    poolCommiterDeployer = await poolCommiterDeployer.deployed()
+    poolCommitterDeployer = await poolCommitterDeployer.deployed()
 
-    await factory.setPoolCommitterDeployer(poolCommiterDeployer.address)
+    await factory.setPoolCommitterDeployer(poolCommitterDeployer.address)
     // Create pool
     const deploymentData = {
         poolName: POOL_CODE,

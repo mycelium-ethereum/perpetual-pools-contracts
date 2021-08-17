@@ -56,7 +56,7 @@ describe("PoolCommitter.uncommit", () => {
         )
         signers = elements.signers
         pool = elements.pool
-        committer = elements.poolCommiter
+        committer = elements.poolCommitter
         token = elements.token
         longToken = elements.longToken
         shortToken = elements.shortToken
@@ -357,7 +357,7 @@ describe("PoolCommitter.uncommit", () => {
                 )
                 signers = elements.signers
                 pool = elements.pool
-                committer = elements.poolCommiter
+                committer = elements.poolCommitter
                 token = elements.token
                 longToken = elements.longToken
                 shortToken = elements.shortToken
