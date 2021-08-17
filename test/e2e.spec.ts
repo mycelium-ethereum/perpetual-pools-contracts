@@ -44,7 +44,7 @@ describe("LeveragedPool - executeAllCommitments", () => {
     let pool: LeveragedPool
     let library: PoolSwapLibrary
     let poolKeeper: PoolKeeper
-    let derivativeOracle: TestChainlinkOracle
+    let chainlinkOracle: TestChainlinkOracle
 
     const commits: CommitEventArgs[] | undefined = []
 
@@ -64,7 +64,7 @@ describe("LeveragedPool - executeAllCommitments", () => {
 			library = result.library
             poolCommiter = result.poolCommiter
             poolKeeper = result.poolKeeper
-            derivativeOracle = result.derivativeOracle
+            chainlinkOracle = result.chainlinkOracle
 
 			token = result.token
 			shortToken = result.shortToken
@@ -116,8 +116,43 @@ describe("LeveragedPool - executeAllCommitments", () => {
             const longTokenSupplyAfterSecond = await longToken.totalSupply()
             const shortTokenSupplyAfterSecond = await shortToken.totalSupply()
 
+            // Each side's token should increase
+            // and long should equal amountCommitted * 2 (since 2x commits were made),
+            // while short supply is amountCommitted (since 1x short mint commits was made)
             expect(longTokenSupplyAfterSecond).to.be.gt(longTokenSupplyAfter)
             expect(shortTokenSupplyAfterSecond).to.be.gt(shortTokenSupplyAfter)
+            expect(longTokenSupplyAfterSecond).to.equal(amountCommitted.mul(2))
+            expect(shortTokenSupplyAfterSecond).to.equal(amountCommitted)
+
+            const longBalanceBefore = await pool.longBalance()
+            const shortBalanceBefore = await pool.shortBalance()
+
+            // Halve price
+            const currentPrice = (await chainlinkOracle.latestRoundData()).answer
+            await chainlinkOracle.setPrice(currentPrice.div(2))
+
+            // Perform upkeep
+            await timeout(updateInterval * 1000)
+			await poolKeeper.performUpkeepSinglePool(pool.address)
+
+            // Short balance should increase, long should half
+            const longBalanceAfter = await pool.longBalance()
+            const shortBalanceAfter = await pool.shortBalance()
+
+            expect(longBalanceAfter).to.equal(longBalanceBefore.div(2))
+            expect(shortBalanceAfter).to.equal(shortBalanceBefore.add(longBalanceBefore.div(2)))
+
+            const shortBurnCommitId = await poolCommiter.commitIDCounter()
+            // Short burn
+			await createCommit(poolCommiter, [1], amountCommitted)
+            // Short tokens should be decreased by amountCommitted, to 0
+            expect(await shortToken.totalSupply()).to.equal(0)
+
+            // TODO ADD BACK WHEN FIX IS MERGED PR 121
+            // await expect(poolCommiter.uncommit(shortBurnCommitId)).to.be.revertedWith("Must uncommit before frontRunningInterval")
+
+            await timeout((updateInterval - frontRunningInterval / 2) * 1000 )
+
 		})
     })
 })

@@ -89,7 +89,7 @@ export const deployPoolAndTokenContracts = async (
     library: PoolSwapLibrary
     poolCommiter: PoolCommitter
     poolKeeper: PoolKeeper
-    derivativeOracle: TestChainlinkOracle
+    chainlinkOracle: TestChainlinkOracle
 }> => {
     const signers = await ethers.getSigners()
     // Deploy test ERC20 token
@@ -116,7 +116,7 @@ export const deployPoolAndTokenContracts = async (
         "TestChainlinkOracle",
         signers[0]
     )) as TestChainlinkOracle__factory
-    const chainlinkOracle = await chainlinkOracleFactory.deploy()
+    const chainlinkOracle = await (await chainlinkOracleFactory.deploy()).deployed()
     const ethOracle = await (await chainlinkOracleFactory.deploy()).deployed()
     await ethOracle.setPrice(3000 * 10 ** 8)
 
@@ -202,6 +202,7 @@ export const deployPoolAndTokenContracts = async (
     let commiter = await pool.poolCommitter()
     const poolCommiter = await ethers.getContractAt("PoolCommitter", commiter)
 
+    console.log(chainlinkOracle.address)
     return {
         signers,
         //@ts-ignore
