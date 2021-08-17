@@ -163,27 +163,4 @@ describe("PoolKeeper - checkUpkeepSinglePool", () => {
         await poolKeeper.performUpkeepSinglePool(poolAddress)
         expect(await poolKeeper.checkUpkeepSinglePool(poolAddress)).to.eq(false)
     })
-
-    it("should increase the keeper fee balance", async () => {
-        await forwardTime(5)
-
-        /* induce price increase */
-        let underlyingOracle: TestChainlinkOracle = (await ethers.getContractAt(
-            "TestChainlinkOracle",
-            await oracleWrapper.oracle()
-        )) as TestChainlinkOracle
-        await incrementPrice(underlyingOracle)
-
-        let keeperAddress = await signers[0].getAddress()
-
-        let preUpkeepFee = await token.balanceOf(keeperAddress)
-
-        // perform upkeep
-        let poolAddress = await factory.pools(0)
-        let res = await poolKeeper.performUpkeepSinglePool(poolAddress)
-
-        let postUpkeepFee = await token.balanceOf(keeperAddress)
-
-        expect(postUpkeepFee).to.gt(preUpkeepFee)
-    })
 })
