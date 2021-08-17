@@ -66,6 +66,11 @@ contract PoolFactory is IPoolFactory, Ownable {
         feeReceiver = _feeReceiver;
     }
 
+    /**
+     * @notice Deploy a leveraged pool with given parameters
+     * @param deploymentParameters Deployment parameters of the market. Some may be reconfigurable
+     * @return Address of the created pool
+     */
     function deployPool(PoolDeployment calldata deploymentParameters) external override returns (address) {
         address _poolKeeper = address(poolKeeper);
         require(_poolKeeper != address(0), "PoolKeeper not set");
@@ -120,6 +125,12 @@ contract PoolFactory is IPoolFactory, Ownable {
         return _pool;
     }
 
+    /**
+     * @notice Deploy a contract for pool tokens
+     * @param name Name of the token
+     * @param symbol Symbol of the token
+     * @return Address of the pool token
+     */
     function deployPairToken(
         address owner,
         string memory name,
