@@ -50,6 +50,7 @@ let POOL1_ADDR: string
 let POOL2_ADDR: string
 let signers: SignerWithAddress[]
 let token: TestToken
+let poolAddresses: address[]
 
 const updateInterval = 10
 
@@ -192,7 +193,7 @@ interface Upkeep {
     updateInterval: number
     roundStart: number
 }
-describe("PoolKeeper - performUpkeep: basic functionality", () => {
+describe("PoolKeeper.performUpkeep", () => {
     let oldRound: Upkeep
     let newRound: Upkeep
     let oldExecutionPrice: BigNumber
@@ -201,37 +202,30 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
     let newLastExecutionPrice: BigNumber
     let oldLastExecutionTime: BigNumber
     let newLastExecutionTime: BigNumber
-    describe("Base cases", () => {
-        beforeEach(setupHook)
-        it("should not revert if performData is invalid", async () => {
-            await pool.setKeeper(poolKeeper.address)
-            await poolKeeper.performUpkeepMultiplePools([
-                POOL1_ADDR,
-                POOL2_ADDR,
-            ])
-        })
-    })
 
-    describe("Upkeep - Price execution", () => {
+    context("When called with pools that are all upkeepable", () => {
         let event: Result | undefined
         let lastTime: BigNumber
+
         before(async () => {
             await setupHook()
+
             // process a few upkeeps
             lastTime = await pool.lastPriceTimestamp()
             await timeout(updateInterval * 1000 + 1000)
             await pool.setKeeper(poolKeeper.address)
             oldExecutionPrice = await poolKeeper.executionPrice(POOL1_ADDR)
-            const result = await (
+        })
+
+        it("emits a `KeeperPaid` event with correct details", async () => {
+            await (
                 await poolKeeper.performUpkeepMultiplePools([
                     POOL1_ADDR,
                     POOL2_ADDR,
                 ])
             ).wait()
-            newExecutionPrice = await poolKeeper.executionPrice(POOL1_ADDR)
             event = getEventArgs(result, "KeeperPaid")
-        })
-        it("should emit an event with the details", async () => {
+
             expect(event?.keeper).to.eq(signers[0].address)
         })
     })
@@ -256,26 +250,37 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
             ])
             newExecutionPrice = await poolKeeper.executionPrice(POOL1_ADDR)
             newLastExecutionTime = await pool.lastPriceTimestamp()
+
+            poolAddresses = [POOL1_ADDR, POOL2_ADDR];
         })
-        it("should clear the old round data", async () => {
-            const price = ethers.utils.parseEther(
+
+        it("clears the old round data", async () => {
+            const oldExecutionPrices = poolAddresses.map((x) => (await poolKeeper.executionPrices(x)));
+            const oldPrice = ethers.utils.parseEther(
                 (await derivativeOracleWrapper.getPrice()).toString()
             )
-            expect(newLastExecutionTime.gt(oldLastExecutionTime)).to.equal(true)
+
+            await (
+                await poolKeeper.performUpkeepMultiplePools([
+                    POOL1_ADDR,
+                    POOL2_ADDR,
+                ])
+            ).wait()
+
             expect(newExecutionPrice).to.be.lt(oldExecutionPrice)
             expect(newExecutionPrice).to.equal(price)
         })
-        it("Should update the keeper's balance", async () => {
-            await timeout(updateInterval * 1000 + 1000)
-            const balanceBefore = await token.balanceOf(signers[0].address)
-            const poolTokenBalanceBefore = await token.balanceOf(pool.address)
-            await poolKeeper.performUpkeepMultiplePools([
-                POOL1_ADDR,
-                POOL2_ADDR,
-            ])
 
-            const balanceAfter = await token.balanceOf(signers[0].address)
-            const poolTokenBalanceAfter = await token.balanceOf(pool.address)
+        it("increases the keeper's balance", async () => {
+            await timeout(updateInterval * 1000 + 1000)
+            const oldSettlementBalance = await token.balanceOf(signers[0].address)
+            const oldPoolTokenBalance = await token.balanceOf(pool.address)
+
+            await poolKeeper.performUpkeepMultiplePools(poolAddresses);
+
+            const newSettlementBalance = await token.balanceOf(signers[0].address)
+            const newPoolTokenBalance = await token.balanceOf(pool.address)
+
             const tenGwei = BigNumber.from("10").pow(9).mul(10)
             const tenToTheEighteen = BigNumber.from("10").pow(18)
             const settlementPerEth = BigNumber.from("3000").mul(
@@ -300,9 +305,10 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
                 lowerBound,
                 upperBound
             )
-            expect(balanceAfter).to.be.gt(balanceBefore)
-            expect(poolTokenBalanceAfter).to.be.lt(poolTokenBalanceBefore)
+            expect(balanceAfter).to.be.gt(oldSettlementBalance)
+            expect(poolTokenBalanceAfter).to.be.lt(newPoolTokenBalance)
         })
+
         it("should calculate a new execution price", async () => {
             expect(newLastExecutionPrice).to.eq(oldExecutionPrice)
             expect(newExecutionPrice).to.be.lt(oldExecutionPrice)
