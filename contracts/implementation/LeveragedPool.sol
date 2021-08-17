@@ -221,7 +221,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
      * @dev Can only be called by & used by the pool committer
      * @param token Index of token
      * @param amount Amount of tokens to burn
-     * @param minter Address of user/burner
+     * @param burner Address of user/burner
      */
     function burnTokens(
         uint256 token,
