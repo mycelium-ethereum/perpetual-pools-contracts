@@ -19,8 +19,8 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     // #### Globals
 
     // Each balance is the amount of quote tokens in the pair
-    uint112 public override shortBalance;
-    uint112 public override longBalance;
+    uint256 public override shortBalance;
+    uint256 public override longBalance;
     uint32 public override frontRunningInterval;
     uint32 public override updateInterval;
 
@@ -159,7 +159,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
                 leverageAmount,
                 fee
             );
-            (uint112 newLongBalance, uint112 newShortBalance, uint112 totalFeeAmount) = PoolSwapLibrary
+            (uint256 newLongBalance, uint256 newShortBalance, uint256 totalFeeAmount) = PoolSwapLibrary
                 .calculatePriceChange(priceChangeData);
 
             // Update pool balances
@@ -171,7 +171,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         }
     }
 
-    function setNewPoolBalances(uint112 _longBalance, uint112 _shortBalance) external override onlyPoolCommitter {
+    function setNewPoolBalances(uint256 _longBalance, uint256 _shortBalance) external override onlyPoolCommitter {
         longBalance = _longBalance;
         shortBalance = _shortBalance;
     }
