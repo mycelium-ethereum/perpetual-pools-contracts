@@ -171,7 +171,6 @@ describe("PoolKeeper - checkUpkeepMultiplePools", () => {
         ]
         await forwardTime(5)
         await incrementPrice(underlyingOracle)
-        await poolKeeper.performUpkeepMultiplePools(poolAddresses)
         expect(await poolKeeper.checkUpkeepMultiplePools(poolAddresses)).to.eq(
             false
         )
