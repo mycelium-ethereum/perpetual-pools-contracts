@@ -108,7 +108,9 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         try ILeveragedPool(pool).poolUpkeep(lastExecutionPrice, executionPrice[_pool]) {} catch Error(
             string memory reason
         ) {
+            // If poolUpkeep fails for any other reason, emit event and prevent gas from being refunded
             emit PoolUpkeepError(_pool, reason);
+            return;
         }
 
         uint256 gasSpent = startGas - gasleft();
