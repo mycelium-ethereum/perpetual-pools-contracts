@@ -24,9 +24,10 @@ describe("PoolSwapLibrary - getBalancesAfterFees", () => {
     })
 
     it("should return the amount proportional to the short and long balances", async () => {
-        const keeperReward = ethers.utils.parseEther("10")
-        const shortBalance = ethers.utils.parseEther("90")
-        const longBalance = ethers.utils.parseEther("110")
+        const keeperReward = ethers.utils.parseEther("0.10")
+
+        const shortBalance = ethers.utils.parseEther("0.90")
+        const longBalance = ethers.utils.parseEther("1.10")
 
         const afterRewardBalances = await library.getBalancesAfterFees(
             keeperReward,
@@ -35,10 +36,29 @@ describe("PoolSwapLibrary - getBalancesAfterFees", () => {
         )
 
         expect(afterRewardBalances[0]).to.eq(
-            ethers.utils.parseEther("85.5").toString()
+            ethers.utils.parseEther("0.855000000000000001").toString()
         )
         expect(afterRewardBalances[1]).to.eq(
-            ethers.utils.parseEther("104.5").toString()
+            ethers.utils.parseEther("1.044999999999999999").toString()
         )
+        expect(
+            afterRewardBalances[0].add(afterRewardBalances[1]).add(keeperReward)
+        ).to.equal(shortBalance.add(longBalance))
+    })
+    it("should return the amount proportional to the short and long balances", async () => {
+        const keeperReward = ethers.utils.parseEther("0.10")
+
+        const shortBalance = ethers.utils.parseEther("0.130298903128347192")
+        const longBalance = ethers.utils.parseEther("1.129741927492121129")
+
+        const afterRewardBalances = await library.getBalancesAfterFees(
+            keeperReward,
+            shortBalance,
+            longBalance
+        )
+
+        expect(
+            afterRewardBalances[0].add(afterRewardBalances[1]).add(keeperReward)
+        ).to.equal(shortBalance.add(longBalance))
     })
 })
