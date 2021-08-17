@@ -3,14 +3,15 @@ pragma solidity 0.8.6;
 
 /// @title The pool controller contract interface
 interface ILeveragedPool {
+    // Initialisation parameters for new market
     struct Initialization {
-        address _owner;
+        address _owner; // Owner of the contract
         address _keeper; // The address of the PoolKeeper contract
         address _oracleWrapper; // The oracle wrapper for the derivative price feed
         address _settlementEthOracle; // The oracle wrapper for the SettlementToken/ETH price feed
-        address _longToken;
-        address _shortToken;
-        address _poolCommitter;
+        address _longToken; // Address of the long pool token
+        address _shortToken; // Address of the short pool token
+        address _poolCommitter; // Address of the PoolCommitter contract
         string _poolName; // The pool identification name
         uint32 _frontRunningInterval; // The minimum number of seconds that must elapse before a commit is forced to wait until the next interval
         uint32 _updateInterval; // The minimum number of seconds that must elapse before a commit can be executed
@@ -30,8 +31,18 @@ interface ILeveragedPool {
      */
     event PoolInitialized(address indexed longToken, address indexed shortToken, address quoteToken, string poolName);
 
+    /**
+     * @notice Creates a notification when the pool's price execution succeeds
+     * @param startPrice Price prior to price change execution
+     * @param endPrice Price during price change execution
+     */
     event PriceChange(int256 indexed startPrice, int256 indexed endPrice);
 
+    /**
+     * @notice Creates a notification when the pool's price execution fails
+     * @param startPrice Price prior to price change execution
+     * @param endPrice Price during price change execution
+     */
     event PriceChangeError(int256 indexed startPrice, int256 indexed endPrice);
 
     /**
@@ -105,34 +116,18 @@ interface ILeveragedPool {
 
     function intervalPassed() external view returns (bool);
 
-    /**
-     * @notice Changes the address of the keeper contract
-     * @param _keeper Address of the new keeper contract
-     */
     function setKeeper(address _keeper) external;
 
-    /**
-     * @dev Allows the governor to transfer governance rights to another address
-     */
     function transferGovernance(address _governance) external;
 
-    /**
-     * @notice sets the address that can pull fees from this pool
-     */
     function updateFeeAddress(address account) external;
 
-    /**
-     * @notice Mints new tokens
-     */
     function mintTokens(
         uint256 token,
         uint256 amount,
         address burner
     ) external;
 
-    /**
-     * @notice burns an amount of pool tokens from someones account
-     */
     function burnTokens(
         uint256 token,
         uint256 amount,
