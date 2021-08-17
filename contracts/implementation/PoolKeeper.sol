@@ -105,18 +105,19 @@ contract PoolKeeper is IPoolKeeper, Ownable {
 
         // This allows us to still batch multiple calls to executePriceChange, even if some are invalid
         // Without reverting the entire transaction
-        try ILeveragedPool(pool).poolUpkeep(lastExecutionPrice, executionPrice[_pool]) {} catch Error(
-            string memory reason
-        ) {
+        try ILeveragedPool(pool).poolUpkeep(lastExecutionPrice, executionPrice[_pool]) {
+            // If poolUpkeep is successful, refund the keeper for their gas costs
+            uint256 gasSpent = startGas - gasleft();
+
+            // TODO: poll gas price oracle (or BASEFEE)
+            // _gasPrice = 10 gwei = 10000000000 wei
+            uint256 _gasPrice = 10 gwei;
+
+            payKeeper(_pool, _gasPrice, gasSpent, savedPreviousUpdatedTimestamp, updateInterval);
+        } catch Error(string memory reason) {
+            // If poolUpkeep fails for any other reason, emit event
             emit PoolUpkeepError(_pool, reason);
         }
-
-        uint256 gasSpent = startGas - gasleft();
-        // TODO: poll gas price oracle (or BASEFEE)
-        // _gasPrice = 10 gwei = 10000000000 wei
-        uint256 _gasPrice = 10 gwei;
-
-        payKeeper(_pool, _gasPrice, gasSpent, savedPreviousUpdatedTimestamp, updateInterval);
     }
 
     /**
