@@ -181,8 +181,8 @@ contract PoolCommitter is IPoolCommitter, Ownable {
                 PoolSwapLibrary.getRatio(
                     longBalance,
                     IERC20(pool.poolTokens()[0]).totalSupply() +
-                            shadowPools[commitTypeToUint(CommitType.LongBurn)] +
-                            _commit.amount
+                        shadowPools[commitTypeToUint(CommitType.LongBurn)] +
+                        _commit.amount
                 ),
                 _commit.amount
             );

@@ -63,7 +63,7 @@ library PoolSwapLibrary {
     @return The amount as a IEEE754 quadruple precision number
   */
     function convertUIntToDecimal(uint256 amount) external pure returns (bytes16) {
-        return ABDKMathQuad.fromUInt(uint256(amount));
+        return ABDKMathQuad.fromUInt(amount);
     }
 
     /**
