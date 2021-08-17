@@ -44,7 +44,7 @@ library PoolSwapLibrary {
         if (ABDKMathQuad.cmp(ratio, 0) == 0 || ABDKMathQuad.cmp(ratio, bytes16("0x1")) == 0) {
             return amountIn;
         }
-        return uint256(ABDKMathQuad.toUInt(ABDKMathQuad.mul(ratio, ABDKMathQuad.fromUInt(amountIn))));
+        return ABDKMathQuad.toUInt(ABDKMathQuad.mul(ratio, ABDKMathQuad.fromUInt(amountIn)));
     }
 
     /**
@@ -160,8 +160,8 @@ library PoolSwapLibrary {
         bytes16 fee = priceChange.fee;
 
         // Calculate fees from long and short sides
-        uint256 longFeeAmount = uint256(convertDecimalToUInt(multiplyDecimalByUInt(fee, longBalance)));
-        uint256 shortFeeAmount = uint256(convertDecimalToUInt(multiplyDecimalByUInt(fee, shortBalance)));
+        uint256 longFeeAmount = convertDecimalToUInt(multiplyDecimalByUInt(fee, longBalance));
+        uint256 shortFeeAmount = convertDecimalToUInt(multiplyDecimalByUInt(fee, shortBalance));
         uint256 totalFeeAmount = 0;
 
         // fee is enforced to be < 1. Therefore, shortFeeAmount < shortBalance, and longFeeAmount < longBalance
@@ -180,12 +180,12 @@ library PoolSwapLibrary {
 
         if (direction >= 0 && shortBalance > 0) {
             // Move funds from short to long pair
-            uint256 lossAmount = uint256(getLossAmount(lossMultiplier, shortBalance));
+            uint256 lossAmount = getLossAmount(lossMultiplier, shortBalance);
             shortBalance = shortBalance - lossAmount;
             longBalance = longBalance + lossAmount;
         } else if (direction < 0 && longBalance > 0) {
             // Move funds from long to short pair
-            uint256 lossAmount = uint256(getLossAmount(lossMultiplier, longBalance));
+            uint256 lossAmount = getLossAmount(lossMultiplier, longBalance);
             shortBalance = shortBalance + lossAmount;
             longBalance = longBalance - lossAmount;
         }
@@ -215,7 +215,7 @@ library PoolSwapLibrary {
         return
             getAmountOut(
                 // ratio = (totalSupply + inverseShadowBalance) / balance
-                getRatio(uint256(tokenSupply) + inverseShadowbalance, balance),
+                getRatio(tokenSupply + inverseShadowbalance, balance),
                 amountIn
             );
     }

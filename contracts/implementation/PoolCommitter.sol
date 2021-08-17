@@ -180,11 +180,9 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             uint256 amountOut = PoolSwapLibrary.getAmountOut(
                 PoolSwapLibrary.getRatio(
                     longBalance,
-                    uint256(
-                        uint256(IERC20(pool.poolTokens()[0]).totalSupply()) +
+                    IERC20(pool.poolTokens()[0]).totalSupply() +
                             shadowPools[commitTypeToUint(CommitType.LongBurn)] +
                             _commit.amount
-                    )
                 ),
                 _commit.amount
             );
@@ -206,7 +204,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             uint256 amountOut = PoolSwapLibrary.getAmountOut(
                 PoolSwapLibrary.getRatio(
                     shortBalance,
-                    uint256(IERC20(pool.poolTokens()[1]).totalSupply()) +
+                    IERC20(pool.poolTokens()[1]).totalSupply() +
                         shadowPools[commitTypeToUint(CommitType.ShortBurn)] +
                         _commit.amount
                 ),
