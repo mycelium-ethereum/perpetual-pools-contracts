@@ -12,6 +12,7 @@ The environment variables used in this project are documented in the `example.en
 
 Install the dependencies with `yarn`. 
 Build everything with `yarn compile`. 
+Run the tests with `yarn test`.
 
 ## Available Functionality
 
