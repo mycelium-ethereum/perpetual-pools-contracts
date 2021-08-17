@@ -11,8 +11,20 @@ interface IPoolKeeper {
      */
     event PoolAdded(address indexed poolAddress, int256 indexed firstPrice);
 
+    /**
+     * @notice Creates a notification when a keeper is paid for doing upkeep for a pool
+     * @param _pool Address of pool being upkept
+     * @param keeper Keeper to be rewarded for upkeeping
+     * @param reward Keeper's reward (in settlement tokens)
+     */
     event KeeperPaid(address indexed _pool, address indexed keeper, uint256 reward);
 
+    /**
+     * @notice Creates a notification when a keeper's payment for upkeeping a pool failed
+     * @param _pool Address of pool being upkept
+     * @param keeper Keeper to be rewarded for upkeeping
+     * @param expectedReward Keeper's expected reward (in settlement tokens); not actually transferred
+     */
     event KeeperPaymentError(address indexed _pool, address indexed keeper, uint256 expectedReward);
 
     /**
@@ -23,42 +35,15 @@ interface IPoolKeeper {
     event PoolUpkeepError(address indexed pool, string reason);
 
     // #### Functions
-    /**
-     * @notice When a pool is created, this function is called by the factory to initiate price tracking
-     * @param _poolAddress The address of the newly-created pool
-     */
     function newPool(address _poolAddress) external;
 
-    /**
-     * @notice Sets the factory of the keeper contract
-     * @param _factory Address of the new factory contract
-     */
     function setFactory(address _factory) external;
 
-    /**
-     * @notice Check if upkeep is required
-     * @dev This should not be called or executed.
-     * @param pool The address of the pool to upkeep
-     * @return upkeepNeeded Whether or not upkeep is needed for this single pool
-     */
     function checkUpkeepSinglePool(address pool) external view returns (bool);
 
-    /**
-     * @notice Checks multiple pools if any of them need updating
-     * @param pools The array of pool codes to check
-     * @return upkeepNeeded Whether or not at least one pool needs upkeeping
-     */
     function checkUpkeepMultiplePools(address[] calldata pools) external view returns (bool);
 
-    /**
-     * @notice Called by keepers to perform an update on a single pool
-     * @param pool The pool code to perform the update for
-     */
     function performUpkeepSinglePool(address pool) external;
 
-    /**
-     * @notice Called by keepers to perform an update on multiple pools
-     * @param pools Pool codes to perform the update for
-     */
     function performUpkeepMultiplePools(address[] calldata pools) external;
 }

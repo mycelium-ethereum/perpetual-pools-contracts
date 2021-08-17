@@ -19,5 +19,9 @@ interface IOracleWrapper {
      */
     function getPrice() external view returns (int256);
 
+    /**
+     * @notice Converts from a WAD to normal value
+     * @return Converted non-WAD value
+     */
     function fromWad(int256 wad) external view returns (int256);
 }

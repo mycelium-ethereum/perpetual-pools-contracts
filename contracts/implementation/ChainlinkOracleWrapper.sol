@@ -60,6 +60,9 @@ contract ChainlinkOracleWrapper is IOracleWrapper, Ownable {
         return raw * scaler;
     }
 
+    /**
+     * @notice Converts from a WAD value to a raw value based on the decimals in the feed
+     */
     function fromWad(int256 wad) external view override returns (int256) {
         return wad / scaler;
     }
