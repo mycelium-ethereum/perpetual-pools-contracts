@@ -117,8 +117,8 @@ contract LeveragedPool is ILeveragedPool, Initializable {
 
         (uint112 shortBalanceAfterRewards, uint112 longBalanceAfterRewards) = PoolSwapLibrary.getBalancesAfterFees(
             uint112(amount),
-            shortBalance,
-            longBalance
+            _shortBalance,
+            _longBalance
         );
 
         shortBalance = shortBalanceAfterRewards;
