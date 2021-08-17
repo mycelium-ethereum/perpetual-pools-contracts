@@ -147,7 +147,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
             emit KeeperPaid(_pool, msg.sender, reward);
         } else {
             // Usually occurs if pool just started and does not have any funds
-            emit KeeperPaymentError(_pool);
+            emit KeeperPaymentError(_pool, msg.sender, reward);
         }
     }
 
