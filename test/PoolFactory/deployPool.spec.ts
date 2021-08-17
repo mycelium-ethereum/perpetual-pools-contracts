@@ -4,6 +4,7 @@ import chaiAsPromised from "chai-as-promised"
 import {
     LeveragedPool,
     PoolFactory,
+    TestToken,
     PoolFactory__factory,
     PoolKeeper,
     PoolKeeper__factory,
@@ -11,7 +12,9 @@ import {
     ChainlinkOracleWrapper,
     ChainlinkOracleWrapper__factory,
     TestChainlinkOracle__factory,
+    TestToken__factory,
     PoolToken__factory,
+    PoolCommitterDeployer__factory,
 } from "../../typechain"
 import { POOL_CODE, POOL_CODE_2 } from "../constants"
 import { generateRandomAddress, getEventArgs } from "../utilities"
@@ -21,13 +24,13 @@ import LeveragedPoolInterface from "../../artifacts/contracts/implementation/Lev
 chai.use(chaiAsPromised)
 const { expect } = chai
 describe("PoolFactory - deployPool", () => {
-    /*
     let factory: PoolFactory
     let poolKeeper: PoolKeeper
     let oracleWrapper: ChainlinkOracleWrapper
     let settlementEthOracle: ChainlinkOracleWrapper
     let poolTx: Result | undefined
     let pool: LeveragedPool
+    let token: TestToken
     before(async () => {
         const signers = await ethers.getSigners()
 
@@ -62,7 +65,7 @@ describe("PoolFactory - deployPool", () => {
             signer: signers[0],
             libraries: { PoolSwapLibrary: library.address },
         })) as PoolFactory__factory
-        let feeAddress = await generateRandomAddress()
+        const feeAddress = await generateRandomAddress()
         factory = await (await PoolFactory.deploy(feeAddress)).deployed()
         const poolKeeperFactory = (await ethers.getContractFactory(
             "PoolKeeper",
@@ -74,6 +77,26 @@ describe("PoolFactory - deployPool", () => {
         poolKeeper = await poolKeeperFactory.deploy(factory.address)
         await poolKeeper.deployed()
 
+        const testToken = (await ethers.getContractFactory(
+            "TestToken",
+            signers[0]
+        )) as TestToken__factory
+        token = await testToken.deploy("TEST TOKEN", "TST1")
+        await token.deployed()
+        const PoolCommiterDeployerFactory = (await ethers.getContractFactory(
+            "PoolCommitterDeployer",
+            {
+                signer: signers[0],
+                libraries: { PoolSwapLibrary: library.address },
+            }
+        )) as PoolCommitterDeployer__factory
+
+        let poolCommiterDeployer = await PoolCommiterDeployerFactory.deploy(
+            factory.address
+        )
+        poolCommiterDeployer = await poolCommiterDeployer.deployed()
+        await factory.setPoolCommitterDeployer(poolCommiterDeployer.address)
+
         await factory.setPoolKeeper(poolKeeper.address)
         const deploymentData = {
             poolName: POOL_CODE,
@@ -81,7 +104,7 @@ describe("PoolFactory - deployPool", () => {
             updateInterval: 10,
             fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
             leverageAmount: 5,
-            quoteToken: generateRandomAddress(),
+            quoteToken: token.address,
             oracleWrapper: oracleWrapper.address,
             settlementEthOracle: settlementEthOracle.address,
         }
@@ -106,13 +129,14 @@ describe("PoolFactory - deployPool", () => {
             _settlementEthOracle: generateRandomAddress(),
             _longToken: generateRandomAddress(),
             _shortToken: generateRandomAddress(),
+            _poolCommitter: generateRandomAddress(),
             _poolName: POOL_CODE,
             _frontRunningInterval: 3,
             _updateInterval: 5,
             _fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
             _leverageAmount: 5,
             _feeAddress: generateRandomAddress(),
-            _quoteToken: generateRandomAddress(),
+            _quoteToken: token.address,
         }
         await expect(pool.initialize(initialization)).to.be.rejectedWith(Error)
     })
@@ -122,7 +146,7 @@ describe("PoolFactory - deployPool", () => {
             frontRunningInterval: 3,
             updateInterval: 5,
             leverageAmount: 5,
-            quoteToken: generateRandomAddress(),
+            quoteToken: token.address,
             oracleWrapper: oracleWrapper.address,
             settlementEthOracle: settlementEthOracle.address,
         }
@@ -158,7 +182,7 @@ describe("PoolFactory - deployPool", () => {
             frontRunningInterval: 2,
             updateInterval: 5,
             leverageAmount: 5,
-            quoteToken: generateRandomAddress(),
+            quoteToken: token.address,
             oracleWrapper: oracleWrapper.address,
             settlementEthOracle: settlementEthOracle.address,
         }
@@ -181,7 +205,7 @@ describe("PoolFactory - deployPool", () => {
                 frontRunningInterval: 5,
                 updateInterval: 3,
                 leverageAmount: 0,
-                quoteToken: generateRandomAddress(),
+                quoteToken: token.address,
                 oracleWrapper: oracleWrapper.address,
                 settlementEthOracle: settlementEthOracle.address,
             }
@@ -190,13 +214,12 @@ describe("PoolFactory - deployPool", () => {
                 "PoolKeeper: leveraged amount invalid"
             )
         })
-
         it("should reject leverages greater than the MAX_LEVERAGE amount", async () => {
             const deploymentData = {
                 poolName: POOL_CODE_2,
                 frontRunningInterval: 5,
                 updateInterval: 3,
-                leverageAmount: 100, // default max leverage is 25
+                leverageAmount: 100, // default max leverage is 10
                 quoteToken: generateRandomAddress(),
                 oracleWrapper: oracleWrapper.address,
                 settlementEthOracle: settlementEthOracle.address,
@@ -206,6 +229,21 @@ describe("PoolFactory - deployPool", () => {
                 "PoolKeeper: leveraged amount invalid"
             )
         })
+        it("should reject tokens with more than 18 decimals", async () => {
+            await token.setDecimals(19)
+            const deploymentData = {
+                poolName: POOL_CODE_2,
+                frontRunningInterval: 5,
+                updateInterval: 3,
+                leverageAmount: 1,
+                quoteToken: token.address,
+                oracleWrapper: oracleWrapper.address,
+                settlementEthOracle: settlementEthOracle.address,
+            }
+
+            await expect(factory.deployPool(deploymentData)).to.be.revertedWith(
+                "Token decimals > 18"
+            )
+        })
     })
-    */
 })

@@ -11,8 +11,8 @@ library PoolSwapLibrary {
     struct PriceChangeData {
         int256 oldPrice;
         int256 newPrice;
-        uint112 longBalance;
-        uint112 shortBalance;
+        uint256 longBalance;
+        uint256 shortBalance;
         bytes16 leverageAmount;
         bytes16 fee;
     }
@@ -24,7 +24,7 @@ library PoolSwapLibrary {
     @param _denominator The "per part" side of the equation. If this is zero, the ratio is zero
     @return the ratio, as an ABDKMathQuad number (IEEE 754 quadruple precision floating point)
    */
-    function getRatio(uint112 _numerator, uint112 _denominator) public pure returns (bytes16) {
+    function getRatio(uint256 _numerator, uint256 _denominator) public pure returns (bytes16) {
         // Catch the divide by zero error.
         if (_denominator == 0) {
             return 0;
@@ -39,12 +39,12 @@ library PoolSwapLibrary {
     @param amountIn The amount of tokens the user is providing. This can be quote tokens or pool tokens.
     @return The amount of tokens to mint/remit to the user.
    */
-    function getAmountOut(bytes16 ratio, uint112 amountIn) public pure returns (uint112) {
+    function getAmountOut(bytes16 ratio, uint256 amountIn) public pure returns (uint256) {
         require(amountIn > 0, "Invalid amount");
         if (ABDKMathQuad.cmp(ratio, 0) == 0 || ABDKMathQuad.cmp(ratio, bytes16("0x1")) == 0) {
             return amountIn;
         }
-        return uint112(ABDKMathQuad.toUInt(ABDKMathQuad.mul(ratio, ABDKMathQuad.fromUInt(amountIn))));
+        return ABDKMathQuad.toUInt(ABDKMathQuad.mul(ratio, ABDKMathQuad.fromUInt(amountIn)));
     }
 
     /**
@@ -62,8 +62,8 @@ library PoolSwapLibrary {
     @param amount The amount to convert
     @return The amount as a IEEE754 quadruple precision number
   */
-    function convertUIntToDecimal(uint112 amount) external pure returns (bytes16) {
-        return ABDKMathQuad.fromUInt(uint256(amount));
+    function convertUIntToDecimal(uint256 amount) external pure returns (bytes16) {
+        return ABDKMathQuad.fromUInt(amount);
     }
 
     /**
@@ -131,7 +131,7 @@ library PoolSwapLibrary {
     @param lossMultiplier The multiplier to use
     @param balance The balance of the losing pool
   */
-    function getLossAmount(bytes16 lossMultiplier, uint112 balance) public pure returns (uint256) {
+    function getLossAmount(bytes16 lossMultiplier, uint256 balance) public pure returns (uint256) {
         return
             ABDKMathQuad.toUInt(
                 ABDKMathQuad.mul(ABDKMathQuad.sub(one, lossMultiplier), ABDKMathQuad.fromUInt(balance))
@@ -147,22 +147,22 @@ library PoolSwapLibrary {
         public
         pure
         returns (
-            uint112,
-            uint112,
-            uint112
+            uint256,
+            uint256,
+            uint256
         )
     {
-        uint112 shortBalance = priceChange.shortBalance;
-        uint112 longBalance = priceChange.longBalance;
+        uint256 shortBalance = priceChange.shortBalance;
+        uint256 longBalance = priceChange.longBalance;
         bytes16 leverageAmount = priceChange.leverageAmount;
         int256 oldPrice = priceChange.oldPrice;
         int256 newPrice = priceChange.newPrice;
         bytes16 fee = priceChange.fee;
 
         // Calculate fees from long and short sides
-        uint112 longFeeAmount = uint112(convertDecimalToUInt(multiplyDecimalByUInt(fee, longBalance)));
-        uint112 shortFeeAmount = uint112(convertDecimalToUInt(multiplyDecimalByUInt(fee, shortBalance)));
-        uint112 totalFeeAmount = 0;
+        uint256 longFeeAmount = convertDecimalToUInt(multiplyDecimalByUInt(fee, longBalance));
+        uint256 shortFeeAmount = convertDecimalToUInt(multiplyDecimalByUInt(fee, shortBalance));
+        uint256 totalFeeAmount = 0;
 
         // fee is enforced to be < 1. Therefore, shortFeeAmount < shortBalance, and longFeeAmount < longBalance
         shortBalance = shortBalance - shortFeeAmount;
@@ -180,12 +180,12 @@ library PoolSwapLibrary {
 
         if (direction >= 0 && shortBalance > 0) {
             // Move funds from short to long pair
-            uint112 lossAmount = uint112(getLossAmount(lossMultiplier, shortBalance));
+            uint256 lossAmount = getLossAmount(lossMultiplier, shortBalance);
             shortBalance = shortBalance - lossAmount;
             longBalance = longBalance + lossAmount;
         } else if (direction < 0 && longBalance > 0) {
             // Move funds from long to short pair
-            uint112 lossAmount = uint112(getLossAmount(lossMultiplier, longBalance));
+            uint256 lossAmount = getLossAmount(lossMultiplier, longBalance);
             shortBalance = shortBalance + lossAmount;
             longBalance = longBalance - lossAmount;
         }
@@ -193,16 +193,29 @@ library PoolSwapLibrary {
         return (longBalance, shortBalance, totalFeeAmount);
     }
 
+    /**
+     * @notice Returns true if the function is being called BEFORE the frontRunningInterval starts,
+     *         which is allowed for uncommitment.
+     * @dev If you try to uncommit AFTER the frontRunningInterval, it should revert.
+     */
+    function isBeforeFrontRunningInterval(
+        uint256 lastPriceTimestamp,
+        uint256 updateInterval,
+        uint256 frontRunningInterval
+    ) external view returns (bool) {
+        return lastPriceTimestamp + updateInterval - frontRunningInterval > block.timestamp;
+    }
+
     function getMintAmount(
         uint256 tokenSupply,
-        uint112 amountIn,
-        uint112 balance,
-        uint112 inverseShadowbalance
-    ) external pure returns (uint112) {
+        uint256 amountIn,
+        uint256 balance,
+        uint256 inverseShadowbalance
+    ) external pure returns (uint256) {
         return
             getAmountOut(
                 // ratio = (totalSupply + inverseShadowBalance) / balance
-                getRatio(uint112(tokenSupply) + inverseShadowbalance, balance),
+                getRatio(tokenSupply + inverseShadowbalance, balance),
                 amountIn
             );
     }
