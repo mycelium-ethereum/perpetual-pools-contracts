@@ -98,7 +98,38 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         IPoolCommitter(poolCommitter).executeAllCommitments();
     }
 
-    function quoteTokenTransfer(address to, uint256 amount) external override onlyPoolCommitterOrKeeper {
+    /**
+     * @notice Pay keeper some amount in the collateral token for the perpetual pools market
+     * @param to Address of the pool keeper to pay
+     * @param amount Amount to pay the pool keeper
+     * @return Whether the keeper is going to be paid; false if the amount exceeds the balances of the
+     *         long and short pool, and true if the keeper can successfully be paid out
+     */
+    function payKeeperFromBalances(address to, uint256 amount) external override onlyPoolKeeper returns (bool) {
+        uint256 _shortBalance = shortBalance;
+        uint256 _longBalance = longBalance;
+
+        // If the rewards are more than the balances of the pool, the keeper does not get paid
+        if (amount >= _shortBalance + _longBalance) {
+            return false;
+        }
+
+        (uint256 shortBalanceAfterRewards, uint256 longBalanceAfterRewards) = PoolSwapLibrary.getBalancesAfterFees(
+            uint256(amount),
+            _shortBalance,
+            _longBalance
+        );
+
+        shortBalance = shortBalanceAfterRewards;
+        longBalance = longBalanceAfterRewards;
+
+        // Pay keeper
+        IERC20(quoteToken).safeTransfer(to, amount);
+
+        return true;
+    }
+
+    function quoteTokenTransfer(address to, uint256 amount) external override onlyPoolCommitter {
         require(to != address(0), "To address cannot be 0 address");
         IERC20(quoteToken).safeTransfer(to, amount);
     }
@@ -214,8 +245,8 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         _;
     }
 
-    modifier onlyPoolCommitterOrKeeper() {
-        require(msg.sender == poolCommitter || msg.sender == keeper, "sender not committer or keeper");
+    modifier onlyPoolKeeper() {
+        require(msg.sender == keeper, "sender not keeper");
         _;
     }
 
