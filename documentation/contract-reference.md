@@ -258,7 +258,7 @@ Emitted when a commit is executed. Commit execution is the transfer of funds fro
 event PriceChange(
     int256 indexed startPrice,
     int256 indexed endPrice,
-    uint112 indexed transferAmount
+    uint256 indexed transferAmount
   );
 ```  
 Emitted when a price change execution occurs.
@@ -286,7 +286,7 @@ Initializes a minimal clone of a pool contract. This can only be run once. Ordin
 ```
 function commit(
     CommitType commitType,
-    uint112 amount
+    uint256 amount
   ) external;
 ```  
 Used to create a commitment to add or remove funds from one of the pool's pairs.
@@ -321,7 +321,7 @@ Utilizes the ABDKMathQuad library to work with 128-bit floating-point numbers (I
 ### Read only functions
 #### getRatio
 ```
-function getRatio(uint112 _numerator, uint112 _denominator)
+function getRatio(uint256 _numerator, uint256 _denominator)
     external
     pure
     returns (bytes16);
@@ -330,10 +330,10 @@ Calculates `_numerator/_denominator` and returns the result as an IEEE754 binary
 
 #### getAmountOut
 ```
-function getAmountOut(bytes16 ratio, uint112 amountIn)
+function getAmountOut(bytes16 ratio, uint256 amountIn)
     external
     pure
-    returns (uint112)
+    returns (uint256)
 ```  
 Returns the amount of `amountIn` to transfer based on the `ratio`.
 
@@ -349,7 +349,7 @@ Compares two IEEE754 binary128 numbers and returns:
 
 #### convertUIntToDecimal
 ```
-function convertUIntToDecimal(uint112 amount)
+function convertUIntToDecimal(uint256 amount)
     external
     pure
     returns (bytes16)
@@ -398,7 +398,7 @@ The exact implementation for the power function uses the following formula for p
 
 #### getLossAmount
 ```
-function getLossAmount(bytes16 lossMultiplier, uint112 balance)
+function getLossAmount(bytes16 lossMultiplier, uint256 balance)
     external
     pure
     returns (uint256);
