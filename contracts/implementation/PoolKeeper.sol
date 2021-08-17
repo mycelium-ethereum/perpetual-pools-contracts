@@ -53,7 +53,6 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     // Keeper network
     /**
      * @notice Check if upkeep is required
-     * @dev This should not be called or executed
      * @param _pool The address of the pool to upkeep
      * @return upkeepNeeded Whether or not upkeep is needed for this single pool
      */

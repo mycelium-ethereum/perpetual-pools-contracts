@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.6;
 
-/// @title The oracle management contract interface
+/// @title The oracle wrapper contract interface
 interface IOracleWrapper {
     function oracle() external view returns (address);
 
