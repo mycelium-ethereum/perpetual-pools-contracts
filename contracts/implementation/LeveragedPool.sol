@@ -3,7 +3,7 @@ pragma solidity 0.8.6;
 
 import "../interfaces/ILeveragedPool.sol";
 import "../interfaces/IPoolCommitter.sol";
-import "./PoolToken.sol";
+import "../interfaces/IPoolToken.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -11,16 +11,14 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./PoolSwapLibrary.sol";
 import "../interfaces/IOracleWrapper.sol";
 
-/*
-@title The pool controller contract
-*/
+/// @title The pool controller contract
 contract LeveragedPool is ILeveragedPool, Initializable {
     using SafeERC20 for IERC20;
     // #### Globals
 
     // Each balance is the amount of quote tokens in the pair
-    uint112 public override shortBalance;
-    uint112 public override longBalance;
+    uint256 public override shortBalance;
+    uint256 public override longBalance;
     uint32 public override frontRunningInterval;
     uint32 public override updateInterval;
 
@@ -39,7 +37,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
 
     string public override poolName;
     address public override oracleWrapper;
-    address public override keeperOracle;
+    address public override settlementEthOracle;
 
     // #### Functions
 
@@ -47,7 +45,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         require(initialization._feeAddress != address(0), "Fee address cannot be 0 address");
         require(initialization._quoteToken != address(0), "Quote token cannot be 0 address");
         require(initialization._oracleWrapper != address(0), "Oracle wrapper cannot be 0 address");
-        require(initialization._keeperOracle != address(0), "Keeper oracle cannot be 0 address");
+        require(initialization._settlementEthOracle != address(0), "Keeper oracle cannot be 0 address");
         require(initialization._owner != address(0), "Owner cannot be 0 address");
         require(initialization._keeper != address(0), "Keeper cannot be 0 address");
         require(initialization._longToken != address(0), "Long token cannot be 0 address");
@@ -66,7 +64,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         // Setup variables
         keeper = initialization._keeper;
         oracleWrapper = initialization._oracleWrapper;
-        keeperOracle = initialization._keeperOracle;
+        settlementEthOracle = initialization._settlementEthOracle;
         quoteToken = initialization._quoteToken;
         frontRunningInterval = initialization._frontRunningInterval;
         updateInterval = initialization._updateInterval;
@@ -88,19 +86,64 @@ contract LeveragedPool is ILeveragedPool, Initializable {
 
     /**
      * @notice Execute a price change, then execute all commits in PoolCommitter
+     * @dev This is the entry point to upkeep a market
      */
     function poolUpkeep(int256 _oldPrice, int256 _newPrice) external override onlyKeeper {
         require(intervalPassed(), "Update interval hasn't passed");
         lastPriceTimestamp = uint40(block.timestamp);
+        // perform price change and update pool balances
         executePriceChange(_oldPrice, _newPrice);
+        // execute pending commitments to enter and exit the pool
         IPoolCommitter(poolCommitter).executeAllCommitments();
     }
 
-    function quoteTokenTransfer(address to, uint256 amount) external override onlyPoolCommitterOrKeeper {
+    /**
+     * @notice Pay keeper some amount in the collateral token for the perpetual pools market
+     * @param to Address of the pool keeper to pay
+     * @param amount Amount to pay the pool keeper
+     * @return Whether the keeper is going to be paid; false if the amount exceeds the balances of the
+     *         long and short pool, and true if the keeper can successfully be paid out
+     */
+    function payKeeperFromBalances(address to, uint256 amount) external override onlyPoolKeeper returns (bool) {
+        uint256 _shortBalance = shortBalance;
+        uint256 _longBalance = longBalance;
+
+        // If the rewards are more than the balances of the pool, the keeper does not get paid
+        if (amount >= _shortBalance + _longBalance) {
+            return false;
+        }
+
+        (uint256 shortBalanceAfterRewards, uint256 longBalanceAfterRewards) = PoolSwapLibrary.getBalancesAfterFees(
+            uint256(amount),
+            _shortBalance,
+            _longBalance
+        );
+
+        shortBalance = shortBalanceAfterRewards;
+        longBalance = longBalanceAfterRewards;
+
+        // Pay keeper
+        IERC20(quoteToken).safeTransfer(to, amount);
+
+        return true;
+    }
+
+    /**
+     * @notice Transfer tokens from pool to user
+     * @param to Address of account to transfer to
+     * @param amount Amount of quote tokens being transferred
+     */
+    function quoteTokenTransfer(address to, uint256 amount) external override onlyPoolCommitter {
         require(to != address(0), "To address cannot be 0 address");
         IERC20(quoteToken).safeTransfer(to, amount);
     }
 
+    /**
+     * @notice Transfer tokens from user to account
+     * @param from The account that's transferring quote tokens
+     * @param to Address of account to transfer to
+     * @param amount Amount of quote tokens being transferred
+     */
     function quoteTokenTransferFrom(
         address from,
         address to,
@@ -111,31 +154,58 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         IERC20(quoteToken).safeTransferFrom(from, to, amount);
     }
 
+    /**
+     * @notice Execute the price change once the interval period ticks over, updating the long & short
+     *         balances based on the change of the feed (upwards or downwards) and paying fees
+     * @dev Can only be called by poolUpkeep; emits PriceChangeError if execution does not take place,
+     *      and PriceChange if it does
+     * @param _oldPrice Old price from the oracle
+     * @param _newPrice New price from the oracle
+     */
     function executePriceChange(int256 _oldPrice, int256 _newPrice) internal {
-        PoolSwapLibrary.PriceChangeData memory priceChangeData = PoolSwapLibrary.PriceChangeData(
-            _oldPrice,
-            _newPrice,
-            longBalance,
-            shortBalance,
-            leverageAmount,
-            fee
-        );
-        (uint112 newLongBalance, uint112 newShortBalance, uint112 totalFeeAmount) = PoolSwapLibrary
-            .calculatePriceChange(priceChangeData);
+        // prevent a division by 0 in computing the price change
+        // prevent negative pricing
+        if (_oldPrice <= 0 || _newPrice <= 0) {
+            emit PriceChangeError(_oldPrice, _newPrice);
+        } else {
+            PoolSwapLibrary.PriceChangeData memory priceChangeData = PoolSwapLibrary.PriceChangeData(
+                _oldPrice,
+                _newPrice,
+                longBalance,
+                shortBalance,
+                leverageAmount,
+                fee
+            );
+            (uint256 newLongBalance, uint256 newShortBalance, uint256 totalFeeAmount) = PoolSwapLibrary
+                .calculatePriceChange(priceChangeData);
 
-        // Update pool balances
-        longBalance = newLongBalance;
-        shortBalance = newShortBalance;
-        // Pay the fee
-        IERC20(quoteToken).safeTransferFrom(address(this), feeAddress, totalFeeAmount);
-        emit PriceChange(_oldPrice, _newPrice);
+            // Update pool balances
+            longBalance = newLongBalance;
+            shortBalance = newShortBalance;
+            // Pay the fee
+            IERC20(quoteToken).safeTransfer(feeAddress, totalFeeAmount);
+            emit PriceChange(_oldPrice, _newPrice);
+        }
     }
 
-    function setNewPoolBalances(uint112 _longBalance, uint112 _shortBalance) external override onlyPoolCommitter {
+    /**
+     * @notice Sets the long and short balances of the pools
+     * @dev Can only be called by & used by the pool committer
+     * @param _longBalance New balance of the long pool
+     * @param _shortBalance New balancee of the short pool
+     */
+    function setNewPoolBalances(uint256 _longBalance, uint256 _shortBalance) external override onlyPoolCommitter {
         longBalance = _longBalance;
         shortBalance = _shortBalance;
     }
 
+    /**
+     * @notice Mint tokens to a user
+     * @dev Can only be called by & used by the pool committer
+     * @param token Index of token
+     * @param amount Amount of tokens to mint
+     * @param minter Address of user/minter
+     */
     function mintTokens(
         uint256 token,
         uint256 amount,
@@ -143,9 +213,16 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     ) external override onlyPoolCommitter {
         require(minter != address(0), "Minter address cannot be 0 address");
         require(token == 0 || token == 1, "Pool: token out of range");
-        require(PoolToken(tokens[token]).mint(amount, minter), "Mint failed");
+        require(IPoolToken(tokens[token]).mint(amount, minter), "Mint failed");
     }
 
+    /**
+     * @notice Burn tokens by a user
+     * @dev Can only be called by & used by the pool committer
+     * @param token Index of token
+     * @param amount Amount of tokens to burn
+     * @param burner Address of user/burner
+     */
     function burnTokens(
         uint256 token,
         uint256 amount,
@@ -153,7 +230,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     ) external override onlyPoolCommitter {
         require(burner != address(0), "Burner address cannot be 0 address");
         require(token == 0 || token == 1, "Pool: token out of range");
-        require(PoolToken(tokens[token]).burn(amount, burner), "Burn failed");
+        require(IPoolToken(tokens[token]).burn(amount, burner), "Burn failed");
     }
 
     /**
@@ -163,6 +240,10 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         return block.timestamp >= lastPriceTimestamp + updateInterval;
     }
 
+    /**
+     * @notice Updates the fee address of the pool
+     * @param account New address of the fee address/receiver
+     */
     function updateFeeAddress(address account) external override onlyGov {
         require(account != address(0), "Account cannot be 0 address");
         address oldFeeAddress = feeAddress;
@@ -170,6 +251,10 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         emit FeeAddressUpdated(oldFeeAddress, feeAddress);
     }
 
+    /**
+     * @notice Updates the keeper contract of the pool
+     * @param _keeper New address of the keeper contract
+     */
     function setKeeper(address _keeper) external override onlyGov {
         require(_keeper != address(0), "Keeper address cannot be 0 address");
         address oldKeeper = keeper;
@@ -177,6 +262,10 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         emit KeeperAddressChanged(oldKeeper, keeper);
     }
 
+    /**
+     * @notice Transfer governance of the pool
+     * @param _governance New address of the governance of the pool
+     */
     function transferGovernance(address _governance) external override onlyGov {
         require(_governance != address(0), "Governance address cannot be 0 address");
         address oldGovAddress = governance;
@@ -206,8 +295,8 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         _;
     }
 
-    modifier onlyPoolCommitterOrKeeper() {
-        require(msg.sender == poolCommitter || msg.sender == keeper, "sender not committer or keeper");
+    modifier onlyPoolKeeper() {
+        require(msg.sender == keeper, "sender not keeper");
         _;
     }
 

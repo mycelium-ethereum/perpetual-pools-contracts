@@ -28,7 +28,7 @@ module.exports = async (hre) => {
     })
 
     /* deploy OracleWrapper */
-    let oracleWrapper = await deploy("TestOracleWrapper", {
+    let oracleWrapper = await deploy("ChainlinkOracleWrapper", {
         from: deployer,
         log: true,
         args: [testOracle.address],

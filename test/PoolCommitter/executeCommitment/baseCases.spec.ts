@@ -35,12 +35,51 @@ const fee = "0x00000000000000000000000000000000"
 const leverage = 2
 const commitType = [2] //long mint;
 
-describe("PoolCommiter - executeCommitment: Basic test cases", () => {
+describe("poolCommitter - executeCommitment: Basic test cases", () => {
     let token: TestToken
     let pool: LeveragedPool
     let library: PoolSwapLibrary
     let signers: SignerWithAddress[]
-    let poolCommiter: PoolCommitter
+    let poolCommitter: PoolCommitter
+
+    context("When committing during the frontRunningInterval", () => {
+        it("Does not execute until the next update interval", async () => {
+            const elements = await deployPoolAndTokenContracts(
+                POOL_CODE,
+                100,
+                250,
+                fee,
+                leverage,
+                feeAddress,
+                amountMinted
+            )
+            signers = elements.signers
+            pool = elements.pool
+            const committer = elements.poolCommitter
+            token = elements.token
+            const shortToken = elements.shortToken
+            await token.approve(pool.address, ethers.constants.MaxUint256)
+            await pool.setKeeper(signers[0].address)
+            // Wait until somewhere between `frontRunningInterval <-> updateInterval`
+            await timeout(175 * 1000)
+            await committer.commitIDCounter()
+            await committer.commit([0], amountCommitted)
+
+            const shortTokensSupplyBefore = await shortToken.totalSupply()
+            // Now wait for updateInterval to pass
+            await timeout(76 * 1000)
+            await pool.poolUpkeep(lastPrice, lastPrice)
+            const shortTokensSupplyAfter = await shortToken.totalSupply()
+            expect(shortTokensSupplyAfter).to.equal(shortTokensSupplyBefore)
+            await timeout(300 * 1000)
+            await pool.poolUpkeep(lastPrice, lastPrice)
+            const shortTokensSupplyAfterSecond = await shortToken.totalSupply()
+
+            expect(shortTokensSupplyAfterSecond).to.be.gt(
+                shortTokensSupplyAfter
+            )
+        })
+    })
 
     describe("Revert cases", () => {
         before(async () => {
@@ -57,12 +96,12 @@ describe("PoolCommiter - executeCommitment: Basic test cases", () => {
             signers = result.signers
             token = result.token
             library = result.library
-            poolCommiter = result.poolCommiter
+            poolCommitter = result.poolCommitter
         })
         it("should revert if the commitment is too new", async () => {
             await token.approve(pool.address, amountCommitted)
             const commit = await createCommit(
-                poolCommiter,
+                poolCommitter,
                 commitType,
                 amountCommitted
             )
@@ -94,11 +133,11 @@ describe("PoolCommiter - executeCommitment: Basic test cases", () => {
             signers = result.signers
             token = result.token
             library = result.library
-            poolCommiter = result.poolCommiter
+            poolCommitter = result.poolCommitter
 
             await token.approve(pool.address, amountCommitted)
             commit = await createCommit(
-                poolCommiter,
+                poolCommitter,
                 commitType,
                 amountCommitted
             )
@@ -106,12 +145,12 @@ describe("PoolCommiter - executeCommitment: Basic test cases", () => {
         })
 
         it("should remove the commitment after execution", async () => {
-            expect((await poolCommiter.commits(commit.commitID)).amount).to.eq(
+            expect((await poolCommitter.commits(commit.commitID)).amount).to.eq(
                 amountCommitted
             )
             await timeout(2000)
             await pool.poolUpkeep(9, 10)
-            expect((await poolCommiter.commits(commit.commitID)).amount).to.eq(
+            expect((await poolCommitter.commits(commit.commitID)).amount).to.eq(
                 0
             )
         })
@@ -131,7 +170,7 @@ describe("PoolCommiter - executeCommitment: Basic test cases", () => {
                 pool.connect(signers[1]).poolUpkeep(9, 10)
             ).to.be.revertedWith("msg.sender not keeper")
             // Doesn't delete commit
-            expect((await poolCommiter.commits(commit.commitID)).amount).to.eq(
+            expect((await poolCommitter.commits(commit.commitID)).amount).to.eq(
                 amountCommitted
             )
         })

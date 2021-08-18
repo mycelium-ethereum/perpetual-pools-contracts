@@ -39,7 +39,7 @@ describe("LeveragedPool - executeCommitment: Short Burn", () => {
     let pool: LeveragedPool
     let signers: SignerWithAddress[]
     let commit: CommitEventArgs
-    let poolCommiter: PoolCommitter
+    let poolCommitter: PoolCommitter
 
     describe("Short Burn", () => {
         beforeEach(async () => {
@@ -57,15 +57,15 @@ describe("LeveragedPool - executeCommitment: Short Burn", () => {
             token = result.token
             shortToken = result.shortToken
             library = result.library
-            poolCommiter = result.poolCommiter
+            poolCommitter = result.poolCommitter
             await token.approve(pool.address, amountMinted)
-            commit = await createCommit(poolCommiter, [0], amountCommitted)
+            commit = await createCommit(poolCommitter, [0], amountCommitted)
             await timeout(2000)
             await pool.setKeeper(signers[0].address)
             await pool.poolUpkeep(lastPrice, 10)
 
             await shortToken.approve(pool.address, amountCommitted)
-            commit = await createCommit(poolCommiter, [1], amountCommitted)
+            commit = await createCommit(poolCommitter, [1], amountCommitted)
         })
         it("should reduce the live short pool balance", async () => {
             expect(await pool.shortBalance()).to.eq(amountCommitted)
@@ -74,12 +74,12 @@ describe("LeveragedPool - executeCommitment: Short Burn", () => {
             expect(await pool.shortBalance()).to.eq(0)
         })
         it("should reduce the shadow short burn pool balance", async () => {
-            expect(await poolCommiter.shadowPools(commit.commitType)).to.eq(
+            expect(await poolCommitter.shadowPools(commit.commitType)).to.eq(
                 amountCommitted
             )
             await timeout(2000)
             await pool.poolUpkeep(lastPrice, 10)
-            expect(await poolCommiter.shadowPools(commit.commitType)).to.eq(0)
+            expect(await poolCommitter.shadowPools(commit.commitType)).to.eq(0)
         })
         it("should transfer quote tokens to the commit owner", async () => {
             expect(await token.balanceOf(signers[0].address)).to.eq(

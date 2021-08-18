@@ -4,9 +4,7 @@ pragma solidity 0.8.6;
 import "./PoolCommitter.sol";
 import "../interfaces/IPoolCommitterDeployer.sol";
 
-/*
-@title The deployer of the PoolCommitter contract
-*/
+/// @title The deployer of the PoolCommitter contract
 contract PoolCommitterDeployer is IPoolCommitterDeployer {
     address public factory;
 

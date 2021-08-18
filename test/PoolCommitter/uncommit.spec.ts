@@ -27,8 +27,8 @@ const amountCommitted = ethers.utils.parseEther("2000")
 const amountMinted = ethers.utils.parseEther("10000")
 const feeAddress = generateRandomAddress()
 const lastPrice = getRandomInt(99999999, 1)
-const updateInterval = 2
-const frontRunningInterval = 1
+const updateInterval = 20
+const frontRunningInterval = 10
 const fee = "0x00000000000000000000000000000000"
 const leverage = 1
 const commitType = [2] // Long mint;
@@ -56,7 +56,7 @@ describe("PoolCommitter.uncommit", () => {
         )
         signers = elements.signers
         pool = elements.pool
-        committer = elements.poolCommiter
+        committer = elements.poolCommitter
         token = elements.token
         longToken = elements.longToken
         shortToken = elements.shortToken
@@ -215,7 +215,7 @@ describe("PoolCommitter.uncommit", () => {
             const pairToken = await (
                 await committer.commit([2], amountCommitted)
             ).wait()
-            await timeout(2000)
+            await timeout(updateInterval * 1000)
             await pool.poolUpkeep(1, 2)
             const receipt = await (
                 await committer.commit([3], amountCommitted)
@@ -238,7 +238,7 @@ describe("PoolCommitter.uncommit", () => {
             const pairToken = await (
                 await committer.commit([2], amountCommitted)
             ).wait()
-            await timeout(2000)
+            await timeout(updateInterval * 1000)
             await pool.poolUpkeep(1, 2)
             const receipt = await (
                 await committer.commit([3], amountCommitted)
@@ -262,7 +262,7 @@ describe("PoolCommitter.uncommit", () => {
             const pairToken = await (
                 await committer.commit([2], amountCommitted)
             ).wait()
-            await timeout(2000)
+            await timeout(updateInterval * 1000)
             await pool.poolUpkeep(1, 2)
             const receipt = await (
                 await committer.commit([3], amountCommitted)
@@ -282,7 +282,7 @@ describe("PoolCommitter.uncommit", () => {
             const pairToken = await (
                 await committer.commit([0], amountCommitted)
             ).wait()
-            await timeout(2000)
+            await timeout(updateInterval * 1000)
             await pool.poolUpkeep(1, 2)
             const receipt = await (
                 await committer.commit([1], amountCommitted)
@@ -304,7 +304,7 @@ describe("PoolCommitter.uncommit", () => {
             const pairToken = await (
                 await committer.commit([0], amountCommitted)
             ).wait()
-            await timeout(2000)
+            await timeout(updateInterval * 1000)
             await pool.poolUpkeep(1, 2)
             const receipt = await (
                 await committer.commit([1], amountCommitted)
@@ -327,7 +327,7 @@ describe("PoolCommitter.uncommit", () => {
             const pairToken = await (
                 await committer.commit([0], amountCommitted)
             ).wait()
-            await timeout(2000)
+            await timeout(updateInterval * 1000)
             await pool.poolUpkeep(1, 2)
             const receipt = await (
                 await committer.commit([1], amountCommitted)
@@ -341,4 +341,37 @@ describe("PoolCommitter.uncommit", () => {
             )
         })
     })
+
+    context(
+        "When the uncommit happens after frontRunningInterval has passed",
+        async () => {
+            it("Should revert", async () => {
+                const elements = await deployPoolAndTokenContracts(
+                    POOL_CODE,
+                    100,
+                    250,
+                    fee,
+                    leverage,
+                    feeAddress,
+                    amountMinted
+                )
+                signers = elements.signers
+                pool = elements.pool
+                committer = elements.poolCommitter
+                token = elements.token
+                longToken = elements.longToken
+                shortToken = elements.shortToken
+                library = elements.library
+                await token.approve(pool.address, ethers.constants.MaxUint256)
+                await pool.setKeeper(signers[0].address)
+                const commitId = await committer.commitIDCounter()
+                await committer.commit([0], amountCommitted)
+                // Wait until somewhere between `frontRunningInterval <-> updateInterval`
+                await timeout(175 * 1000)
+                expect(committer.uncommit(commitId)).to.be.revertedWith(
+                    "Must uncommit before frontRunningInterval"
+                )
+            })
+        }
+    )
 })

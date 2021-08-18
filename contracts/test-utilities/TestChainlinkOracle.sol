@@ -1,11 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.6;
 
-/**
- * @dev The following is a mock Chainlink Price Feed Implementation.
- *      It is used purely for the purpose of testing.
- *      DO NOT USE IN PRODUCTION
- */
+/// @dev The following is a mock Chainlink Price Feed Implementation.
+///      It is used purely for the purpose of testing & not to be used in production
 contract TestChainlinkOracle {
     int256 public price = 100000000;
     uint8 public decimals = 8; // default of 8 decimals for USD price feeds in the Chainlink ecosystem
@@ -22,18 +19,18 @@ contract TestChainlinkOracle {
         external
         view
         returns (
-            uint80 roundId,
-            int256 answer,
-            uint256 startedAt,
-            uint256 updatedAt,
-            uint80 answeredInRound
+            uint80,
+            int256,
+            uint256,
+            uint256,
+            uint80
         )
     {
-        roundId = ROUND_ID;
-        answer = price;
-        startedAt = 0;
-        updatedAt = block.timestamp;
-        answeredInRound = ROUND_ID;
+        uint80 roundId = ROUND_ID;
+        int256 answer = price;
+        uint256 startedAt = 0;
+        uint256 updatedAt = block.timestamp;
+        uint80 answeredInRound = ROUND_ID;
 
         return (roundId, answer, startedAt, updatedAt, answeredInRound);
     }

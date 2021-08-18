@@ -34,7 +34,7 @@ const fee = "0x00000000000000000000000000000000"
 const leverage = 1
 
 describe("LeveragedPool - executeAllCommitments", () => {
-    let poolCommiter: PoolCommitter
+    let poolCommitter: PoolCommitter
     let token: TestToken
     let shortToken: ERC20
     let longToken: ERC20
@@ -54,7 +54,7 @@ describe("LeveragedPool - executeAllCommitments", () => {
         )
         pool = result.pool
         library = result.library
-        poolCommiter = result.poolCommiter
+        poolCommitter = result.poolCommitter
 
         token = result.token
         shortToken = result.shortToken
@@ -63,8 +63,8 @@ describe("LeveragedPool - executeAllCommitments", () => {
         await token.approve(pool.address, amountMinted)
 
         // Long mint commit
-        await createCommit(poolCommiter, [2], amountCommitted)
-        await createCommit(poolCommiter, [0], amountCommitted)
+        await createCommit(poolCommitter, [2], amountCommitted)
+        await createCommit(poolCommitter, [0], amountCommitted)
 
         await shortToken.approve(pool.address, amountMinted)
         await longToken.approve(pool.address, await longToken.totalSupply())
@@ -81,9 +81,9 @@ describe("LeveragedPool - executeAllCommitments", () => {
     describe("With one Long Mint and one Long Burn and normal price change", async () => {
         it("Updates state", async () => {
             // Long mint commit
-            await createCommit(poolCommiter, [2], amountCommitted)
+            await createCommit(poolCommitter, [2], amountCommitted)
             // Long burn commit
-            await createCommit(poolCommiter, [3], amountCommitted.div(2))
+            await createCommit(poolCommitter, [3], amountCommitted.div(2))
             await timeout(2000)
 
             const shortTokenTotalSupplyBefore = await shortToken.totalSupply()
@@ -122,7 +122,7 @@ describe("LeveragedPool - executeAllCommitments", () => {
             expect(shortBalanceAfter).to.equal(shortBalanceBefore.div(2))
 
             const earliestCommitUnexecuted =
-                await poolCommiter.earliestCommitUnexecuted()
+                await poolCommitter.earliestCommitUnexecuted()
             expect(earliestCommitUnexecuted).to.equal(NO_COMMITS_REMAINING)
         })
     })

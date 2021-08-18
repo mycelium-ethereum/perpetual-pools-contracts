@@ -1,3 +1,4 @@
+import { incrementPrice } from "../test/utilities"
 import {
     LeveragedPool__factory,
     PoolFactory__factory,
@@ -7,8 +8,8 @@ import {
     PoolFactory,
     PoolKeeper__factory,
     PoolKeeper,
-    TestOracleWrapper__factory,
-    TestOracleWrapper,
+    ChainlinkOracleWrapper__factory,
+    ChainlinkOracleWrapper,
     PoolToken__factory,
     PoolToken,
     PoolCommitter__factory,
@@ -37,11 +38,11 @@ async function main() {
     ).connect(deployer) as PoolKeeper
 
     /* Get the Oracle */
-    const oracleWrapper = await deployments.get("TestOracleWrapper")
+    const oracleWrapper = await deployments.get("ChainlinkOracleWrapper")
     const oracleWrapperInstance = new ethers.Contract(
         oracleWrapper.address,
-        TestOracleWrapper__factory.abi
-    ).connect(deployer) as TestOracleWrapper
+        ChainlinkOracleWrapper__factory.abi
+    ).connect(deployer) as ChainlinkOracleWrapper
 
     /* Get deployed pool */
     const createdMarkets = factoryInstance.filters.DeployPool()
@@ -117,7 +118,7 @@ async function main() {
     const updateInterval = 60
 
     /* Changing price */
-    await oracleWrapperInstance.incrementPrice()
+    // await oracleWrapperInstance.incrementPrice()
 
     console.log("Fast forward 10 mins")
     await ethers.provider.send("evm_increaseTime", [updateInterval + 1], {

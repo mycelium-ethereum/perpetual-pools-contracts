@@ -6,8 +6,8 @@ import { generateRandomAddress } from "../utilities"
 import { MARKET_2, POOL_CODE, POOL_CODE_2 } from "../constants"
 import {
     TestChainlinkOracle,
-    TestOracleWrapper,
-    TestOracleWrapper__factory,
+    ChainlinkOracleWrapper,
+    ChainlinkOracleWrapper__factory,
     TestChainlinkOracle__factory,
     PoolFactory__factory,
     PoolKeeper,
@@ -21,9 +21,10 @@ chai.use(chaiAsPromised)
 const { expect } = chai
 
 let quoteToken: string
-let oracleWrapper: TestOracleWrapper
-let keeperOracle: TestOracleWrapper
+let oracleWrapper: ChainlinkOracleWrapper
+let settlementEthOracle: ChainlinkOracleWrapper
 let oracle: TestChainlinkOracle
+let ethOracle: TestChainlinkOracle
 let poolKeeper: PoolKeeper
 let factory: PoolFactory
 
@@ -52,14 +53,14 @@ const setupHook = async () => {
     oracle = await oracleFactory.deploy()
     await oracle.deployed()
     const oracleWrapperFactory = (await ethers.getContractFactory(
-        "TestOracleWrapper",
+        "ChainlinkOracleWrapper",
         signers[0]
-    )) as TestOracleWrapper__factory
+    )) as ChainlinkOracleWrapper__factory
     oracleWrapper = await oracleWrapperFactory.deploy(oracle.address)
     await oracleWrapper.deployed()
 
-    keeperOracle = await oracleWrapperFactory.deploy(oracle.address)
-    await keeperOracle.deployed()
+    settlementEthOracle = await oracleWrapperFactory.deploy(oracle.address)
+    await settlementEthOracle.deployed()
 
     // Deploy pool keeper
     const libraryFactory = (await ethers.getContractFactory(
@@ -70,6 +71,7 @@ const setupHook = async () => {
     await library.deployed()
     const poolKeeperFactory = (await ethers.getContractFactory("PoolKeeper", {
         signer: signers[0],
+        libraries: { PoolSwapLibrary: library.address },
     })) as PoolKeeper__factory
     const PoolFactory = (await ethers.getContractFactory("PoolFactory", {
         signer: signers[0],
@@ -93,7 +95,7 @@ const setupHook = async () => {
         leverageAmount: 1,
         quoteToken: quoteToken,
         oracleWrapper: oracleWrapper.address,
-        keeperOracle: keeperOracle.address,
+        settlementEthOracle: settlementEthOracle.address,
     }
     await factory.deployPool(deploymentData)
 
@@ -104,7 +106,7 @@ const setupHook = async () => {
         leverageAmount: 2,
         quoteToken: quoteToken,
         oracleWrapper: oracleWrapper.address,
-        keeperOracle: keeperOracle.address,
+        settlementEthOracle: settlementEthOracle.address,
     }
     await factory.deployPool(deploymentData2)
 }
