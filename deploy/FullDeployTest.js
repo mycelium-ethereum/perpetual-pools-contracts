@@ -4,8 +4,6 @@ module.exports = async (hre) => {
     const { deployer } = await getNamedAccounts()
     const [_deployer, ...accounts] = await ethers.getSigners()
 
-    console.log("Using deployer: " + deployer)
-
     /* deploy TestOracle */
     const chainlinkOracle = await deploy("TestChainlinkOracle", {
         from: deployer,
@@ -19,6 +17,7 @@ module.exports = async (hre) => {
         log: true,
         contract: "TestToken",
     })
+
     // mint some dollar bills
     await execute(
         "TestToken",
@@ -102,6 +101,7 @@ module.exports = async (hre) => {
     const poolKeeper = await deploy("PoolKeeper", {
         from: deployer,
         log: true,
+        libraries: { PoolSwapLibrary: library.address },
         args: [factory.address],
     })
 
@@ -115,23 +115,6 @@ module.exports = async (hre) => {
         "setPoolKeeper",
         poolKeeper.address
     )
-
-    const POOL_CODE = "tETH"
-
-    const updateInterval = 60 // 1 minute
-    const frontRunningInterval = 1 // seconds
-    const leverage = 1
-
-    /* deploy LeveragePool */
-    const deploymentData = {
-        poolName: POOL_CODE,
-        frontRunningInterval: frontRunningInterval,
-        updateInterval: updateInterval,
-        leverageAmount: leverage,
-        quoteToken: token.address,
-        oracleWrapper: oracleWrapper.address,
-        settlementEthOracle: keeperOracle.address,
-    }
 
     console.log("Setting factory fee")
     const fee = "0x00000000000000000000000000000000"
@@ -158,6 +141,23 @@ module.exports = async (hre) => {
         "setPoolCommitterDeployer",
         poolCommitterDeployer.address
     )
+
+    const POOL_CODE = "tETH"
+
+    const updateInterval = 60 // 1 minute
+    const frontRunningInterval = 1 // seconds
+    const leverage = 1
+
+    /* deploy LeveragePool */
+    const deploymentData = {
+        poolName: POOL_CODE,
+        frontRunningInterval: frontRunningInterval,
+        updateInterval: updateInterval,
+        leverageAmount: leverage,
+        quoteToken: token.address,
+        oracleWrapper: oracleWrapper.address,
+        settlementEthOracle: keeperOracle.address,
+    }
 
     const receipt = await execute(
         "PoolFactory",
