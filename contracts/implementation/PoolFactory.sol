@@ -86,12 +86,12 @@ contract PoolFactory is IPoolFactory, Ownable {
         address _pool = address(pool);
         emit DeployPool(_pool, deploymentParameters.poolName);
 
-        address shortToken = deployPairToken(
+        address longToken = deployPairToken(
             _pool,
             string(abi.encodePacked(deploymentParameters.poolName, "-LONG")),
             string(abi.encodePacked("L-", deploymentParameters.poolName))
         );
-        address longToken = deployPairToken(
+        address shortToken = deployPairToken(
             _pool,
             string(abi.encodePacked(deploymentParameters.poolName, "-SHORT")),
             string(abi.encodePacked("S-", deploymentParameters.poolName))
@@ -101,8 +101,8 @@ contract PoolFactory is IPoolFactory, Ownable {
             _poolKeeper,
             deploymentParameters.oracleWrapper,
             deploymentParameters.settlementEthOracle,
-            shortToken,
             longToken,
+            shortToken,
             poolCommitter,
             deploymentParameters.poolName,
             deploymentParameters.frontRunningInterval,
