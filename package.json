@@ -13,7 +13,8 @@
         "slither": "npm run build && slither . --filter-path node_modules --exclude-dependencies --exclude-optimization --exclude-informational",
         "removeLogs": "npx hardhat remove-logs",
         "lint": "prettier --check .",
-        "lint:fix": "prettier . --write"
+        "lint:fix": "prettier . --write",
+        "uml": "sol2uml contracts"
     },
     "repository": {
         "type": "git",
@@ -53,6 +54,7 @@
         "mocha": "^9.0.3",
         "prettier": "^2.3.0",
         "prettier-plugin-solidity": "^1.0.0-beta.10",
+        "sol2uml": "^1.1.29",
         "ts-generator": "^0.1.1",
         "ts-node": "^10.1.0",
         "typechain": "^5.0.0",
