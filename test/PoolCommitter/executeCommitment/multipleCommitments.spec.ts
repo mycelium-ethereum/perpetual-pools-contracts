@@ -47,8 +47,7 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
                 updateInterval,
                 fee,
                 leverage,
-                feeAddress,
-                amountMinted
+                feeAddress
             )
             pool = result.pool
             library = result.library
@@ -114,8 +113,7 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
                 updateInterval,
                 fee,
                 leverage,
-                feeAddress,
-                amountMinted
+                feeAddress
             )
             pool = result.pool
             library = result.library

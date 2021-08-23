@@ -66,7 +66,7 @@ export const getEventArgs = (
     return txReceipt?.events?.find((el: Event) => el.event === eventType)?.args
 }
 
-const deployPoolSetupContracts = deployments.createFixture(async () => {
+export const deployPoolSetupContracts = deployments.createFixture(async () => {
     const amountMinted = DEFAULT_MINT_AMOUNT
 
     const signers = await ethers.getSigners()
@@ -185,8 +185,7 @@ export const deployPoolAndTokenContracts = async (
     updateInterval: number,
     fee: BytesLike,
     leverage: number,
-    feeAddress: string,
-    amountMinted: BigNumberish
+    feeAddress: string
 ): Promise<{
     signers: SignerWithAddress[]
     pool: LeveragedPool
@@ -212,6 +211,7 @@ export const deployPoolAndTokenContracts = async (
     }
 
     await setupContracts.factory.setFee(fee)
+    await setupContracts.factory.setFeeReceiver(feeAddress)
     await setupContracts.factory.deployPool(deployParams)
     const poolAddress = await setupContracts.factory.pools(0)
     const pool = await ethers.getContractAt("LeveragedPool", poolAddress)

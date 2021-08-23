@@ -51,8 +51,7 @@ describe("PoolCommitter.uncommit", () => {
             updateInterval,
             fee,
             leverage,
-            feeAddress,
-            amountMinted
+            feeAddress
         )
         signers = elements.signers
         pool = elements.pool
@@ -352,8 +351,7 @@ describe("PoolCommitter.uncommit", () => {
                     250,
                     fee,
                     leverage,
-                    feeAddress,
-                    amountMinted
+                    feeAddress
                 )
                 signers = elements.signers
                 pool = elements.pool

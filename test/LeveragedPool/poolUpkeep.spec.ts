@@ -49,8 +49,7 @@ describe("LeveragedPool - executeAllCommitments", () => {
             updateInterval,
             fee,
             leverage,
-            feeAddress,
-            amountMinted
+            feeAddress
         )
         pool = result.pool
         library = result.library
@@ -137,7 +136,6 @@ describe("LeveragedPool - executeAllCommitments", () => {
                 fee,
                 leverage,
                 feeAddress,
-                amountMinted
             )
             pool = result.pool
             library = result.library

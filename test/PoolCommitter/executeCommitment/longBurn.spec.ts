@@ -49,8 +49,7 @@ describe("LeveragedPool - executeCommitment: Long Burn", () => {
                 updateInterval,
                 fee,
                 leverage,
-                feeAddress,
-                amountMinted
+                feeAddress
             )
             pool = result.pool
             signers = result.signers

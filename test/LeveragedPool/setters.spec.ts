@@ -22,8 +22,7 @@ describe("LeveragedPool - setters", () => {
             5, // updateInterval
             "0x00000000000000000000000000000000",
             1,
-            signers[0].address,
-            500
+            signers[0].address
         )
         pool = result.pool
         keeper = result.poolKeeper

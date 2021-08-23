@@ -50,8 +50,7 @@ describe("poolCommitter - executeCommitment: Basic test cases", () => {
                 250,
                 fee,
                 leverage,
-                feeAddress,
-                amountMinted
+                feeAddress
             )
             signers = elements.signers
             pool = elements.pool
@@ -89,8 +88,7 @@ describe("poolCommitter - executeCommitment: Basic test cases", () => {
                 updateInterval,
                 fee,
                 leverage,
-                feeAddress,
-                amountMinted
+                feeAddress
             )
             pool = result.pool
             signers = result.signers
@@ -126,8 +124,7 @@ describe("poolCommitter - executeCommitment: Basic test cases", () => {
                 updateInterval,
                 fee,
                 leverage,
-                feeAddress,
-                amountMinted
+                feeAddress
             )
             pool = result.pool
             signers = result.signers
