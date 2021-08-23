@@ -211,9 +211,7 @@ describe("PoolCommitter.uncommit", () => {
 
     context("When specified commitment is a long burn", async () => {
         it("updates the shadow long burn balance", async () => {
-            const pairToken = await (
-                await committer.commit([2], amountCommitted)
-            ).wait()
+            await committer.commit([2], amountCommitted)
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(1, 2)
             const receipt = await (
@@ -234,9 +232,7 @@ describe("PoolCommitter.uncommit", () => {
         })
 
         it("does not transfer quote tokens", async () => {
-            const pairToken = await (
-                await committer.commit([2], amountCommitted)
-            ).wait()
+            await committer.commit([2], amountCommitted)
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(1, 2)
             const receipt = await (
@@ -258,9 +254,7 @@ describe("PoolCommitter.uncommit", () => {
         })
 
         it("refunds long pair tokens to the user", async () => {
-            const pairToken = await (
-                await committer.commit([2], amountCommitted)
-            ).wait()
+            await committer.commit([2], amountCommitted)
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(1, 2)
             const receipt = await (
@@ -278,9 +272,7 @@ describe("PoolCommitter.uncommit", () => {
 
     context("When specified commitment is a short burn", async () => {
         it("updates the shadow short burn balance", async () => {
-            const pairToken = await (
-                await committer.commit([0], amountCommitted)
-            ).wait()
+            await committer.commit([0], amountCommitted)
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(1, 2)
             const receipt = await (
@@ -300,9 +292,7 @@ describe("PoolCommitter.uncommit", () => {
             ).to.eq(true)
         })
         it("does not transfer quote tokens", async () => {
-            const pairToken = await (
-                await committer.commit([0], amountCommitted)
-            ).wait()
+            await committer.commit([0], amountCommitted)
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(1, 2)
             const receipt = await (
@@ -323,9 +313,7 @@ describe("PoolCommitter.uncommit", () => {
             expect(await token.balanceOf(pool.address)).to.eq(amountCommitted)
         })
         it("refunds short pair tokens to the user", async () => {
-            const pairToken = await (
-                await committer.commit([0], amountCommitted)
-            ).wait()
+            await committer.commit([0], amountCommitted)
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(1, 2)
             const receipt = await (
