@@ -232,73 +232,26 @@ describe("LeveragedPool - initialize", () => {
         let testFactoryActual: TestPoolFactory
         let poolCommitter: PoolCommitter
         beforeEach(async () => {
-            const setupContracts = await deployPoolSetupContracts()
-            const library = setupContracts.library
-            const factory = setupContracts.factory
-            const token = setupContracts.token
+            const setupContracts = await deployPoolAndTokenContracts(
+                POOL_CODE,
+                frontRunningInterval,
+                updateInterval,
+                fee,
+                leverage,
+                feeAddress
+            )
             oracleWrapper = setupContracts.oracleWrapper
             settlementEthOracle = setupContracts.settlementEthOracle
             quoteToken = setupContracts.token.address
+            poolCommitter = setupContracts.poolCommitter
 
-            const poolCommitterFactory = (await ethers.getContractFactory(
-                "PoolCommitter",
-                {
-                    signer: signers[0],
-                    libraries: { PoolSwapLibrary: library.address },
-                }
-            )) as PoolCommitter__factory
-
-            poolCommitter = await (
-                await poolCommitterFactory.deploy(factory.address)
-            ).deployed()
-
-            const leveragedPoolFactory = (await ethers.getContractFactory(
-                "LeveragedPool",
-                {
-                    signer: signers[0],
-                    libraries: { PoolSwapLibrary: library.address },
-                }
-            )) as LeveragedPool__factory
-            const poolTokenFactory = (await ethers.getContractFactory(
-                "TestToken",
-                signers[0]
-            )) as TestToken__factory
-            short = await poolTokenFactory.deploy(
-                POOL_CODE.concat("-SHORT"),
-                "S-".concat(POOL_CODE)
-            )
-            await short.deployed()
-
-            long = await poolTokenFactory.deploy(
-                POOL_CODE.concat("-LONG"),
-                "L-".concat(POOL_CODE)
-            )
-            await long.deployed()
-            const pool = await leveragedPoolFactory.deploy()
-            await pool.deployed()
-            await (
-                await pool.initialize({
-                    _owner: signers[0].address,
-                    _keeper: generateRandomAddress(),
-                    _oracleWrapper: oracleWrapper.address,
-                    _settlementEthOracle: settlementEthOracle.address,
-                    _longToken: long.address,
-                    _shortToken: short.address,
-                    _poolCommitter: poolCommitter.address,
-                    _poolName: POOL_CODE,
-                    _frontRunningInterval: frontRunningInterval,
-                    _updateInterval: updateInterval,
-                    _fee: fee,
-                    _leverageAmount: leverage,
-                    _feeAddress: feeAddress,
-                    _quoteToken: token.address,
-                })
-            ).wait()
             const testFactory = (await ethers.getContractFactory(
                 "TestPoolFactory",
                 signers[0]
             )) as TestPoolFactory__factory
-            testFactoryActual = await testFactory.deploy(pool.address)
+            testFactoryActual = await testFactory.deploy(
+                setupContracts.pool.address
+            )
             await testFactoryActual.deployed()
             const factoryReceipt = await (
                 await testFactoryActual.createPool(POOL_CODE)

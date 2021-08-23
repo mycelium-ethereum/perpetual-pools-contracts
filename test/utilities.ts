@@ -29,6 +29,7 @@ import {
     PoolCommitter,
     PoolCommitterDeployer__factory,
     TestChainlinkOracle,
+    ChainlinkOracleWrapper,
 } from "../typechain"
 
 import { abi as ERC20Abi } from "../artifacts/@openzeppelin/contracts/token/ERC20/ERC20.sol/ERC20.json"
@@ -190,12 +191,15 @@ export const deployPoolAndTokenContracts = async (
     signers: SignerWithAddress[]
     pool: LeveragedPool
     token: TestToken
+    library: PoolSwapLibrary
     shortToken: ERC20
     longToken: ERC20
-    library: PoolSwapLibrary
     poolCommitter: PoolCommitter
     poolKeeper: PoolKeeper
     chainlinkOracle: TestChainlinkOracle
+    factory: PoolFactory
+    oracleWrapper: ChainlinkOracleWrapper
+    settlementEthOracle: ChainlinkOracleWrapper
 }> => {
     const setupContracts = await deployPoolSetupContracts()
 
@@ -230,6 +234,9 @@ export const deployPoolAndTokenContracts = async (
     const library = setupContracts.library
     const poolKeeper = setupContracts.poolKeeper
     const chainlinkOracle = setupContracts.chainlinkOracle
+    const factory = setupContracts.factory
+    const oracleWrapper = setupContracts.oracleWrapper
+    const settlementEthOracle = setupContracts.settlementEthOracle
 
     return {
         signers,
@@ -245,6 +252,9 @@ export const deployPoolAndTokenContracts = async (
         poolCommitter,
         poolKeeper,
         chainlinkOracle,
+        factory,
+        oracleWrapper,
+        settlementEthOracle,
     }
 }
 
