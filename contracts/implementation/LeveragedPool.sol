@@ -37,7 +37,9 @@ contract LeveragedPool is ILeveragedPool, Initializable {
 
     string public override poolName;
     address public override oracleWrapper;
+    address public override gasOracleWrapper;
     address public override settlementEthOracle;
+    address public override gasEthOracle;
 
     // #### Functions
 
@@ -45,13 +47,15 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         require(initialization._feeAddress != address(0), "Fee address cannot be 0 address");
         require(initialization._quoteToken != address(0), "Quote token cannot be 0 address");
         require(initialization._oracleWrapper != address(0), "Oracle wrapper cannot be 0 address");
-        require(initialization._settlementEthOracle != address(0), "Keeper oracle cannot be 0 address");
+        require(initialization._settlementEthOracle != address(0), "Keeper oracle cannot be 0 address"); //Pretty Sure this can go, dont seem to be using it and you set the oracle address inside the wrapper contract
         require(initialization._owner != address(0), "Owner cannot be 0 address");
         require(initialization._keeper != address(0), "Keeper cannot be 0 address");
         require(initialization._longToken != address(0), "Long token cannot be 0 address");
         require(initialization._shortToken != address(0), "Short token cannot be 0 address");
         require(initialization._poolCommitter != address(0), "PoolCommitter cannot be 0 address");
         require(initialization._frontRunningInterval < initialization._updateInterval, "frontRunning > updateInterval");
+        require(initialization._gasEthOracle != address(0), "GasEthOracle cannot be 0 address"); //Pretty Sure this can go, dont seem to be using it and you set the oracle address inside the wrapper contract - Same here, I just included on of these to be consistent with this code
+        require(initialization._gasOracleWrapper != address(0), "GasOracle wrapper cannot be 0 address");
 
         require(
             PoolSwapLibrary.compareDecimals(initialization._fee, PoolSwapLibrary.one) == -1,
@@ -65,6 +69,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         keeper = initialization._keeper;
         oracleWrapper = initialization._oracleWrapper;
         settlementEthOracle = initialization._settlementEthOracle;
+        gasEthOracle = initialization._gasEthOracle;
         quoteToken = initialization._quoteToken;
         frontRunningInterval = initialization._frontRunningInterval;
         updateInterval = initialization._updateInterval;
@@ -95,6 +100,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         executePriceChange(_oldPrice, _newPrice);
         // execute pending commitments to enter and exit the pool
         IPoolCommitter(poolCommitter).executeAllCommitments();
+        //NOTE Reputation Plugs in Here 
         emit CompletedUpkeep(_oldPrice, _newPrice);
     }
 

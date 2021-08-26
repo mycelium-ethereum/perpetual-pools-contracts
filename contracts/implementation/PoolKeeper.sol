@@ -46,7 +46,8 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         address oracleWrapper = ILeveragedPool(_poolAddress).oracleWrapper();
         int256 firstPrice = IOracleWrapper(oracleWrapper).getPrice();
         int256 startingPrice = ABDKMathQuad.toInt(ABDKMathQuad.mul(ABDKMathQuad.fromInt(firstPrice), fixedPoint));
-        emit PoolAdded(_poolAddress, firstPrice);
+        //Note: Where Reputation can plug in
+        emit PoolAdded(_poolAddress, firstPrice); 
         executionPrice[_poolAddress] = startingPrice;
     }
 
@@ -106,10 +107,11 @@ contract PoolKeeper is IPoolKeeper, Ownable {
             // If poolUpkeep is successful, refund the keeper for their gas costs
             uint256 gasSpent = startGas - gasleft();
 
-            // TODO: poll gas price oracle (or BASEFEE)
+            // TODO: poll gas price oracle (or BASEFEE) Want me to do this? - BenM
+            int256 _gasPrice = IOracleWrapper(pool.gasOracleWrapper());
+            //Im not sure what the oracle returns, you guys probably need to throw in a multipliar thingo here - BenM
             // _gasPrice = 10 gwei = 10000000000 wei
-            uint256 _gasPrice = 10 gwei;
-
+            
             payKeeper(_pool, _gasPrice, gasSpent, savedPreviousUpdatedTimestamp, updateInterval);
         } catch Error(string memory reason) {
             // If poolUpkeep fails for any other reason, emit event
