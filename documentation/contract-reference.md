@@ -253,12 +253,11 @@ event ExecuteCommit(uint128 commitID);
 ```  
 Emitted when a commit is executed. Commit execution is the transfer of funds from the pool's shadow balance into the live balances. 
 
-#### PriceChange
+#### Upkeep
 ```
-event PriceChange(
+event CompletedUpkeep(
     int256 indexed startPrice,
     int256 indexed endPrice,
-    uint256 indexed transferAmount
   );
 ```  
 Emitted when a price change execution occurs.

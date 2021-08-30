@@ -12,6 +12,8 @@ import {
     ChainlinkOracleWrapper,
     PoolToken__factory,
     PoolToken,
+    PoolCommitter__factory,
+    PoolCommitter,
 } from "../typechain"
 
 const hre = require("hardhat")
@@ -42,12 +44,6 @@ async function main() {
         ChainlinkOracleWrapper__factory.abi
     ).connect(deployer) as ChainlinkOracleWrapper
 
-    const quoteToken = await deployments.get("TestToken")
-    let quoteTokenInstance = new ethers.Contract(
-        quoteToken.address,
-        TestToken__factory.abi
-    ).connect(deployer) as TestToken
-
     /* Get deployed pool */
     const createdMarkets = factoryInstance.filters.DeployPool()
     const allEvents = await factoryInstance?.queryFilter(createdMarkets)
@@ -59,8 +55,20 @@ async function main() {
             ).connect(deployer) as LeveragedPool
     )[0]
 
+    const poolCommitter = await pool.poolCommitter()
+    let committerInstance = new ethers.Contract(
+        poolCommitter,
+        PoolCommitter__factory.abi
+    ).connect(deployer) as PoolCommitter
+
     const shortMint = [0]
     const longMint = [2]
+
+    const quoteToken = await pool.quoteToken()
+    let quoteTokenInstance = new ethers.Contract(
+        quoteToken,
+        TestToken__factory.abi
+    ).connect(deployer) as TestToken
 
     const token = await pool.tokens(0)
     const tokenInstance = new ethers.Contract(
@@ -77,37 +85,37 @@ async function main() {
     /* Commit to pool */
     console.log(`Account ${accounts[0].address} committing 100 short`)
     quoteTokenInstance = quoteTokenInstance.connect(accounts[0])
-    pool = pool.connect(accounts[0])
+    committerInstance = committerInstance.connect(accounts[0])
     await quoteTokenInstance.approve(
         pool.address,
         ethers.utils.parseEther("1000000")
     )
-    await pool.commit(shortMint, ethers.utils.parseEther("100"))
+    await committerInstance.commit(longMint, ethers.utils.parseEther("100"))
 
     console.log(`Account ${accounts[1].address} committing 75 long`)
     quoteTokenInstance = quoteTokenInstance.connect(accounts[1])
-    pool = pool.connect(accounts[1])
+    committerInstance = committerInstance.connect(accounts[1])
     await quoteTokenInstance.approve(
         pool.address,
         ethers.utils.parseEther("1000000")
     )
-    await pool.commit(longMint, ethers.utils.parseEther("75"))
+    await committerInstance.commit(longMint, ethers.utils.parseEther("75"))
 
     console.log(`Account ${accounts[2].address} committing 50 long`)
     quoteTokenInstance = quoteTokenInstance.connect(accounts[2])
-    pool = pool.connect(accounts[2])
+    committerInstance = committerInstance.connect(accounts[2])
     await quoteTokenInstance.approve(
         pool.address,
         ethers.utils.parseEther("1000000")
     )
-    await pool.commit(longMint, ethers.utils.parseEther("50"))
+    await committerInstance.commit(longMint, ethers.utils.parseEther("50"))
 
     /* Get pool commits and execute them */
-    const createdCommits = pool.filters.CreateCommit()
+    const createdCommits = committerInstance.filters.CreateCommit()
     const allCommits = await pool?.queryFilter(createdCommits)
     let commitIds = allCommits.map((event) => event.args.commitID)
 
-    const updateInterval = 10 * 60
+    const updateInterval = 60
 
     /* Changing price */
     // await oracleWrapperInstance.incrementPrice()
@@ -120,12 +128,8 @@ async function main() {
 
     /* Granting access */
     pool = pool.connect(deployer)
-
-    console.log(`Performing upkeep first round`)
-    await keeperInstance.performUpkeepSinglePool(pool.address)
-
     console.log("Executing commitments")
-    await pool.executeCommitment(commitIds) // fails here
+    await keeperInstance.performUpkeepSinglePool(pool.address)
 
     console.log("Fast forward 10 mins")
     await ethers.provider.send("evm_increaseTime", [updateInterval + 1], {
