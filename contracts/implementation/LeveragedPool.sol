@@ -172,8 +172,10 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         // prevent a division by 0 in computing the price change
         // prevent negative pricing
         if (_oldPrice <= 0 || _newPrice <= 0) {
-            emit PriceChangeError(_oldPrice, _newPrice);
+            emit PriceChangeError(_oldPrice, _newPrice); //Note:Reputation
         } else {
+
+            //Can we get some comments here? 
             PoolSwapLibrary.PriceChangeData memory priceChangeData = PoolSwapLibrary.PriceChangeData(
                 _oldPrice,
                 _newPrice,
@@ -182,6 +184,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
                 leverageAmount,
                 fee
             );
+            //Comment here please, I think also event 
             (uint256 newLongBalance, uint256 newShortBalance, uint256 totalFeeAmount) = PoolSwapLibrary
                 .calculatePriceChange(priceChangeData);
 
@@ -190,6 +193,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
             shortBalance = newShortBalance;
             // Pay the fee
             IERC20(quoteToken).safeTransfer(feeAddress, totalFeeAmount);
+            //Note:Emit event here I think 
         }
     }
 
