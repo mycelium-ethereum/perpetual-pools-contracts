@@ -47,9 +47,9 @@ describe("PoolFactory - deployPool", () => {
             POOL_CODE,
             frontRunningInterval,
             updateInterval,
-            fee,
             leverage,
-            feeAddress
+            feeAddress,
+            fee
         )
         factory = contracts.factory
         poolKeeper = contracts.poolKeeper

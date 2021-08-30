@@ -49,9 +49,9 @@ describe("LeveragedPool - commit", () => {
                 POOL_CODE,
                 frontRunningInterval,
                 updateInterval,
-                fee,
                 leverage,
-                feeAddress
+                feeAddress,
+                fee
             )
             signers = result.signers
             pool = result.pool
@@ -147,9 +147,9 @@ describe("LeveragedPool - commit", () => {
                 POOL_CODE,
                 frontRunningInterval,
                 updateInterval,
-                fee,
                 leverage,
-                feeAddress
+                feeAddress,
+                fee
             )
             signers = result.signers
             pool = result.pool
@@ -210,9 +210,9 @@ describe("LeveragedPool - commit", () => {
                 POOL_CODE,
                 frontRunningInterval,
                 updateInterval,
-                fee,
                 leverage,
-                feeAddress
+                feeAddress,
+                fee
             )
             signers = result.signers
             pool = result.pool

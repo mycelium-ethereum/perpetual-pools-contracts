@@ -184,9 +184,9 @@ export const deployPoolAndTokenContracts = async (
     POOL_CODE: string,
     frontRunningInterval: number,
     updateInterval: number,
-    fee: BytesLike,
     leverage: number,
-    feeAddress: string
+    feeAddress?: string,
+    fee?: BytesLike
 ): Promise<{
     signers: SignerWithAddress[]
     pool: LeveragedPool
@@ -214,8 +214,12 @@ export const deployPoolAndTokenContracts = async (
         settlementEthOracle: setupContracts.settlementEthOracle.address,
     }
 
-    await setupContracts.factory.setFee(fee)
-    await setupContracts.factory.setFeeReceiver(feeAddress)
+    if (fee) {
+        await setupContracts.factory.setFee(fee)
+    }
+    if (feeAddress) {
+        await setupContracts.factory.setFeeReceiver(feeAddress)
+    }
     await setupContracts.factory.deployPool(deployParams)
     const poolAddress = await setupContracts.factory.pools(0)
     const pool = await ethers.getContractAt("LeveragedPool", poolAddress)

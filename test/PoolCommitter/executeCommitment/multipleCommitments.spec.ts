@@ -45,9 +45,9 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
                 POOL_CODE,
                 frontRunningInterval,
                 updateInterval,
-                fee,
                 leverage,
-                feeAddress
+                feeAddress,
+                fee
             )
             pool = result.pool
             library = result.library
@@ -111,9 +111,9 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
                 POOL_CODE,
                 frontRunningInterval,
                 updateInterval,
-                fee,
                 leverage,
-                feeAddress
+                feeAddress,
+                fee
             )
             pool = result.pool
             library = result.library

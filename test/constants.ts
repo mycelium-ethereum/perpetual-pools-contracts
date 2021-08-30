@@ -19,4 +19,4 @@ export const DEFAULT_FEE = "0x00000000000000000000000000000000"
 export const NO_COMMITS_REMAINING = "340282366920938463463374607431768211455"
 
 // Calculated by commenting out the keeper reward logic and calling performUpkeepSinglePool
-export const SINGLE_POOL_UPKEEP_GAS_COST = "103358"
+export const SINGLE_POOL_UPKEEP_GAS_COST = "67678"

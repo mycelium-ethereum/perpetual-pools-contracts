@@ -38,9 +38,9 @@ const setupHook = async () => {
         POOL_CODE,
         frontRunningInterval,
         updateInterval,
-        fee,
         leverage,
-        feeAddress
+        feeAddress,
+        fee
     )
     library = result.library
     pool = result.pool

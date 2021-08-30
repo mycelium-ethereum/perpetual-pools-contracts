@@ -68,9 +68,9 @@ describe("LeveragedPool - initialize", () => {
                 POOL_CODE,
                 frontRunningInterval,
                 updateInterval,
-                fee,
                 leverage,
-                feeAddress
+                feeAddress,
+                fee
             )
             leveragedPool = contracts.pool
             library = contracts.library
@@ -236,9 +236,9 @@ describe("LeveragedPool - initialize", () => {
                 POOL_CODE,
                 frontRunningInterval,
                 updateInterval,
-                fee,
                 leverage,
-                feeAddress
+                feeAddress,
+                fee
             )
             oracleWrapper = setupContracts.oracleWrapper
             settlementEthOracle = setupContracts.settlementEthOracle
