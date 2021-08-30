@@ -40,6 +40,7 @@ const config: HardhatUserConfig = {
         },
         local: {
             url: "http://localhost:8545",
+            gas: "auto"
         },
     },
     etherscan: {

@@ -2,13 +2,29 @@ module.exports = async (hre) => {
     const { getNamedAccounts, ethers } = hre
     const { deploy, execute } = deployments
     const { deployer } = await getNamedAccounts()
-    const [_deployer, ...accounts] = await ethers.getSigners()
+    const accounts = await ethers.getSigners()
 
     /* deploy TestOracle */
-    const chainlinkOracle = await deploy("TestChainlinkOracle", {
+    const chainlinkOracle = await deploy("DerivativeOracle", {
+        contract: "TestChainlinkOracle",
         from: deployer,
         log: true,
     })
+
+    const settlementEthOracle = await deploy("SettlementEthOracle", {
+        contract: "TestChainlinkOracle",
+        from: deployer,
+        log: true,
+    })
+
+    await execute("SettlementEthOracle",
+        {
+            from: deployer,
+            log: true,
+        },
+        "setPrice",
+        3000 * 10 ** 8
+    )
 
     /* deploy testToken */
     const token = await deploy("TestToken", {
@@ -27,38 +43,7 @@ module.exports = async (hre) => {
         },
         "mint",
         ethers.utils.parseEther("10000000"), // 10 mil supply
-        deployer
-    )
-    // send 1000 to first 3 accounts
-    await execute(
-        "TestToken",
-        {
-            from: deployer,
-            log: true,
-        },
-        "transfer",
-        accounts[0].address,
-        ethers.utils.parseEther("1000")
-    )
-    await execute(
-        "TestToken",
-        {
-            from: deployer,
-            log: true,
-        },
-        "transfer",
-        accounts[1].address,
-        ethers.utils.parseEther("1000")
-    )
-    await execute(
-        "TestToken",
-        {
-            from: deployer,
-            log: true,
-        },
-        "transfer",
-        accounts[2].address,
-        ethers.utils.parseEther("1000")
+        accounts[0].address
     )
 
     /* deploy ChainlinkOracleWrapper */
@@ -71,7 +56,7 @@ module.exports = async (hre) => {
     const keeperOracle = await deploy("ChainlinkOracleWrapper", {
         from: deployer,
         log: true,
-        args: [chainlinkOracle.address],
+        args: [settlementEthOracle.address],
     })
 
     /* deploy PoolSwapLibrary */
@@ -86,7 +71,7 @@ module.exports = async (hre) => {
         log: true,
         libraries: { PoolSwapLibrary: library.address },
         // (fee receiver)
-        args: [deployer],
+        args: [accounts[0].address],
     })
 
     /* deploy PoolFactory */
