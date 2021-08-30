@@ -12,8 +12,6 @@ import "./PoolKeeper.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-import "hardhat/console.sol";
-
 /// @title The pool factory contract
 contract PoolFactory is IPoolFactory, Ownable {
     // #### Globals
@@ -43,7 +41,6 @@ contract PoolFactory is IPoolFactory, Ownable {
     // #### Functions
     constructor(address _feeReceiver) {
         // Deploy base contracts
-        console.log("hi");
         pairTokenBase = new PoolToken();
         poolBase = new LeveragedPool();
 

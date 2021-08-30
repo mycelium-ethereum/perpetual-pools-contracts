@@ -17,7 +17,8 @@ module.exports = async (hre) => {
         log: true,
     })
 
-    await execute("SettlementEthOracle",
+    await execute(
+        "SettlementEthOracle",
         {
             from: deployer,
             log: true,
