@@ -70,6 +70,11 @@ async function main() {
         TestToken__factory.abi
     ).connect(deployer) as TestToken
 
+    const amount = ethers.utils.parseEther("1000")
+    await quoteTokenInstance.connect(deployer).transfer(accounts[0].address, amount)
+    await quoteTokenInstance.connect(deployer).transfer(accounts[1].address, amount)
+    await quoteTokenInstance.connect(deployer).transfer(accounts[2].address, amount)
+
     const token = await pool.tokens(0)
     const tokenInstance = new ethers.Contract(
         token,
