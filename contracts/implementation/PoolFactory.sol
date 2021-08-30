@@ -168,4 +168,9 @@ contract PoolFactory is IPoolFactory, Ownable {
         require(_poolCommitterDeployer != address(0), "address cannot be null");
         poolCommitterDeployer = IPoolCommitterDeployer(_poolCommitterDeployer);
     }
+
+    modifier onlyGov() {
+        require(msg.sender == owner(), "msg.sender not governance");
+        _;
+    }
 }
