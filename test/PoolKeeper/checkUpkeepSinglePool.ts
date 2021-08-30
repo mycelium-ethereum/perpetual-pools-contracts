@@ -59,7 +59,7 @@ const setupHook = async () => {
         deploymentData.updateInterval,
         1
     )
-    
+
     token = contracts1.token
     signers = await ethers.getSigners()
     poolKeeper = contracts1.poolKeeper
