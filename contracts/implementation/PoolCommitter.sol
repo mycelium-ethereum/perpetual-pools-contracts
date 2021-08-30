@@ -136,9 +136,9 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
         uint256 frontRunningInterval = pool.frontRunningInterval();
         uint256 lastPriceTimestamp = pool.lastPriceTimestamp();
-        for (uint128 i = earliestCommitUnexecuted; i <= latestCommitUnexecuted; i++) {
+        for (uint128 i = earliestCommitUnexecuted; i <= latestCommitUnexecuted; i++) { //meaningful variable name maybe? 
             IPoolCommitter.Commit memory _commit = commits[i];
-            nextEarliestCommitUnexecuted = i;
+            nextEarliestCommitUnexecuted = i; 
             // These two checks are so a given call to executeCommitment won't revert,
             // allowing us to continue iterations, as well as update nextEarliestCommitUnexecuted.
             if (_commit.owner == address(0)) {
@@ -241,6 +241,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         leveragedPool = _leveragedPool;
         IERC20 _token = IERC20(_quoteToken);
         _token.approve(leveragedPool, _token.totalSupply());
+        //emit event here 
     }
 
     function commitTypeToUint(CommitType _commit) public pure returns (uint256) {

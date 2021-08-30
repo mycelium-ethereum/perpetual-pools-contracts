@@ -81,6 +81,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         tokens[0] = initialization._longToken;
         tokens[1] = initialization._shortToken;
         poolCommitter = initialization._poolCommitter;
+        //HERE Note:Reputation
         emit PoolInitialized(
             initialization._longToken,
             initialization._shortToken,
@@ -101,7 +102,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         // execute pending commitments to enter and exit the pool
         IPoolCommitter(poolCommitter).executeAllCommitments();
         //NOTE Reputation Plugs in Here 
-        emit CompletedUpkeep(_oldPrice, _newPrice);
+        emit CompletedUpkeep(_oldPrice, _newPrice); //empty function definition
     }
 
     /**
@@ -133,6 +134,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         IERC20(quoteToken).safeTransfer(to, amount);
 
         return true;
+        //emit event here 
     }
 
     /**
@@ -143,6 +145,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     function quoteTokenTransfer(address to, uint256 amount) external override onlyPoolCommitter {
         require(to != address(0), "To address cannot be 0 address");
         IERC20(quoteToken).safeTransfer(to, amount);
+        //emit event here 
     }
 
     /**
@@ -159,6 +162,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         require(from != address(0), "From address cannot be 0 address");
         require(to != address(0), "To address cannot be 0 address");
         IERC20(quoteToken).safeTransferFrom(from, to, amount);
+        //emit event here 
     }
 
     /**
@@ -206,9 +210,10 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     function setNewPoolBalances(uint256 _longBalance, uint256 _shortBalance) external override onlyPoolCommitter {
         longBalance = _longBalance;
         shortBalance = _shortBalance;
+        //emit event
     }
 
-    /**
+        /**
      * @notice Mint tokens to a user
      * @dev Can only be called by & used by the pool committer
      * @param token Index of token
@@ -223,6 +228,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         require(minter != address(0), "Minter address cannot be 0 address");
         require(token == 0 || token == 1, "Pool: token out of range");
         require(IPoolToken(tokens[token]).mint(amount, minter), "Mint failed");
+        //emit event I would say 
     }
 
     /**
@@ -240,6 +246,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         require(burner != address(0), "Burner address cannot be 0 address");
         require(token == 0 || token == 1, "Pool: token out of range");
         require(IPoolToken(tokens[token]).burn(amount, burner), "Burn failed");
+        //emit event
     }
 
     /**
