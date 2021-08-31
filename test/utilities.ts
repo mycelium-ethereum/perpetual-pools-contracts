@@ -23,7 +23,7 @@ import {
     PoolCommitter,
     PoolCommitterDeployer__factory,
     TestChainlinkOracle,
-} from "../typechain"
+} from "../types"
 
 import { abi as ERC20Abi } from "../artifacts/@openzeppelin/contracts/token/ERC20/ERC20.sol/ERC20.json"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"

@@ -14,7 +14,7 @@ import {
     PoolToken,
     PoolCommitter__factory,
     PoolCommitter,
-} from "../typechain"
+} from "../types"
 
 const hre = require("hardhat")
 

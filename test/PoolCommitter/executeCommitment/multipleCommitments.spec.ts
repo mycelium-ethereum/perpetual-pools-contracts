@@ -7,7 +7,7 @@ import {
     ERC20,
     PoolSwapLibrary,
     PoolCommitter,
-} from "../../../typechain"
+} from "../../../types"
 
 import { POOL_CODE } from "../../constants"
 import {

@@ -19,7 +19,7 @@ import {
     PoolFactory,
     PoolCommitterDeployer,
     PoolCommitterDeployer__factory,
-} from "../../typechain"
+} from "../../types"
 
 chai.use(chaiAsPromised)
 const { expect } = chai
