@@ -141,7 +141,7 @@ describe("PoolFactory.deployPool", () => {
 
                 await expect(
                     factory.connect(nonDAO).deployPool(deploymentParameters)
-                ).to.be.rejectedWith(Error)
+                ).to.be.rejectedWith("msg.sender not governance")
             })
         }
     )
