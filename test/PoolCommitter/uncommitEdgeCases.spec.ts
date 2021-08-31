@@ -106,19 +106,15 @@ describe("Uncommit", () => {
             let latestCommitUnexecuted
             earliestCommitUnexecuted =
                 await poolCommitter.earliestCommitUnexecuted()
-            console.log(earliestCommitUnexecuted.toString())
             latestCommitUnexecuted =
                 await poolCommitter.latestCommitUnexecuted()
-            console.log(latestCommitUnexecuted.toString())
             for (let i = 0; i < 5; i++) {
                 await createCommit(poolCommitter, [2], amountCommitted)
             }
             earliestCommitUnexecuted =
                 await poolCommitter.earliestCommitUnexecuted()
-            console.log(earliestCommitUnexecuted.toString())
             latestCommitUnexecuted =
                 await poolCommitter.latestCommitUnexecuted()
-            console.log(latestCommitUnexecuted.toString())
             for (let i = 1; i < 4; i++) {
                 await poolCommitter.uncommit(i)
             }
@@ -129,9 +125,7 @@ describe("Uncommit", () => {
             expect(earliestCommitUnexecuted).to.equal(0)
             expect(latestCommitUnexecuted).to.equal(4)
 
-            console.log(1)
             await poolCommitter.uncommit(0)
-            console.log(2)
             earliestCommitUnexecuted =
                 await poolCommitter.earliestCommitUnexecuted()
             latestCommitUnexecuted =
@@ -139,9 +133,7 @@ describe("Uncommit", () => {
             expect(earliestCommitUnexecuted).to.equal(4)
             expect(latestCommitUnexecuted).to.equal(4)
 
-            console.log(3)
             await poolCommitter.uncommit(4)
-            console.log(4)
             earliestCommitUnexecuted =
                 await poolCommitter.earliestCommitUnexecuted()
             latestCommitUnexecuted =
