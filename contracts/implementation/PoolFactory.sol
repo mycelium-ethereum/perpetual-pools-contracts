@@ -72,7 +72,7 @@ contract PoolFactory is IPoolFactory, Ownable {
      * @param deploymentParameters Deployment parameters of the market. Some may be reconfigurable
      * @return Address of the created pool
      */
-    function deployPool(PoolDeployment calldata deploymentParameters) external override returns (address) {
+    function deployPool(PoolDeployment calldata deploymentParameters) external override onlyGov returns (address) {
         address _poolKeeper = address(poolKeeper);
         require(_poolKeeper != address(0), "PoolKeeper not set");
         require(address(poolCommitterDeployer) != address(0), "PoolCommitterDeployer not set");
