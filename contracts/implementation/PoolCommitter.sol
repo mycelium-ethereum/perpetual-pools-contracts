@@ -96,6 +96,14 @@ contract PoolCommitter is IPoolCommitter, Ownable {
     }
 
     
+    /**
+     * @dev When required, scan through the from earliestCommitUnexecuted to latestCommitUnexecuted
+     *      and set these variables to be correct based on which of the commits between them are
+     *      uncommited.
+     *      This is useful for when you uncommit the first or last commit, and you can scan backwards or forwards
+     *      in order to find the new value earliestCommitUnexecuted or latestCommitUnexecuted should be set to.
+     * @param direction UP if going from earliest to latest, DOWN if going from latest to earliest.
+     */
     function skipMiddleUncommits(ScanDirection direction) internal {
         if (direction == ScanDirection.UP) {
             uint128 nextEarliestCommitUnexecuted = earliestCommitUnexecuted;
