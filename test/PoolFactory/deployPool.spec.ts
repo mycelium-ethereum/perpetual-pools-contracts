@@ -128,24 +128,19 @@ describe("PoolFactory.deployPool", () => {
         "When not called by the DAO and with valid parameters",
         async () => {
             it("Reverts", async () => {
-                const initialization = {
-                    _owner: generateRandomAddress(),
-                    _keeper: generateRandomAddress(),
-                    _oracleWrapper: generateRandomAddress(),
-                    _settlementEthOracle: generateRandomAddress(),
-                    _longToken: generateRandomAddress(),
-                    _shortToken: generateRandomAddress(),
-                    _poolCommitter: generateRandomAddress(),
-                    _poolName: POOL_CODE,
-                    _frontRunningInterval: 3,
-                    _updateInterval: 5,
-                    _fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
-                    _leverageAmount: 5,
-                    _feeAddress: generateRandomAddress(),
-                    _quoteToken: token.address,
+                const deploymentParameters = {
+                    poolName: POOL_CODE,
+                    frontRunningInterval: 5,
+                    updateInterval: 10,
+                    fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+                    leverageAmount: 5,
+                    quoteToken: token.address,
+                    oracleWrapper: oracleWrapper.address,
+                    settlementEthOracle: settlementEthOracle.address,
                 }
+
                 await expect(
-                    pool.connect(nonDAO).initialize(initialization)
+                    factory.connect(nonDAO).deployPool(deploymentParameters)
                 ).to.be.rejectedWith(Error)
             })
         }
