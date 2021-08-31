@@ -97,7 +97,7 @@ contract PoolFactory is IPoolFactory, Ownable {
             string(abi.encodePacked("S-", deploymentParameters.poolName))
         );
         ILeveragedPool.Initialization memory initialization = ILeveragedPool.Initialization(
-            owner(), // governance is the owner of pools
+            owner(), // governance is the owner of pools -- if this changes, `onlyGov` breaks
             _poolKeeper,
             deploymentParameters.oracleWrapper,
             deploymentParameters.settlementEthOracle,
