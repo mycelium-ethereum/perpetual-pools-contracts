@@ -19,6 +19,7 @@ import {
 import { POOL_CODE, POOL_CODE_2 } from "../constants"
 import { generateRandomAddress, getEventArgs } from "../utilities"
 import { Result } from "ethers/lib/utils"
+import { Signer } from "ethers"
 import LeveragedPoolInterface from "../../artifacts/contracts/implementation/LeveragedPool.sol/LeveragedPool.json"
 
 chai.use(chaiAsPromised)
@@ -31,8 +32,12 @@ describe("PoolFactory.deployPool", () => {
     let poolTx: Result | undefined
     let pool: LeveragedPool
     let token: TestToken
+    let signers: Signer[]
+    let nonDAO: Signer
+
     before(async () => {
-        const signers = await ethers.getSigners()
+        signers = await ethers.getSigners()
+        nonDAO = signers[1]
 
         const libraryFactory = (await ethers.getContractFactory(
             "PoolSwapLibrary",
@@ -118,6 +123,33 @@ describe("PoolFactory.deployPool", () => {
             (await ethers.getSigners())[0]
         ) as LeveragedPool
     })
+
+    context(
+        "When not called by the DAO and with valid parameters",
+        async () => {
+            it("Reverts", async () => {
+                const initialization = {
+                    _owner: generateRandomAddress(),
+                    _keeper: generateRandomAddress(),
+                    _oracleWrapper: generateRandomAddress(),
+                    _settlementEthOracle: generateRandomAddress(),
+                    _longToken: generateRandomAddress(),
+                    _shortToken: generateRandomAddress(),
+                    _poolCommitter: generateRandomAddress(),
+                    _poolName: POOL_CODE,
+                    _frontRunningInterval: 3,
+                    _updateInterval: 5,
+                    _fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+                    _leverageAmount: 5,
+                    _feeAddress: generateRandomAddress(),
+                    _quoteToken: token.address,
+                }
+                await expect(
+                    pool.connect(nonDAO).initialize(initialization)
+                ).to.be.rejectedWith(Error)
+            })
+        }
+    )
 
     context("When called by the DAO and with valid parameters", async () => {
         it("should deploy a minimal clone", async () => {
