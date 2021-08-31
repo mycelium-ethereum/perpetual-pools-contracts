@@ -8,7 +8,7 @@ import {
     PoolSwapLibrary,
     PoolCommitter,
     PoolKeeper,
-} from "../../typechain"
+} from "../../types"
 
 import { POOL_CODE } from "../constants"
 import {
