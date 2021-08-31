@@ -103,7 +103,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
      *      in order to find the new value earliestCommitUnexecuted or latestCommitUnexecuted should be set to.
      * @param direction UP if going from earliest to latest, DOWN if going from latest to earliest.
      */
-    function skipMiddleUncommits(ScanDirection direction) internal {
+    function skipDeletedMiddleCommits(ScanDirection direction) internal {
         if (direction == ScanDirection.UP) {
             uint128 nextEarliestCommitUnexecuted = earliestCommitUnexecuted;
             while (nextEarliestCommitUnexecuted <= latestCommitUnexecuted) {
@@ -158,12 +158,12 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         if (earliestCommitUnexecuted == _commitID) {
             // This is the first unexecuted commit, so we can bump this up one
             earliestCommitUnexecuted += 1;
-            skipMiddleUncommits(ScanDirection.UP);
+            skipDeletedMiddleCommits(ScanDirection.UP);
         }
         if (latestCommitUnexecuted == _commitID && earliestCommitUnexecuted != NO_COMMITS_REMAINING) {
             // This is the latest commit unexecuted that we are trying to delete.
             latestCommitUnexecuted -= 1;
-            skipMiddleUncommits(ScanDirection.DOWN);
+            skipDeletedMiddleCommits(ScanDirection.DOWN);
         }
 
         // release tokens
