@@ -43,6 +43,10 @@ const config: HardhatUserConfig = {
             gas: "auto",
         },
     },
+    typechain: {
+        outDir: "types",
+        target: "ethers-v5",
+    },
     etherscan: {
         apiKey: ETHERSCAN_API_KEY,
     },

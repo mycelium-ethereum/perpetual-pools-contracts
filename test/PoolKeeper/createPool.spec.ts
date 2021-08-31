@@ -13,7 +13,7 @@ import {
     PoolCommitterDeployer__factory,
     TestToken__factory,
     TestChainlinkOracle,
-} from "../../typechain"
+} from "../../types"
 
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { OPERATOR_ROLE, ADMIN_ROLE, POOL_CODE, MARKET_CODE } from "../constants"

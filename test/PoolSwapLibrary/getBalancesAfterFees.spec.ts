@@ -1,7 +1,7 @@
 import { ethers } from "hardhat"
 import chai from "chai"
 import chaiAsPromised from "chai-as-promised"
-import { PoolSwapLibrary, PoolSwapLibrary__factory } from "../../typechain"
+import { PoolSwapLibrary, PoolSwapLibrary__factory } from "../../types"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 
 chai.use(chaiAsPromised)

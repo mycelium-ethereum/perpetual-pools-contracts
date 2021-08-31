@@ -2,7 +2,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import chai from "chai"
 import chaiAsPromised from "chai-as-promised"
 import { ethers } from "hardhat"
-import { LeveragedPool, PoolKeeper } from "../../typechain"
+import { LeveragedPool, PoolKeeper } from "../../types"
 import { POOL_CODE } from "../constants"
 import { deployPoolAndTokenContracts } from "../utilities"
 
