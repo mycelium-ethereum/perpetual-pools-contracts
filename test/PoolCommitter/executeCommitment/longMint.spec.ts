@@ -7,7 +7,7 @@ import {
     ERC20,
     PoolSwapLibrary,
     PoolCommitter,
-} from "../../../typechain"
+} from "../../../types"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { POOL_CODE } from "../../constants"
 import {

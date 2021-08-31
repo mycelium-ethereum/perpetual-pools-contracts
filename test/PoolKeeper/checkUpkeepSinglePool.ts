@@ -17,8 +17,8 @@ import {
     ChainlinkOracleWrapper,
     PoolKeeper,
     TestToken,
-    LeveragedPool,
-} from "../../typechain"
+    LeveragedPool
+} from "../../types"
 
 chai.use(chaiAsPromised)
 const { expect } = chai

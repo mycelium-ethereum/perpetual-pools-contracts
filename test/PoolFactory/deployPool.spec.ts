@@ -15,7 +15,7 @@ import {
     TestToken__factory,
     PoolToken__factory,
     PoolCommitterDeployer__factory,
-} from "../../typechain"
+} from "../../types"
 import { POOL_CODE, POOL_CODE_2 } from "../constants"
 import {
     deployPoolAndTokenContracts,

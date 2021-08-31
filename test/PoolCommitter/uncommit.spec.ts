@@ -7,7 +7,7 @@ import {
     PoolCommitter,
     PoolSwapLibrary,
     TestToken,
-} from "../../typechain"
+} from "../../types"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { DEFAULT_MINT_AMOUNT, POOL_CODE } from "../constants"
 import {

@@ -21,7 +21,7 @@ import {
     ChainlinkOracleWrapper,
     TestToken,
     TestChainlinkOracle,
-} from "../../../typechain"
+} from "../../../types"
 import { BigNumber } from "ethers"
 import { Result } from "ethers/lib/utils"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"

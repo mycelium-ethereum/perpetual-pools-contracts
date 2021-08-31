@@ -15,7 +15,7 @@ import {
     PoolSwapLibrary__factory,
     TestToken__factory,
     PoolFactory,
-} from "../../typechain"
+} from "../../types"
 
 chai.use(chaiAsPromised)
 const { expect } = chai
