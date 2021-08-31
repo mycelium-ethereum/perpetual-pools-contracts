@@ -61,38 +61,44 @@ describe("Uncommit", () => {
             await token.approve(pool.address, amountMinted)
         })
         it("Should maintain earliest and latest unexecuted commits", async () => {
-            let earliestCommitUnexecuted;
-            let latestCommitUnexecuted;
+            let earliestCommitUnexecuted
+            let latestCommitUnexecuted
             for (let i = 0; i < 5; i++) {
-                await createCommit(
-                    poolCommitter,
-                    [2],
-                    amountCommitted
-                )
+                await createCommit(poolCommitter, [2], amountCommitted)
             }
             for (let i = 1; i < 4; i++) {
-                await poolCommitter.uncommit(i);
+                await poolCommitter.uncommit(i)
             }
-            earliestCommitUnexecuted = await poolCommitter.earliestCommitUnexecuted()
-            latestCommitUnexecuted = await poolCommitter.latestCommitUnexecuted()
+            earliestCommitUnexecuted =
+                await poolCommitter.earliestCommitUnexecuted()
+            latestCommitUnexecuted =
+                await poolCommitter.latestCommitUnexecuted()
             expect(earliestCommitUnexecuted).to.equal(0)
             expect(latestCommitUnexecuted).to.equal(4)
 
             await poolCommitter.uncommit(4)
-            earliestCommitUnexecuted = await poolCommitter.earliestCommitUnexecuted()
-            latestCommitUnexecuted = await poolCommitter.latestCommitUnexecuted()
+            earliestCommitUnexecuted =
+                await poolCommitter.earliestCommitUnexecuted()
+            latestCommitUnexecuted =
+                await poolCommitter.latestCommitUnexecuted()
             expect(earliestCommitUnexecuted).to.equal(0)
             expect(latestCommitUnexecuted).to.equal(0)
 
             await poolCommitter.uncommit(0)
-            earliestCommitUnexecuted = await poolCommitter.earliestCommitUnexecuted()
-            latestCommitUnexecuted = await poolCommitter.latestCommitUnexecuted()
-            expect(earliestCommitUnexecuted).to.equal(await poolCommitter.NO_COMMITS_REMAINING())
+            earliestCommitUnexecuted =
+                await poolCommitter.earliestCommitUnexecuted()
+            latestCommitUnexecuted =
+                await poolCommitter.latestCommitUnexecuted()
+            expect(earliestCommitUnexecuted).to.equal(
+                await poolCommitter.NO_COMMITS_REMAINING()
+            )
             expect(latestCommitUnexecuted).to.equal(0)
 
-            await timeout((updateInterval + 1)* 1000)
+            await timeout((updateInterval + 1) * 1000)
             // Shouldn't revert
-            const receipt = await (await poolKeeper.performUpkeepSinglePool(pool.address)).wait()
+            const receipt = await (
+                await poolKeeper.performUpkeepSinglePool(pool.address)
+            ).wait()
         })
     })
 })

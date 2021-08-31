@@ -95,7 +95,6 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         _uncommit(_commit, _commitID);
     }
 
-    
     /**
      * @dev When required, scan through the from earliestCommitUnexecuted to latestCommitUnexecuted
      *      and set these variables to be correct based on which of the commits between them are

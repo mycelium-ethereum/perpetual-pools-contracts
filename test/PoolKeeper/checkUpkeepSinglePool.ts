@@ -17,7 +17,7 @@ import {
     ChainlinkOracleWrapper,
     PoolKeeper,
     TestToken,
-    LeveragedPool
+    LeveragedPool,
 } from "../../types"
 
 chai.use(chaiAsPromised)
