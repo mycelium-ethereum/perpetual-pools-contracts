@@ -306,7 +306,10 @@ contract LeveragedPool is ILeveragedPool, Initializable {
      */
     function withdrawEth() external onlyGov {
         require(paused, "Pool is live");
-        this.send(msg.sender, this.balance);
+        uint256 balance = address(this).balance;
+        /* See: https://consensys.net/diligence/blog/2019/09/stop-using-soliditys-transfer-now/ */
+        (bool transferSucceeded, ) = msg.sender.call{value: balance}("");
+        require(transferSucceeded, "Transfer failed");
     }
 
     /**
