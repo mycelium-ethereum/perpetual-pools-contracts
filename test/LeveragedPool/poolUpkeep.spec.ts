@@ -9,7 +9,7 @@ import {
     PoolCommitter,
 } from "../../types"
 
-import { POOL_CODE, NO_COMMITS_REMAINING, DEFAULT_FEE } from "../constants"
+import { POOL_CODE, NO_COMMITS_REMAINING } from "../constants"
 import {
     deployPoolAndTokenContracts,
     getRandomInt,
@@ -30,7 +30,7 @@ const feeAddress = generateRandomAddress()
 const lastPrice = ethers.utils.parseEther(getRandomInt(99999999, 1).toString())
 const updateInterval = 2
 const frontRunningInterval = 1 // seconds
-const fee = DEFAULT_FEE
+const fee = "0x00000000000000000000000000000000"
 const leverage = 1
 
 describe("LeveragedPool - executeAllCommitments", () => {
@@ -47,9 +47,10 @@ describe("LeveragedPool - executeAllCommitments", () => {
             POOL_CODE,
             frontRunningInterval,
             updateInterval,
+            fee,
             leverage,
             feeAddress,
-            fee
+            amountMinted
         )
         pool = result.pool
         library = result.library
@@ -133,9 +134,10 @@ describe("LeveragedPool - executeAllCommitments", () => {
                 POOL_CODE,
                 frontRunningInterval,
                 updateInterval,
+                fee,
                 leverage,
                 feeAddress,
-                fee
+                amountMinted
             )
             pool = result.pool
             library = result.library

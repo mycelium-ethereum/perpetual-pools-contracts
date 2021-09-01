@@ -2,22 +2,23 @@ import { ethers, network } from "hardhat"
 import chai from "chai"
 import { Bytes, BytesLike } from "ethers"
 import chaiAsPromised from "chai-as-promised"
-import {
-    createCommit,
-    deployPoolAndTokenContracts,
-    deployPoolSetupContracts,
-    generateRandomAddress,
-    incrementPrice,
-    timeout,
-} from "../utilities"
+import { generateRandomAddress, incrementPrice } from "../utilities"
 
-import { POOL_CODE, POOL_CODE_2 } from "../constants"
+import { MARKET_2, POOL_CODE, POOL_CODE_2 } from "../constants"
 import {
     TestChainlinkOracle,
     ChainlinkOracleWrapper,
+    ChainlinkOracleWrapper__factory,
+    TestChainlinkOracle__factory,
+    PoolFactory__factory,
     PoolKeeper,
+    PoolKeeper__factory,
+    PoolSwapLibrary__factory,
+    TestToken__factory,
     TestToken,
-    LeveragedPool,
+    PoolFactory,
+    PoolCommitterDeployer,
+    PoolCommitterDeployer__factory,
 } from "../../types"
 
 chai.use(chaiAsPromised)
@@ -27,9 +28,12 @@ let signers: any
 let quoteToken: string
 let oracleWrapper: ChainlinkOracleWrapper
 let settlementEthOracle: ChainlinkOracleWrapper
+let oracle: TestChainlinkOracle
 let poolKeeper: PoolKeeper
+let factory: PoolFactory
+let ethOracleWrapper: ChainlinkOracleWrapper
+let ethOracle: TestChainlinkOracle
 let token: TestToken
-let pool1: LeveragedPool
 
 const forwardTime = async (seconds: number) => {
     await network.provider.send("evm_increaseTime", [seconds])
@@ -38,11 +42,74 @@ const forwardTime = async (seconds: number) => {
 
 const setupHook = async () => {
     signers = await ethers.getSigners()
-    const setup = await deployPoolSetupContracts()
-    quoteToken = setup.token.address
-    oracleWrapper = setup.oracleWrapper
-    settlementEthOracle = setup.settlementEthOracle
-    /* NOTE: settlementToken in this test is the same as the derivative oracle */
+    // Deploy quote token
+    const testToken = (await ethers.getContractFactory(
+        "TestToken",
+        signers[0]
+    )) as TestToken__factory
+    token = await testToken.deploy("TEST TOKEN", "TST1")
+    await token.deployed()
+    await token.mint(10000, signers[0].address)
+    quoteToken = token.address
+
+    // Deploy oracle. Using a test oracle for predictability
+    const oracleFactory = (await ethers.getContractFactory(
+        "TestChainlinkOracle",
+        signers[0]
+    )) as TestChainlinkOracle__factory
+    oracle = await oracleFactory.deploy()
+    await oracle.deployed()
+    ethOracle = await (await oracleFactory.deploy()).deployed()
+    await ethOracle.setPrice(3000 * 10 ** 8)
+    const oracleWrapperFactory = (await ethers.getContractFactory(
+        "ChainlinkOracleWrapper",
+        signers[0]
+    )) as ChainlinkOracleWrapper__factory
+    oracleWrapper = await oracleWrapperFactory.deploy(oracle.address)
+    await oracleWrapper.deployed()
+    ethOracleWrapper = await oracleWrapperFactory.deploy(ethOracle.address)
+    await ethOracleWrapper.deployed()
+
+    settlementEthOracle = await oracleWrapperFactory.deploy(oracle.address)
+    await settlementEthOracle.deployed()
+
+    // Deploy pool keeper
+    const libraryFactory = (await ethers.getContractFactory(
+        "PoolSwapLibrary",
+        signers[0]
+    )) as PoolSwapLibrary__factory
+    const library = await libraryFactory.deploy()
+    await library.deployed()
+    const poolKeeperFactory = (await ethers.getContractFactory("PoolKeeper", {
+        signer: signers[0],
+        libraries: { PoolSwapLibrary: library.address },
+    })) as PoolKeeper__factory
+    const PoolFactory = (await ethers.getContractFactory("PoolFactory", {
+        signer: signers[0],
+        libraries: { PoolSwapLibrary: library.address },
+    })) as PoolFactory__factory
+    factory = await (
+        await PoolFactory.deploy(generateRandomAddress())
+    ).deployed()
+    poolKeeper = await poolKeeperFactory.deploy(factory.address)
+    await poolKeeper.deployed()
+    await factory.connect(signers[0]).setPoolKeeper(poolKeeper.address)
+
+    const poolCommitterDeployerFactory = (await ethers.getContractFactory(
+        "PoolCommitterDeployer",
+        {
+            signer: signers[0],
+            libraries: { PoolSwapLibrary: library.address },
+        }
+    )) as PoolCommitterDeployer__factory
+
+    let poolCommitterDeployer = await poolCommitterDeployerFactory.deploy(
+        factory.address
+    )
+    poolCommitterDeployer = await poolCommitterDeployer.deployed()
+
+    await factory.setPoolCommitterDeployer(poolCommitterDeployer.address)
+    // Create pool
     const deploymentData = {
         poolName: POOL_CODE,
         frontRunningInterval: 1,
@@ -52,19 +119,18 @@ const setupHook = async () => {
         oracleWrapper: oracleWrapper.address,
         settlementEthOracle: settlementEthOracle.address,
     }
+    await factory.deployPool(deploymentData)
 
-    const contracts1 = await deployPoolAndTokenContracts(
-        POOL_CODE,
-        deploymentData.frontRunningInterval,
-        deploymentData.updateInterval,
-        1
-    )
-
-    token = contracts1.token
-    signers = await ethers.getSigners()
-    poolKeeper = contracts1.poolKeeper
-    oracleWrapper = contracts1.oracleWrapper
-    pool1 = contracts1.pool
+    const deploymentData2 = {
+        poolName: POOL_CODE_2,
+        frontRunningInterval: 1,
+        updateInterval: 2,
+        leverageAmount: 2,
+        quoteToken: quoteToken,
+        oracleWrapper: oracleWrapper.address,
+        settlementEthOracle: settlementEthOracle.address,
+    }
+    await factory.deployPool(deploymentData2)
 }
 describe("PoolKeeper - checkUpkeepSinglePool", () => {
     beforeEach(async () => {
@@ -83,7 +149,7 @@ describe("PoolKeeper - checkUpkeepSinglePool", () => {
                 )) as TestChainlinkOracle
             await incrementPrice(underlyingOracle)
 
-            const poolAddress = pool1.address
+            const poolAddress = await factory.pools(0)
             expect(await poolKeeper.checkUpkeepSinglePool(poolAddress)).to.eq(
                 true
             )
@@ -102,7 +168,7 @@ describe("PoolKeeper - checkUpkeepSinglePool", () => {
                 )) as TestChainlinkOracle
             await incrementPrice(underlyingOracle)
 
-            const poolAddress = pool1.address
+            const poolAddress = await factory.pools(0)
             await poolKeeper.performUpkeepSinglePool(poolAddress)
             expect(await poolKeeper.checkUpkeepSinglePool(poolAddress)).to.eq(
                 false

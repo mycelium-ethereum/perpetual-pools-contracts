@@ -16,7 +16,6 @@ import {
     POOL_CODE,
     NO_COMMITS_REMAINING,
     SINGLE_POOL_UPKEEP_GAS_COST,
-    DEFAULT_FEE,
 } from "./constants"
 import {
     deployPoolAndTokenContracts,
@@ -38,7 +37,7 @@ const feeAddress = generateRandomAddress()
 const lastPrice = ethers.utils.parseEther(getRandomInt(99999999, 1).toString())
 const updateInterval = 20
 const frontRunningInterval = 10 // seconds
-const fee = DEFAULT_FEE
+const fee = "0x00000000000000000000000000000000"
 const leverage = 1
 
 describe("LeveragedPool - executeAllCommitments", () => {
@@ -60,9 +59,10 @@ describe("LeveragedPool - executeAllCommitments", () => {
                 POOL_CODE,
                 frontRunningInterval,
                 updateInterval,
+                fee,
                 leverage,
                 feeAddress,
-                fee
+                amountMinted
             )
             pool = result.pool
             library = result.library

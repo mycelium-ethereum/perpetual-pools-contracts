@@ -9,8 +9,6 @@ import { deployPoolAndTokenContracts } from "../utilities"
 chai.use(chaiAsPromised)
 const { expect } = chai
 
-import { DEFAULT_FEE } from "../constants"
-
 describe("LeveragedPool - setters", () => {
     let pool: LeveragedPool
     let signers: SignerWithAddress[]
@@ -22,9 +20,10 @@ describe("LeveragedPool - setters", () => {
             POOL_CODE,
             2, // frontRunningInterval
             5, // updateInterval
+            "0x00000000000000000000000000000000",
             1,
             signers[0].address,
-            DEFAULT_FEE
+            500
         )
         pool = result.pool
         keeper = result.poolKeeper
