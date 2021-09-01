@@ -17,7 +17,7 @@ import {
 
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { OPERATOR_ROLE, ADMIN_ROLE, POOL_CODE, MARKET_CODE } from "../constants"
-import { generateRandomAddress } from "../utilities"
+import { deployPoolSetupContracts, generateRandomAddress } from "../utilities"
 import { deploy } from "@openzeppelin/hardhat-upgrades/dist/utils"
 import { BigNumber } from "ethers"
 
@@ -30,85 +30,16 @@ describe("PoolKeeper - createPool", () => {
     let poolKeeper: PoolKeeper
     let factory: PoolFactory
     let signers: SignerWithAddress[]
-    let ethOracleWrapper: ChainlinkOracleWrapper
-    let ethOracle: TestChainlinkOracle
     beforeEach(async () => {
         // Deploy the contracts
         signers = await ethers.getSigners()
-
-        const testToken = (await ethers.getContractFactory(
-            "TestToken",
-            signers[0]
-        )) as TestToken__factory
-        const token = await testToken.deploy("TEST TOKEN", "TST1")
-        await token.deployed()
-        await token.mint(ethers.utils.parseEther("10000"), signers[0].address)
-
-        const chainlinkOracleFactory = (await ethers.getContractFactory(
-            "TestChainlinkOracle",
-            signers[0]
-        )) as TestChainlinkOracle__factory
-        const chainlinkOracle = await chainlinkOracleFactory.deploy()
-        ethOracle = await (await chainlinkOracleFactory.deploy()).deployed()
-        await ethOracle.setPrice(3000 * 10 ** 8)
-
-        // Deploy tokens
-        const oracleWrapperFactory = (await ethers.getContractFactory(
-            "ChainlinkOracleWrapper",
-            signers[0]
-        )) as ChainlinkOracleWrapper__factory
-        const oracleWrapper = await oracleWrapperFactory.deploy(
-            chainlinkOracle.address
-        )
-        await oracleWrapper.deployed()
-        ethOracleWrapper = await oracleWrapperFactory.deploy(ethOracle.address)
-        await ethOracleWrapper.deployed()
-
-        const settlementEthOracle = await oracleWrapperFactory.deploy(
-            chainlinkOracle.address
-        )
-        await settlementEthOracle.deployed()
-
-        const libraryFactory = (await ethers.getContractFactory(
-            "PoolSwapLibrary",
-            signers[0]
-        )) as PoolSwapLibrary__factory
-        const library = await libraryFactory.deploy()
-        await library.deployed()
-        const poolKeeperFactory = (await ethers.getContractFactory(
-            "PoolKeeper",
-            {
-                signer: signers[0],
-                libraries: { PoolSwapLibrary: library.address },
-            }
-        )) as PoolKeeper__factory
-        const PoolFactory = (await ethers.getContractFactory("PoolFactory", {
-            signer: signers[0],
-            libraries: { PoolSwapLibrary: library.address },
-        })) as PoolFactory__factory
-        factory = await (
-            await PoolFactory.deploy(generateRandomAddress())
-        ).deployed()
-
-        const poolCommitterDeployerFactory = (await ethers.getContractFactory(
-            "PoolCommitterDeployer",
-            {
-                signer: signers[0],
-                libraries: { PoolSwapLibrary: library.address },
-            }
-        )) as PoolCommitterDeployer__factory
-
-        let poolCommitterDeployer = await poolCommitterDeployerFactory.deploy(
-            factory.address
-        )
-        poolCommitterDeployer = await poolCommitterDeployer.deployed()
-
-        await factory.setPoolCommitterDeployer(poolCommitterDeployer.address)
-
-        poolKeeper = await poolKeeperFactory.deploy(factory.address)
-        await poolKeeper.deployed()
-
-        await factory.setPoolKeeper(poolKeeper.address)
+        signers = await ethers.getSigners()
+        const setup = await deployPoolSetupContracts()
+        const token = setup.token
+        const oracleWrapper = setup.oracleWrapper
+        const settlementEthOracle = setup.settlementEthOracle
+        poolKeeper = setup.poolKeeper
+        factory = setup.factory
 
         deploymentData = {
             owner: signers[0].address,
