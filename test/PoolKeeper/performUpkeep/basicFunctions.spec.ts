@@ -10,6 +10,7 @@ import {
 } from "../../utilities"
 
 import {
+    DEFAULT_FEE,
     DEFAULT_MINT_AMOUNT,
     MARKET_2,
     POOL_CODE,
@@ -41,7 +42,7 @@ let token: TestToken
 
 const updateInterval = 10
 const frontRunningInterval = 1
-const fee = "0x00000000000000000000000000000000"
+const fee = DEFAULT_FEE
 const feeAddress = generateRandomAddress()
 const mintAmount = DEFAULT_MINT_AMOUNT
 
