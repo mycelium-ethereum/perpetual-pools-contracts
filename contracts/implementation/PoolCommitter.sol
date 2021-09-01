@@ -3,6 +3,7 @@ pragma solidity 0.8.6;
 
 import "../interfaces/IPoolCommitter.sol";
 import "../interfaces/ILeveragedPool.sol";
+import "../interfaces/IPoolFactory.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
@@ -27,6 +28,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
     mapping(uint256 => uint256) public shadowPools;
 
     address public factory;
+    address public governance;
 
     constructor(
         address _factory,
@@ -37,6 +39,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         factory = _factory;
         minimumCommitSize = _minimumCommitSize;
         maximumCommitQueueLength = _maximumCommitQueueLength;
+        governance = IPoolFactory(factory).getOwner();
     }
 
     /**
@@ -282,6 +285,15 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         _token.approve(leveragedPool, _token.totalSupply());
     }
 
+    function setMinimumCommitSize(uint128 _minimumCommitSize) external override onlyGov {
+        minimumCommitSize = _minimumCommitSize;
+    }
+
+    function setMaxCommitQueueLength(uint128 _maximumCommitQueueLength) external override onlyGov {
+        require(_maximumCommitQueueLength > 0, "Commit queue must be > 0");
+        maximumCommitQueueLength = _maximumCommitQueueLength;
+    }
+
     function commitTypeToUint(CommitType _commit) public pure returns (uint256) {
         if (_commit == CommitType.ShortMint) {
             return 0;
@@ -308,6 +320,11 @@ contract PoolCommitter is IPoolCommitter, Ownable {
 
     modifier onlySelf() {
         require(msg.sender == address(this), "msg.sender not self");
+        _;
+    }
+
+    modifier onlyGov() {
+        require(msg.sender == governance, "msg.sender not governance");
         _;
     }
 }

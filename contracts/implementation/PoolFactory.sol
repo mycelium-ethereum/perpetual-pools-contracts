@@ -172,6 +172,10 @@ contract PoolFactory is IPoolFactory, Ownable {
         poolCommitterDeployer = IPoolCommitterDeployer(_poolCommitterDeployer);
     }
 
+    function getOwner() external view override returns (address) {
+        return owner();
+    }
+
     modifier onlyGov() {
         require(msg.sender == owner(), "msg.sender not governance");
         _;

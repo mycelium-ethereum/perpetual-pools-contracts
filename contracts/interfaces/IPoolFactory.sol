@@ -33,6 +33,8 @@ interface IPoolFactory {
     // #### Functions
     function deployPool(PoolDeployment calldata deploymentParameters) external returns (address);
 
+    function getOwner() external returns (address);
+
     function setPoolKeeper(address _poolKeeper) external;
 
     function setMaxLeverage(uint16 newMaxLeverage) external;
