@@ -3,31 +3,24 @@ import chai from "chai"
 import chaiAsPromised from "chai-as-promised"
 import {
     createCommit,
+    deployPoolAndTokenContracts,
     generateRandomAddress,
     getEventArgs,
-    incrementPrice,
     timeout,
 } from "../../utilities"
 
 import {
+    DEFAULT_FEE,
+    DEFAULT_MINT_AMOUNT,
     MARKET_2,
     POOL_CODE,
     POOL_CODE_2,
     SINGLE_POOL_UPKEEP_GAS_COST,
 } from "../../constants"
 import {
-    PoolCommitter,
-    PoolCommitterDeployer__factory,
-    PoolFactory,
-    PoolFactory__factory,
     PoolKeeper,
-    PoolKeeper__factory,
-    PoolSwapLibrary__factory,
-    TestChainlinkOracle__factory,
     ChainlinkOracleWrapper,
-    ChainlinkOracleWrapper__factory,
     TestToken,
-    TestToken__factory,
     TestChainlinkOracle,
 } from "../../../types"
 import { BigNumber } from "ethers"
@@ -37,12 +30,8 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 chai.use(chaiAsPromised)
 const { expect } = chai
 
-let quoteToken: string
 let derivativeChainlinkOracle: TestChainlinkOracle
 let derivativeOracleWrapper: ChainlinkOracleWrapper
-let settlementEthChainlinkOracle: TestChainlinkOracle
-let settlementEthOracle: ChainlinkOracleWrapper
-let ethOracleWrapper: ChainlinkOracleWrapper
 let poolKeeper: PoolKeeper
 let pool: any
 let pool2: any
@@ -52,128 +41,38 @@ let signers: SignerWithAddress[]
 let token: TestToken
 
 const updateInterval = 10
+const frontRunningInterval = 1
+const fee = DEFAULT_FEE
+const feeAddress = generateRandomAddress()
+const mintAmount = DEFAULT_MINT_AMOUNT
 
 const setupHook = async () => {
     /* NOTE: settlementToken in this test is the same as the derivative oracle */
+    const contracts1 = await deployPoolAndTokenContracts(
+        POOL_CODE,
+        frontRunningInterval,
+        updateInterval,
+        1,
+        feeAddress,
+        fee
+    )
+    const poolCommitter = contracts1.poolCommitter
+    const contracts2 = await deployPoolAndTokenContracts(
+        POOL_CODE_2,
+        frontRunningInterval,
+        updateInterval,
+        2,
+        feeAddress,
+        fee
+    )
+    const poolCommitter2 = contracts2.poolCommitter
+    token = contracts1.token
+    pool = contracts1.pool
+    pool2 = contracts2.pool
     signers = await ethers.getSigners()
-
-    // Deploy quote token
-    const testToken = (await ethers.getContractFactory(
-        "TestToken",
-        signers[0]
-    )) as TestToken__factory
-    token = await testToken.deploy("TEST TOKEN", "TST1")
-    await token.deployed()
-    await token.setDecimals(8)
-    const mintAmount = ethers.utils.parseEther("1000") // An arbitrarily large amount
-    await token.mint(mintAmount, signers[0].address)
-    quoteToken = token.address
-
-    const chainlinkOracleFactory = (await ethers.getContractFactory(
-        "TestChainlinkOracle",
-        signers[0]
-    )) as TestChainlinkOracle__factory
-    derivativeChainlinkOracle = await (
-        await chainlinkOracleFactory.deploy()
-    ).deployed()
-    // $1
-    await derivativeChainlinkOracle.setPrice(1 * 10 ** 8)
-    settlementEthChainlinkOracle = await (
-        await chainlinkOracleFactory.deploy()
-    ).deployed()
-    // 3000 STL/ETH
-    await settlementEthChainlinkOracle.setPrice(3000 * 10 ** 8)
-
-    // Deploy oracle. Using a test oracle for predictability
-    const oracleWrapperFactory = (await ethers.getContractFactory(
-        "ChainlinkOracleWrapper",
-        signers[0]
-    )) as ChainlinkOracleWrapper__factory
-    // TODO fix
-    derivativeOracleWrapper = await oracleWrapperFactory.deploy(
-        derivativeChainlinkOracle.address
-    )
-
-    settlementEthOracle = await oracleWrapperFactory.deploy(
-        settlementEthChainlinkOracle.address
-    )
-    await settlementEthOracle.deployed()
-
-    // Deploy pool keeper
-    const libraryFactory = (await ethers.getContractFactory(
-        "PoolSwapLibrary",
-        signers[0]
-    )) as PoolSwapLibrary__factory
-    const library = await libraryFactory.deploy()
-    await library.deployed()
-    const poolKeeperFactory = (await ethers.getContractFactory("PoolKeeper", {
-        signer: signers[0],
-        libraries: { PoolSwapLibrary: library.address },
-    })) as PoolKeeper__factory
-    const PoolFactory = (await ethers.getContractFactory("PoolFactory", {
-        signer: signers[0],
-        libraries: { PoolSwapLibrary: library.address },
-    })) as PoolFactory__factory
-    // TODO replace addresses with the two new deployers
-    const factory: PoolFactory = await (
-        await PoolFactory.deploy(generateRandomAddress())
-    ).deployed()
-
-    const poolCommitterDeployerFactory = (await ethers.getContractFactory(
-        "PoolCommitterDeployer",
-        {
-            signer: signers[0],
-            libraries: { PoolSwapLibrary: library.address },
-        }
-    )) as PoolCommitterDeployer__factory
-
-    let poolCommitterDeployer = await poolCommitterDeployerFactory.deploy(
-        factory.address
-    )
-    poolCommitterDeployer = await poolCommitterDeployer.deployed()
-
-    await factory.setPoolCommitterDeployer(poolCommitterDeployer.address)
-    poolKeeper = await poolKeeperFactory.deploy(factory.address)
-    await poolKeeper.deployed()
-    await factory.setPoolKeeper(poolKeeper.address)
-
-    // Create pool
-    const deploymentData = {
-        poolName: POOL_CODE,
-        frontRunningInterval: 1,
-        updateInterval: updateInterval,
-        leverageAmount: 1,
-        quoteToken: quoteToken,
-        oracleWrapper: derivativeOracleWrapper.address,
-        settlementEthOracle: settlementEthOracle.address,
-    }
-    await (await factory.deployPool(deploymentData)).wait()
-
-    const deploymentData2 = {
-        poolName: POOL_CODE_2,
-        frontRunningInterval: 1,
-        updateInterval: updateInterval,
-        leverageAmount: 2,
-        quoteToken: quoteToken,
-        oracleWrapper: derivativeOracleWrapper.address,
-        settlementEthOracle: settlementEthOracle.address,
-    }
-    await (await factory.deployPool(deploymentData2)).wait()
-
-    // get pool addresses
-    POOL1_ADDR = await factory.pools(0)
-    POOL2_ADDR = await factory.pools(1)
-
-    pool = await ethers.getContractAt("LeveragedPool", POOL1_ADDR)
-    pool2 = await ethers.getContractAt("LeveragedPool", POOL2_ADDR)
-    const poolCommitter: any = await ethers.getContractAt(
-        "PoolCommitter",
-        await pool.poolCommitter()
-    )
-    const poolCommitter2: any = await ethers.getContractAt(
-        "PoolCommitter",
-        await pool2.poolCommitter()
-    )
+    poolKeeper = contracts1.poolKeeper
+    derivativeChainlinkOracle = contracts1.chainlinkOracle
+    derivativeOracleWrapper = contracts1.oracleWrapper
     await token.approve(pool.address, mintAmount)
     await token.approve(pool2.address, mintAmount)
     await createCommit(poolCommitter, [2], mintAmount.div(2))
@@ -181,6 +80,8 @@ const setupHook = async () => {
     await timeout(updateInterval * 1000 * 2)
     await pool.setKeeper(signers[0].address)
     await pool.poolUpkeep(9, 10)
+    POOL1_ADDR = pool.address
+    POOL2_ADDR = pool2.address
 }
 
 interface Upkeep {
@@ -269,15 +170,18 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
             await timeout(updateInterval * 1000 + 1000)
             const balanceBefore = await token.balanceOf(signers[0].address)
             const poolTokenBalanceBefore = await token.balanceOf(pool.address)
-            await poolKeeper.performUpkeepMultiplePools([
-                POOL1_ADDR,
-                POOL2_ADDR,
-            ])
+            const receipt = await (
+                await poolKeeper.performUpkeepMultiplePools([
+                    POOL1_ADDR,
+                    POOL2_ADDR,
+                ])
+            ).wait()
 
             const balanceAfter = await token.balanceOf(signers[0].address)
             const poolTokenBalanceAfter = await token.balanceOf(pool.address)
             const tenGwei = BigNumber.from("10").pow(9).mul(10)
             const tenToTheEighteen = BigNumber.from("10").pow(18)
+            const tenToTheTen = BigNumber.from("10").pow(10)
             const settlementPerEth = BigNumber.from("3000").mul(
                 BigNumber.from(10).pow(8)
             )
@@ -288,7 +192,7 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
                 .mul(tenGwei)
                 .mul(settlementPerEth)
                 .mul(2) // Mul by 2 because there are two pools
-                .div(tenToTheEighteen)
+                .div(tenToTheEighteen.div(tenToTheTen))
             // EstimatedKeeperReward +/- 25% since it is quite hard to estimate
             const lowerBound: any = estimatedKeeperReward.sub(
                 estimatedKeeperReward.div(4)
