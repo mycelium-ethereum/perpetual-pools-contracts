@@ -7,7 +7,7 @@ import {
     PoolFactory,
     PoolFactory__factory,
     PoolSwapLibrary__factory,
-} from "../../typechain"
+} from "../../types"
 import { generateRandomAddress } from "../utilities"
 
 chai.use(chaiAsPromised)

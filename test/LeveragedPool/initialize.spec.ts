@@ -16,7 +16,7 @@ import {
     PoolFactory__factory,
     PoolCommitter__factory,
     PoolCommitter,
-} from "../../typechain"
+} from "../../types"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import {
     ADMIN_ROLE,

@@ -95,6 +95,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         executePriceChange(_oldPrice, _newPrice);
         // execute pending commitments to enter and exit the pool
         IPoolCommitter(poolCommitter).executeAllCommitments();
+        emit CompletedUpkeep(_oldPrice, _newPrice);
     }
 
     /**
@@ -157,8 +158,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     /**
      * @notice Execute the price change once the interval period ticks over, updating the long & short
      *         balances based on the change of the feed (upwards or downwards) and paying fees
-     * @dev Can only be called by poolUpkeep; emits PriceChangeError if execution does not take place,
-     *      and PriceChange if it does
+     * @dev Can only be called by poolUpkeep; emits PriceChangeError if execution does not take place
      * @param _oldPrice Old price from the oracle
      * @param _newPrice New price from the oracle
      */
@@ -184,7 +184,6 @@ contract LeveragedPool is ILeveragedPool, Initializable {
             shortBalance = newShortBalance;
             // Pay the fee
             IERC20(quoteToken).safeTransfer(feeAddress, totalFeeAmount);
-            emit PriceChange(_oldPrice, _newPrice);
         }
     }
 

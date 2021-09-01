@@ -18,7 +18,7 @@ import {
     PoolKeeper,
     TestToken,
     LeveragedPool,
-} from "../../typechain"
+} from "../../types"
 
 chai.use(chaiAsPromised)
 const { expect } = chai

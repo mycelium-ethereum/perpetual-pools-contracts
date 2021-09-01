@@ -1,7 +1,7 @@
 import { ethers } from "hardhat"
 import chai from "chai"
 import chaiAsPromised from "chai-as-promised"
-import { ERC20, LeveragedPool, PoolSwapLibrary } from "../../typechain"
+import { ERC20, LeveragedPool, PoolSwapLibrary } from "../../types"
 
 import {
     deployPoolAndTokenContracts,

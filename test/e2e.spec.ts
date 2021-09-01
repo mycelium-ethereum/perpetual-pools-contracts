@@ -10,7 +10,7 @@ import {
     PoolKeeper,
     ChainlinkOracleWrapper,
     TestChainlinkOracle,
-} from "../typechain"
+} from "../types"
 
 import {
     POOL_CODE,
