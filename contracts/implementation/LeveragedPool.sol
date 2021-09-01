@@ -283,6 +283,28 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         return tokens;
     }
 
+    /**
+     * @notice Withdraws all available ETH from the pool
+     * @dev Pool must not be paused
+     * @dev Raw ETH transfer
+     */
+    function withdrawEth() external onlyGov {
+        require(paused, "Pool is live");
+        this.send(msg.sender, this.balance);
+    }
+
+    /**
+     * @notice Withdraws all available quote asset from the pool
+     * @dev Pool must not be paused
+     * @dev ERC20 transfer
+     */
+    function withdrawQuote() external onlyGov {
+        require(paused, "Pool is live");
+        IERC20 quoteERC = IERC20(quoteToken);
+        uint256 balance = quoteERC.balanceOf(address(this));
+        IERC20(quoteToken).transfer(msg.sender, balance);
+    }
+
     // #### Modifiers
     modifier onlyKeeper() {
         require(msg.sender == keeper, "msg.sender not keeper");
