@@ -1,4 +1,4 @@
-import { ethers, network } from "hardhat"
+import { ethers, network, deployments } from "hardhat"
 import {
     BigNumberish,
     ContractReceipt,
@@ -6,7 +6,13 @@ import {
     Event,
 } from "ethers"
 import { BytesLike, Result } from "ethers/lib/utils"
-import { MARKET } from "./constants"
+import {
+    DEFAULT_FEE,
+    DEFAULT_MINT_AMOUNT,
+    MARKET,
+    POOL_CODE,
+    POOL_CODE_2,
+} from "./constants"
 import {
     ERC20,
     LeveragedPool,
@@ -23,6 +29,7 @@ import {
     PoolCommitter,
     PoolCommitterDeployer__factory,
     TestChainlinkOracle,
+    ChainlinkOracleWrapper,
 } from "../types"
 
 import { abi as ERC20Abi } from "../artifacts/@openzeppelin/contracts/token/ERC20/ERC20.sol/ERC20.json"
@@ -60,37 +67,9 @@ export const getEventArgs = (
     return txReceipt?.events?.find((el: Event) => el.event === eventType)?.args
 }
 
-/**
- * Deploys a new instance of a pool, as well as an ERC20 token to use as a quote token.
- * @param POOL_CODE The pool identifier
- * @param firstPrice The initial value to set the lastPrice variable to in the contract
- * @param updateInterval The update interval value
- * @param frontRunningInterval The front running interval value. Must be less than the update interval
- * @param fee The fund movement fee.
- * @param leverage The amount of leverage the pool will apply
- * @param feeAddress The address to transfer fees to on a fund movement
- * @param amountMinted The amount of test quote tokens to mint
- * @returns {signers, token, pool, library, shortToken, longToken} An object containing an array of ethers signers, a Contract instance for the token, and a Contract instance for the pool.
- */
-export const deployPoolAndTokenContracts = async (
-    POOL_CODE: string,
-    frontRunningInterval: number,
-    updateInterval: number,
-    fee: BytesLike,
-    leverage: number,
-    feeAddress: string,
-    amountMinted: BigNumberish
-): Promise<{
-    signers: SignerWithAddress[]
-    pool: LeveragedPool
-    token: TestToken
-    shortToken: ERC20
-    longToken: ERC20
-    library: PoolSwapLibrary
-    poolCommitter: PoolCommitter
-    poolKeeper: PoolKeeper
-    chainlinkOracle: TestChainlinkOracle
-}> => {
+export const deployPoolSetupContracts = deployments.createFixture(async () => {
+    const amountMinted = DEFAULT_MINT_AMOUNT
+
     const signers = await ethers.getSigners()
     // Deploy test ERC20 token
     const testToken = (await ethers.getContractFactory(
@@ -130,9 +109,6 @@ export const deployPoolAndTokenContracts = async (
 
     const oracleWrapper = await oracleWrapperFactory.deploy(
         chainlinkOracle.address
-    )
-    const ethOracleWrapper = await oracleWrapperFactory.deploy(
-        ethOracle.address
     )
 
     /* keeper oracle */
@@ -179,6 +155,53 @@ export const deployPoolAndTokenContracts = async (
     let poolKeeper = await poolKeeperFactory.deploy(factory.address)
     poolKeeper = await poolKeeper.deployed()
     await factory.setPoolKeeper(poolKeeper.address)
+    await factory.setFee(DEFAULT_FEE)
+
+    return {
+        factory,
+        poolKeeper,
+        chainlinkOracle,
+        oracleWrapper,
+        settlementEthOracle,
+        token,
+        library,
+    }
+})
+
+/**
+ * Deploys a new instance of a pool, as well as an ERC20 token to use as a quote token.
+ * @param POOL_CODE The pool identifier
+ * @param firstPrice The initial value to set the lastPrice variable to in the contract
+ * @param updateInterval The update interval value
+ * @param frontRunningInterval The front running interval value. Must be less than the update interval
+ * @param fee The fund movement fee.
+ * @param leverage The amount of leverage the pool will apply
+ * @param feeAddress The address to transfer fees to on a fund movement
+ * @param amountMinted The amount of test quote tokens to mint
+ * @returns {signers, token, pool, library, shortToken, longToken} An object containing an array of ethers signers, a Contract instance for the token, and a Contract instance for the pool.
+ */
+export const deployPoolAndTokenContracts = async (
+    POOL_CODE: string,
+    frontRunningInterval: number,
+    updateInterval: number,
+    leverage: number,
+    feeAddress?: string,
+    fee?: BytesLike
+): Promise<{
+    signers: SignerWithAddress[]
+    pool: LeveragedPool
+    token: TestToken
+    library: PoolSwapLibrary
+    shortToken: ERC20
+    longToken: ERC20
+    poolCommitter: PoolCommitter
+    poolKeeper: PoolKeeper
+    chainlinkOracle: TestChainlinkOracle
+    factory: PoolFactory
+    oracleWrapper: ChainlinkOracleWrapper
+    settlementEthOracle: ChainlinkOracleWrapper
+}> => {
+    const setupContracts = await deployPoolSetupContracts()
 
     // deploy the pool using the factory, not separately
     const deployParams = {
@@ -186,14 +209,19 @@ export const deployPoolAndTokenContracts = async (
         frontRunningInterval: frontRunningInterval,
         updateInterval: updateInterval,
         leverageAmount: leverage,
-        quoteToken: token.address,
-        oracleWrapper: oracleWrapper.address,
-        settlementEthOracle: settlementEthOracle.address,
+        quoteToken: setupContracts.token.address,
+        oracleWrapper: setupContracts.oracleWrapper.address,
+        settlementEthOracle: setupContracts.settlementEthOracle.address,
     }
 
-    await factory.setFee(fee)
-    await factory.deployPool(deployParams)
-    const poolAddress = await factory.pools(0)
+    if (fee) {
+        await setupContracts.factory.setFee(fee)
+    }
+    if (feeAddress) {
+        await setupContracts.factory.setFeeReceiver(feeAddress)
+    }
+    await setupContracts.factory.deployPool(deployParams)
+    const poolAddress = await setupContracts.factory.pools(0)
     const pool = await ethers.getContractAt("LeveragedPool", poolAddress)
 
     let longTokenAddr = await pool.tokens(0)
@@ -203,6 +231,16 @@ export const deployPoolAndTokenContracts = async (
 
     let commiter = await pool.poolCommitter()
     const poolCommitter = await ethers.getContractAt("PoolCommitter", commiter)
+
+    const signers = await ethers.getSigners()
+
+    const token = setupContracts.token
+    const library = setupContracts.library
+    const poolKeeper = setupContracts.poolKeeper
+    const chainlinkOracle = setupContracts.chainlinkOracle
+    const factory = setupContracts.factory
+    const oracleWrapper = setupContracts.oracleWrapper
+    const settlementEthOracle = setupContracts.settlementEthOracle
 
     return {
         signers,
@@ -218,6 +256,9 @@ export const deployPoolAndTokenContracts = async (
         poolCommitter,
         poolKeeper,
         chainlinkOracle,
+        factory,
+        oracleWrapper,
+        settlementEthOracle,
     }
 }
 

@@ -9,7 +9,7 @@ import {
     PoolCommitter,
 } from "../../../types"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import { POOL_CODE } from "../../constants"
+import { DEFAULT_FEE, DEFAULT_MINT_AMOUNT, POOL_CODE } from "../../constants"
 import {
     deployPoolAndTokenContracts,
     getRandomInt,
@@ -24,12 +24,12 @@ chai.use(chaiAsPromised)
 const { expect } = chai
 
 const amountCommitted = ethers.utils.parseEther("2000")
-const amountMinted = ethers.utils.parseEther("10000")
+const amountMinted = ethers.BigNumber.from(DEFAULT_MINT_AMOUNT)
 const feeAddress = generateRandomAddress()
 const lastPrice = getRandomInt(99999999, 1)
 const updateInterval = 2
 const frontRunningInterval = 1 // seconds
-const fee = "0x00000000000000000000000000000000"
+const fee = DEFAULT_FEE
 const leverage = 2
 
 describe("LeveragedPool - executeCommitment: Long Burn", () => {
@@ -47,10 +47,9 @@ describe("LeveragedPool - executeCommitment: Long Burn", () => {
                 POOL_CODE,
                 frontRunningInterval,
                 updateInterval,
-                fee,
                 leverage,
                 feeAddress,
-                amountMinted
+                fee
             )
             pool = result.pool
             signers = result.signers
