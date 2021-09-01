@@ -25,6 +25,11 @@ contract PoolCommitter is IPoolCommitter, Ownable {
 
     address public factory;
 
+    enum ScanDirection {
+        UP,
+        DOWN
+    }
+
     constructor(address _factory) {
         // set the factory on deploy
         factory = _factory;
