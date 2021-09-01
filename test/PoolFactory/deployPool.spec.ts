@@ -17,10 +17,20 @@ import {
     PoolCommitterDeployer__factory,
 } from "../../types"
 import { POOL_CODE, POOL_CODE_2 } from "../constants"
-import { generateRandomAddress, getEventArgs } from "../utilities"
+import {
+    deployPoolAndTokenContracts,
+    generateRandomAddress,
+    getEventArgs,
+} from "../utilities"
 import { Result } from "ethers/lib/utils"
 import { Signer } from "ethers"
 import LeveragedPoolInterface from "../../artifacts/contracts/implementation/LeveragedPool.sol/LeveragedPool.json"
+
+const updateInterval = 100
+const frontRunningInterval = 20
+const fee = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5]
+const leverage = 1
+const feeAddress = generateRandomAddress()
 
 chai.use(chaiAsPromised)
 const { expect } = chai
@@ -29,7 +39,6 @@ describe("PoolFactory.deployPool", () => {
     let poolKeeper: PoolKeeper
     let oracleWrapper: ChainlinkOracleWrapper
     let settlementEthOracle: ChainlinkOracleWrapper
-    let poolTx: Result | undefined
     let pool: LeveragedPool
     let token: TestToken
     let signers: Signer[]
@@ -39,89 +48,20 @@ describe("PoolFactory.deployPool", () => {
         signers = await ethers.getSigners()
         nonDAO = signers[1]
 
-        const libraryFactory = (await ethers.getContractFactory(
-            "PoolSwapLibrary",
-            signers[0]
-        )) as PoolSwapLibrary__factory
-        const library = await libraryFactory.deploy()
-        await library.deployed()
-
-        const chainlinkOracleFactory = (await ethers.getContractFactory(
-            "TestChainlinkOracle",
-            signers[0]
-        )) as TestChainlinkOracle__factory
-        const chainlinkOracle = await chainlinkOracleFactory.deploy()
-
-        const oracleWrapperFactory = (await ethers.getContractFactory(
-            "ChainlinkOracleWrapper",
-            signers[0]
-        )) as ChainlinkOracleWrapper__factory
-        oracleWrapper = await oracleWrapperFactory.deploy(
-            chainlinkOracle.address
+        const contracts = await deployPoolAndTokenContracts(
+            POOL_CODE,
+            frontRunningInterval,
+            updateInterval,
+            leverage,
+            feeAddress,
+            fee
         )
-        await oracleWrapper.deployed()
-
-        settlementEthOracle = await oracleWrapperFactory.deploy(
-            chainlinkOracle.address
-        )
-        await settlementEthOracle.deployed()
-
-        const PoolFactory = (await ethers.getContractFactory("PoolFactory", {
-            signer: signers[0],
-            libraries: { PoolSwapLibrary: library.address },
-        })) as PoolFactory__factory
-        const feeAddress = await generateRandomAddress()
-        factory = await (await PoolFactory.deploy(feeAddress)).deployed()
-        const poolKeeperFactory = (await ethers.getContractFactory(
-            "PoolKeeper",
-            {
-                signer: signers[0],
-                libraries: { PoolSwapLibrary: library.address },
-            }
-        )) as PoolKeeper__factory
-        poolKeeper = await poolKeeperFactory.deploy(factory.address)
-        await poolKeeper.deployed()
-
-        const testToken = (await ethers.getContractFactory(
-            "TestToken",
-            signers[0]
-        )) as TestToken__factory
-        token = await testToken.deploy("TEST TOKEN", "TST1")
-        await token.deployed()
-        const poolCommitterDeployerFactory = (await ethers.getContractFactory(
-            "PoolCommitterDeployer",
-            {
-                signer: signers[0],
-                libraries: { PoolSwapLibrary: library.address },
-            }
-        )) as PoolCommitterDeployer__factory
-
-        let poolCommitterDeployer = await poolCommitterDeployerFactory.deploy(
-            factory.address
-        )
-        poolCommitterDeployer = await poolCommitterDeployer.deployed()
-        await factory.setPoolCommitterDeployer(poolCommitterDeployer.address)
-
-        await factory.setPoolKeeper(poolKeeper.address)
-        const deploymentData = {
-            poolName: POOL_CODE,
-            frontRunningInterval: 5,
-            updateInterval: 10,
-            fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
-            leverageAmount: 5,
-            quoteToken: token.address,
-            oracleWrapper: oracleWrapper.address,
-            settlementEthOracle: settlementEthOracle.address,
-        }
-        poolTx = getEventArgs(
-            await (await factory.deployPool(deploymentData)).wait(),
-            "DeployPool"
-        )
-        pool = new ethers.Contract(
-            poolTx?.pool,
-            LeveragedPoolInterface.abi,
-            (await ethers.getSigners())[0]
-        ) as LeveragedPool
+        factory = contracts.factory
+        poolKeeper = contracts.poolKeeper
+        oracleWrapper = contracts.oracleWrapper
+        settlementEthOracle = contracts.settlementEthOracle
+        pool = contracts.pool
+        token = contracts.token
     })
 
     context(

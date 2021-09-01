@@ -9,7 +9,7 @@ import {
     PoolCommitter,
 } from "../../../types"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import { POOL_CODE } from "../../constants"
+import { DEFAULT_FEE, POOL_CODE } from "../../constants"
 import {
     deployPoolAndTokenContracts,
     getRandomInt,
@@ -29,7 +29,7 @@ const feeAddress = generateRandomAddress()
 const lastPrice = getRandomInt(99999999, 1)
 const updateInterval = 2
 const frontRunningInterval = 1 // seconds
-const fee = "0x00000000000000000000000000000000"
+const fee = DEFAULT_FEE
 const leverage = 2
 
 describe("LeveragedPool - executeCommitment: Long Mint", () => {
@@ -47,10 +47,9 @@ describe("LeveragedPool - executeCommitment: Long Mint", () => {
                 POOL_CODE,
                 frontRunningInterval,
                 updateInterval,
-                fee,
                 leverage,
                 feeAddress,
-                amountMinted
+                fee
             )
             pool = result.pool
             signers = result.signers
