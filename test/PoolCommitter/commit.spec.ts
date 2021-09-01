@@ -50,7 +50,7 @@ describe("LeveragedPool - commit", () => {
 
     describe("Create commit", () => {
         let receipt: ContractReceipt
-        before(async () => {
+        beforeEach(async () => {
             const result = await deployPoolAndTokenContracts(
                 POOL_CODE,
                 frontRunningInterval,
@@ -89,7 +89,7 @@ describe("LeveragedPool - commit", () => {
             const tx = poolCommitter.commit([3], ethers.utils.parseEther("500"))
             await expect(tx).to.be.revertedWith("Amount less than minimum")
         })
-        it.only("should disallow long burn commits that are too small, with non 1:1 ratios", async () => {
+        it("should disallow long burn commits that are too small, with non 1:1 ratios", async () => {
             const result = await deployPoolAndTokenContracts(
                 POOL_CODE,
                 frontRunningInterval,
@@ -216,11 +216,7 @@ describe("LeveragedPool - commit", () => {
             ).to.not.eq(0)
         })
         it("should increment the id counter", async () => {
-            expect(
-                (await poolCommitter.commitIDCounter()).eq(
-                    ethers.BigNumber.from(1)
-                )
-            ).to.eq(true)
+            expect(await poolCommitter.commitIDCounter()).to.equal(1)
         })
         it("should set the amount committed", async () => {
             expect(
