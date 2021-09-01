@@ -9,7 +9,7 @@ import {
     TestToken,
 } from "../../types"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import { DEFAULT_FEE, POOL_CODE } from "../constants"
+import { DEFAULT_FEE, DEFAULT_MAX_COMMIT_QUEUE_LENGTH, DEFAULT_MIN_COMMIT_SIZE, POOL_CODE } from "../constants"
 import {
     getEventArgs,
     deployPoolAndTokenContracts,
@@ -50,6 +50,8 @@ describe("LeveragedPool - commit", () => {
                 frontRunningInterval,
                 updateInterval,
                 leverage,
+                DEFAULT_MIN_COMMIT_SIZE,
+                DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
                 feeAddress,
                 fee
             )
@@ -148,6 +150,8 @@ describe("LeveragedPool - commit", () => {
                 frontRunningInterval,
                 updateInterval,
                 leverage,
+                DEFAULT_MIN_COMMIT_SIZE,
+                DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
                 feeAddress,
                 fee
             )
@@ -211,6 +215,8 @@ describe("LeveragedPool - commit", () => {
                 frontRunningInterval,
                 updateInterval,
                 leverage,
+                DEFAULT_MIN_COMMIT_SIZE,
+                DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
                 feeAddress,
                 fee
             )
