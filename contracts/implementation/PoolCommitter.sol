@@ -79,6 +79,8 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             pool.quoteTokenTransferFrom(msg.sender, leveragedPool, amount);
         } else if (commitType == CommitType.LongBurn) {
             // long burning: pull in long pool tokens from commiter
+
+            // A theoretical amount based on current ratio. Used to get same units as minimumCommitSize
             uint256 amountOut = PoolSwapLibrary.getAmountOut(
                 PoolSwapLibrary.getRatio(
                     longBalance,
@@ -92,6 +94,8 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             pool.burnTokens(0, amount, msg.sender);
         } else if (commitType == CommitType.ShortBurn) {
             // short burning: pull in short pool tokens from commiter
+
+            // A theoretical amount based on current ratio. Used to get same units as minimumCommitSize
             uint256 amountOut = PoolSwapLibrary.getAmountOut(
                 PoolSwapLibrary.getRatio(
                     shortBalance,
