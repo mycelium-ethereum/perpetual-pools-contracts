@@ -222,7 +222,7 @@ describe("LeveragedPool - initialize", () => {
         })
     })
 
-    describe("Performs safety checks", () => {
+    context("Performs safety checks", () => {
         let leveragedPool: LeveragedPool
         let testFactoryActual: TestPoolFactory
         let poolCommitter: PoolCommitter
