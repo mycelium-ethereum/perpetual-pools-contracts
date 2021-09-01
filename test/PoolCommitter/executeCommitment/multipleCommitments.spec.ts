@@ -9,7 +9,7 @@ import {
     PoolCommitter,
 } from "../../../types"
 
-import { POOL_CODE } from "../../constants"
+import { DEFAULT_FEE, POOL_CODE } from "../../constants"
 import {
     deployPoolAndTokenContracts,
     getRandomInt,
@@ -28,7 +28,7 @@ const feeAddress = generateRandomAddress()
 const lastPrice = getRandomInt(99999999, 1)
 const updateInterval = 2
 const frontRunningInterval = 1 // seconds
-const fee = "0x00000000000000000000000000000000"
+const fee = DEFAULT_FEE
 const leverage = 1
 
 describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
@@ -45,10 +45,9 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
                 POOL_CODE,
                 frontRunningInterval,
                 updateInterval,
-                fee,
                 leverage,
                 feeAddress,
-                amountMinted
+                fee
             )
             pool = result.pool
             library = result.library
@@ -112,10 +111,9 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
                 POOL_CODE,
                 frontRunningInterval,
                 updateInterval,
-                fee,
                 leverage,
                 feeAddress,
-                amountMinted
+                fee
             )
             pool = result.pool
             library = result.library
