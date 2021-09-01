@@ -285,6 +285,22 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         return tokens;
     }
 
+    /**
+     * @notice Pauses the pool
+     * @dev Prevents all state updates until unpaused
+     */
+    function pause() external onlyGov {
+        paused = true;
+    }
+
+    /**
+     * @notice Unpauses the pool
+     * @dev Prevents all state updates until unpaused
+     */
+    function unpause() external onlyGov {
+        paused = false;
+    }
+
     // #### Modifiers
     modifier onlyKeeper() {
         require(msg.sender == keeper, "msg.sender not keeper");
