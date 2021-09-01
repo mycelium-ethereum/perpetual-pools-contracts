@@ -71,7 +71,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         // pull in tokens
         if (commitType == CommitType.LongMint || commitType == CommitType.ShortMint) {
             // minting: pull in the quote token from the commiter
-            require(amount > minimumCommitSize, "Amount less than minimum");
+            require(amount >= minimumCommitSize, "Amount less than minimum");
             pool.quoteTokenTransferFrom(msg.sender, leveragedPool, amount);
         } else if (commitType == CommitType.LongBurn) {
             // long burning: pull in long pool tokens from commiter
@@ -84,7 +84,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
                 ),
                 amount
             );
-            require(amountOut > minimumCommitSize, "Amount less than minimum");
+            require(amountOut >= minimumCommitSize, "Amount less than minimum");
             pool.burnTokens(0, amount, msg.sender);
         } else if (commitType == CommitType.ShortBurn) {
             // short burning: pull in short pool tokens from commiter
@@ -97,7 +97,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
                 ),
                 amount
             );
-            require(amountOut > minimumCommitSize, "Amount less than minimum");
+            require(amountOut >= minimumCommitSize, "Amount less than minimum");
             pool.burnTokens(1, amount, msg.sender);
         }
     }
