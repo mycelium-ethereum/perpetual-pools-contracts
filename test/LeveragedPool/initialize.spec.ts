@@ -19,7 +19,7 @@ import {
     POOL_CODE,
     POOL_CODE_2,
     DEFAULT_MAX_LEVERAGE,
-    DEFAULT_MIN_LEVERAGE
+    DEFAULT_MIN_LEVERAGE,
 } from "../constants"
 import {
     deployPoolAndTokenContracts,
