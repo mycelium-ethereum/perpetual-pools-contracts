@@ -17,6 +17,8 @@ import {
     NO_COMMITS_REMAINING,
     SINGLE_POOL_UPKEEP_GAS_COST,
     DEFAULT_FEE,
+    DEFAULT_MIN_COMMIT_SIZE,
+    DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
 } from "./constants"
 import {
     deployPoolAndTokenContracts,
@@ -61,6 +63,8 @@ describe("LeveragedPool - executeAllCommitments", () => {
                 frontRunningInterval,
                 updateInterval,
                 leverage,
+                DEFAULT_MIN_COMMIT_SIZE,
+                DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
                 feeAddress,
                 fee
             )

@@ -3,7 +3,7 @@ import chai from "chai"
 import chaiAsPromised from "chai-as-promised"
 import { generateRandomAddress } from "../utilities"
 
-import { MARKET_2, POOL_CODE, POOL_CODE_2 } from "../constants"
+import { DEFAULT_MAX_COMMIT_QUEUE_LENGTH, DEFAULT_MIN_COMMIT_SIZE, MARKET_2, POOL_CODE, POOL_CODE_2 } from "../constants"
 import {
     TestChainlinkOracle,
     ChainlinkOracleWrapper,
@@ -96,6 +96,8 @@ const setupHook = async () => {
         quoteToken: quoteToken,
         oracleWrapper: oracleWrapper.address,
         settlementEthOracle: settlementEthOracle.address,
+        minimumCommitSize: DEFAULT_MIN_COMMIT_SIZE,
+        maximumCommitQueueLength: DEFAULT_MAX_COMMIT_QUEUE_LENGTH
     }
     await factory.deployPool(deploymentData)
 
@@ -107,6 +109,8 @@ const setupHook = async () => {
         quoteToken: quoteToken,
         oracleWrapper: oracleWrapper.address,
         settlementEthOracle: settlementEthOracle.address,
+        minimumCommitSize: DEFAULT_MIN_COMMIT_SIZE,
+        maximumCommitQueueLength: DEFAULT_MAX_COMMIT_QUEUE_LENGTH
     }
     await factory.deployPool(deploymentData2)
 }
