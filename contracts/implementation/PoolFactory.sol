@@ -72,11 +72,11 @@ contract PoolFactory is IPoolFactory, Ownable {
      * @param deploymentParameters Deployment parameters of the market. Some may be reconfigurable
      * @return Address of the created pool
      */
-    function deployPool(PoolDeployment calldata deploymentParameters) external override returns (address) {
+    function deployPool(PoolDeployment calldata deploymentParameters) external override onlyGov returns (address) {
         address _poolKeeper = address(poolKeeper);
         require(_poolKeeper != address(0), "PoolKeeper not set");
         require(address(poolCommitterDeployer) != address(0), "PoolCommitterDeployer not set");
-        address poolCommitter = poolCommitterDeployer.deploy();
+        address poolCommitter = poolCommitterDeployer.deploy(deploymentParameters.minimumCommitSize, deploymentParameters.maximumCommitQueueLength);
         require(
             deploymentParameters.leverageAmount >= 1 && deploymentParameters.leverageAmount <= maxLeverage,
             "PoolKeeper: leveraged amount invalid"
@@ -97,7 +97,7 @@ contract PoolFactory is IPoolFactory, Ownable {
             string(abi.encodePacked("S-", deploymentParameters.poolName))
         );
         ILeveragedPool.Initialization memory initialization = ILeveragedPool.Initialization(
-            owner(), // governance is the owner of pools
+            owner(), // governance is the owner of pools -- if this changes, `onlyGov` breaks
             _poolKeeper,
             deploymentParameters.oracleWrapper,
             deploymentParameters.settlementEthOracle,
@@ -167,5 +167,10 @@ contract PoolFactory is IPoolFactory, Ownable {
     function setPoolCommitterDeployer(address _poolCommitterDeployer) external override onlyOwner {
         require(_poolCommitterDeployer != address(0), "address cannot be null");
         poolCommitterDeployer = IPoolCommitterDeployer(_poolCommitterDeployer);
+    }
+
+    modifier onlyGov() {
+        require(msg.sender == owner(), "msg.sender not governance");
+        _;
     }
 }
