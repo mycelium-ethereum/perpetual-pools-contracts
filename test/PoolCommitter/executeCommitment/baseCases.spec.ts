@@ -10,7 +10,7 @@ import {
     PoolKeeper,
 } from "../../../types"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import { POOL_CODE } from "../../constants"
+import { DEFAULT_FEE, POOL_CODE } from "../../constants"
 import {
     getEventArgs,
     deployPoolAndTokenContracts,
@@ -31,7 +31,7 @@ const feeAddress = generateRandomAddress()
 const lastPrice = getRandomInt(99999999, 1)
 const updateInterval = 2
 const frontRunningInterval = 1 // seconds
-const fee = "0x00000000000000000000000000000000"
+const fee = DEFAULT_FEE
 const leverage = 2
 const commitType = [2] //long mint;
 

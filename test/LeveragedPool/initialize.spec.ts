@@ -7,24 +7,19 @@ import {
     TestPoolFactory,
     LeveragedPool__factory,
     TestToken__factory,
-    PoolSwapLibrary__factory,
     PoolSwapLibrary,
     ERC20,
-    TestChainlinkOracle__factory,
-    ChainlinkOracleWrapper__factory,
     ChainlinkOracleWrapper,
-    PoolFactory__factory,
     PoolCommitter__factory,
     PoolCommitter,
 } from "../../types"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import {
-    ADMIN_ROLE,
-    DEFAULT_MINT_AMOUNT,
-    FEE_HOLDER_ROLE,
+    DEFAULT_FEE,
     POOL_CODE,
     POOL_CODE_2,
-    UPDATER_ROLE,
+    DEFAULT_MAX_LEVERAGE,
+    DEFAULT_MIN_LEVERAGE
 } from "../constants"
 import {
     deployPoolAndTokenContracts,
@@ -45,8 +40,8 @@ const feeAddress = generateRandomAddress()
 
 const updateInterval = getRandomInt(99999, 10)
 const frontRunningInterval = getRandomInt(updateInterval - 1, 1)
-const fee = "0x00000000000000000000000000000000"
-const leverage = getRandomInt(10, 1)
+const fee = DEFAULT_FEE
+const leverage = getRandomInt(DEFAULT_MAX_LEVERAGE, DEFAULT_MIN_LEVERAGE)
 
 describe("LeveragedPool - initialize", () => {
     let signers: SignerWithAddress[]
