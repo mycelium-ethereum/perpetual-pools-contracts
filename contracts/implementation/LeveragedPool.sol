@@ -41,6 +41,9 @@ contract LeveragedPool is ILeveragedPool, Initializable {
 
     bool public paused;
 
+    event Paused();
+    event Unpaused();
+
     // #### Functions
 
     function initialize(ILeveragedPool.Initialization calldata initialization) external override initializer {
@@ -302,6 +305,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
      */
     function pause() external onlyGov {
         paused = true;
+        emit Paused();
     }
 
     /**
@@ -310,6 +314,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
      */
     function unpause() external onlyGov {
         paused = false;
+        emit Unpaused();
     }
 
     // #### Modifiers
