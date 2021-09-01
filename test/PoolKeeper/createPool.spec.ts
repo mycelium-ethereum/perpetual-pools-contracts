@@ -1,13 +1,14 @@
 import { ethers } from "hardhat"
 import chai from "chai"
 import chaiAsPromised from "chai-as-promised"
-import {
-    PoolKeeper,
-    PoolFactory,
-} from "../../types"
+import { PoolKeeper, PoolFactory } from "../../types"
 
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import { POOL_CODE, DEFAULT_MAX_COMMIT_QUEUE_LENGTH, DEFAULT_MIN_COMMIT_SIZE } from "../constants"
+import {
+    POOL_CODE,
+    DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
+    DEFAULT_MIN_COMMIT_SIZE,
+} from "../constants"
 import { deployPoolSetupContracts, generateRandomAddress } from "../utilities"
 
 chai.use(chaiAsPromised)
@@ -42,7 +43,7 @@ describe("PoolKeeper - createPool", () => {
             oracleWrapper: oracleWrapper.address,
             settlementEthOracle: settlementEthOracle.address,
             minimumCommitSize: DEFAULT_MIN_COMMIT_SIZE,
-            maximumCommitQueueLength: DEFAULT_MAX_COMMIT_QUEUE_LENGTH
+            maximumCommitQueueLength: DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
         }
     })
 

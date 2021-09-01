@@ -11,7 +11,12 @@ import {
     timeout,
 } from "../utilities"
 
-import { DEFAULT_MAX_COMMIT_QUEUE_LENGTH, DEFAULT_MIN_COMMIT_SIZE, POOL_CODE, POOL_CODE_2 } from "../constants"
+import {
+    DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
+    DEFAULT_MIN_COMMIT_SIZE,
+    POOL_CODE,
+    POOL_CODE_2,
+} from "../constants"
 import {
     TestChainlinkOracle,
     ChainlinkOracleWrapper,
@@ -59,7 +64,7 @@ const setupHook = async () => {
         deploymentData.updateInterval,
         1,
         DEFAULT_MIN_COMMIT_SIZE,
-        DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
+        DEFAULT_MAX_COMMIT_QUEUE_LENGTH
     )
 
     token = contracts1.token

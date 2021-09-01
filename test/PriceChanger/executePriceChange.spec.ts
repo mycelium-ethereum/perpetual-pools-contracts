@@ -11,7 +11,12 @@ import {
 } from "../utilities"
 
 import { BigNumberish, BytesLike } from "ethers"
-import { DEFAULT_MAX_COMMIT_QUEUE_LENGTH, DEFAULT_MINT_AMOUNT, DEFAULT_MIN_COMMIT_SIZE, POOL_CODE } from "../constants"
+import {
+    DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
+    DEFAULT_MINT_AMOUNT,
+    DEFAULT_MIN_COMMIT_SIZE,
+    POOL_CODE,
+} from "../constants"
 
 chai.use(chaiAsPromised)
 const { expect } = chai

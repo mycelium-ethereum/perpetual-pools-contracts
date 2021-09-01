@@ -28,7 +28,11 @@ contract PoolCommitter is IPoolCommitter, Ownable {
 
     address public factory;
 
-    constructor(address _factory, uint128 _minimumCommitSize, uint128 _maximumCommitQueueLength) {
+    constructor(
+        address _factory,
+        uint128 _minimumCommitSize,
+        uint128 _maximumCommitQueueLength
+    ) {
         // set the factory on deploy
         factory = _factory;
         minimumCommitSize = _minimumCommitSize;
@@ -162,6 +166,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         if (earliestCommitUnexecuted == NO_COMMITS_REMAINING) {
             return;
         }
+        currentCommitQueueLength = 0;
         uint128 nextEarliestCommitUnexecuted;
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
         uint256 frontRunningInterval = pool.frontRunningInterval();

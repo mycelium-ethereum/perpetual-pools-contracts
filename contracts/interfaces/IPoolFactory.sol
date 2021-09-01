@@ -11,7 +11,7 @@ interface IPoolFactory {
         address quoteToken; // The digital asset that the pool accepts
         address oracleWrapper; // The IOracleWrapper implementation for fetching price feed data
         address settlementEthOracle; // The oracle to fetch the price of Ether in terms of the settlement token
-        uint128 minimumCommitSize; // The minimum amount (in settlement tokens) that a user can commit in a single commitment 
+        uint128 minimumCommitSize; // The minimum amount (in settlement tokens) that a user can commit in a single commitment
         uint128 maximumCommitQueueLength; // The maximum number of commitments that can be made for a given updateInterval
     }
 

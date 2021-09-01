@@ -216,7 +216,7 @@ export const deployPoolAndTokenContracts = async (
         oracleWrapper: setupContracts.oracleWrapper.address,
         settlementEthOracle: setupContracts.settlementEthOracle.address,
         minimumCommitSize: minimumCommitSize,
-        maximumCommitQueueLength: maximumCommitQueueLength
+        maximumCommitQueueLength: maximumCommitQueueLength,
     }
 
     if (fee) {

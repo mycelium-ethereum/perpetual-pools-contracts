@@ -10,7 +10,12 @@ import {
     TestToken,
 } from "../../types"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import { DEFAULT_FEE, DEFAULT_MAX_COMMIT_QUEUE_LENGTH, DEFAULT_MIN_COMMIT_SIZE, POOL_CODE } from "../constants"
+import {
+    DEFAULT_FEE,
+    DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
+    DEFAULT_MIN_COMMIT_SIZE,
+    POOL_CODE,
+} from "../constants"
 import {
     getEventArgs,
     deployPoolAndTokenContracts,
@@ -82,7 +87,7 @@ describe("LeveragedPool - commit", () => {
             await token.approve(pool.address, amountCommitted)
             // Commit with half the amount of the minimum, with a LONG BURN
             const tx = poolCommitter.commit([3], ethers.utils.parseEther("500"))
-            await expect(tx).to.be.revertedWith("Amount less than minimum");
+            await expect(tx).to.be.revertedWith("Amount less than minimum")
         })
         it.only("should disallow long burn commits that are too small, with non 1:1 ratios", async () => {
             const result = await deployPoolAndTokenContracts(
@@ -96,14 +101,18 @@ describe("LeveragedPool - commit", () => {
                 fee
             )
             poolCommitter = result.poolCommitter
-            await token.approve(pool.address, ethers.utils.parseEther("1000000"))
+            await token.approve(
+                pool.address,
+                ethers.utils.parseEther("1000000")
+            )
             await poolCommitter.commit([0], ethers.utils.parseEther("2000"))
             await poolCommitter.commit([2], ethers.utils.parseEther("1000"))
             await timeout((updateInterval + 1) * 1000)
             await poolKeeper.performUpkeepSinglePool(pool.address)
+            expect(await poolCommitter.currentCommitQueueLength()).to.equal(0)
             // Commit with half the amount of the minimum, with a LONG BURN
             const tx = poolCommitter.commit([3], ethers.utils.parseEther("600"))
-            await expect(tx).to.be.revertedWith("Amount less than minimum");
+            await expect(tx).to.be.revertedWith("Amount less than minimum")
         })
         it("should disallow short burn commits that are too small, with non 1:1 ratios", async () => {
             const result = await deployPoolAndTokenContracts(
@@ -117,14 +126,17 @@ describe("LeveragedPool - commit", () => {
                 fee
             )
             poolCommitter = result.poolCommitter
-            await token.approve(pool.address, ethers.utils.parseEther("1000000"))
+            await token.approve(
+                pool.address,
+                ethers.utils.parseEther("1000000")
+            )
             await poolCommitter.commit([0], ethers.utils.parseEther("2000"))
             await poolCommitter.commit([2], ethers.utils.parseEther("1000"))
             await timeout((updateInterval + 1) * 1000)
             await poolKeeper.performUpkeepSinglePool(pool.address)
             // Commit with half the amount of the minimum, with a SHORT BURN
             const tx = poolCommitter.commit([1], ethers.utils.parseEther("600"))
-            await expect(tx).to.be.revertedWith("Amount less than minimum");
+            await expect(tx).to.be.revertedWith("Amount less than minimum")
         })
         it("should disallow short burn commits that are too small", async () => {
             const result = await deployPoolAndTokenContracts(
@@ -141,7 +153,7 @@ describe("LeveragedPool - commit", () => {
             await token.approve(pool.address, amountCommitted)
             // Commit with half the amount of the minimum, with a SHORT BURN
             const tx = poolCommitter.commit([1], ethers.utils.parseEther("500"))
-            await expect(tx).to.be.revertedWith("Amount less than minimum");
+            await expect(tx).to.be.revertedWith("Amount less than minimum")
         })
         it("should disallow mint commits that are too small", async () => {
             const result = await deployPoolAndTokenContracts(
@@ -157,8 +169,11 @@ describe("LeveragedPool - commit", () => {
             poolCommitter = result.poolCommitter
             await token.approve(pool.address, amountCommitted)
             // Commit with half the amount of the minimum
-            const tx = poolCommitter.commit(commitType, ethers.utils.parseEther("500"))
-            await expect(tx).to.be.revertedWith("Amount less than minimum");
+            const tx = poolCommitter.commit(
+                commitType,
+                ethers.utils.parseEther("500")
+            )
+            await expect(tx).to.be.revertedWith("Amount less than minimum")
         })
         it("should disallow too many commits", async () => {
             const result = await deployPoolAndTokenContracts(
@@ -174,10 +189,22 @@ describe("LeveragedPool - commit", () => {
             poolCommitter = result.poolCommitter
             await token.approve(pool.address, amountCommitted)
             // Commit 3 times, then the 4th should revert
-            await poolCommitter.commit(commitType, ethers.utils.parseEther("500"))
-            await poolCommitter.commit(commitType, ethers.utils.parseEther("500"))
-            await poolCommitter.commit(commitType, ethers.utils.parseEther("500"))
-            expect(poolCommitter.commit(commitType, ethers.utils.parseEther("500"))).to.be.revertedWith("Too many commits in interval")
+            await poolCommitter.commit(
+                commitType,
+                ethers.utils.parseEther("500")
+            )
+            await poolCommitter.commit(
+                commitType,
+                ethers.utils.parseEther("500")
+            )
+            await poolCommitter.commit(
+                commitType,
+                ethers.utils.parseEther("500")
+            )
+            expect(await poolCommitter.currentCommitQueueLength()).to.equal(3)
+            expect(
+                poolCommitter.commit(commitType, ethers.utils.parseEther("500"))
+            ).to.be.revertedWith("Too many commits in interval")
         })
         it("should create a commit entry", async () => {
             expect(

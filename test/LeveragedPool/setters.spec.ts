@@ -3,7 +3,11 @@ import chai from "chai"
 import chaiAsPromised from "chai-as-promised"
 import { ethers } from "hardhat"
 import { LeveragedPool, PoolKeeper } from "../../types"
-import { DEFAULT_MAX_COMMIT_QUEUE_LENGTH, DEFAULT_MIN_COMMIT_SIZE, POOL_CODE } from "../constants"
+import {
+    DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
+    DEFAULT_MIN_COMMIT_SIZE,
+    POOL_CODE,
+} from "../constants"
 import { deployPoolAndTokenContracts } from "../utilities"
 
 chai.use(chaiAsPromised)
