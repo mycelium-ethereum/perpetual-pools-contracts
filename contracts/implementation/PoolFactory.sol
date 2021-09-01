@@ -76,7 +76,7 @@ contract PoolFactory is IPoolFactory, Ownable {
         address _poolKeeper = address(poolKeeper);
         require(_poolKeeper != address(0), "PoolKeeper not set");
         require(address(poolCommitterDeployer) != address(0), "PoolCommitterDeployer not set");
-        address poolCommitter = poolCommitterDeployer.deploy();
+        address poolCommitter = poolCommitterDeployer.deploy(deploymentParameters.minimumCommitSize, deploymentParameters.maximumCommitQueueLength);
         require(
             deploymentParameters.leverageAmount >= 1 && deploymentParameters.leverageAmount <= maxLeverage,
             "PoolKeeper: leveraged amount invalid"
