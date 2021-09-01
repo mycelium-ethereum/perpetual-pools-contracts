@@ -33,7 +33,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         DOWN
     }
 
-    constructor(address _factory, uint128 _minimumCommitSize, uint128 _maximumCommitQueueLength) {
+    constructor(address _factory) {
         // set the factory on deploy
         factory = _factory;
         minimumCommitSize = _minimumCommitSize;

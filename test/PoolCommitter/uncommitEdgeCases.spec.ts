@@ -10,7 +10,7 @@ import {
     PoolKeeper,
 } from "../../types"
 
-import { DEFAULT_MAX_COMMIT_QUEUE_LENGTH, DEFAULT_MIN_COMMIT_SIZE, POOL_CODE } from "../constants"
+import { POOL_CODE } from "../constants"
 import {
     deployPoolAndTokenContracts,
     getRandomInt,
@@ -48,8 +48,6 @@ describe("Uncommit", () => {
                 frontRunningInterval,
                 updateInterval,
                 leverage,
-                DEFAULT_MIN_COMMIT_SIZE,
-                DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
                 feeAddress,
                 fee
             )

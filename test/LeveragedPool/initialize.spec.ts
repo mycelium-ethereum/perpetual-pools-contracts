@@ -20,8 +20,6 @@ import {
     DEFAULT_MAX_LEVERAGE,
     DEFAULT_MIN_LEVERAGE,
     DEFAULT_FEE,
-    DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
-    DEFAULT_MIN_COMMIT_SIZE,
 } from "../constants"
 import {
     deployPoolAndTokenContracts,
@@ -66,8 +64,6 @@ describe("LeveragedPool - initialize", () => {
                 frontRunningInterval,
                 updateInterval,
                 leverage,
-                DEFAULT_MIN_COMMIT_SIZE,
-                DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
                 feeAddress,
                 fee
             )
@@ -175,9 +171,7 @@ describe("LeveragedPool - initialize", () => {
 
             const poolCommitter = await (
                 await poolCommitterFactory.deploy(
-                    setupContracts.factory.address,
-                    DEFAULT_MIN_COMMIT_SIZE,
-                    DEFAULT_MAX_COMMIT_QUEUE_LENGTH
+                    setupContracts.factory.address
                 )
             ).deployed()
 
@@ -238,8 +232,6 @@ describe("LeveragedPool - initialize", () => {
                 frontRunningInterval,
                 updateInterval,
                 leverage,
-                DEFAULT_MIN_COMMIT_SIZE,
-                DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
                 feeAddress,
                 fee
             )

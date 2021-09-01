@@ -133,8 +133,6 @@ module.exports = async (hre) => {
     const updateInterval = 3600 // 1 hour
     const frontRunningInterval = 60 // seconds
     const leverage = 1
-    const minimumCommitSize = ethers.utils.parseEther("500")
-    const maximumCommitQueueLength = 300
 
     /* deploy LeveragePool */
     const deploymentData = {
@@ -145,8 +143,6 @@ module.exports = async (hre) => {
         quoteToken: token.address,
         oracleWrapper: oracleWrapper.address,
         settlementEthOracle: keeperOracle.address,
-        minimumCommitSize: minimumCommitSize,
-        maximumCommitQueueLength: maximumCommitQueueLength
     }
 
     const receipt = await execute(
@@ -163,8 +159,6 @@ module.exports = async (hre) => {
 
     console.log(`Deployed PoolFactory: ${factory.address}`)
     console.log(`Deployed LeveragedPool: ${event.args.pool}`)
-    console.log(`Minimum commit size: ${minimumCommitSize}`)
-    console.log(`Maximum commit queue length: ${maximumCommitQueueLength}`)
     console.log(`Deploy PoolKeeper: ${poolKeeper.address}`)
     console.log(`Deployed TestToken: ${token.address}`)
     console.log(`Deployed TestOracle: ${chainlinkOracle.address}`)

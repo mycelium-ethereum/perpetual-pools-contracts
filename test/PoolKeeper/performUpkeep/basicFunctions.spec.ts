@@ -11,9 +11,7 @@ import {
 
 import {
     DEFAULT_FEE,
-    DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
     DEFAULT_MINT_AMOUNT,
-    DEFAULT_MIN_COMMIT_SIZE,
     MARKET_2,
     POOL_CODE,
     POOL_CODE_2,
@@ -55,8 +53,6 @@ const setupHook = async () => {
         frontRunningInterval,
         updateInterval,
         1,
-        DEFAULT_MIN_COMMIT_SIZE,
-        DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
         feeAddress,
         fee
     )
@@ -66,8 +62,6 @@ const setupHook = async () => {
         frontRunningInterval,
         updateInterval,
         2,
-        DEFAULT_MIN_COMMIT_SIZE,
-        DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
         feeAddress,
         fee
     )

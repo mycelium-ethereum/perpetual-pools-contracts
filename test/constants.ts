@@ -23,6 +23,3 @@ export const SINGLE_POOL_UPKEEP_GAS_COST = "67678"
 
 export const DEFAULT_MAX_LEVERAGE = 10
 export const DEFAULT_MIN_LEVERAGE = 1
-
-export const DEFAULT_MIN_COMMIT_SIZE = ethers.utils.parseEther("0")
-export const DEFAULT_MAX_COMMIT_QUEUE_LENGTH = 500

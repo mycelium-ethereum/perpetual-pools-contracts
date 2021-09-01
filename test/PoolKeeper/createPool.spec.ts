@@ -16,7 +16,7 @@ import {
 } from "../../types"
 
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import { OPERATOR_ROLE, ADMIN_ROLE, POOL_CODE, MARKET_CODE, DEFAULT_MAX_COMMIT_QUEUE_LENGTH, DEFAULT_MIN_COMMIT_SIZE } from "../constants"
+import { OPERATOR_ROLE, ADMIN_ROLE, POOL_CODE, MARKET_CODE } from "../constants"
 import { deployPoolSetupContracts, generateRandomAddress } from "../utilities"
 import { deploy } from "@openzeppelin/hardhat-upgrades/dist/utils"
 import { BigNumber } from "ethers"
@@ -41,9 +41,6 @@ describe("PoolKeeper - createPool", () => {
         poolKeeper = setup.poolKeeper
         factory = setup.factory
 
-        const minimumCommitSize = DEFAULT_MIN_COMMIT_SIZE
-        const maximumCommitQueueLength = DEFAULT_MAX_COMMIT_QUEUE_LENGTH
-
         deploymentData = {
             owner: signers[0].address,
             keeper: poolKeeper.address,
@@ -55,8 +52,6 @@ describe("PoolKeeper - createPool", () => {
             quoteToken: token.address,
             oracleWrapper: oracleWrapper.address,
             settlementEthOracle: settlementEthOracle.address,
-            minimumCommitSize: minimumCommitSize,
-            maximumCommitQueueLength: maximumCommitQueueLength
         }
     })
 

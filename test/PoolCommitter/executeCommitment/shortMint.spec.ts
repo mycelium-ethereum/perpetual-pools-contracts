@@ -9,7 +9,7 @@ import {
     PoolCommitter,
 } from "../../../types"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import { DEFAULT_FEE, DEFAULT_MAX_COMMIT_QUEUE_LENGTH, DEFAULT_MINT_AMOUNT, DEFAULT_MIN_COMMIT_SIZE, POOL_CODE } from "../../constants"
+import { DEFAULT_FEE, DEFAULT_MINT_AMOUNT, POOL_CODE } from "../../constants"
 import {
     deployPoolAndTokenContracts,
     getRandomInt,
@@ -48,8 +48,6 @@ describe("LeveragedPool - executeCommitment: Short Mint", () => {
                 frontRunningInterval,
                 updateInterval,
                 leverage,
-                DEFAULT_MIN_COMMIT_SIZE,
-                DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
                 feeAddress,
                 fee
             )

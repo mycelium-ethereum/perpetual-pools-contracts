@@ -5,9 +5,16 @@ import {
     LeveragedPool,
     PoolFactory,
     TestToken,
+    PoolFactory__factory,
     PoolKeeper,
+    PoolKeeper__factory,
+    PoolSwapLibrary__factory,
     ChainlinkOracleWrapper,
+    ChainlinkOracleWrapper__factory,
+    TestChainlinkOracle__factory,
+    TestToken__factory,
     PoolToken__factory,
+    PoolCommitterDeployer__factory,
 } from "../../types"
 import { POOL_CODE, POOL_CODE_2 } from "../constants"
 import {
@@ -15,6 +22,7 @@ import {
     generateRandomAddress,
     getEventArgs,
 } from "../utilities"
+import { Result } from "ethers/lib/utils"
 import { Signer } from "ethers"
 import LeveragedPoolInterface from "../../artifacts/contracts/implementation/LeveragedPool.sol/LeveragedPool.json"
 
@@ -23,8 +31,6 @@ const frontRunningInterval = 20
 const fee = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5]
 const leverage = 1
 const feeAddress = generateRandomAddress()
-const minimumCommitSize = ethers.utils.parseEther("500")
-const maximumCommitQueueLength = 300
 
 chai.use(chaiAsPromised)
 const { expect } = chai
@@ -47,8 +53,6 @@ describe("PoolFactory.deployPool", () => {
             frontRunningInterval,
             updateInterval,
             leverage,
-            minimumCommitSize,
-            maximumCommitQueueLength,
             feeAddress,
             fee
         )
@@ -73,8 +77,6 @@ describe("PoolFactory.deployPool", () => {
                     quoteToken: token.address,
                     oracleWrapper: oracleWrapper.address,
                     settlementEthOracle: settlementEthOracle.address,
-                    minimumCommitSize: minimumCommitSize,
-                    maximumCommitQueueLength: maximumCommitQueueLength
                 }
 
                 await expect(
@@ -118,8 +120,6 @@ describe("PoolFactory.deployPool", () => {
                 quoteToken: token.address,
                 oracleWrapper: oracleWrapper.address,
                 settlementEthOracle: settlementEthOracle.address,
-                minimumCommitSize: minimumCommitSize,
-                maximumCommitQueueLength: maximumCommitQueueLength
             }
             const secondPool = getEventArgs(
                 await (await factory.deployPool(deploymentData)).wait(),
@@ -156,8 +156,6 @@ describe("PoolFactory.deployPool", () => {
                 quoteToken: token.address,
                 oracleWrapper: oracleWrapper.address,
                 settlementEthOracle: settlementEthOracle.address,
-                minimumCommitSize: minimumCommitSize,
-                maximumCommitQueueLength: maximumCommitQueueLength
             }
             const secondPool = getEventArgs(
                 await (await factory.deployPool(deploymentData)).wait(),
@@ -182,8 +180,6 @@ describe("PoolFactory.deployPool", () => {
                 quoteToken: token.address,
                 oracleWrapper: oracleWrapper.address,
                 settlementEthOracle: settlementEthOracle.address,
-                minimumCommitSize: minimumCommitSize,
-                maximumCommitQueueLength: maximumCommitQueueLength
             }
 
             await expect(factory.deployPool(deploymentData)).to.be.revertedWith(
@@ -199,8 +195,6 @@ describe("PoolFactory.deployPool", () => {
                 quoteToken: generateRandomAddress(),
                 oracleWrapper: oracleWrapper.address,
                 settlementEthOracle: settlementEthOracle.address,
-                minimumCommitSize: minimumCommitSize,
-                maximumCommitQueueLength: maximumCommitQueueLength
             }
 
             await expect(factory.deployPool(deploymentData)).to.be.revertedWith(
@@ -217,8 +211,6 @@ describe("PoolFactory.deployPool", () => {
                 quoteToken: token.address,
                 oracleWrapper: oracleWrapper.address,
                 settlementEthOracle: settlementEthOracle.address,
-                minimumCommitSize: minimumCommitSize,
-                maximumCommitQueueLength: maximumCommitQueueLength
             }
 
             await expect(factory.deployPool(deploymentData)).to.be.revertedWith(

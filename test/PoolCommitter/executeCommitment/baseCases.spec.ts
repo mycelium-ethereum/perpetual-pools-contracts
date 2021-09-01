@@ -10,7 +10,7 @@ import {
     PoolKeeper,
 } from "../../../types"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import { DEFAULT_FEE, DEFAULT_MAX_COMMIT_QUEUE_LENGTH, DEFAULT_MIN_COMMIT_SIZE, POOL_CODE } from "../../constants"
+import { DEFAULT_FEE, POOL_CODE } from "../../constants"
 import {
     getEventArgs,
     deployPoolAndTokenContracts,
@@ -49,8 +49,6 @@ describe("poolCommitter - executeCommitment: Basic test cases", () => {
                 100,
                 250,
                 leverage,
-                DEFAULT_MIN_COMMIT_SIZE,
-                DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
                 feeAddress,
                 fee
             )
@@ -89,8 +87,6 @@ describe("poolCommitter - executeCommitment: Basic test cases", () => {
                 frontRunningInterval,
                 updateInterval,
                 leverage,
-                DEFAULT_MIN_COMMIT_SIZE,
-                DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
                 feeAddress,
                 fee
             )
@@ -127,8 +123,6 @@ describe("poolCommitter - executeCommitment: Basic test cases", () => {
                 frontRunningInterval,
                 updateInterval,
                 leverage,
-                DEFAULT_MIN_COMMIT_SIZE,
-                DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
                 feeAddress,
                 fee
             )
