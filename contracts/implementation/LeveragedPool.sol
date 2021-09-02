@@ -300,6 +300,18 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     }
 
     /**
+     * @notice Withdraws all available quote asset from the pool
+     * @dev Pool must not be paused
+     * @dev ERC20 transfer
+     */
+    function withdrawQuote() external onlyGov {
+        require(paused, "Pool is live");
+        IERC20 quoteERC = IERC20(quoteToken);
+        uint256 balance = quoteERC.balanceOf(address(this));
+        IERC20(quoteToken).safeTransfer(msg.sender, balance);
+    }
+
+    /**
      * @notice Pauses the pool
      * @dev Prevents all state updates until unpaused
      */
