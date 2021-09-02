@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.6;
+pragma solidity 0.8.7;
 
 /// @title The manager contract interface for multiple markets and the pools in them
 interface IPoolKeeper {

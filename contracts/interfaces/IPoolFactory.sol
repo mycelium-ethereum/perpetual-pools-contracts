@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.6;
+pragma solidity 0.8.7;
 
 /// @title The contract factory for the keeper and pool contracts. Utilizes minimal clones to keep gas costs low
 interface IPoolFactory {
