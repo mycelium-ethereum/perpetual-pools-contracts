@@ -9,7 +9,13 @@ import {
     PoolCommitter,
 } from "../../types"
 
-import { POOL_CODE, NO_COMMITS_REMAINING, DEFAULT_FEE } from "../constants"
+import {
+    POOL_CODE,
+    NO_COMMITS_REMAINING,
+    DEFAULT_FEE,
+    DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
+    DEFAULT_MIN_COMMIT_SIZE,
+} from "../constants"
 import {
     deployPoolAndTokenContracts,
     getRandomInt,
@@ -48,6 +54,8 @@ describe("LeveragedPool - executeAllCommitments", () => {
             frontRunningInterval,
             updateInterval,
             leverage,
+            DEFAULT_MIN_COMMIT_SIZE,
+            DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
             feeAddress,
             fee
         )
@@ -134,6 +142,8 @@ describe("LeveragedPool - executeAllCommitments", () => {
                 frontRunningInterval,
                 updateInterval,
                 leverage,
+                DEFAULT_MIN_COMMIT_SIZE,
+                DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
                 feeAddress,
                 fee
             )

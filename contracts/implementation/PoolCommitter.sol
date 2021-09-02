@@ -3,6 +3,7 @@ pragma solidity 0.8.6;
 
 import "../interfaces/IPoolCommitter.sol";
 import "../interfaces/ILeveragedPool.sol";
+import "../interfaces/IPoolFactory.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
@@ -20,19 +21,30 @@ contract PoolCommitter is IPoolCommitter, Ownable {
     uint128 public earliestCommitUnexecuted = NO_COMMITS_REMAINING;
     uint128 public latestCommitUnexecuted;
     uint128 public commitIDCounter;
+    uint128 public minimumCommitSize; // The minimum amount (in settlement tokens) that a user can commit in a single commitment
+    uint128 public maximumCommitQueueLength; // The maximum number of commitments that can be made for a given updateInterval
+    uint128 public currentCommitQueueLength;
     mapping(uint128 => Commit) public commits;
     mapping(uint256 => uint256) public shadowPools;
 
     address public factory;
+    address public governance;
 
     enum ScanDirection {
         UP,
         DOWN
     }
 
-    constructor(address _factory) {
+    constructor(
+        address _factory,
+        uint128 _minimumCommitSize,
+        uint128 _maximumCommitQueueLength
+    ) {
         // set the factory on deploy
         factory = _factory;
+        minimumCommitSize = _minimumCommitSize;
+        maximumCommitQueueLength = _maximumCommitQueueLength;
+        governance = IPoolFactory(factory).getOwner();
     }
 
     /**
@@ -42,6 +54,8 @@ contract PoolCommitter is IPoolCommitter, Ownable {
      *               tokens you want to burn
      */
     function commit(CommitType commitType, uint256 amount) external override {
+        require(currentCommitQueueLength < maximumCommitQueueLength, "Too many commits in interval");
+        currentCommitQueueLength += 1;
         require(amount > 0, "Amount must not be zero");
         uint128 currentCommitIDCounter = commitIDCounter;
         commitIDCounter = currentCommitIDCounter + 1;
@@ -63,16 +77,43 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         latestCommitUnexecuted = currentCommitIDCounter;
 
         emit CreateCommit(currentCommitIDCounter, amount, commitType);
+        uint256 shortBalance = pool.shortBalance();
+        uint256 longBalance = pool.longBalance();
 
         // pull in tokens
         if (commitType == CommitType.LongMint || commitType == CommitType.ShortMint) {
             // minting: pull in the quote token from the commiter
+            require(amount >= minimumCommitSize, "Amount less than minimum");
             pool.quoteTokenTransferFrom(msg.sender, leveragedPool, amount);
         } else if (commitType == CommitType.LongBurn) {
             // long burning: pull in long pool tokens from commiter
+
+            // A theoretical amount based on current ratio. Used to get same units as minimumCommitSize
+            uint256 amountOut = PoolSwapLibrary.getAmountOut(
+                PoolSwapLibrary.getRatio(
+                    longBalance,
+                    IERC20(pool.poolTokens()[0]).totalSupply() +
+                        shadowPools[commitTypeToUint(CommitType.LongBurn)] +
+                        amount
+                ),
+                amount
+            );
+            require(amountOut >= minimumCommitSize, "Amount less than minimum");
             pool.burnTokens(0, amount, msg.sender);
         } else if (commitType == CommitType.ShortBurn) {
             // short burning: pull in short pool tokens from commiter
+
+            // A theoretical amount based on current ratio. Used to get same units as minimumCommitSize
+            uint256 amountOut = PoolSwapLibrary.getAmountOut(
+                PoolSwapLibrary.getRatio(
+                    shortBalance,
+                    IERC20(pool.poolTokens()[1]).totalSupply() +
+                        shadowPools[commitTypeToUint(CommitType.ShortBurn)] +
+                        amount
+                ),
+                amount
+            );
+            require(amountOut >= minimumCommitSize, "Amount less than minimum");
             pool.burnTokens(1, amount, msg.sender);
         }
     }
@@ -186,6 +227,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         if (earliestCommitUnexecuted == NO_COMMITS_REMAINING) {
             return;
         }
+        currentCommitQueueLength = 0;
         uint128 nextEarliestCommitUnexecuted;
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
         uint256 frontRunningInterval = pool.frontRunningInterval();
@@ -297,6 +339,15 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         _token.approve(leveragedPool, _token.totalSupply());
     }
 
+    function setMinimumCommitSize(uint128 _minimumCommitSize) external override onlyGov {
+        minimumCommitSize = _minimumCommitSize;
+    }
+
+    function setMaxCommitQueueLength(uint128 _maximumCommitQueueLength) external override onlyGov {
+        require(_maximumCommitQueueLength > 0, "Commit queue must be > 0");
+        maximumCommitQueueLength = _maximumCommitQueueLength;
+    }
+
     function commitTypeToUint(CommitType _commit) public pure returns (uint256) {
         if (_commit == CommitType.ShortMint) {
             return 0;
@@ -323,6 +374,11 @@ contract PoolCommitter is IPoolCommitter, Ownable {
 
     modifier onlySelf() {
         require(msg.sender == address(this), "msg.sender not self");
+        _;
+    }
+
+    modifier onlyGov() {
+        require(msg.sender == governance, "msg.sender not governance");
         _;
     }
 }

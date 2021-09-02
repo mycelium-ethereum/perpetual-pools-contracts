@@ -3,7 +3,12 @@ import chai from "chai"
 import chaiAsPromised from "chai-as-promised"
 import { ethers } from "hardhat"
 import { LeveragedPool, PoolKeeper } from "../../types"
-import { DEFAULT_FEE, POOL_CODE } from "../constants"
+import {
+    DEFAULT_FEE,
+    DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
+    DEFAULT_MIN_COMMIT_SIZE,
+    POOL_CODE,
+} from "../constants"
 import { deployPoolAndTokenContracts } from "../utilities"
 
 chai.use(chaiAsPromised)
@@ -21,6 +26,8 @@ describe("LeveragedPool - setters", () => {
             2, // frontRunningInterval
             5, // updateInterval
             1,
+            DEFAULT_MIN_COMMIT_SIZE,
+            DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
             signers[0].address,
             DEFAULT_FEE
         )
