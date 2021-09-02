@@ -308,7 +308,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         require(paused, "Pool is live");
         IERC20 quoteERC = IERC20(quoteToken);
         uint256 balance = quoteERC.balanceOf(address(this));
-        IERC20(quoteToken).transfer(msg.sender, balance);
+        IERC20(quoteToken).safeTransfer(msg.sender, balance);
     }
 
     /**
