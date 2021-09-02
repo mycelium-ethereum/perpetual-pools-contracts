@@ -300,19 +300,6 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     }
 
     /**
-     * @notice Withdraws all available ETH from the pool
-     * @dev Pool must not be paused
-     * @dev Raw ETH transfer
-     */
-    function withdrawEth() external onlyGov {
-        require(paused, "Pool is live");
-        uint256 balance = address(this).balance;
-        /* See: https://consensys.net/diligence/blog/2019/09/stop-using-soliditys-transfer-now/ */
-        (bool transferSucceeded, ) = msg.sender.call{value: balance}("");
-        require(transferSucceeded, "Transfer failed");
-    }
-
-    /**
      * @notice Withdraws all available quote asset from the pool
      * @dev Pool must not be paused
      * @dev ERC20 transfer
