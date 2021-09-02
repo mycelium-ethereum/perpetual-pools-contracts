@@ -103,6 +103,11 @@ describe("PoolCommitter - setters", () => {
                 ethers.utils.parseEther("3000")
             )
         })
+        it("Should prevent setting it to 0", async () => {
+            expect(poolCommitter.setMinimumCommitSize(0)).to.be.revertedWith(
+                "_minimumCommitSize must be > 0"
+            )
+        })
         it("Should prevent unauthorised setting", async () => {
             // Signers[0] should be owner because that is owner of factory too
             await expect(
