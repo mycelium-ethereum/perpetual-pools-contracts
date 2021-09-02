@@ -4,6 +4,7 @@ import chaiAsPromised from "chai-as-promised"
 import { ethers } from "hardhat"
 import { LeveragedPool, PoolKeeper } from "../../types"
 import {
+    DEFAULT_FEE,
     DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
     DEFAULT_MIN_COMMIT_SIZE,
     POOL_CODE,
@@ -12,8 +13,6 @@ import { deployPoolAndTokenContracts } from "../utilities"
 
 chai.use(chaiAsPromised)
 const { expect } = chai
-
-import { DEFAULT_FEE } from "../constants"
 
 describe("LeveragedPool - setters", () => {
     let pool: LeveragedPool

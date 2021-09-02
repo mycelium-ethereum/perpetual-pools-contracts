@@ -15,11 +15,11 @@ import {
 } from "../../types"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import {
+    DEFAULT_FEE,
     POOL_CODE,
     POOL_CODE_2,
     DEFAULT_MAX_LEVERAGE,
     DEFAULT_MIN_LEVERAGE,
-    DEFAULT_FEE,
     DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
     DEFAULT_MIN_COMMIT_SIZE,
 } from "../constants"

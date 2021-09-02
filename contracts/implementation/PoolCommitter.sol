@@ -30,6 +30,11 @@ contract PoolCommitter is IPoolCommitter, Ownable {
     address public factory;
     address public governance;
 
+    enum ScanDirection {
+        UP,
+        DOWN
+    }
+
     constructor(
         address _factory,
         uint128 _minimumCommitSize,
@@ -131,6 +136,58 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         _uncommit(_commit, _commitID);
     }
 
+    /**
+     * @dev When required, scan through the from earliestCommitUnexecuted to latestCommitUnexecuted
+     *      and set these variables to be correct based on which of the commits between them are
+     *      uncommited.
+     *      This is useful for when you uncommit the first or last commit, and you can scan backwards or forwards
+     *      in order to find the new value earliestCommitUnexecuted or latestCommitUnexecuted should be set to.
+     * @param direction UP if going from earliest to latest, DOWN if going from latest to earliest.
+     */
+    function skipDeletedMiddleCommits(ScanDirection direction) internal {
+        if (direction == ScanDirection.UP) {
+            uint128 nextEarliestCommitUnexecuted = earliestCommitUnexecuted;
+            while (nextEarliestCommitUnexecuted <= latestCommitUnexecuted) {
+                IPoolCommitter.Commit memory _commit = commits[nextEarliestCommitUnexecuted];
+                if (_commit.owner == address(0)) {
+                    // Commit deleted (uncommitted) or already executed
+                    nextEarliestCommitUnexecuted += 1; // It makes sense to set the next unexecuted to the next number
+                    continue;
+                } else {
+                    break;
+                }
+            }
+            if (nextEarliestCommitUnexecuted > latestCommitUnexecuted) {
+                // We have just bumped earliestCommitUnexecuted above latestCommitUnexecuted,
+                // we have therefore run out of commits
+                earliestCommitUnexecuted = NO_COMMITS_REMAINING;
+            } else {
+                earliestCommitUnexecuted = nextEarliestCommitUnexecuted;
+            }
+        }
+
+        if (direction == ScanDirection.DOWN) {
+            uint128 nextLatestCommitUnexecuted = latestCommitUnexecuted;
+            while (nextLatestCommitUnexecuted >= earliestCommitUnexecuted) {
+                IPoolCommitter.Commit memory _commit = commits[nextLatestCommitUnexecuted];
+                if (_commit.owner == address(0)) {
+                    // Commit deleted (uncommitted) or already executed
+                    nextLatestCommitUnexecuted -= 1;
+                    continue;
+                } else {
+                    break;
+                }
+            }
+            if (nextLatestCommitUnexecuted < earliestCommitUnexecuted) {
+                // We have just bumped earliestCommitUnexecuted above latestCommitUnexecuted,
+                // we have therefore run out of commits
+                earliestCommitUnexecuted = NO_COMMITS_REMAINING;
+            } else {
+                latestCommitUnexecuted = nextLatestCommitUnexecuted;
+            }
+        }
+    }
+
     function _uncommit(Commit memory _commit, uint128 _commitID) internal {
         // reduce pool commitment amount
         uint256 _commitType = commitTypeToUint(_commit.commitType);
@@ -142,15 +199,12 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         if (earliestCommitUnexecuted == _commitID) {
             // This is the first unexecuted commit, so we can bump this up one
             earliestCommitUnexecuted += 1;
-        }
-        if (earliestCommitUnexecuted > latestCommitUnexecuted) {
-            // We have just bumped earliestCommitUnexecuted above latestCommitUnexecuted,
-            // we have therefore run out of commits
-            earliestCommitUnexecuted = NO_COMMITS_REMAINING;
+            skipDeletedMiddleCommits(ScanDirection.UP);
         }
         if (latestCommitUnexecuted == _commitID && earliestCommitUnexecuted != NO_COMMITS_REMAINING) {
             // This is the latest commit unexecuted that we are trying to delete.
             latestCommitUnexecuted -= 1;
+            skipDeletedMiddleCommits(ScanDirection.DOWN);
         }
 
         // release tokens
