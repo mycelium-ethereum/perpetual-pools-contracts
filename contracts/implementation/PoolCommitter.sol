@@ -286,7 +286,6 @@ contract PoolCommitter is IPoolCommitter, Ownable {
     }
 
     function setMinimumCommitSize(uint128 _minimumCommitSize) external override onlyGov {
-        require(_minimumCommitSize > 0, "_minimumCommitSize must be > 0");
         minimumCommitSize = _minimumCommitSize;
     }
 
