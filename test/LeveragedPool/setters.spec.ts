@@ -3,13 +3,11 @@ import chai from "chai"
 import chaiAsPromised from "chai-as-promised"
 import { ethers } from "hardhat"
 import { LeveragedPool, PoolKeeper } from "../../types"
-import { POOL_CODE } from "../constants"
+import { DEFAULT_FEE, POOL_CODE } from "../constants"
 import { deployPoolAndTokenContracts } from "../utilities"
 
 chai.use(chaiAsPromised)
 const { expect } = chai
-
-import { DEFAULT_FEE } from "../constants"
 
 describe("LeveragedPool - setters", () => {
     let pool: LeveragedPool
