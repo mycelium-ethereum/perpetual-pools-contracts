@@ -24,7 +24,6 @@ contract PoolCommitter is IPoolCommitter, Ownable {
     uint128 public minimumCommitSize; // The minimum amount (in settlement tokens) that a user can commit in a single commitment
     uint128 public maximumCommitQueueLength; // The maximum number of commitments that can be made for a given updateInterval
     uint128 public currentCommitQueueLength;
-    bool public currentIntervalReset; // Has the current interval's commit queue length been reset?
     mapping(uint128 => Commit) public commits;
     mapping(uint256 => uint256) public shadowPools;
 
