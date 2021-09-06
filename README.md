@@ -46,7 +46,7 @@ PRs and feedback welcome!
 
 The Pool Keeper is simply a contract that enforces the correct keeper behaviour. Anyone may be a keeper by calling the keeper function on that contract with a pool that is valid for upkeep. We will initially be adding wrappers for Chainlink keepers as well as having custom keepers.
 
-**Leveraged pool fee is represented as bytes16 value. Why is this chosen over something like uint? What denomination does this represent?**
+**The leveraged pool fee is represented as a `bytes16` value. Why is this chosen over something like `uint`? What denomination does this represent?**
 
 Leveraged pool fee is a bytes16 value simply due to the maths library used. We often represent values in WAD values (popularised by the Maker DAO team). WAD values are the integer value multiplied by 10^18. (eg `1 = 1*10^18`). The maths library we currently use represents values in IEEE quad precision numbers and uses bytes as way of storing this. A good primer on the above can be found here [https://medium.com/coinmonks/math-in-solidity-part-1-numbers-384c8377f26d](https://medium.com/coinmonks/math-in-solidity-part-1-numbers-384c8377f26d) and WAD / RAY maths is introduced here [https://docs.makerdao.com/other-documentation/system-glossary](https://docs.makerdao.com/other-documentation/system-glossary).
 
