@@ -108,7 +108,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
 
             // TODO: poll gas price oracle (or BASEFEE)
             // _gasPrice = 10 gwei = 10000000000 wei
-            uint256 _gasPrice = 10 gwei;
+            uint256 _gasPrice = block.basefee;
 
             payKeeper(_pool, _gasPrice, gasSpent, savedPreviousUpdatedTimestamp, updateInterval);
         } catch Error(string memory reason) {
