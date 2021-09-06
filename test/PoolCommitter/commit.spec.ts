@@ -89,7 +89,9 @@ describe("LeveragedPool - commit", () => {
             await token.transfer(signers[1].address, amountCommitted.mul(5))
 
             await token.approve(result.pool.address, amountCommitted.mul(5))
-            await token.connect(signers[1]).approve(result.pool.address, amountCommitted.mul(2))
+            await token
+                .connect(signers[1])
+                .approve(result.pool.address, amountCommitted.mul(2))
 
             await poolCommitter.commit(2, amountCommitted.mul(2))
             await poolCommitter.connect(signers[1]).commit(2, amountCommitted)
@@ -107,7 +109,10 @@ describe("LeveragedPool - commit", () => {
             const validAmount = ethers.utils.parseEther("261.299")
 
             const epsilon = ethers.utils.parseEther("0.01")
-            const tx = result.poolCommitter.commit([3], validAmount.sub(ethers.utils.parseEther("0.01")))
+            const tx = result.poolCommitter.commit(
+                [3],
+                validAmount.sub(ethers.utils.parseEther("0.01"))
+            )
             await expect(tx).to.be.revertedWith("Amount less than minimum")
             await result.poolCommitter.commit([3], validAmount.add(epsilon))
         })
