@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.6;
+pragma solidity 0.8.7;
 
 import "../vendors/ERC20_Cloneable.sol";
 import "../interfaces/IPoolToken.sol";
