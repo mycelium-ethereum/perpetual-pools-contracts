@@ -89,15 +89,15 @@ contract PoolFactory is IPoolFactory, Ownable {
         address _pool = address(pool);
         emit DeployPool(_pool, deploymentParameters.poolName);
 
-        address longToken = deployPairToken(
-            _pool,
-            string(abi.encodePacked(deploymentParameters.poolName, "-LONG")),
-            string(abi.encodePacked("L-", deploymentParameters.poolName))
-        );
         address shortToken = deployPairToken(
             _pool,
-            string(abi.encodePacked(deploymentParameters.poolName, "-SHORT")),
-            string(abi.encodePacked("S-", deploymentParameters.poolName))
+            string(abi.encodePacked(uint2str(deploymentParameters.leverageAmount), "S-", deploymentParameters.poolName)),
+            string(abi.encodePacked(uint2str(deploymentParameters.leverageAmount), "S-", deploymentParameters.poolName))
+        );
+        address longToken = deployPairToken(
+            _pool,
+            string(abi.encodePacked(uint2str(deploymentParameters.leverageAmount), "L-", deploymentParameters.poolName)),
+            string(abi.encodePacked(uint2str(deploymentParameters.leverageAmount), "L-", deploymentParameters.poolName))
         );
         ILeveragedPool.Initialization memory initialization = ILeveragedPool.Initialization(
             owner(), // governance is the owner of pools -- if this changes, `onlyGov` breaks
@@ -174,6 +174,28 @@ contract PoolFactory is IPoolFactory, Ownable {
 
     function getOwner() external view override returns (address) {
         return owner();
+    }
+
+    function uint2str(uint _i) internal pure returns (string memory _uintAsString) {
+        if (_i == 0) {
+            return "0";
+        }
+        uint j = _i;
+        uint len;
+        while (j != 0) {
+            len++;
+            j /= 10;
+        }
+        bytes memory bstr = new bytes(len);
+        uint k = len;
+        while (_i != 0) {
+            k = k-1;
+            uint8 temp = (48 + uint8(_i - _i / 10 * 10));
+            bytes1 b1 = bytes1(temp);
+            bstr[k] = b1;
+            _i /= 10;
+        }
+        return string(bstr);
     }
 
     modifier onlyGov() {
