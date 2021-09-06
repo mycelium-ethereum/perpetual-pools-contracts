@@ -49,8 +49,6 @@ interface IPoolCommitter {
 
     // #### Functions
 
-    function shadowPools(uint256 commitType) external view returns (uint256);
-
     function commit(CommitType commitType, uint256 amount) external;
 
     function uncommit(uint128 commitID) external;

@@ -25,7 +25,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
     uint128 public maximumCommitQueueLength; // The maximum number of commitments that can be made for a given updateInterval
     uint128 public currentCommitQueueLength;
     mapping(uint128 => Commit) public commits;
-    mapping(uint256 => uint256) public override shadowPools;
+    mapping(uint256 => uint256) public shadowPools;
 
     address public factory;
     address public governance;
