@@ -18,6 +18,7 @@ import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV2V3Interface.sol";
 /// @title The manager contract for multiple markets and the pools in them
 contract PoolKeeper is IPoolKeeper, Ownable {
     /* Constants */
+    uint256 public constant BASE_TIP = 5; // 5% base tip
     uint256 public constant TIP_DELTA_PER_BLOCK = 5; // 5% increase per block
     uint256 public constant BLOCK_TIME = 13; /* in seconds */
     uint256 public constant MAX_DECIMALS = 18;
@@ -224,7 +225,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         /* the number of blocks that have elapsed since the given pool's updateInterval passed */
         uint256 elapsedBlocks = (block.timestamp - (_savedPreviousUpdatedTimestamp + _poolInterval)) / BLOCK_TIME;
 
-        return block.basefee + TIP_DELTA_PER_BLOCK * elapsedBlocks;
+        return BASE_TIP + TIP_DELTA_PER_BLOCK * elapsedBlocks;
     }
 
     function setFactory(address _factory) external override onlyOwner {
