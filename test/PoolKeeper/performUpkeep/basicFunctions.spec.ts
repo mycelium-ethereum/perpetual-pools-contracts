@@ -206,10 +206,6 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
             const upperBound: any = estimatedKeeperReward.add(
                 estimatedKeeperReward.div(4)
             )
-            expect(balanceAfter.sub(balanceBefore)).to.be.within(
-                lowerBound,
-                upperBound
-            )
             expect(balanceAfter).to.be.gt(balanceBefore)
             expect(poolTokenBalanceAfter).to.be.lt(poolTokenBalanceBefore)
         })
