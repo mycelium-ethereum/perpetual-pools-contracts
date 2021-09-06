@@ -42,7 +42,7 @@ PRs and feedback welcome!
 
 ## Frequently Asked Questions
 
-**How are pool keepers be chosen? How many keepers are there?** 
+**How are pool keepers to be chosen? How many keepers are there?** 
 
 The Pool Keeper is simply a contract that enforces the correct keeper behaviour. Anyone may be a keeper by calling the keeper function on that contract with a pool that is valid for upkeep. We will initially be adding wrappers for Chainlink keepers as well as having custom keepers.
 
