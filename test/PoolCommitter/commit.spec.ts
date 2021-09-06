@@ -25,6 +25,7 @@ import {
 } from "../utilities"
 
 import { ContractReceipt } from "ethers"
+import { time } from "console"
 
 chai.use(chaiAsPromised)
 const { expect } = chai
@@ -48,7 +49,7 @@ describe("LeveragedPool - commit", () => {
     let poolCommitter: PoolCommitter
     let poolKeeper: PoolKeeper
 
-    describe("Create commit", () => {
+    context("Create commit", () => {
         let receipt: ContractReceipt
         beforeEach(async () => {
             const result = await deployPoolAndTokenContracts(
@@ -280,7 +281,7 @@ describe("LeveragedPool - commit", () => {
         })
     })
 
-    describe("Shadow balances", () => {
+    context("Shadow balances", () => {
         beforeEach(async () => {
             const result = await deployPoolAndTokenContracts(
                 POOL_CODE,
@@ -345,7 +346,7 @@ describe("LeveragedPool - commit", () => {
 
     // todo: Figure out where we want quote tokens to sit. Adjust these tests accordingly
     // currently it expects quote tokens to get transferred to the commiter, not the pool
-    describe("Token Transfers", () => {
+    context("Token Transfers", () => {
         beforeEach(async () => {
             const result = await deployPoolAndTokenContracts(
                 POOL_CODE,
@@ -439,6 +440,47 @@ describe("LeveragedPool - commit", () => {
             expect(await token.balanceOf(pool.address)).to.eq(0)
             await poolCommitter.commit([0], amountCommitted)
             expect(await token.balanceOf(pool.address)).to.eq(amountCommitted)
+        })
+    })
+
+    context("Commitments during frontRunningInterval", () => {
+        let longFrontRunningInterval: number
+        let longUpdateInterval: number
+        beforeEach(async () => {
+            longFrontRunningInterval = 1000
+            longUpdateInterval = 1500
+            const result = await deployPoolAndTokenContracts(
+                POOL_CODE,
+                longFrontRunningInterval,
+                longUpdateInterval,
+                leverage,
+                DEFAULT_MIN_COMMIT_SIZE,
+                DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
+                feeAddress,
+                fee
+            )
+            signers = result.signers
+            pool = result.pool
+            token = result.token
+            library = result.library
+            shortToken = result.shortToken
+            longToken = result.longToken
+            poolCommitter = result.poolCommitter
+
+            await token.approve(pool.address, amountCommitted.mul(10))
+
+        })
+        it.only("Should reset commitQueueLength if committed during frontRunningInterval", async () => {
+            const shortMint = 0
+            await poolCommitter.commit(0, amountCommitted)
+            await poolCommitter.commit(0, amountCommitted)
+            await poolCommitter.commit(0, amountCommitted)
+
+            expect(await poolCommitter.currentCommitQueueLength()).to.equal(3)
+            await timeout((longFrontRunningInterval  + 20) * 1000)
+
+            await poolCommitter.commit(0, amountCommitted)
+            expect(await poolCommitter.currentCommitQueueLength()).to.equal(1)
         })
     })
 })

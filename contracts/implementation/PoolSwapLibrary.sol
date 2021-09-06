@@ -234,7 +234,7 @@ library PoolSwapLibrary {
         uint256 lastPriceTimestamp,
         uint256 updateInterval,
         uint256 frontRunningInterval
-    ) external view returns (bool) {
+    ) external pure returns (bool) {
         return lastPriceTimestamp + updateInterval - frontRunningInterval > subjectTime;
     }
 
