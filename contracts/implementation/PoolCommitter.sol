@@ -247,7 +247,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             try IPoolCommitter(address(this)).executeCommitment(_commit) {
                 delete commits[i];
             } catch {
-                // _uncommit(_commit, i);
+                _uncommit(_commit, i);
                 emit FailedCommitExecution(i);
             }
             if (i == latestCommitUnexecuted) {
