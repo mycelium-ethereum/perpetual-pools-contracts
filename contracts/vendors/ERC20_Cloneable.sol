@@ -47,7 +47,7 @@ contract ERC20_Cloneable is Context, ERC20, Initializable {
      * construction.
      */
     constructor(string memory name_, string memory symbol_) ERC20(name_, symbol_) {
-        _decimals = 8;
+        _decimals = 18;
     }
 
     function initialize(
