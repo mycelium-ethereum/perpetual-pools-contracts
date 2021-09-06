@@ -15,11 +15,13 @@ import {
 } from "../../types"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import {
+    DEFAULT_FEE,
     POOL_CODE,
     POOL_CODE_2,
     DEFAULT_MAX_LEVERAGE,
     DEFAULT_MIN_LEVERAGE,
-    DEFAULT_FEE,
+    DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
+    DEFAULT_MIN_COMMIT_SIZE,
 } from "../constants"
 import {
     deployPoolAndTokenContracts,
@@ -64,6 +66,8 @@ describe("LeveragedPool - initialize", () => {
                 frontRunningInterval,
                 updateInterval,
                 leverage,
+                DEFAULT_MIN_COMMIT_SIZE,
+                DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
                 feeAddress,
                 fee
             )
@@ -124,10 +128,18 @@ describe("LeveragedPool - initialize", () => {
 
             expect(longAddress).to.not.eq(ethers.constants.AddressZero)
             expect(shortAddress).to.not.eq(ethers.constants.AddressZero)
-            expect(await longToken.symbol()).to.eq("L-".concat(POOL_CODE))
-            expect(await shortToken.symbol()).to.eq("S-".concat(POOL_CODE))
-            expect(await longToken.name()).to.eq(POOL_CODE.concat("-LONG"))
-            expect(await shortToken.name()).to.eq(POOL_CODE.concat("-SHORT"))
+            expect(await longToken.symbol()).to.eq(
+                leverage.toString().concat("L-".concat(POOL_CODE))
+            )
+            expect(await shortToken.symbol()).to.eq(
+                leverage.toString().concat("S-".concat(POOL_CODE))
+            )
+            expect(await longToken.name()).to.eq(
+                leverage.toString().concat("L-".concat(POOL_CODE))
+            )
+            expect(await shortToken.name()).to.eq(
+                leverage.toString().concat("S-".concat(POOL_CODE))
+            )
         })
 
         it("should emit an event containing the details of the new pool", async () => {
@@ -171,7 +183,9 @@ describe("LeveragedPool - initialize", () => {
 
             const poolCommitter = await (
                 await poolCommitterFactory.deploy(
-                    setupContracts.factory.address
+                    setupContracts.factory.address,
+                    DEFAULT_MIN_COMMIT_SIZE,
+                    DEFAULT_MAX_COMMIT_QUEUE_LENGTH
                 )
             ).deployed()
 
@@ -232,6 +246,8 @@ describe("LeveragedPool - initialize", () => {
                 frontRunningInterval,
                 updateInterval,
                 leverage,
+                DEFAULT_MIN_COMMIT_SIZE,
+                DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
                 feeAddress,
                 fee
             )

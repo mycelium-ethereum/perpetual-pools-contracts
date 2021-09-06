@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.6;
+pragma solidity 0.8.7;
 
 import "../interfaces/ILeveragedPool.sol";
 import "../interfaces/IPoolCommitter.sol";
@@ -297,6 +297,18 @@ contract LeveragedPool is ILeveragedPool, Initializable {
 
     function poolTokens() external view override returns (address[2] memory) {
         return tokens;
+    }
+
+    /**
+     * @notice Withdraws all available quote asset from the pool
+     * @dev Pool must not be paused
+     * @dev ERC20 transfer
+     */
+    function withdrawQuote() external onlyGov {
+        require(paused, "Pool is live");
+        IERC20 quoteERC = IERC20(quoteToken);
+        uint256 balance = quoteERC.balanceOf(address(this));
+        IERC20(quoteToken).safeTransfer(msg.sender, balance);
     }
 
     /**

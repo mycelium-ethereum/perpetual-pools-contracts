@@ -2,4 +2,7 @@ node_modules
 .env
 cache/
 artifacts/
+typechain/
+coverage/
+coverage.json
 types/

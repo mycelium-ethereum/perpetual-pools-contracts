@@ -1,5 +1,6 @@
 import { ethers, network, deployments } from "hardhat"
 import {
+    BigNumber,
     BigNumberish,
     ContractReceipt,
     ContractTransaction,
@@ -185,6 +186,8 @@ export const deployPoolAndTokenContracts = async (
     frontRunningInterval: number,
     updateInterval: number,
     leverage: number,
+    minimumCommitSize: BigNumber,
+    maximumCommitQueueLength: number,
     feeAddress?: string,
     fee?: BytesLike
 ): Promise<{
@@ -212,6 +215,8 @@ export const deployPoolAndTokenContracts = async (
         quoteToken: setupContracts.token.address,
         oracleWrapper: setupContracts.oracleWrapper.address,
         settlementEthOracle: setupContracts.settlementEthOracle.address,
+        minimumCommitSize: minimumCommitSize,
+        maximumCommitQueueLength: maximumCommitQueueLength,
     }
 
     if (fee) {

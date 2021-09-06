@@ -1,25 +1,15 @@
 import { ethers } from "hardhat"
 import chai from "chai"
 import chaiAsPromised from "chai-as-promised"
-import {
-    PoolKeeper__factory,
-    PoolKeeper,
-    PoolSwapLibrary__factory,
-    PoolFactory__factory,
-    ChainlinkOracleWrapper__factory,
-    TestChainlinkOracle__factory,
-    ChainlinkOracleWrapper,
-    PoolFactory,
-    PoolCommitterDeployer__factory,
-    TestToken__factory,
-    TestChainlinkOracle,
-} from "../../types"
+import { PoolKeeper, PoolFactory } from "../../types"
 
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import { OPERATOR_ROLE, ADMIN_ROLE, POOL_CODE, MARKET_CODE } from "../constants"
+import {
+    POOL_CODE,
+    DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
+    DEFAULT_MIN_COMMIT_SIZE,
+} from "../constants"
 import { deployPoolSetupContracts, generateRandomAddress } from "../utilities"
-import { deploy } from "@openzeppelin/hardhat-upgrades/dist/utils"
-import { BigNumber } from "ethers"
 
 chai.use(chaiAsPromised)
 const { expect } = chai
@@ -52,6 +42,8 @@ describe("PoolKeeper - createPool", () => {
             quoteToken: token.address,
             oracleWrapper: oracleWrapper.address,
             settlementEthOracle: settlementEthOracle.address,
+            minimumCommitSize: DEFAULT_MIN_COMMIT_SIZE,
+            maximumCommitQueueLength: DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
         }
     })
 

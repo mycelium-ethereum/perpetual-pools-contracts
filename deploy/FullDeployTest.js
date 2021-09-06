@@ -130,8 +130,8 @@ module.exports = async (hre) => {
 
     const POOL_CODE = "tETH"
 
-    const updateInterval = 60 // 1 minute
-    const frontRunningInterval = 1 // seconds
+    const updateInterval = 3600 // 1 hour
+    const frontRunningInterval = 60 // seconds
     const leverage = 1
 
     /* deploy LeveragePool */

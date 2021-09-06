@@ -11,7 +11,9 @@ import {
 
 import {
     DEFAULT_FEE,
+    DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
     DEFAULT_MINT_AMOUNT,
+    DEFAULT_MIN_COMMIT_SIZE,
     MARKET_2,
     POOL_CODE,
     POOL_CODE_2,
@@ -53,6 +55,8 @@ const setupHook = async () => {
         frontRunningInterval,
         updateInterval,
         1,
+        DEFAULT_MIN_COMMIT_SIZE,
+        DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
         feeAddress,
         fee
     )
@@ -62,6 +66,8 @@ const setupHook = async () => {
         frontRunningInterval,
         updateInterval,
         2,
+        DEFAULT_MIN_COMMIT_SIZE,
+        DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
         feeAddress,
         fee
     )
@@ -199,10 +205,6 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
             )
             const upperBound: any = estimatedKeeperReward.add(
                 estimatedKeeperReward.div(4)
-            )
-            expect(balanceAfter.sub(balanceBefore)).to.be.within(
-                lowerBound,
-                upperBound
             )
             expect(balanceAfter).to.be.gt(balanceBefore)
             expect(poolTokenBalanceAfter).to.be.lt(poolTokenBalanceBefore)

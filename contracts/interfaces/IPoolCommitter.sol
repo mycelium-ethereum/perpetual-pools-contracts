@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.6;
+pragma solidity 0.8.7;
 
 /// @title The interface for the contract that handles pool commitments
 interface IPoolCommitter {
@@ -60,4 +60,8 @@ interface IPoolCommitter {
     function getCommit(uint128 _commitID) external view returns (Commit memory);
 
     function setQuoteAndPool(address quoteToken, address leveragedPool) external;
+
+    function setMinimumCommitSize(uint128 _minimumCommitSize) external;
+
+    function setMaxCommitQueueLength(uint128 _maximumCommitQueueLength) external;
 }
