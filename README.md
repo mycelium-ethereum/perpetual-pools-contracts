@@ -56,7 +56,7 @@ The leveraged pool fee is a `bytes16` value simply due to the maths library used
 
 **How many different type of tests are there? There are unit tests in the test suite. Are there also end to end tests?**
 
-Most tests are unit tests. There is a single E2E test in e2e.spec.ts right now. We plan to add more.
+Most tests are unit tests. There is a single E2E test in `e2e.spec.ts` right now. We plan to add more.
 
 **Whats the deployments/kovan folder for? They seems to be different from the abi’s I get from artefacts folder when I compile.**
 
