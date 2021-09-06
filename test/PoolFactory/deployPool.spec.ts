@@ -5,197 +5,175 @@ import {
     LeveragedPool,
     PoolFactory,
     TestToken,
-    PoolFactory__factory,
     PoolKeeper,
-    PoolKeeper__factory,
-    PoolSwapLibrary__factory,
     ChainlinkOracleWrapper,
-    ChainlinkOracleWrapper__factory,
-    TestChainlinkOracle__factory,
-    TestToken__factory,
     PoolToken__factory,
-    PoolCommitterDeployer__factory,
-} from "../../typechain"
-import { POOL_CODE, POOL_CODE_2 } from "../constants"
-import { generateRandomAddress, getEventArgs } from "../utilities"
+} from "../../types"
+import {
+    DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
+    DEFAULT_MIN_COMMIT_SIZE,
+    POOL_CODE,
+    POOL_CODE_2,
+} from "../constants"
+import {
+    deployPoolAndTokenContracts,
+    generateRandomAddress,
+    getEventArgs,
+} from "../utilities"
 import { Result } from "ethers/lib/utils"
+import { Signer } from "ethers"
 import LeveragedPoolInterface from "../../artifacts/contracts/implementation/LeveragedPool.sol/LeveragedPool.json"
+
+const updateInterval = 100
+const frontRunningInterval = 20
+const fee = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5]
+const leverage = 1
+const feeAddress = generateRandomAddress()
 
 chai.use(chaiAsPromised)
 const { expect } = chai
-describe("PoolFactory - deployPool", () => {
+describe("PoolFactory.deployPool", () => {
     let factory: PoolFactory
     let poolKeeper: PoolKeeper
     let oracleWrapper: ChainlinkOracleWrapper
     let settlementEthOracle: ChainlinkOracleWrapper
-    let poolTx: Result | undefined
     let pool: LeveragedPool
     let token: TestToken
+    let signers: Signer[]
+    let nonDAO: Signer
+
     before(async () => {
-        const signers = await ethers.getSigners()
+        signers = await ethers.getSigners()
+        nonDAO = signers[1]
 
-        const libraryFactory = (await ethers.getContractFactory(
-            "PoolSwapLibrary",
-            signers[0]
-        )) as PoolSwapLibrary__factory
-        const library = await libraryFactory.deploy()
-        await library.deployed()
-
-        const chainlinkOracleFactory = (await ethers.getContractFactory(
-            "TestChainlinkOracle",
-            signers[0]
-        )) as TestChainlinkOracle__factory
-        const chainlinkOracle = await chainlinkOracleFactory.deploy()
-
-        const oracleWrapperFactory = (await ethers.getContractFactory(
-            "ChainlinkOracleWrapper",
-            signers[0]
-        )) as ChainlinkOracleWrapper__factory
-        oracleWrapper = await oracleWrapperFactory.deploy(
-            chainlinkOracle.address
+        const contracts = await deployPoolAndTokenContracts(
+            POOL_CODE,
+            frontRunningInterval,
+            updateInterval,
+            leverage,
+            DEFAULT_MIN_COMMIT_SIZE,
+            DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
+            feeAddress,
+            fee
         )
-        await oracleWrapper.deployed()
+        factory = contracts.factory
+        poolKeeper = contracts.poolKeeper
+        oracleWrapper = contracts.oracleWrapper
+        settlementEthOracle = contracts.settlementEthOracle
+        pool = contracts.pool
+        token = contracts.token
+    })
 
-        settlementEthOracle = await oracleWrapperFactory.deploy(
-            chainlinkOracle.address
-        )
-        await settlementEthOracle.deployed()
+    context(
+        "When not called by the DAO and with valid parameters",
+        async () => {
+            it("Reverts", async () => {
+                const deploymentParameters = {
+                    poolName: POOL_CODE,
+                    frontRunningInterval: 5,
+                    updateInterval: 10,
+                    fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+                    leverageAmount: 5,
+                    quoteToken: token.address,
+                    oracleWrapper: oracleWrapper.address,
+                    settlementEthOracle: settlementEthOracle.address,
+                    minimumCommitSize: DEFAULT_MIN_COMMIT_SIZE,
+                    maximumCommitQueueLength: DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
+                }
 
-        const PoolFactory = (await ethers.getContractFactory("PoolFactory", {
-            signer: signers[0],
-            libraries: { PoolSwapLibrary: library.address },
-        })) as PoolFactory__factory
-        const feeAddress = await generateRandomAddress()
-        factory = await (await PoolFactory.deploy(feeAddress)).deployed()
-        const poolKeeperFactory = (await ethers.getContractFactory(
-            "PoolKeeper",
-            {
-                signer: signers[0],
-                libraries: { PoolSwapLibrary: library.address },
+                await expect(
+                    factory.connect(nonDAO).deployPool(deploymentParameters)
+                ).to.be.rejectedWith("msg.sender not governance")
+            })
+        }
+    )
+
+    context("When called by the DAO and with valid parameters", async () => {
+        it("should deploy a minimal clone", async () => {
+            expect(await pool.poolName()).to.eq(POOL_CODE)
+        })
+        it("should initialize the clone", async () => {
+            const initialization = {
+                _owner: generateRandomAddress(),
+                _keeper: generateRandomAddress(),
+                _oracleWrapper: generateRandomAddress(),
+                _settlementEthOracle: generateRandomAddress(),
+                _longToken: generateRandomAddress(),
+                _shortToken: generateRandomAddress(),
+                _poolCommitter: generateRandomAddress(),
+                _poolName: POOL_CODE,
+                _frontRunningInterval: 3,
+                _updateInterval: 5,
+                _fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+                _leverageAmount: 5,
+                _feeAddress: generateRandomAddress(),
+                _quoteToken: token.address,
             }
-        )) as PoolKeeper__factory
-        poolKeeper = await poolKeeperFactory.deploy(factory.address)
-        await poolKeeper.deployed()
-
-        const testToken = (await ethers.getContractFactory(
-            "TestToken",
-            signers[0]
-        )) as TestToken__factory
-        token = await testToken.deploy("TEST TOKEN", "TST1")
-        await token.deployed()
-        const poolCommitterDeployerFactory = (await ethers.getContractFactory(
-            "PoolCommitterDeployer",
-            {
-                signer: signers[0],
-                libraries: { PoolSwapLibrary: library.address },
+            await expect(pool.initialize(initialization)).to.be.rejectedWith(
+                Error
+            )
+        })
+        it("should allow multiple clones to exist", async () => {
+            const deploymentData = {
+                poolName: POOL_CODE_2,
+                frontRunningInterval: 3,
+                updateInterval: 5,
+                leverageAmount: 5,
+                quoteToken: token.address,
+                oracleWrapper: oracleWrapper.address,
+                settlementEthOracle: settlementEthOracle.address,
+                minimumCommitSize: DEFAULT_MIN_COMMIT_SIZE,
+                maximumCommitQueueLength: DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
             }
-        )) as PoolCommitterDeployer__factory
+            const secondPool = getEventArgs(
+                await (await factory.deployPool(deploymentData)).wait(),
+                "DeployPool"
+            )
+            const pool2 = new ethers.Contract(
+                secondPool?.pool,
+                LeveragedPoolInterface.abi,
+                (await ethers.getSigners())[0]
+            ) as LeveragedPool
+            expect(await pool2.poolName()).to.eq(POOL_CODE_2)
+            expect(await pool.poolName()).to.eq(POOL_CODE)
+        })
 
-        let poolCommitterDeployer = await poolCommitterDeployerFactory.deploy(
-            factory.address
-        )
-        poolCommitterDeployer = await poolCommitterDeployer.deployed()
-        await factory.setPoolCommitterDeployer(poolCommitterDeployer.address)
+        it("pool should own tokens", async () => {
+            const longToken = await pool.tokens(0)
+            const shortToken = await pool.tokens(1)
+            let tokenInstance = new ethers.Contract(
+                longToken,
+                PoolToken__factory.abi
+            ).connect((await ethers.getSigners())[0])
+            expect(await tokenInstance.owner()).to.eq(pool.address)
 
-        await factory.setPoolKeeper(poolKeeper.address)
-        const deploymentData = {
-            poolName: POOL_CODE,
-            frontRunningInterval: 5,
-            updateInterval: 10,
-            fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
-            leverageAmount: 5,
-            quoteToken: token.address,
-            oracleWrapper: oracleWrapper.address,
-            settlementEthOracle: settlementEthOracle.address,
-        }
-        poolTx = getEventArgs(
-            await (await factory.deployPool(deploymentData)).wait(),
-            "DeployPool"
-        )
-        pool = new ethers.Contract(
-            poolTx?.pool,
-            LeveragedPoolInterface.abi,
-            (await ethers.getSigners())[0]
-        ) as LeveragedPool
-    })
-    it("should deploy a minimal clone", async () => {
-        expect(await pool.poolName()).to.eq(POOL_CODE)
-    })
-    it("should initialize the clone", async () => {
-        const initialization = {
-            _owner: generateRandomAddress(),
-            _keeper: generateRandomAddress(),
-            _oracleWrapper: generateRandomAddress(),
-            _settlementEthOracle: generateRandomAddress(),
-            _longToken: generateRandomAddress(),
-            _shortToken: generateRandomAddress(),
-            _poolCommitter: generateRandomAddress(),
-            _poolName: POOL_CODE,
-            _frontRunningInterval: 3,
-            _updateInterval: 5,
-            _fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
-            _leverageAmount: 5,
-            _feeAddress: generateRandomAddress(),
-            _quoteToken: token.address,
-        }
-        await expect(pool.initialize(initialization)).to.be.rejectedWith(Error)
-    })
-    it("should allow multiple clones to exist", async () => {
-        const deploymentData = {
-            poolName: POOL_CODE_2,
-            frontRunningInterval: 3,
-            updateInterval: 5,
-            leverageAmount: 5,
-            quoteToken: token.address,
-            oracleWrapper: oracleWrapper.address,
-            settlementEthOracle: settlementEthOracle.address,
-        }
-        const secondPool = getEventArgs(
-            await (await factory.deployPool(deploymentData)).wait(),
-            "DeployPool"
-        )
-        const pool2 = new ethers.Contract(
-            secondPool?.pool,
-            LeveragedPoolInterface.abi,
-            (await ethers.getSigners())[0]
-        ) as LeveragedPool
-        expect(await pool2.poolName()).to.eq(POOL_CODE_2)
-        expect(await pool.poolName()).to.eq(POOL_CODE)
-    })
+            tokenInstance = tokenInstance.attach(shortToken)
+            expect(await tokenInstance.owner()).to.eq(pool.address)
+        })
 
-    it("pool should own tokens", async () => {
-        const longToken = await pool.tokens(0)
-        const shortToken = await pool.tokens(1)
-        let tokenInstance = new ethers.Contract(
-            longToken,
-            PoolToken__factory.abi
-        ).connect((await ethers.getSigners())[0])
-        expect(await tokenInstance.owner()).to.eq(pool.address)
-
-        tokenInstance = tokenInstance.attach(shortToken)
-        expect(await tokenInstance.owner()).to.eq(pool.address)
-    })
-
-    it("should use the default keeper", async () => {
-        const deploymentData = {
-            poolName: POOL_CODE_2,
-            frontRunningInterval: 2,
-            updateInterval: 5,
-            leverageAmount: 5,
-            quoteToken: token.address,
-            oracleWrapper: oracleWrapper.address,
-            settlementEthOracle: settlementEthOracle.address,
-        }
-        const secondPool = getEventArgs(
-            await (await factory.deployPool(deploymentData)).wait(),
-            "DeployPool"
-        )
-        const pool2 = new ethers.Contract(
-            secondPool?.pool,
-            LeveragedPoolInterface.abi,
-            (await ethers.getSigners())[0]
-        ) as LeveragedPool
-        expect(await pool2.keeper()).to.eq(poolKeeper.address)
+        it("should use the default keeper", async () => {
+            const deploymentData = {
+                poolName: POOL_CODE_2,
+                frontRunningInterval: 2,
+                updateInterval: 5,
+                leverageAmount: 5,
+                quoteToken: token.address,
+                oracleWrapper: oracleWrapper.address,
+                settlementEthOracle: settlementEthOracle.address,
+                minimumCommitSize: DEFAULT_MIN_COMMIT_SIZE,
+                maximumCommitQueueLength: DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
+            }
+            const secondPool = getEventArgs(
+                await (await factory.deployPool(deploymentData)).wait(),
+                "DeployPool"
+            )
+            const pool2 = new ethers.Contract(
+                secondPool?.pool,
+                LeveragedPoolInterface.abi,
+                (await ethers.getSigners())[0]
+            ) as LeveragedPool
+            expect(await pool2.keeper()).to.eq(poolKeeper.address)
+        })
     })
 
     context("Deployment parameter checks", async () => {
@@ -208,6 +186,8 @@ describe("PoolFactory - deployPool", () => {
                 quoteToken: token.address,
                 oracleWrapper: oracleWrapper.address,
                 settlementEthOracle: settlementEthOracle.address,
+                minimumCommitSize: DEFAULT_MIN_COMMIT_SIZE,
+                maximumCommitQueueLength: DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
             }
 
             await expect(factory.deployPool(deploymentData)).to.be.revertedWith(
@@ -223,6 +203,8 @@ describe("PoolFactory - deployPool", () => {
                 quoteToken: generateRandomAddress(),
                 oracleWrapper: oracleWrapper.address,
                 settlementEthOracle: settlementEthOracle.address,
+                minimumCommitSize: DEFAULT_MIN_COMMIT_SIZE,
+                maximumCommitQueueLength: DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
             }
 
             await expect(factory.deployPool(deploymentData)).to.be.revertedWith(
@@ -239,6 +221,8 @@ describe("PoolFactory - deployPool", () => {
                 quoteToken: token.address,
                 oracleWrapper: oracleWrapper.address,
                 settlementEthOracle: settlementEthOracle.address,
+                minimumCommitSize: DEFAULT_MIN_COMMIT_SIZE,
+                maximumCommitQueueLength: DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
             }
 
             await expect(factory.deployPool(deploymentData)).to.be.revertedWith(

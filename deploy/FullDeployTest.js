@@ -2,15 +2,30 @@ module.exports = async (hre) => {
     const { getNamedAccounts, ethers } = hre
     const { deploy, execute } = deployments
     const { deployer } = await getNamedAccounts()
-    const [_deployer, ...accounts] = await ethers.getSigners()
-
-    console.log("Using deployer: " + deployer)
+    const accounts = await ethers.getSigners()
 
     /* deploy TestOracle */
-    const chainlinkOracle = await deploy("TestChainlinkOracle", {
+    const chainlinkOracle = await deploy("DerivativeOracle", {
+        contract: "TestChainlinkOracle",
         from: deployer,
         log: true,
     })
+
+    const settlementEthOracle = await deploy("SettlementEthOracle", {
+        contract: "TestChainlinkOracle",
+        from: deployer,
+        log: true,
+    })
+
+    await execute(
+        "SettlementEthOracle",
+        {
+            from: deployer,
+            log: true,
+        },
+        "setPrice",
+        3000 * 10 ** 8
+    )
 
     /* deploy testToken */
     const token = await deploy("TestToken", {
@@ -19,6 +34,7 @@ module.exports = async (hre) => {
         log: true,
         contract: "TestToken",
     })
+
     // mint some dollar bills
     await execute(
         "TestToken",
@@ -28,38 +44,7 @@ module.exports = async (hre) => {
         },
         "mint",
         ethers.utils.parseEther("10000000"), // 10 mil supply
-        deployer
-    )
-    // send 1000 to first 3 accounts
-    await execute(
-        "TestToken",
-        {
-            from: deployer,
-            log: true,
-        },
-        "transfer",
-        accounts[0].address,
-        ethers.utils.parseEther("1000")
-    )
-    await execute(
-        "TestToken",
-        {
-            from: deployer,
-            log: true,
-        },
-        "transfer",
-        accounts[1].address,
-        ethers.utils.parseEther("1000")
-    )
-    await execute(
-        "TestToken",
-        {
-            from: deployer,
-            log: true,
-        },
-        "transfer",
-        accounts[2].address,
-        ethers.utils.parseEther("1000")
+        accounts[0].address
     )
 
     /* deploy ChainlinkOracleWrapper */
@@ -72,7 +57,7 @@ module.exports = async (hre) => {
     const keeperOracle = await deploy("ChainlinkOracleWrapper", {
         from: deployer,
         log: true,
-        args: [chainlinkOracle.address],
+        args: [settlementEthOracle.address],
     })
 
     /* deploy PoolSwapLibrary */
@@ -86,13 +71,23 @@ module.exports = async (hre) => {
         from: deployer,
         log: true,
         libraries: { PoolSwapLibrary: library.address },
-        args: [deployer], // fee receiver
+        // (fee receiver)
+        args: [accounts[0].address],
+    })
+
+    /* deploy PoolFactory */
+    const poolCommitterDeployer = await deploy("PoolCommitterDeployer", {
+        from: deployer,
+        log: true,
+        libraries: { PoolSwapLibrary: library.address },
+        args: [factory.address],
     })
 
     /* deploy PoolKeeper */
     const poolKeeper = await deploy("PoolKeeper", {
         from: deployer,
         log: true,
+        libraries: { PoolSwapLibrary: library.address },
         args: [factory.address],
     })
 
@@ -107,17 +102,44 @@ module.exports = async (hre) => {
         poolKeeper.address
     )
 
-    const POOL_CODE = "5-TEST/MARKET+POOL"
+    console.log("Setting factory fee")
+    const fee = "0x00000000000000000000000000000000"
+    await execute(
+        "PoolFactory",
+        {
+            from: deployer,
+            log: true,
+        },
+        "setFee",
+        fee
+    )
 
-    const TEN_MINS = 10 * 60
+    console.log(
+        "Setting factory committer deployer",
+        poolCommitterDeployer.address
+    )
+    await execute(
+        "PoolFactory",
+        {
+            from: deployer,
+            log: true,
+        },
+        "setPoolCommitterDeployer",
+        poolCommitterDeployer.address
+    )
+
+    const POOL_CODE = "tETH"
+
+    const updateInterval = 3600 // 1 hour
+    const frontRunningInterval = 60 // seconds
+    const leverage = 1
 
     /* deploy LeveragePool */
     const deploymentData = {
-        poolCode: POOL_CODE,
-        frontRunningInterval: 0,
-        updateInterval: TEN_MINS,
-        fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
-        leverageAmount: 5,
+        poolName: POOL_CODE,
+        frontRunningInterval: frontRunningInterval,
+        updateInterval: updateInterval,
+        leverageAmount: leverage,
         quoteToken: token.address,
         oracleWrapper: oracleWrapper.address,
         settlementEthOracle: keeperOracle.address,

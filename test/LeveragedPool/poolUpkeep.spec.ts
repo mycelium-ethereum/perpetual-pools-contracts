@@ -7,9 +7,15 @@ import {
     ERC20,
     PoolSwapLibrary,
     PoolCommitter,
-} from "../../typechain"
+} from "../../types"
 
-import { POOL_CODE, NO_COMMITS_REMAINING } from "../constants"
+import {
+    POOL_CODE,
+    NO_COMMITS_REMAINING,
+    DEFAULT_FEE,
+    DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
+    DEFAULT_MIN_COMMIT_SIZE,
+} from "../constants"
 import {
     deployPoolAndTokenContracts,
     getRandomInt,
@@ -30,7 +36,7 @@ const feeAddress = generateRandomAddress()
 const lastPrice = ethers.utils.parseEther(getRandomInt(99999999, 1).toString())
 const updateInterval = 2
 const frontRunningInterval = 1 // seconds
-const fee = "0x00000000000000000000000000000000"
+const fee = DEFAULT_FEE
 const leverage = 1
 
 describe("LeveragedPool - executeAllCommitments", () => {
@@ -47,10 +53,11 @@ describe("LeveragedPool - executeAllCommitments", () => {
             POOL_CODE,
             frontRunningInterval,
             updateInterval,
-            fee,
             leverage,
+            DEFAULT_MIN_COMMIT_SIZE,
+            DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
             feeAddress,
-            amountMinted
+            fee
         )
         pool = result.pool
         library = result.library
@@ -134,10 +141,11 @@ describe("LeveragedPool - executeAllCommitments", () => {
                 POOL_CODE,
                 frontRunningInterval,
                 updateInterval,
-                fee,
                 leverage,
+                DEFAULT_MIN_COMMIT_SIZE,
+                DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
                 feeAddress,
-                amountMinted
+                fee
             )
             pool = result.pool
             library = result.library

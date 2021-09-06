@@ -6,7 +6,7 @@ import {
     ChainlinkOracleWrapper,
     TestChainlinkOracle__factory,
     TestChainlinkOracle,
-} from "../../typechain"
+} from "../../types"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { MARKET, OPERATOR_ROLE, ADMIN_ROLE, MARKET_2 } from "../constants"
 

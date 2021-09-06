@@ -8,9 +8,14 @@ import {
     ERC20,
     PoolCommitter,
     PoolKeeper,
-} from "../../../typechain"
+} from "../../../types"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import { POOL_CODE } from "../../constants"
+import {
+    DEFAULT_FEE,
+    DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
+    DEFAULT_MIN_COMMIT_SIZE,
+    POOL_CODE,
+} from "../../constants"
 import {
     getEventArgs,
     deployPoolAndTokenContracts,
@@ -31,7 +36,7 @@ const feeAddress = generateRandomAddress()
 const lastPrice = getRandomInt(99999999, 1)
 const updateInterval = 2
 const frontRunningInterval = 1 // seconds
-const fee = "0x00000000000000000000000000000000"
+const fee = DEFAULT_FEE
 const leverage = 2
 const commitType = [2] //long mint;
 
@@ -48,10 +53,11 @@ describe("poolCommitter - executeCommitment: Basic test cases", () => {
                 POOL_CODE,
                 100,
                 250,
-                fee,
                 leverage,
+                DEFAULT_MIN_COMMIT_SIZE,
+                DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
                 feeAddress,
-                amountMinted
+                fee
             )
             signers = elements.signers
             pool = elements.pool
@@ -87,10 +93,11 @@ describe("poolCommitter - executeCommitment: Basic test cases", () => {
                 POOL_CODE,
                 frontRunningInterval,
                 updateInterval,
-                fee,
                 leverage,
+                DEFAULT_MIN_COMMIT_SIZE,
+                DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
                 feeAddress,
-                amountMinted
+                fee
             )
             pool = result.pool
             signers = result.signers
@@ -124,10 +131,11 @@ describe("poolCommitter - executeCommitment: Basic test cases", () => {
                 POOL_CODE,
                 frontRunningInterval,
                 updateInterval,
-                fee,
                 leverage,
+                DEFAULT_MIN_COMMIT_SIZE,
+                DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
                 feeAddress,
-                amountMinted
+                fee
             )
             pool = result.pool
             signers = result.signers

@@ -1,7 +1,7 @@
 import { ethers } from "hardhat"
 import chai from "chai"
 import chaiAsPromised from "chai-as-promised"
-import { ERC20, LeveragedPool, PoolSwapLibrary } from "../../typechain"
+import { ERC20, LeveragedPool, PoolSwapLibrary } from "../../types"
 
 import {
     deployPoolAndTokenContracts,
@@ -11,13 +11,18 @@ import {
 } from "../utilities"
 
 import { BigNumberish, BytesLike } from "ethers"
-import { POOL_CODE } from "../constants"
+import {
+    DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
+    DEFAULT_MINT_AMOUNT,
+    DEFAULT_MIN_COMMIT_SIZE,
+    POOL_CODE,
+} from "../constants"
 
 chai.use(chaiAsPromised)
 const { expect } = chai
 
 const amountCommitted = ethers.utils.parseEther("2000")
-const amountMinted = ethers.utils.parseEther("10000")
+const amountMinted = DEFAULT_MINT_AMOUNT
 const feeAddress = generateRandomAddress()
 const fee = "0x3ff947ae147ae147ae147ae147ae147a" // 2% per execution. An IEEE 754 quadruple precision number
 const lastPrice = 77000000
@@ -38,10 +43,11 @@ const setupHook = async () => {
         POOL_CODE,
         frontRunningInterval,
         updateInterval,
-        fee,
         leverage,
+        DEFAULT_MIN_COMMIT_SIZE,
+        DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
         feeAddress,
-        amountMinted
+        fee
     )
     library = result.library
     pool = result.pool

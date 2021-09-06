@@ -3,6 +3,7 @@ pragma solidity 0.8.6;
 
 import "../interfaces/IPoolCommitter.sol";
 import "../interfaces/ILeveragedPool.sol";
+import "../interfaces/IPoolFactory.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
@@ -20,14 +21,30 @@ contract PoolCommitter is IPoolCommitter, Ownable {
     uint128 public earliestCommitUnexecuted = NO_COMMITS_REMAINING;
     uint128 public latestCommitUnexecuted;
     uint128 public commitIDCounter;
+    uint128 public minimumCommitSize; // The minimum amount (in settlement tokens) that a user can commit in a single commitment
+    uint128 public maximumCommitQueueLength; // The maximum number of commitments that can be made for a given updateInterval
+    uint128 public currentCommitQueueLength;
     mapping(uint128 => Commit) public commits;
     mapping(uint256 => uint256) public shadowPools;
 
     address public factory;
+    address public governance;
 
-    constructor(address _factory) {
+    enum ScanDirection {
+        UP,
+        DOWN
+    }
+
+    constructor(
+        address _factory,
+        uint128 _minimumCommitSize,
+        uint128 _maximumCommitQueueLength
+    ) {
         // set the factory on deploy
         factory = _factory;
+        minimumCommitSize = _minimumCommitSize;
+        maximumCommitQueueLength = _maximumCommitQueueLength;
+        governance = IPoolFactory(factory).getOwner();
     }
 
     /**
@@ -37,6 +54,8 @@ contract PoolCommitter is IPoolCommitter, Ownable {
      *               tokens you want to burn
      */
     function commit(CommitType commitType, uint256 amount) external override {
+        require(currentCommitQueueLength < maximumCommitQueueLength, "Too many commits in interval");
+        currentCommitQueueLength += 1;
         require(amount > 0, "Amount must not be zero");
         uint128 currentCommitIDCounter = commitIDCounter;
         commitIDCounter = currentCommitIDCounter + 1;
@@ -58,16 +77,43 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         latestCommitUnexecuted = currentCommitIDCounter;
 
         emit CreateCommit(currentCommitIDCounter, amount, commitType);
+        uint256 shortBalance = pool.shortBalance();
+        uint256 longBalance = pool.longBalance();
 
         // pull in tokens
         if (commitType == CommitType.LongMint || commitType == CommitType.ShortMint) {
             // minting: pull in the quote token from the commiter
+            require(amount >= minimumCommitSize, "Amount less than minimum");
             pool.quoteTokenTransferFrom(msg.sender, leveragedPool, amount);
         } else if (commitType == CommitType.LongBurn) {
             // long burning: pull in long pool tokens from commiter
+
+            // A theoretical amount based on current ratio. Used to get same units as minimumCommitSize
+            uint256 amountOut = PoolSwapLibrary.getAmountOut(
+                PoolSwapLibrary.getRatio(
+                    longBalance,
+                    IERC20(pool.poolTokens()[0]).totalSupply() +
+                        shadowPools[commitTypeToUint(CommitType.LongBurn)] +
+                        amount
+                ),
+                amount
+            );
+            require(amountOut >= minimumCommitSize, "Amount less than minimum");
             pool.burnTokens(0, amount, msg.sender);
         } else if (commitType == CommitType.ShortBurn) {
             // short burning: pull in short pool tokens from commiter
+
+            // A theoretical amount based on current ratio. Used to get same units as minimumCommitSize
+            uint256 amountOut = PoolSwapLibrary.getAmountOut(
+                PoolSwapLibrary.getRatio(
+                    shortBalance,
+                    IERC20(pool.poolTokens()[1]).totalSupply() +
+                        shadowPools[commitTypeToUint(CommitType.ShortBurn)] +
+                        amount
+                ),
+                amount
+            );
+            require(amountOut >= minimumCommitSize, "Amount less than minimum");
             pool.burnTokens(1, amount, msg.sender);
         }
     }
@@ -90,6 +136,58 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         _uncommit(_commit, _commitID);
     }
 
+    /**
+     * @dev When required, scan through the from earliestCommitUnexecuted to latestCommitUnexecuted
+     *      and set these variables to be correct based on which of the commits between them are
+     *      uncommited.
+     *      This is useful for when you uncommit the first or last commit, and you can scan backwards or forwards
+     *      in order to find the new value earliestCommitUnexecuted or latestCommitUnexecuted should be set to.
+     * @param direction UP if going from earliest to latest, DOWN if going from latest to earliest.
+     */
+    function skipDeletedMiddleCommits(ScanDirection direction) internal {
+        if (direction == ScanDirection.UP) {
+            uint128 nextEarliestCommitUnexecuted = earliestCommitUnexecuted;
+            while (nextEarliestCommitUnexecuted <= latestCommitUnexecuted) {
+                IPoolCommitter.Commit memory _commit = commits[nextEarliestCommitUnexecuted];
+                if (_commit.owner == address(0)) {
+                    // Commit deleted (uncommitted) or already executed
+                    nextEarliestCommitUnexecuted += 1; // It makes sense to set the next unexecuted to the next number
+                    continue;
+                } else {
+                    break;
+                }
+            }
+            if (nextEarliestCommitUnexecuted > latestCommitUnexecuted) {
+                // We have just bumped earliestCommitUnexecuted above latestCommitUnexecuted,
+                // we have therefore run out of commits
+                earliestCommitUnexecuted = NO_COMMITS_REMAINING;
+            } else {
+                earliestCommitUnexecuted = nextEarliestCommitUnexecuted;
+            }
+        }
+
+        if (direction == ScanDirection.DOWN) {
+            uint128 nextLatestCommitUnexecuted = latestCommitUnexecuted;
+            while (nextLatestCommitUnexecuted >= earliestCommitUnexecuted) {
+                IPoolCommitter.Commit memory _commit = commits[nextLatestCommitUnexecuted];
+                if (_commit.owner == address(0)) {
+                    // Commit deleted (uncommitted) or already executed
+                    nextLatestCommitUnexecuted -= 1;
+                    continue;
+                } else {
+                    break;
+                }
+            }
+            if (nextLatestCommitUnexecuted < earliestCommitUnexecuted) {
+                // We have just bumped earliestCommitUnexecuted above latestCommitUnexecuted,
+                // we have therefore run out of commits
+                earliestCommitUnexecuted = NO_COMMITS_REMAINING;
+            } else {
+                latestCommitUnexecuted = nextLatestCommitUnexecuted;
+            }
+        }
+    }
+
     function _uncommit(Commit memory _commit, uint128 _commitID) internal {
         // reduce pool commitment amount
         uint256 _commitType = commitTypeToUint(_commit.commitType);
@@ -101,15 +199,12 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         if (earliestCommitUnexecuted == _commitID) {
             // This is the first unexecuted commit, so we can bump this up one
             earliestCommitUnexecuted += 1;
-        }
-        if (earliestCommitUnexecuted > latestCommitUnexecuted) {
-            // We have just bumped earliestCommitUnexecuted above latestCommitUnexecuted,
-            // we have therefore run out of commits
-            earliestCommitUnexecuted = NO_COMMITS_REMAINING;
+            skipDeletedMiddleCommits(ScanDirection.UP);
         }
         if (latestCommitUnexecuted == _commitID && earliestCommitUnexecuted != NO_COMMITS_REMAINING) {
             // This is the latest commit unexecuted that we are trying to delete.
             latestCommitUnexecuted -= 1;
+            skipDeletedMiddleCommits(ScanDirection.DOWN);
         }
 
         // release tokens
@@ -132,6 +227,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         if (earliestCommitUnexecuted == NO_COMMITS_REMAINING) {
             return;
         }
+        currentCommitQueueLength = 0;
         uint128 nextEarliestCommitUnexecuted;
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
         uint256 frontRunningInterval = pool.frontRunningInterval();
@@ -243,6 +339,15 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         _token.approve(leveragedPool, _token.totalSupply());
     }
 
+    function setMinimumCommitSize(uint128 _minimumCommitSize) external override onlyGov {
+        minimumCommitSize = _minimumCommitSize;
+    }
+
+    function setMaxCommitQueueLength(uint128 _maximumCommitQueueLength) external override onlyGov {
+        require(_maximumCommitQueueLength > 0, "Commit queue must be > 0");
+        maximumCommitQueueLength = _maximumCommitQueueLength;
+    }
+
     function commitTypeToUint(CommitType _commit) public pure returns (uint256) {
         if (_commit == CommitType.ShortMint) {
             return 0;
@@ -269,6 +374,11 @@ contract PoolCommitter is IPoolCommitter, Ownable {
 
     modifier onlySelf() {
         require(msg.sender == address(this), "msg.sender not self");
+        _;
+    }
+
+    modifier onlyGov() {
+        require(msg.sender == governance, "msg.sender not governance");
         _;
     }
 }

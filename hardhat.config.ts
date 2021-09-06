@@ -40,7 +40,12 @@ const config: HardhatUserConfig = {
         },
         local: {
             url: "http://localhost:8545",
+            gas: "auto",
         },
+    },
+    typechain: {
+        outDir: "types",
+        target: "ethers-v5",
     },
     etherscan: {
         apiKey: ETHERSCAN_API_KEY,

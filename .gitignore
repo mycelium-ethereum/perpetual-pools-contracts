@@ -5,3 +5,4 @@ artifacts/
 typechain/
 coverage/
 coverage.json
+types/

@@ -5,11 +5,17 @@ import {
     ERC20,
     LeveragedPool,
     PoolCommitter,
+    PoolKeeper,
     PoolSwapLibrary,
     TestToken,
-} from "../../typechain"
+} from "../../types"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import { POOL_CODE } from "../constants"
+import {
+    DEFAULT_FEE,
+    DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
+    DEFAULT_MIN_COMMIT_SIZE,
+    POOL_CODE,
+} from "../constants"
 import {
     getEventArgs,
     deployPoolAndTokenContracts,
@@ -26,10 +32,9 @@ const { expect } = chai
 const amountCommitted = ethers.utils.parseEther("2000")
 const amountMinted = ethers.utils.parseEther("10000")
 const feeAddress = generateRandomAddress()
-const lastPrice = getRandomInt(99999999, 1)
 const updateInterval = 2
 const frontRunningInterval = 1
-const fee = "0x00000000000000000000000000000000"
+const fee = DEFAULT_FEE
 const leverage = 1
 const commitType = [0] // Short mint
 
@@ -41,28 +46,165 @@ describe("LeveragedPool - commit", () => {
     let shortToken: ERC20
     let longToken: ERC20
     let poolCommitter: PoolCommitter
+    let poolKeeper: PoolKeeper
 
     describe("Create commit", () => {
         let receipt: ContractReceipt
-        before(async () => {
+        beforeEach(async () => {
             const result = await deployPoolAndTokenContracts(
                 POOL_CODE,
                 frontRunningInterval,
                 updateInterval,
-                fee,
                 leverage,
+                DEFAULT_MIN_COMMIT_SIZE,
+                DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
                 feeAddress,
-                amountMinted
+                fee
             )
             signers = result.signers
             pool = result.pool
             token = result.token
             library = result.library
             poolCommitter = result.poolCommitter
+            poolKeeper = result.poolKeeper
             await token.approve(pool.address, amountCommitted)
             receipt = await (
                 await poolCommitter.commit(commitType, amountCommitted)
             ).wait()
+        })
+        it("should disallow long burn commits that are too small", async () => {
+            const result = await deployPoolAndTokenContracts(
+                POOL_CODE,
+                frontRunningInterval,
+                updateInterval,
+                leverage,
+                ethers.utils.parseEther("1000"),
+                DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
+                feeAddress,
+                fee
+            )
+            poolCommitter = result.poolCommitter
+            await token.approve(pool.address, amountCommitted)
+            // Commit with half the amount of the minimum, with a LONG BURN
+            const tx = poolCommitter.commit([3], ethers.utils.parseEther("500"))
+            await expect(tx).to.be.revertedWith("Amount less than minimum")
+        })
+        it("should disallow long burn commits that are too small, with non 1:1 ratios", async () => {
+            const result = await deployPoolAndTokenContracts(
+                POOL_CODE,
+                frontRunningInterval,
+                updateInterval,
+                leverage,
+                ethers.utils.parseEther("1000"),
+                DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
+                feeAddress,
+                fee
+            )
+            poolCommitter = result.poolCommitter
+            await token.approve(
+                pool.address,
+                ethers.utils.parseEther("1000000")
+            )
+            await poolCommitter.commit([0], ethers.utils.parseEther("2000"))
+            await poolCommitter.commit([2], ethers.utils.parseEther("1000"))
+            await timeout((updateInterval + 1) * 1000)
+            await poolKeeper.performUpkeepSinglePool(pool.address)
+            expect(await poolCommitter.currentCommitQueueLength()).to.equal(0)
+            // Commit with half the amount of the minimum, with a LONG BURN
+            const tx = poolCommitter.commit([3], ethers.utils.parseEther("600"))
+            await expect(tx).to.be.revertedWith("Amount less than minimum")
+        })
+        it("should disallow short burn commits that are too small, with non 1:1 ratios", async () => {
+            const result = await deployPoolAndTokenContracts(
+                POOL_CODE,
+                frontRunningInterval,
+                updateInterval,
+                leverage,
+                ethers.utils.parseEther("1000"),
+                DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
+                feeAddress,
+                fee
+            )
+            poolCommitter = result.poolCommitter
+            await token.approve(
+                pool.address,
+                ethers.utils.parseEther("1000000")
+            )
+            await poolCommitter.commit([0], ethers.utils.parseEther("2000"))
+            await poolCommitter.commit([2], ethers.utils.parseEther("1000"))
+            await timeout((updateInterval + 1) * 1000)
+            await poolKeeper.performUpkeepSinglePool(pool.address)
+            // Commit with half the amount of the minimum, with a SHORT BURN
+            const tx = poolCommitter.commit([1], ethers.utils.parseEther("600"))
+            await expect(tx).to.be.revertedWith("Amount less than minimum")
+        })
+        it("should disallow short burn commits that are too small", async () => {
+            const result = await deployPoolAndTokenContracts(
+                POOL_CODE,
+                frontRunningInterval,
+                updateInterval,
+                leverage,
+                ethers.utils.parseEther("1000"),
+                DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
+                feeAddress,
+                fee
+            )
+            poolCommitter = result.poolCommitter
+            await token.approve(pool.address, amountCommitted)
+            // Commit with half the amount of the minimum, with a SHORT BURN
+            const tx = poolCommitter.commit([1], ethers.utils.parseEther("500"))
+            await expect(tx).to.be.revertedWith("Amount less than minimum")
+        })
+        it("should disallow mint commits that are too small", async () => {
+            const result = await deployPoolAndTokenContracts(
+                POOL_CODE,
+                frontRunningInterval,
+                updateInterval,
+                leverage,
+                ethers.utils.parseEther("1000"),
+                DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
+                feeAddress,
+                fee
+            )
+            poolCommitter = result.poolCommitter
+            await token.approve(pool.address, amountCommitted)
+            // Commit with half the amount of the minimum
+            const tx = poolCommitter.commit(
+                commitType,
+                ethers.utils.parseEther("500")
+            )
+            await expect(tx).to.be.revertedWith("Amount less than minimum")
+        })
+        it("should disallow too many commits", async () => {
+            const result = await deployPoolAndTokenContracts(
+                POOL_CODE,
+                frontRunningInterval,
+                updateInterval,
+                leverage,
+                DEFAULT_MIN_COMMIT_SIZE,
+                3,
+                feeAddress,
+                fee
+            )
+            poolCommitter = result.poolCommitter
+            await token.approve(pool.address, amountCommitted)
+            // Commit 3 times, then the 4th should revert
+            await poolCommitter.commit(
+                commitType,
+                ethers.utils.parseEther("500")
+            )
+            await poolCommitter.commit(
+                commitType,
+                ethers.utils.parseEther("500")
+            )
+            await poolCommitter.commit(
+                commitType,
+                ethers.utils.parseEther("500")
+            )
+            expect(await poolCommitter.currentCommitQueueLength()).to.equal(3)
+            expect(
+                poolCommitter.commit(commitType, ethers.utils.parseEther("500"))
+            ).to.be.revertedWith("Too many commits in interval")
         })
         it("should create a commit entry", async () => {
             expect(
@@ -74,11 +216,7 @@ describe("LeveragedPool - commit", () => {
             ).to.not.eq(0)
         })
         it("should increment the id counter", async () => {
-            expect(
-                (await poolCommitter.commitIDCounter()).eq(
-                    ethers.BigNumber.from(1)
-                )
-            ).to.eq(true)
+            expect(await poolCommitter.commitIDCounter()).to.equal(1)
         })
         it("should set the amount committed", async () => {
             expect(
@@ -148,10 +286,11 @@ describe("LeveragedPool - commit", () => {
                 POOL_CODE,
                 frontRunningInterval,
                 updateInterval,
-                fee,
                 leverage,
+                DEFAULT_MIN_COMMIT_SIZE,
+                DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
                 feeAddress,
-                amountMinted
+                fee
             )
             signers = result.signers
             pool = result.pool
@@ -212,10 +351,11 @@ describe("LeveragedPool - commit", () => {
                 POOL_CODE,
                 frontRunningInterval,
                 updateInterval,
-                fee,
                 leverage,
+                DEFAULT_MIN_COMMIT_SIZE,
+                DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
                 feeAddress,
-                amountMinted
+                fee
             )
             signers = result.signers
             pool = result.pool

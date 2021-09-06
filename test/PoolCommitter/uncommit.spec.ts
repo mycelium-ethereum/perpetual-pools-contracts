@@ -7,9 +7,15 @@ import {
     PoolCommitter,
     PoolSwapLibrary,
     TestToken,
-} from "../../typechain"
+} from "../../types"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import { POOL_CODE } from "../constants"
+import {
+    DEFAULT_FEE,
+    DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
+    DEFAULT_MINT_AMOUNT,
+    DEFAULT_MIN_COMMIT_SIZE,
+    POOL_CODE,
+} from "../constants"
 import {
     getEventArgs,
     deployPoolAndTokenContracts,
@@ -24,12 +30,12 @@ chai.use(chaiAsPromised)
 const { expect } = chai
 
 const amountCommitted = ethers.utils.parseEther("2000")
-const amountMinted = ethers.utils.parseEther("10000")
+const amountMinted = ethers.BigNumber.from(DEFAULT_MINT_AMOUNT)
 const feeAddress = generateRandomAddress()
 const lastPrice = getRandomInt(99999999, 1)
 const updateInterval = 20
 const frontRunningInterval = 10
-const fee = "0x00000000000000000000000000000000"
+const fee = DEFAULT_FEE
 const leverage = 1
 const commitType = [2] // Long mint;
 
@@ -49,10 +55,11 @@ describe("PoolCommitter.uncommit", () => {
             POOL_CODE,
             frontRunningInterval,
             updateInterval,
-            fee,
             leverage,
+            DEFAULT_MIN_COMMIT_SIZE,
+            DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
             feeAddress,
-            amountMinted
+            fee
         )
         signers = elements.signers
         pool = elements.pool
@@ -212,9 +219,7 @@ describe("PoolCommitter.uncommit", () => {
 
     context("When specified commitment is a long burn", async () => {
         it("updates the shadow long burn balance", async () => {
-            const pairToken = await (
-                await committer.commit([2], amountCommitted)
-            ).wait()
+            await committer.commit([2], amountCommitted)
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(1, 2)
             const receipt = await (
@@ -235,9 +240,7 @@ describe("PoolCommitter.uncommit", () => {
         })
 
         it("does not transfer quote tokens", async () => {
-            const pairToken = await (
-                await committer.commit([2], amountCommitted)
-            ).wait()
+            await committer.commit([2], amountCommitted)
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(1, 2)
             const receipt = await (
@@ -259,9 +262,7 @@ describe("PoolCommitter.uncommit", () => {
         })
 
         it("refunds long pair tokens to the user", async () => {
-            const pairToken = await (
-                await committer.commit([2], amountCommitted)
-            ).wait()
+            await committer.commit([2], amountCommitted)
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(1, 2)
             const receipt = await (
@@ -279,9 +280,7 @@ describe("PoolCommitter.uncommit", () => {
 
     context("When specified commitment is a short burn", async () => {
         it("updates the shadow short burn balance", async () => {
-            const pairToken = await (
-                await committer.commit([0], amountCommitted)
-            ).wait()
+            await committer.commit([0], amountCommitted)
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(1, 2)
             const receipt = await (
@@ -301,9 +300,7 @@ describe("PoolCommitter.uncommit", () => {
             ).to.eq(true)
         })
         it("does not transfer quote tokens", async () => {
-            const pairToken = await (
-                await committer.commit([0], amountCommitted)
-            ).wait()
+            await committer.commit([0], amountCommitted)
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(1, 2)
             const receipt = await (
@@ -324,9 +321,7 @@ describe("PoolCommitter.uncommit", () => {
             expect(await token.balanceOf(pool.address)).to.eq(amountCommitted)
         })
         it("refunds short pair tokens to the user", async () => {
-            const pairToken = await (
-                await committer.commit([0], amountCommitted)
-            ).wait()
+            await committer.commit([0], amountCommitted)
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(1, 2)
             const receipt = await (
@@ -350,10 +345,11 @@ describe("PoolCommitter.uncommit", () => {
                     POOL_CODE,
                     100,
                     250,
-                    fee,
                     leverage,
+                    DEFAULT_MIN_COMMIT_SIZE,
+                    DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
                     feeAddress,
-                    amountMinted
+                    fee
                 )
                 signers = elements.signers
                 pool = elements.pool

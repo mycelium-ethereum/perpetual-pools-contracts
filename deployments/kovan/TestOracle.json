@@ -1,0 +1,114 @@
+{
+    "address": "0x451F8c0F822ee81487D0B84E92ffa2d0aDC27d86",
+    "abi": [
+        {
+            "inputs": [],
+            "name": "getPrice",
+            "outputs": [
+                {
+                    "internalType": "int256",
+                    "name": "",
+                    "type": "int256"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "incrementPrice",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "oracle",
+            "outputs": [
+                {
+                    "internalType": "address",
+                    "name": "",
+                    "type": "address"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "_oracle",
+                    "type": "address"
+                }
+            ],
+            "name": "setOracle",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        }
+    ],
+    "transactionHash": "0xcd4d93f70f78b7d80bdc769f9af86d3289490687de5503d07d17e6e915a253c4",
+    "receipt": {
+        "to": null,
+        "from": "0x2C39193Bc5Bc25865B92780B475590A0ce55aC92",
+        "contractAddress": "0x451F8c0F822ee81487D0B84E92ffa2d0aDC27d86",
+        "transactionIndex": 2,
+        "gasUsed": "237158",
+        "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "blockHash": "0x2e214c77b4cce484c16ee5bbfe6e278626d1ffe0167dde22a46f44598220dd21",
+        "transactionHash": "0xcd4d93f70f78b7d80bdc769f9af86d3289490687de5503d07d17e6e915a253c4",
+        "logs": [],
+        "blockNumber": 26562044,
+        "cumulativeGasUsed": "368735",
+        "status": 1,
+        "byzantium": true
+    },
+    "args": [],
+    "solcInputHash": "a5ef5a4b845cf5d39ccfecb0e8ca1186",
+    "metadata": "{\"compiler\":{\"version\":\"0.7.6+commit.7338295f\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[],\"name\":\"getPrice\",\"outputs\":[{\"internalType\":\"int256\",\"name\":\"\",\"type\":\"int256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"incrementPrice\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"oracle\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_oracle\",\"type\":\"address\"}],\"name\":\"setOracle\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"contracts/test-utilities/TestOracle.sol\":\"TestOracle\"},\"evmVersion\":\"istanbul\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"contracts/test-utilities/TestOracle.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity ^0.7.6;\\npragma abicoder v2;\\n\\n/*\\n@title A mockup oracle wrapper. Don't use for production.\\n*/\\ncontract TestOracle {\\n    int256 internal price;\\n    address public oracle;\\n\\n    function setOracle(address _oracle) external {\\n        require(oracle != address(0), \\\"Oracle cannot be 0 address\\\");\\n        oracle = _oracle;\\n    }\\n\\n    function incrementPrice() external {\\n        price += 1;\\n    }\\n\\n    function getPrice() external view returns (int256) {\\n        return price;\\n    }\\n}\\n\",\"keccak256\":\"0x9a4a97f7f61e964c2057a64d522de7827d81fdc70e19dd0d8504ee3ec343cad9\",\"license\":\"MIT\"}},\"version\":1}",
+    "bytecode": "0x608060405234801561001057600080fd5b50610356806100206000396000f3fe608060405234801561001057600080fd5b506004361061004c5760003560e01c80637adbf973146100515780637dc0d1d01461006d57806398d5fdca1461008b578063b5bf6eb6146100a9575b600080fd5b61006b600480360381019061006691906101df565b6100b3565b005b610075610189565b6040516100829190610266565b60405180910390f35b6100936101af565b6040516100a09190610281565b60405180910390f35b6100b16101b8565b005b600073ffffffffffffffffffffffffffffffffffffffff16600160009054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff161415610145576040517f08c379a000000000000000000000000000000000000000000000000000000000815260040161013c9061029c565b60405180910390fd5b80600160006101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff16021790555050565b600160009054906101000a900473ffffffffffffffffffffffffffffffffffffffff1681565b60008054905090565b60016000808282540192505081905550565b6000813590506101d981610309565b92915050565b6000602082840312156101f157600080fd5b60006101ff848285016101ca565b91505092915050565b610211816102cd565b82525050565b610220816102df565b82525050565b6000610233601a836102bc565b91507f4f7261636c652063616e6e6f74206265203020616464726573730000000000006000830152602082019050919050565b600060208201905061027b6000830184610208565b92915050565b60006020820190506102966000830184610217565b92915050565b600060208201905081810360008301526102b581610226565b9050919050565b600082825260208201905092915050565b60006102d8826102e9565b9050919050565b6000819050919050565b600073ffffffffffffffffffffffffffffffffffffffff82169050919050565b610312816102cd565b811461031d57600080fd5b5056fea264697066735822122037e4c6eb290b66980f3a45bd68e46ba1e730f518025680ca253c25f27b51becf64736f6c63430007060033",
+    "deployedBytecode": "0x608060405234801561001057600080fd5b506004361061004c5760003560e01c80637adbf973146100515780637dc0d1d01461006d57806398d5fdca1461008b578063b5bf6eb6146100a9575b600080fd5b61006b600480360381019061006691906101df565b6100b3565b005b610075610189565b6040516100829190610266565b60405180910390f35b6100936101af565b6040516100a09190610281565b60405180910390f35b6100b16101b8565b005b600073ffffffffffffffffffffffffffffffffffffffff16600160009054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff161415610145576040517f08c379a000000000000000000000000000000000000000000000000000000000815260040161013c9061029c565b60405180910390fd5b80600160006101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff16021790555050565b600160009054906101000a900473ffffffffffffffffffffffffffffffffffffffff1681565b60008054905090565b60016000808282540192505081905550565b6000813590506101d981610309565b92915050565b6000602082840312156101f157600080fd5b60006101ff848285016101ca565b91505092915050565b610211816102cd565b82525050565b610220816102df565b82525050565b6000610233601a836102bc565b91507f4f7261636c652063616e6e6f74206265203020616464726573730000000000006000830152602082019050919050565b600060208201905061027b6000830184610208565b92915050565b60006020820190506102966000830184610217565b92915050565b600060208201905081810360008301526102b581610226565b9050919050565b600082825260208201905092915050565b60006102d8826102e9565b9050919050565b6000819050919050565b600073ffffffffffffffffffffffffffffffffffffffff82169050919050565b610312816102cd565b811461031d57600080fd5b5056fea264697066735822122037e4c6eb290b66980f3a45bd68e46ba1e730f518025680ca253c25f27b51becf64736f6c63430007060033",
+    "devdoc": {
+        "kind": "dev",
+        "methods": {},
+        "version": 1
+    },
+    "userdoc": {
+        "kind": "user",
+        "methods": {},
+        "version": 1
+    },
+    "storageLayout": {
+        "storage": [
+            {
+                "astId": 10497,
+                "contract": "contracts/test-utilities/TestOracle.sol:TestOracle",
+                "label": "price",
+                "offset": 0,
+                "slot": "0",
+                "type": "t_int256"
+            },
+            {
+                "astId": 10499,
+                "contract": "contracts/test-utilities/TestOracle.sol:TestOracle",
+                "label": "oracle",
+                "offset": 0,
+                "slot": "1",
+                "type": "t_address"
+            }
+        ],
+        "types": {
+            "t_address": {
+                "encoding": "inplace",
+                "label": "address",
+                "numberOfBytes": "20"
+            },
+            "t_int256": {
+                "encoding": "inplace",
+                "label": "int256",
+                "numberOfBytes": "32"
+            }
+        }
+    }
+}
