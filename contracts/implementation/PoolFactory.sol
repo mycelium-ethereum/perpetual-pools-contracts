@@ -179,6 +179,7 @@ contract PoolFactory is IPoolFactory, Ownable {
 
     /**
      * @notice Converts a uint to a str
+     * @dev Assumes ASCII strings
      * @return raw string representation of the uint
      */
     function uint2str(uint256 _i) internal pure returns (string memory) {
