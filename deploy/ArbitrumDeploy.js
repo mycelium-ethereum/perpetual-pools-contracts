@@ -147,7 +147,6 @@ module.exports = async (hre) => {
     console.log(`Deployed LeveragedPool: ${event.args.pool}`)
     console.log(`Deploy PoolKeeper: ${poolKeeper.address}`)
     console.log(`Deployed TestToken: ${token.address}`)
-    console.log(`Deployed TestOracle: ${chainlinkOracle.address}`)
     console.log(`Deployed OracleWrapper: ${oracleWrapper.address}`)
 }
 
