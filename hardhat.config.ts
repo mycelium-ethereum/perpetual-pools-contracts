@@ -35,6 +35,10 @@ const config: HardhatUserConfig = {
             url: ALCHEMY_API_TESTNET_URL,
             accounts: [TESTNET_PRIVATE_KEY],
         },
+        arb: {
+            url: ALCHEMY_API_TESTNET_URL,
+            accounts: [TESTNET_PRIVATE_KEY],
+        },
         coverage: {
             url: "http://127.0.0.1:8555", // Coverage launches its own ganache-cli client
         },
