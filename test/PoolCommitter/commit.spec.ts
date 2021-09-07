@@ -469,7 +469,6 @@ describe("LeveragedPool - commit", () => {
             poolKeeper = result.poolKeeper
 
             await token.approve(pool.address, amountCommitted.mul(10))
-
         })
         it.only("Should reset commitQueueLength if committed during frontRunningInterval", async () => {
             const shortMint = 0
@@ -479,7 +478,7 @@ describe("LeveragedPool - commit", () => {
 
             // Three commits, so currentCommitQueueLength == 3
             expect(await poolCommitter.currentCommitQueueLength()).to.equal(3)
-            await timeout((longFrontRunningInterval  + 20) * 1000)
+            await timeout((longFrontRunningInterval + 20) * 1000)
 
             // A new commit within the frontRunningInterval, so currentCommitQueueLength == 1
             await poolCommitter.commit(0, amountCommitted)
@@ -497,7 +496,7 @@ describe("LeveragedPool - commit", () => {
 
             // Three commits, so currentCommitQueueLength == 3
             expect(await poolCommitter.currentCommitQueueLength()).to.equal(3)
-            await timeout((longFrontRunningInterval  + 20) * 1000)
+            await timeout((longFrontRunningInterval + 20) * 1000)
 
             await poolCommitter.commit(0, amountCommitted)
             // A new commit within the frontRunningInterval, so currentCommitQueueLength == 1
@@ -507,7 +506,7 @@ describe("LeveragedPool - commit", () => {
             await poolCommitter.commit(0, amountCommitted)
             expect(await poolCommitter.currentCommitQueueLength()).to.equal(2)
 
-            await timeout((longUpdateInterval) * 1000)
+            await timeout(longUpdateInterval * 1000)
 
             // Perform upkeep, and currentCommitQueueLength should remain as 2
             await poolKeeper.performUpkeepSinglePool(pool.address)

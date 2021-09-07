@@ -229,7 +229,7 @@ export const deployPoolAndTokenContracts = async (
     const poolAddress = await setupContracts.factory.pools(0)
     const pool = await ethers.getContractAt("LeveragedPool", poolAddress)
 
-    await timeout(updateInterval* 10000)
+    await timeout(updateInterval * 10000)
     await setupContracts.poolKeeper.performUpkeepSinglePool(pool.address)
 
     let longTokenAddr = await pool.tokens(0)

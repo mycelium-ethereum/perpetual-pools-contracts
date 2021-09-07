@@ -69,7 +69,8 @@ contract PoolCommitter is IPoolCommitter, Ownable {
                 lastPriceTimestamp,
                 updateInterval,
                 frontRunningInterval
-            ) && !PoolSwapLibrary.isBeforeFrontRunningInterval(
+            ) &&
+            !PoolSwapLibrary.isBeforeFrontRunningInterval(
                 block.timestamp,
                 lastPriceTimestamp,
                 updateInterval,
@@ -122,9 +123,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             uint256 amountOut = PoolSwapLibrary.getAmountOut(
                 PoolSwapLibrary.getRatio(
                     longBalance,
-                    IERC20(pool.poolTokens()[0]).totalSupply() +
-                        shadowPools[uint256(CommitType.LongBurn)] +
-                        amount
+                    IERC20(pool.poolTokens()[0]).totalSupply() + shadowPools[uint256(CommitType.LongBurn)] + amount
                 ),
                 amount
             );
@@ -137,9 +136,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             uint256 amountOut = PoolSwapLibrary.getAmountOut(
                 PoolSwapLibrary.getRatio(
                     shortBalance,
-                    IERC20(pool.poolTokens()[1]).totalSupply() +
-                        shadowPools[uint256(CommitType.ShortBurn)] +
-                        amount
+                    IERC20(pool.poolTokens()[1]).totalSupply() + shadowPools[uint256(CommitType.ShortBurn)] + amount
                 ),
                 amount
             );
