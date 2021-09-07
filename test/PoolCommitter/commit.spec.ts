@@ -466,6 +466,7 @@ describe("LeveragedPool - commit", () => {
             shortToken = result.shortToken
             longToken = result.longToken
             poolCommitter = result.poolCommitter
+            poolKeeper = result.poolKeeper
 
             await token.approve(pool.address, amountCommitted.mul(10))
 
@@ -476,11 +477,45 @@ describe("LeveragedPool - commit", () => {
             await poolCommitter.commit(0, amountCommitted)
             await poolCommitter.commit(0, amountCommitted)
 
+            // Three commits, so currentCommitQueueLength == 3
+            expect(await poolCommitter.currentCommitQueueLength()).to.equal(3)
+            await timeout((longFrontRunningInterval  + 20) * 1000)
+
+            // A new commit within the frontRunningInterval, so currentCommitQueueLength == 1
+            await poolCommitter.commit(0, amountCommitted)
+            expect(await poolCommitter.currentCommitQueueLength()).to.equal(1)
+            await poolCommitter.commit(0, amountCommitted)
+            // A second commit, so currentCommitQueueLength == 2
+            expect(await poolCommitter.currentCommitQueueLength()).to.equal(2)
+        })
+
+        it.only("Should reset commitQueueLength and not reset after executing", async () => {
+            const shortMint = 0
+            await poolCommitter.commit(0, amountCommitted)
+            await poolCommitter.commit(0, amountCommitted)
+            await poolCommitter.commit(0, amountCommitted)
+
+            // Three commits, so currentCommitQueueLength == 3
             expect(await poolCommitter.currentCommitQueueLength()).to.equal(3)
             await timeout((longFrontRunningInterval  + 20) * 1000)
 
             await poolCommitter.commit(0, amountCommitted)
+            // A new commit within the frontRunningInterval, so currentCommitQueueLength == 1
             expect(await poolCommitter.currentCommitQueueLength()).to.equal(1)
+
+            // currentCommitQueueLength now equals 2
+            await poolCommitter.commit(0, amountCommitted)
+            expect(await poolCommitter.currentCommitQueueLength()).to.equal(2)
+
+            await timeout((longUpdateInterval) * 1000)
+
+            // Perform upkeep, and currentCommitQueueLength should remain as 2
+            await poolKeeper.performUpkeepSinglePool(pool.address)
+            expect(await poolCommitter.currentCommitQueueLength()).to.equal(2)
+
+            // currentCommitQueueLength now equals 3
+            await poolCommitter.commit(0, amountCommitted)
+            expect(await poolCommitter.currentCommitQueueLength()).to.equal(3)
         })
     })
 })

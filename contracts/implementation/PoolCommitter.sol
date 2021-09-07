@@ -10,8 +10,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./PoolSwapLibrary.sol";
 import "../interfaces/IOracleWrapper.sol";
 
-import "hardhat/console.sol";
-
 /// @title The pool controller contract
 contract PoolCommitter is IPoolCommitter, Ownable {
     // #### Globals
@@ -48,6 +46,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         minimumCommitSize = _minimumCommitSize;
         maximumCommitQueueLength = _maximumCommitQueueLength;
         governance = IPoolFactory(factory).getOwner();
+        lastQueueLengthReset = block.timestamp;
     }
 
     /**
@@ -70,21 +69,21 @@ contract PoolCommitter is IPoolCommitter, Ownable {
                 lastPriceTimestamp,
                 updateInterval,
                 frontRunningInterval
+            ) && !PoolSwapLibrary.isBeforeFrontRunningInterval(
+                block.timestamp,
+                lastPriceTimestamp,
+                updateInterval,
+                frontRunningInterval
             )
         ) {
             /**
              * The lastQueueLengthReset occured before the frontRunningInterval,
+             * and we are within the frontRunningInterval,
              * so this is the first commit since frontRunningInterval has passed.
              * Note: If and only if there are no `commit` calls within the frontRunningInterval, then
              * `executeAllCommitments` will reset `currentCommitQueueLength` and update
              * `lastQueueLengthReset`.
              */
-            console.log("");
-            console.log(lastQueueLengthReset);
-            console.log(lastPriceTimestamp);
-            console.log(updateInterval);
-            console.log(frontRunningInterval);
-            console.log("");
             delete currentCommitQueueLength;
             lastQueueLengthReset = block.timestamp;
         }
@@ -270,6 +269,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         uint256 frontRunningInterval = pool.frontRunningInterval();
         uint256 updateInterval = pool.updateInterval();
         uint256 lastPriceTimestamp = pool.lastPriceTimestamp();
+        uint256 secondLastPriceTimestamp = pool.secondLastPriceTimestamp();
 
         /**
          * If the queue length was reset before the frontRunningInterval that just passed, it means
@@ -278,7 +278,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         if (
             PoolSwapLibrary.isBeforeFrontRunningInterval(
                 lastQueueLengthReset,
-                lastPriceTimestamp - updateInterval,
+                secondLastPriceTimestamp,
                 updateInterval,
                 frontRunningInterval
             )
