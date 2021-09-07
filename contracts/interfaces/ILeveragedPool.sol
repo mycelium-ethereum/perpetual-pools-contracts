@@ -32,13 +32,6 @@ interface ILeveragedPool {
     event PoolInitialized(address indexed longToken, address indexed shortToken, address quoteToken, string poolName);
 
     /**
-     * @notice Creates a notification when the pool's upkeep succeeds
-     * @param startPrice Price prior to price change execution
-     * @param endPrice Price during price change execution
-     */
-    event CompletedUpkeep(int256 indexed startPrice, int256 indexed endPrice);
-
-    /**
      * @notice Creates a notification when the pool's price execution fails
      * @param startPrice Price prior to price change execution
      * @param endPrice Price during price change execution

@@ -100,7 +100,6 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         executePriceChange(_oldPrice, _newPrice);
         // execute pending commitments to enter and exit the pool
         IPoolCommitter(poolCommitter).executeAllCommitments();
-        emit CompletedUpkeep(_oldPrice, _newPrice);
     }
 
     /**
