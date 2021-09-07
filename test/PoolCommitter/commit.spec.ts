@@ -33,8 +33,8 @@ const { expect } = chai
 const amountCommitted = ethers.utils.parseEther("2000")
 const amountMinted = ethers.utils.parseEther("10000")
 const feeAddress = generateRandomAddress()
-const updateInterval = 2
-const frontRunningInterval = 1
+const updateInterval = 2000
+const frontRunningInterval = 1000
 const fee = DEFAULT_FEE
 const leverage = 1
 const commitType = [0] // Short mint
@@ -310,7 +310,7 @@ describe("LeveragedPool - commit", () => {
             const receipt = await (
                 await poolCommitter.commit([0], amountCommitted)
             ).wait()
-            await timeout(2000)
+            await timeout(updateInterval * 1000)
             await pool.setKeeper(signers[0].address)
             await pool.poolUpkeep(1, 2)
 
@@ -332,7 +332,7 @@ describe("LeveragedPool - commit", () => {
             const receipt = await (
                 await poolCommitter.commit([2], amountCommitted)
             ).wait()
-            await timeout(2000)
+            await timeout(updateInterval * 1000)
             await pool.setKeeper(signers[0].address)
             await pool.poolUpkeep(1, 2)
 
@@ -372,7 +372,7 @@ describe("LeveragedPool - commit", () => {
             const receipt = await (
                 await poolCommitter.commit([0], amountCommitted)
             ).wait()
-            await timeout(2000)
+            await timeout(updateInterval * 1000)
             await pool.setKeeper(signers[0].address)
             await pool.poolUpkeep(1, 2)
 
@@ -389,7 +389,7 @@ describe("LeveragedPool - commit", () => {
             const receipt = await (
                 await poolCommitter.commit([2], amountCommitted)
             ).wait()
-            await timeout(2000)
+            await timeout(updateInterval * 1000)
             await pool.setKeeper(signers[0].address)
             await pool.poolUpkeep(1, 2)
             expect((await token.balanceOf(pool.address)).toHexString()).to.eq(
@@ -405,7 +405,7 @@ describe("LeveragedPool - commit", () => {
             const receipt = await (
                 await poolCommitter.commit([0], amountCommitted)
             ).wait()
-            await timeout(2000)
+            await timeout(updateInterval * 1000)
             await pool.setKeeper(signers[0].address)
             await pool.poolUpkeep(1, 2)
 
@@ -420,7 +420,7 @@ describe("LeveragedPool - commit", () => {
             const receipt = await (
                 await poolCommitter.commit([2], amountCommitted)
             ).wait()
-            await timeout(2000)
+            await timeout(updateInterval * 1000)
             await pool.setKeeper(signers[0].address)
             await pool.poolUpkeep(1, 2)
 
@@ -470,7 +470,7 @@ describe("LeveragedPool - commit", () => {
 
             await token.approve(pool.address, amountCommitted.mul(10))
         })
-        it.only("Should reset commitQueueLength if committed during frontRunningInterval", async () => {
+        it("Should reset commitQueueLength if committed during frontRunningInterval", async () => {
             const shortMint = 0
             await poolCommitter.commit(0, amountCommitted)
             await poolCommitter.commit(0, amountCommitted)
@@ -488,7 +488,7 @@ describe("LeveragedPool - commit", () => {
             expect(await poolCommitter.currentCommitQueueLength()).to.equal(2)
         })
 
-        it.only("Should reset commitQueueLength and not reset after executing", async () => {
+        it("Should reset commitQueueLength and not reset after executing", async () => {
             const shortMint = 0
             await poolCommitter.commit(0, amountCommitted)
             await poolCommitter.commit(0, amountCommitted)

@@ -150,7 +150,6 @@ contract PoolCommitter is IPoolCommitter, Ownable {
      * @param _commitID ID of the commit to uncommit (contained within the commits mapping)
      */
     function uncommit(uint128 _commitID) external override {
-        /*
         Commit memory _commit = commits[_commitID];
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
         uint256 lastPriceTimestamp = pool.lastPriceTimestamp();
@@ -167,7 +166,6 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         );
         require(msg.sender == _commit.owner, "Unauthorized");
         _uncommit(_commit, _commitID);
-        */
     }
 
     /**
@@ -266,7 +264,6 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         uint256 frontRunningInterval = pool.frontRunningInterval();
         uint256 updateInterval = pool.updateInterval();
         uint256 lastPriceTimestamp = pool.lastPriceTimestamp();
-        uint256 secondLastPriceTimestamp = pool.secondLastPriceTimestamp();
 
         /**
          * If the queue length was reset before the frontRunningInterval that just passed, it means
@@ -275,7 +272,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         if (
             PoolSwapLibrary.isBeforeFrontRunningInterval(
                 lastQueueLengthReset,
-                secondLastPriceTimestamp,
+                lastPriceTimestamp,
                 updateInterval,
                 frontRunningInterval
             )
@@ -294,7 +291,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
                 nextEarliestCommitUnexecuted += 1; // It makes sense to set the next unexecuted to the next number
                 continue;
             }
-            if (lastPriceTimestamp - _commit.created <= frontRunningInterval) {
+            if (block.timestamp - _commit.created <= frontRunningInterval) {
                 // This commit is the first that was too late.
                 break;
             }

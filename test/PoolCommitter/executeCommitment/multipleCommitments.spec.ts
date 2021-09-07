@@ -210,7 +210,7 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
             // Approve an arbitrarily large amount
             await token.approve(pool.address, amountCommitted.mul(100))
         })
-        it.only("should reset currentCommitQueueLength", async () => {
+        it("should reset currentCommitQueueLength", async () => {
             await poolCommitter.commit(0, amountCommitted)
             await poolCommitter.commit(0, amountCommitted)
             await poolCommitter.commit(0, amountCommitted)

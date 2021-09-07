@@ -34,7 +34,6 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     address public override quoteToken;
     address public override poolCommitter;
     uint256 public override lastPriceTimestamp; // The last time the pool was upkept
-    uint256 public override secondLastPriceTimestamp; // The upkeep time before the previous upkeep. Used for management of commitments and queue length in PoolCommitter
 
     string public override poolName;
     address public override oracleWrapper;
@@ -78,7 +77,6 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         leverageAmount = PoolSwapLibrary.convertUIntToDecimal(initialization._leverageAmount);
         feeAddress = initialization._feeAddress;
         lastPriceTimestamp = uint40(block.timestamp);
-        secondLastPriceTimestamp = block.timestamp - initialization._updateInterval;
         poolName = initialization._poolName;
         tokens[0] = initialization._longToken;
         tokens[1] = initialization._shortToken;
@@ -97,12 +95,11 @@ contract LeveragedPool is ILeveragedPool, Initializable {
      */
     function poolUpkeep(int256 _oldPrice, int256 _newPrice) external override onlyKeeper onlyUnpaused {
         require(intervalPassed(), "Update interval hasn't passed");
-        secondLastPriceTimestamp = lastPriceTimestamp;
-        lastPriceTimestamp = uint40(block.timestamp);
         // perform price change and update pool balances
         executePriceChange(_oldPrice, _newPrice);
         // execute pending commitments to enter and exit the pool
         IPoolCommitter(poolCommitter).executeAllCommitments();
+        lastPriceTimestamp = uint40(block.timestamp);
         emit CompletedUpkeep(_oldPrice, _newPrice);
     }
 
