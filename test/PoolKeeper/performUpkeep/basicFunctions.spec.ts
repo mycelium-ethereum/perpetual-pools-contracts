@@ -121,6 +121,7 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
 
     describe("Upkeep - Price execution", () => {
         let event: Result | undefined
+        let upkeepEvent: Result | undefined
         let lastTime: BigNumber
         before(async () => {
             await setupHook()
@@ -137,9 +138,14 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
             ).wait()
             newExecutionPrice = await poolKeeper.executionPrice(POOL1_ADDR)
             event = getEventArgs(result, "KeeperPaid")
+            upkeepEvent = getEventArgs(result, "UpkeepSuccessful")
         })
         it("should emit an event with the details", async () => {
             expect(event?.keeper).to.eq(signers[0].address)
+        })
+        it("should emit an UpkeepSuccessful event", async () => {
+            expect(upkeepEvent?.startPrice).to.eq(oldExecutionPrice)
+            expect(upkeepEvent?.endPrice).to.eq(newExecutionPrice)
         })
     })
 

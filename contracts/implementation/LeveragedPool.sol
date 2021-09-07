@@ -299,6 +299,10 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         return tokens;
     }
 
+    function balances() external view override returns (uint256 _shortBalance, uint256 _longBalance) {
+        return (shortBalance, longBalance);
+    }
+
     /**
      * @notice Withdraws all available quote asset from the pool
      * @dev Pool must not be paused

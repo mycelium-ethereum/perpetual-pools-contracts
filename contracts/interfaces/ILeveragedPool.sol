@@ -116,6 +116,8 @@ interface ILeveragedPool {
 
     function intervalPassed() external view returns (bool);
 
+    function balances() external view returns (uint256 _shortBalance, uint256 _longBalance);
+
     function setKeeper(address _keeper) external;
 
     function transferGovernance(address _governance) external;
