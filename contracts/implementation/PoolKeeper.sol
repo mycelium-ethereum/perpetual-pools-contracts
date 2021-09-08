@@ -32,6 +32,8 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     IPoolFactory public factory;
     bytes16 constant fixedPoint = 0x403abc16d674ec800000000000000000; // 1 ether
 
+    uint256 public gasPrice = 10 gwei;
+
     // #### Functions
     constructor(address _factory) {
         require(_factory != address(0), "Factory cannot be 0 address");
@@ -105,7 +107,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         try ILeveragedPool(pool).poolUpkeep(lastExecutionPrice, executionPrice[_pool]) {
             // If poolUpkeep is successful, refund the keeper for their gas costs
             uint256 gasSpent = startGas - gasleft();
-            uint256 _gasPrice = block.basefee;
+            uint256 _gasPrice = gasPrice;
 
             payKeeper(_pool, _gasPrice, gasSpent, savedPreviousUpdatedTimestamp, updateInterval);
         } catch Error(string memory reason) {
@@ -227,6 +229,15 @@ contract PoolKeeper is IPoolKeeper, Ownable {
 
     function setFactory(address _factory) external override onlyOwner {
         factory = IPoolFactory(_factory);
+    }
+
+    /**
+     * @notice Sets the gas price to be used in compensating keepers for successful upkeep
+     * @param _price Price (in ETH) per unit gas
+     * @dev Only owner
+     */
+    function setGasPrice(uint256 _price) external onlyOwner {
+        gasPrice = _price;
     }
 
     modifier onlyFactory() {
