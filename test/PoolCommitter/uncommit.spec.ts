@@ -81,6 +81,14 @@ describe("PoolCommitter.uncommit", () => {
                 ).wait()
                 commitID = getEventArgs(receipt, "CreateCommit")?.commitID
             })
+            it("decrements currentCommitQueueLength", async () => {
+                const currentCommitQueueLength =
+                    await committer.currentCommitQueueLength()
+                await committer.uncommit(commitID)
+                expect(await committer.currentCommitQueueLength()).to.equal(
+                    currentCommitQueueLength.sub(1)
+                )
+            })
             it("deletes the specified commitment", async () => {
                 expect(
                     (await committer.commits(commitID)).amount.eq(

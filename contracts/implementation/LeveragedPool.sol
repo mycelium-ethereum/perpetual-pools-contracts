@@ -100,7 +100,6 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         executePriceChange(_oldPrice, _newPrice);
         // execute pending commitments to enter and exit the pool
         IPoolCommitter(poolCommitter).executeAllCommitments();
-        emit CompletedUpkeep(_oldPrice, _newPrice);
     }
 
     /**
@@ -179,17 +178,23 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         if (_oldPrice <= 0 || _newPrice <= 0) {
             emit PriceChangeError(_oldPrice, _newPrice);
         } else {
+            uint256 _shortBalance = shortBalance;
+            uint256 _longBalance = longBalance;
             PoolSwapLibrary.PriceChangeData memory priceChangeData = PoolSwapLibrary.PriceChangeData(
                 _oldPrice,
                 _newPrice,
-                longBalance,
-                shortBalance,
+                _longBalance,
+                _shortBalance,
                 leverageAmount,
                 fee
             );
             (uint256 newLongBalance, uint256 newShortBalance, uint256 totalFeeAmount) = PoolSwapLibrary
                 .calculatePriceChange(priceChangeData);
 
+            emit PoolRebalance(
+                int256(newShortBalance) - int256(_shortBalance),
+                int256(newLongBalance) - int256(_longBalance)
+            );
             // Update pool balances
             longBalance = newLongBalance;
             shortBalance = newShortBalance;
@@ -297,6 +302,10 @@ contract LeveragedPool is ILeveragedPool, Initializable {
 
     function poolTokens() external view override returns (address[2] memory) {
         return tokens;
+    }
+
+    function balances() external view override returns (uint256 _shortBalance, uint256 _longBalance) {
+        return (shortBalance, longBalance);
     }
 
     /**

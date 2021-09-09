@@ -1,4 +1,6 @@
 import { ethers } from "hardhat"
+import { BigNumberish } from "@ethersproject/bignumber"
+import { BytesLike } from "ethers"
 import chai from "chai"
 import chaiAsPromised from "chai-as-promised"
 import { PoolSwapLibrary, PoolSwapLibrary__factory } from "../../types"
@@ -22,6 +24,23 @@ describe("PoolSwapLibrary - getAmountOut", () => {
         library = await libraryFactory.deploy()
         await library.deployed()
     })
+
+    context(
+        "When called with a ratio that is a (Quad) negative zero",
+        async () => {
+            it("Returns input amount", async () => {
+                /* this is the constant defined in both `PoolSwapLibrary` and `ABDKMathQuad` */
+                const negativeZero: BytesLike = ethers.utils.arrayify(
+                    "0x80000000000000000000000000000000"
+                )
+                const amountIn: BigNumberish = 33
+
+                expect(
+                    await library.getAmountOut(negativeZero, amountIn)
+                ).to.eq(amountIn)
+            })
+        }
+    )
 
     it("should return amountIn if the ratio is zero", async () => {
         expect(
