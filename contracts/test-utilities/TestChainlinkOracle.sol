@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity 0.8.6;
+pragma solidity 0.8.7;
 
 /// @dev The following is a mock Chainlink Price Feed Implementation.
 ///      It is used purely for the purpose of testing & not to be used in production

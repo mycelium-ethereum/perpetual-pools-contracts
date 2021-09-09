@@ -128,10 +128,18 @@ describe("LeveragedPool - initialize", () => {
 
             expect(longAddress).to.not.eq(ethers.constants.AddressZero)
             expect(shortAddress).to.not.eq(ethers.constants.AddressZero)
-            expect(await longToken.symbol()).to.eq("L-".concat(POOL_CODE))
-            expect(await shortToken.symbol()).to.eq("S-".concat(POOL_CODE))
-            expect(await longToken.name()).to.eq(POOL_CODE.concat("-LONG"))
-            expect(await shortToken.name()).to.eq(POOL_CODE.concat("-SHORT"))
+            expect(await longToken.symbol()).to.eq(
+                leverage.toString().concat("L-".concat(POOL_CODE))
+            )
+            expect(await shortToken.symbol()).to.eq(
+                leverage.toString().concat("S-".concat(POOL_CODE))
+            )
+            expect(await longToken.name()).to.eq(
+                leverage.toString().concat("L-".concat(POOL_CODE))
+            )
+            expect(await shortToken.name()).to.eq(
+                leverage.toString().concat("S-".concat(POOL_CODE))
+            )
         })
 
         it("should emit an event containing the details of the new pool", async () => {

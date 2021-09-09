@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.6;
+pragma solidity 0.8.7;
 
 import "../interfaces/IPoolCommitter.sol";
 import "../interfaces/ILeveragedPool.sol";
@@ -123,7 +123,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             uint256 amountOut = PoolSwapLibrary.getAmountOut(
                 PoolSwapLibrary.getRatio(
                     longBalance,
-                    IERC20(pool.poolTokens()[0]).totalSupply() + shadowPools[uint256(CommitType.LongBurn)] + amount
+                    IERC20(pool.poolTokens()[0]).totalSupply() + shadowPools[uint256(CommitType.LongBurn)]
                 ),
                 amount
             );
@@ -136,7 +136,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             uint256 amountOut = PoolSwapLibrary.getAmountOut(
                 PoolSwapLibrary.getRatio(
                     shortBalance,
-                    IERC20(pool.poolTokens()[1]).totalSupply() + shadowPools[uint256(CommitType.ShortBurn)] + amount
+                    IERC20(pool.poolTokens()[1]).totalSupply() + shadowPools[uint256(CommitType.ShortBurn)]
                 ),
                 amount
             );
@@ -165,6 +165,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             "Must uncommit before frontRunningInterval"
         );
         require(msg.sender == _commit.owner, "Unauthorized");
+        currentCommitQueueLength -= 1;
         _uncommit(_commit, _commitID);
     }
 

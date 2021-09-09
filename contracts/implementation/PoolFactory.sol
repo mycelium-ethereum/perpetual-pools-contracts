@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.6;
+pragma solidity 0.8.7;
 
 import "../interfaces/IPoolFactory.sol";
 import "../interfaces/ILeveragedPool.sol";
@@ -91,21 +91,25 @@ contract PoolFactory is IPoolFactory, Ownable {
 
         address shortToken = deployPairToken(
             _pool,
-            string(abi.encodePacked(deploymentParameters.poolName, "-LONG")),
-            string(abi.encodePacked("L-", deploymentParameters.poolName))
+            string(
+                abi.encodePacked(uint2str(deploymentParameters.leverageAmount), "S-", deploymentParameters.poolName)
+            ),
+            string(abi.encodePacked(uint2str(deploymentParameters.leverageAmount), "S-", deploymentParameters.poolName))
         );
         address longToken = deployPairToken(
             _pool,
-            string(abi.encodePacked(deploymentParameters.poolName, "-SHORT")),
-            string(abi.encodePacked("S-", deploymentParameters.poolName))
+            string(
+                abi.encodePacked(uint2str(deploymentParameters.leverageAmount), "L-", deploymentParameters.poolName)
+            ),
+            string(abi.encodePacked(uint2str(deploymentParameters.leverageAmount), "L-", deploymentParameters.poolName))
         );
         ILeveragedPool.Initialization memory initialization = ILeveragedPool.Initialization(
             owner(), // governance is the owner of pools -- if this changes, `onlyGov` breaks
             _poolKeeper,
             deploymentParameters.oracleWrapper,
             deploymentParameters.settlementEthOracle,
-            shortToken,
             longToken,
+            shortToken,
             poolCommitter,
             deploymentParameters.poolName,
             deploymentParameters.frontRunningInterval,
@@ -174,6 +178,28 @@ contract PoolFactory is IPoolFactory, Ownable {
 
     function getOwner() external view override returns (address) {
         return owner();
+    }
+
+    function uint2str(uint256 _i) internal pure returns (string memory _uintAsString) {
+        if (_i == 0) {
+            return "0";
+        }
+        uint256 j = _i;
+        uint256 len;
+        while (j != 0) {
+            len++;
+            j /= 10;
+        }
+        bytes memory bstr = new bytes(len);
+        uint256 k = len;
+        while (_i != 0) {
+            k = k - 1;
+            uint8 temp = (48 + uint8(_i - (_i / 10) * 10));
+            bytes1 b1 = bytes1(temp);
+            bstr[k] = b1;
+            _i /= 10;
+        }
+        return string(bstr);
     }
 
     modifier onlyGov() {

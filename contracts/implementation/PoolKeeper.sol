@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.6;
+pragma solidity 0.8.7;
 
 import "../interfaces/IPoolKeeper.sol";
 import "../interfaces/IOracleWrapper.sol";
@@ -96,19 +96,19 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         // Start a new round
         int256 lastExecutionPrice = executionPrice[_pool];
         executionPrice[_pool] = ABDKMathQuad.toInt(ABDKMathQuad.mul(ABDKMathQuad.fromInt(latestPrice), fixedPoint));
+        int256 execPrice = executionPrice[_pool];
 
         uint256 savedPreviousUpdatedTimestamp = pool.lastPriceTimestamp();
         uint256 updateInterval = pool.updateInterval();
 
         // This allows us to still batch multiple calls to executePriceChange, even if some are invalid
         // Without reverting the entire transaction
-        try ILeveragedPool(pool).poolUpkeep(lastExecutionPrice, executionPrice[_pool]) {
+        try ILeveragedPool(pool).poolUpkeep(lastExecutionPrice, execPrice) {
             // If poolUpkeep is successful, refund the keeper for their gas costs
             uint256 gasSpent = startGas - gasleft();
+            uint256 _gasPrice = block.basefee;
 
-            // TODO: poll gas price oracle (or BASEFEE)
-            // _gasPrice = 10 gwei = 10000000000 wei
-            uint256 _gasPrice = 10 gwei;
+            emit UpkeepSuccessful(lastExecutionPrice, execPrice);
 
             payKeeper(_pool, _gasPrice, gasSpent, savedPreviousUpdatedTimestamp, updateInterval);
         } catch Error(string memory reason) {

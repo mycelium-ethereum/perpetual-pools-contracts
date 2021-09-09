@@ -73,6 +73,50 @@ describe("LeveragedPool - commit", () => {
                 await poolCommitter.commit(commitType, amountCommitted)
             ).wait()
         })
+        it("should allow burn commits that are just the right size", async () => {
+            const minimumCommitAmount = ethers.utils.parseEther("250")
+            const result = await deployPoolAndTokenContracts(
+                POOL_CODE,
+                frontRunningInterval,
+                updateInterval,
+                leverage,
+                minimumCommitAmount,
+                DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
+                feeAddress,
+                fee
+            )
+            poolCommitter = result.poolCommitter
+
+            await token.transfer(signers[1].address, amountCommitted.mul(5))
+
+            await token.approve(result.pool.address, amountCommitted.mul(5))
+            await token
+                .connect(signers[1])
+                .approve(result.pool.address, amountCommitted.mul(2))
+
+            await poolCommitter.commit(2, amountCommitted.mul(2))
+            await poolCommitter.connect(signers[1]).commit(2, amountCommitted)
+
+            await timeout(updateInterval * 1000 + 1000)
+            await result.poolKeeper.performUpkeepSinglePool(result.pool.address)
+
+            // validAmount is calculated from rearranging the below and solving for amount:
+            // longBalance / (longPoolTotalSupply + longBurnShadowPool) * amount > minimumCommitAmount
+            // Where longBurnShadowPool is the shadowPools[CommitType.LongBurn] before call + amount
+            // and longBalance = ~5990
+            // longPoolTokenSupply = amountCommitted * 3 = 6000
+            // minimumCommitAmount = 250
+            // Which gives you the inequality x > 250 * ((6000 + amount) / 5990.55)
+            const validAmount = ethers.utils.parseEther("260.87")
+
+            const epsilon = ethers.utils.parseEther("0.01")
+            const tx = result.poolCommitter.commit(
+                [3],
+                validAmount.sub(ethers.utils.parseEther("0.01"))
+            )
+            await expect(tx).to.be.revertedWith("Amount less than minimum")
+            await result.poolCommitter.commit([3], validAmount.add(epsilon))
+        })
         it("should disallow long burn commits that are too small", async () => {
             const result = await deployPoolAndTokenContracts(
                 POOL_CODE,

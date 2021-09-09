@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.6;
+pragma solidity 0.8.7;
 
 /// @title The pool controller contract interface
 interface ILeveragedPool {
@@ -32,11 +32,11 @@ interface ILeveragedPool {
     event PoolInitialized(address indexed longToken, address indexed shortToken, address quoteToken, string poolName);
 
     /**
-     * @notice Creates a notification when the pool's upkeep succeeds
-     * @param startPrice Price prior to price change execution
-     * @param endPrice Price during price change execution
+     * @notice Creates a notification when the pool is rebalanced
+     * @param shortBalanceChange The change of funds in the short side
+     * @param longBalanceChange The change of funds in the long side
      */
-    event CompletedUpkeep(int256 indexed startPrice, int256 indexed endPrice);
+    event PoolRebalance(int256 shortBalanceChange, int256 longBalanceChange);
 
     /**
      * @notice Creates a notification when the pool's price execution fails
@@ -115,6 +115,8 @@ interface ILeveragedPool {
     function getOraclePrice() external view returns (int256);
 
     function intervalPassed() external view returns (bool);
+
+    function balances() external view returns (uint256 _shortBalance, uint256 _longBalance);
 
     function setKeeper(address _keeper) external;
 
