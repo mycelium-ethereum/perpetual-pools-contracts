@@ -76,7 +76,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         fee = initialization._fee;
         leverageAmount = PoolSwapLibrary.convertUIntToDecimal(initialization._leverageAmount);
         feeAddress = initialization._feeAddress;
-        lastPriceTimestamp = uint40(block.timestamp);
+        lastPriceTimestamp = block.timestamp;
         poolName = initialization._poolName;
         tokens[0] = initialization._longToken;
         tokens[1] = initialization._shortToken;
@@ -99,7 +99,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         executePriceChange(_oldPrice, _newPrice);
         // execute pending commitments to enter and exit the pool
         IPoolCommitter(poolCommitter).executeAllCommitments();
-        lastPriceTimestamp = uint40(block.timestamp);
+        lastPriceTimestamp = block.timestamp;
     }
 
     /**

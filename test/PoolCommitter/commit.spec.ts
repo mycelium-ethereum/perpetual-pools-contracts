@@ -20,19 +20,17 @@ import {
     getEventArgs,
     deployPoolAndTokenContracts,
     generateRandomAddress,
-    getRandomInt,
     timeout,
 } from "../utilities"
 
 import { ContractReceipt } from "ethers"
-import { time } from "console"
-
 chai.use(chaiAsPromised)
 const { expect } = chai
 
 const amountCommitted = ethers.utils.parseEther("2000")
 const amountMinted = ethers.utils.parseEther("10000")
 const feeAddress = generateRandomAddress()
+// Update interval and frontrunning interval are in seconds
 const updateInterval = 2000
 const frontRunningInterval = 1000
 const fee = DEFAULT_FEE
