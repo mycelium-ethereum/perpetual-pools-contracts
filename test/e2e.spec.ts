@@ -8,14 +8,11 @@ import {
     PoolSwapLibrary,
     PoolCommitter,
     PoolKeeper,
-    ChainlinkOracleWrapper,
     TestChainlinkOracle,
 } from "../types"
 
 import {
     POOL_CODE,
-    NO_COMMITS_REMAINING,
-    SINGLE_POOL_UPKEEP_GAS_COST,
     DEFAULT_FEE,
     DEFAULT_MIN_COMMIT_SIZE,
     DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
@@ -28,7 +25,7 @@ import {
     CommitEventArgs,
     timeout,
 } from "./utilities"
-import { BigNumber, BytesLike } from "ethers"
+import { BigNumber } from "ethers"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 
 chai.use(chaiAsPromised)

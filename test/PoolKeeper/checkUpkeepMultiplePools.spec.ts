@@ -6,7 +6,6 @@ import { generateRandomAddress, incrementPrice } from "../utilities"
 import {
     DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
     DEFAULT_MIN_COMMIT_SIZE,
-    MARKET_2,
     POOL_CODE,
     POOL_CODE_2,
 } from "../constants"
