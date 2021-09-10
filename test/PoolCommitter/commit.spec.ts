@@ -101,11 +101,11 @@ describe("LeveragedPool - commit", () => {
             // validAmount is calculated from rearranging the below and solving for amount:
             // longBalance / (longPoolTotalSupply + longBurnShadowPool) * amount > minimumCommitAmount
             // Where longBurnShadowPool is the shadowPools[CommitType.LongBurn] before call + amount
-            // and longBalance = ~5990
+            // and longBalance = ~5990.2463
             // longPoolTokenSupply = amountCommitted * 3 = 6000
             // minimumCommitAmount = 250
             // Which gives you the inequality x > 250 * ((6000 + amount) / 5990.55)
-            const validAmount = ethers.utils.parseEther("260.87")
+            const validAmount = ethers.utils.parseEther("261.313")
 
             const epsilon = ethers.utils.parseEther("0.01")
             const tx = result.poolCommitter.commit(
