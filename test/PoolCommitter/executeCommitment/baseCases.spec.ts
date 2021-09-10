@@ -5,9 +5,7 @@ import {
     PoolSwapLibrary,
     LeveragedPool,
     TestToken,
-    ERC20,
     PoolCommitter,
-    PoolKeeper,
 } from "../../../types"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import {
@@ -25,13 +23,11 @@ import {
     CommitEventArgs,
     timeout,
 } from "../../utilities"
-import { BytesLike } from "ethers"
 
 chai.use(chaiAsPromised)
 const { expect } = chai
 
 const amountCommitted = ethers.utils.parseEther("2000")
-const amountMinted = ethers.utils.parseEther("10000")
 const feeAddress = generateRandomAddress()
 const lastPrice = getRandomInt(99999999, 1)
 const updateInterval = 2

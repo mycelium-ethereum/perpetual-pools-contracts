@@ -24,9 +24,7 @@ import {
     CommitEventArgs,
     timeout,
 } from "../utilities"
-import { BigNumber, BytesLike } from "ethers"
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-
+import { BigNumber } from "ethers"
 chai.use(chaiAsPromised)
 const { expect } = chai
 

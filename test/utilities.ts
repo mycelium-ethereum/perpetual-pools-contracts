@@ -7,13 +7,7 @@ import {
     Event,
 } from "ethers"
 import { BytesLike, Result } from "ethers/lib/utils"
-import {
-    DEFAULT_FEE,
-    DEFAULT_MINT_AMOUNT,
-    MARKET,
-    POOL_CODE,
-    POOL_CODE_2,
-} from "./constants"
+import { DEFAULT_FEE, DEFAULT_MINT_AMOUNT, MARKET } from "./constants"
 import {
     ERC20,
     LeveragedPool,
