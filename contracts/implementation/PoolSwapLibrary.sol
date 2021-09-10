@@ -7,6 +7,9 @@ import "abdk-libraries-solidity/ABDKMathQuad.sol";
 library PoolSwapLibrary {
     bytes16 public constant one = 0x3fff0000000000000000000000000000;
     bytes16 public constant zero = 0x00000000000000000000000000000000;
+
+    /* ABDKMathQuad defines this but it's private */
+    bytes16 private constant NEGATIVE_ZERO = 0x80000000000000000000000000000000;
     uint256 public constant MAX_DECIMALS = 18;
 
     struct PriceChangeData {
@@ -68,7 +71,7 @@ library PoolSwapLibrary {
      */
     function getAmountOut(bytes16 ratio, uint256 amountIn) public pure returns (uint256) {
         require(amountIn > 0, "Invalid amount");
-        if (ABDKMathQuad.cmp(ratio, 0) == 0 || ABDKMathQuad.cmp(ratio, bytes16("0x1")) == 0) {
+        if (ABDKMathQuad.cmp(ratio, 0) == 0 || ABDKMathQuad.cmp(ratio, NEGATIVE_ZERO) == 0) {
             return amountIn;
         }
         return ABDKMathQuad.toUInt(ABDKMathQuad.mul(ratio, ABDKMathQuad.fromUInt(amountIn)));
