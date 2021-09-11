@@ -147,10 +147,7 @@ library PoolSwapLibrary {
                 ABDKMathQuad.mul(
                     leverage,
                     ABDKMathQuad.log_2(
-                        ABDKMathQuad.add(
-                            ABDKMathQuad.mul(direction < 0 ? one : zero, ratio),
-                            ABDKMathQuad.div(ABDKMathQuad.mul(direction >= 0 ? one : zero, one), ratio)
-                        )
+                        direction < 0 ? ratio : ABDKMathQuad.div(one,ratio)
                     )
                 )
             );
