@@ -122,6 +122,8 @@ interface ILeveragedPool {
 
     function transferGovernance(address _governance) external;
 
+    function claimGovernance() external;
+
     function updateFeeAddress(address account) external;
 
     function mintTokens(
