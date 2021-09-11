@@ -227,7 +227,6 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         uint256 lastPriceTimestamp = pool.lastPriceTimestamp();
         uint128 nextEarliestCommitUnexecuted;
 
-        uint128 _localNoCommitsRemaining = NO_COMMITS_REMAINING;
         uint128 _latestCommitUnexecuted = latestCommitUnexecuted;
         for (
             nextEarliestCommitUnexecuted = earliestCommitUnexecuted;
@@ -252,9 +251,9 @@ contract PoolCommitter is IPoolCommitter, Ownable {
                 _uncommit(_commit, nextEarliestCommitUnexecuted);
                 emit FailedCommitExecution(nextEarliestCommitUnexecuted);
             }
-            if (nextEarliestCommitUnexecuted == latestCommitUnexecuted) {
+            if (nextEarliestCommitUnexecuted == _latestCommitUnexecuted) {
                 // We have reached the last one
-                earliestCommitUnexecuted = _localNoCommitsRemaining;
+                earliestCommitUnexecuted = NO_COMMITS_REMAINING;
                 return;
             }
         }
