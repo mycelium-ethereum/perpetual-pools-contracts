@@ -263,7 +263,7 @@ library PoolSwapLibrary {
      * @return Converted non-WAD value
      */
     function fromWad(uint256 _wadValue, uint256 _decimals) external pure returns (uint256) {
-        uint256 scaler = uint256(10**(MAX_DECIMALS - _decimals));
+        uint256 scaler = 10**(MAX_DECIMALS - _decimals);
         return _wadValue / scaler;
     }
 }
