@@ -40,6 +40,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     address public override settlementEthOracle;
 
     address public provisionalGovernance;
+    bool public governanceTransferInProgress;
     bool public paused;
 
     event Paused();
@@ -284,14 +285,19 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     }
 
     /**
-     * @notice Transfer governance of the pool
+     * @notice Starts to transfer governance of the pool. The new governance
+     *          address must call `claimGovernance` in order for this to take
+     *          effect. Until this occurs, the existing governance address
+     *          remains in control of the pool.
      * @param _governance New address of the governance of the pool
+     * @dev First step of the two-step governance transfer process
+     * @dev Sets the governance transfer flag to true
+     * @dev See `claimGovernance`
      */
     function transferGovernance(address _governance) external override onlyGov onlyUnpaused {
         require(_governance != address(0), "Governance address cannot be 0 address");
-        address oldGovAddress = governance;
-        governance = _governance;
-        emit GovernanceAddressChanged(oldGovAddress, governance);
+        provisionalGovernance = _governance;
+        governanceTransferInProgress = true;
     }
 
     /**
