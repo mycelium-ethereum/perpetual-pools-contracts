@@ -102,5 +102,44 @@ describe("LeveragedPool - setters", () => {
                 })
             }
         )
+
+        context(
+            "When governance transfer is not in progress and called by provisional governor",
+            async () => {
+                it("Reverts", async () => {
+                    /* attempt to claim governance */
+                    await expect(
+                        pool.connect(signers[1]).claimGovernance()
+                    ).to.be.revertedWith("No governance change active")
+                })
+            }
+        )
+
+        context(
+            "When governance transfer is not in progress and called by a non-provisional governor",
+            async () => {
+                it("Reverts", async () => {
+                    /* attempt to claim governance */
+                    await expect(
+                        pool.connect(signers[2]).claimGovernance()
+                    ).to.be.revertedWith("No governance change active")
+                })
+            }
+        )
+
+        context(
+            "When governance transfer is in progress and called by a non-provisional governor",
+            async () => {
+                it("Reverts", async () => {
+                    /* start governance transfer */
+                    await pool.transferGovernance(signers[1].address)
+
+                    /* attempt to claim governance */
+                    await expect(
+                        pool.connect(signers[2]).claimGovernance()
+                    ).to.be.revertedWith("Not provisional governor")
+                })
+            }
+        )
     })
 })
