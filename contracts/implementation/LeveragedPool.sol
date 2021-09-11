@@ -315,7 +315,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     /**
      * @return The price of the pool's feed oracle
      */
-    function getOraclePrice() public view override returns (int256) {
+    function getOraclePrice() external view override returns (int256) {
         return IOracleWrapper(oracleWrapper).getPrice();
     }
 
