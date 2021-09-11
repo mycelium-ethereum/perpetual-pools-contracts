@@ -60,6 +60,12 @@ interface ILeveragedPool {
     event KeeperAddressChanged(address indexed oldAddress, address indexed newAddress);
 
     /**
+     * @notice Represents proposed change in governance address
+     * @param newAddress Proposed address
+     */
+    event ProvisionalGovernanceChanged(address indexed newAddress);
+
+    /**
      * @notice Represents change in governance address
      * @param oldAddress Previous address
      * @param newAddress Address after change
