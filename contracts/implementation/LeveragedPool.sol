@@ -313,8 +313,10 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     function claimGovernance() external override onlyUnpaused {
         require(governanceTransferInProgress, "No governance change active");
         require(msg.sender == provisionalGovernance, "Not provisional governor");
+        address oldGovernance = governance; /* for later event emission */
         governance = provisionalGovernance;
         governanceTransferInProgress = false;
+        emit GovernanceAddressChanged(oldGovernance, governance);
     }
 
     /**
