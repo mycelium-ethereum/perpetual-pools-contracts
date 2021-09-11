@@ -16,7 +16,9 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 contract PoolFactory is IPoolFactory, Ownable {
     // #### Globals
     PoolToken public pairTokenBase;
+    address public immutable pairTokenBaseAddress;
     LeveragedPool public poolBase;
+    address public immutable poolBaseAddress;
     IPoolKeeper public poolKeeper;
     IPoolCommitterDeployer public poolCommitterDeployer;
 
@@ -42,7 +44,9 @@ contract PoolFactory is IPoolFactory, Ownable {
     constructor(address _feeReceiver) {
         // Deploy base contracts
         pairTokenBase = new PoolToken();
+        pairTokenBaseAddress = address(pairTokenBase);
         poolBase = new LeveragedPool();
+        poolBaseAddress = address(poolBase);
 
         ILeveragedPool.Initialization memory baseInitialization = ILeveragedPool.Initialization(
             address(this),
@@ -85,7 +89,7 @@ contract PoolFactory is IPoolFactory, Ownable {
             "PoolKeeper: leveraged amount invalid"
         );
         require(IERC20DecimalsWrapper(deploymentParameters.quoteToken).decimals() <= 18, "Token decimals > 18");
-        LeveragedPool pool = LeveragedPool(Clones.clone(address(poolBase)));
+        LeveragedPool pool = LeveragedPool(Clones.clone(poolBaseAddress));
         address _pool = address(pool);
         emit DeployPool(_pool, deploymentParameters.poolName);
 
@@ -143,7 +147,7 @@ contract PoolFactory is IPoolFactory, Ownable {
         string memory name,
         string memory symbol
     ) internal returns (address) {
-        PoolToken pairToken = PoolToken(Clones.clone(address(pairTokenBase)));
+        PoolToken pairToken = PoolToken(Clones.clone(pairTokenBaseAddress));
         pairToken.initialize(owner, name, symbol);
 
         return address(pairToken);
