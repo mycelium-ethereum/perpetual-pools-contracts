@@ -226,9 +226,12 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         uint256 frontRunningInterval = pool.frontRunningInterval();
         uint256 lastPriceTimestamp = pool.lastPriceTimestamp();
         uint128 nextEarliestCommitUnexecuted;
+
+        uint128 _localNoCommitsRemaining = NO_COMMITS_REMAINING;
+        uint128 _latestCommitUnexecuted = latestCommitUnexecuted;
         for (
             nextEarliestCommitUnexecuted = earliestCommitUnexecuted;
-            nextEarliestCommitUnexecuted <= latestCommitUnexecuted;
+            nextEarliestCommitUnexecuted <= _latestCommitUnexecuted;
             nextEarliestCommitUnexecuted++
         ) {
             IPoolCommitter.Commit memory _commit = commits[nextEarliestCommitUnexecuted];
@@ -251,7 +254,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             }
             if (nextEarliestCommitUnexecuted == latestCommitUnexecuted) {
                 // We have reached the last one
-                earliestCommitUnexecuted = NO_COMMITS_REMAINING;
+                earliestCommitUnexecuted = _localNoCommitsRemaining;
                 return;
             }
         }
