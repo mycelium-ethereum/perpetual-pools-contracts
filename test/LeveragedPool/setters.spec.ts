@@ -63,9 +63,9 @@ describe("LeveragedPool - setters", () => {
     })
 
     context("transferGovernance", async () => {
-        it("should set the governance address", async () => {
+        it("should set the provisional governance address", async () => {
             await pool.transferGovernance(signers[1].address)
-            expect(await pool.governance()).to.eq(signers[1].address)
+            expect(await pool.provisionalGovernance()).to.eq(signers[1].address)
         })
         it("should prevent unauthorized access", async () => {
             await pool.transferGovernance(signers[1].address)
