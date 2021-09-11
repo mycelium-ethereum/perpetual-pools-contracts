@@ -39,6 +39,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     address public override oracleWrapper;
     address public override settlementEthOracle;
 
+    address public provisionalGovernance;
     bool public paused;
 
     event Paused();
