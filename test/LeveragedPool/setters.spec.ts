@@ -88,6 +88,18 @@ describe("LeveragedPool - setters", () => {
 
                     expect(await pool.governance()).to.be.eq(signers[1].address)
                 })
+
+                it("Sets the governance transfer flag to false", async () => {
+                    /* start governance transfer */
+                    await pool.transferGovernance(signers[1].address)
+
+                    /* claim governance */
+                    await pool.connect(signers[1]).claimGovernance()
+
+                    expect(await pool.governanceTransferInProgress()).to.be.eq(
+                        false
+                    )
+                })
             }
         )
     })
