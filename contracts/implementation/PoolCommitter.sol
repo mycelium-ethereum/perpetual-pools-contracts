@@ -222,32 +222,34 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             return;
         }
         currentCommitQueueLength = 0;
-        uint128 nextEarliestCommitUnexecuted;
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
         uint256 frontRunningInterval = pool.frontRunningInterval();
         uint256 lastPriceTimestamp = pool.lastPriceTimestamp();
-        for (uint128 i = earliestCommitUnexecuted; i <= latestCommitUnexecuted; i++) {
-            IPoolCommitter.Commit memory _commit = commits[i];
-            nextEarliestCommitUnexecuted = i;
+        uint128 nextEarliestCommitUnexecuted;
+        for (
+            nextEarliestCommitUnexecuted = earliestCommitUnexecuted;
+            nextEarliestCommitUnexecuted <= latestCommitUnexecuted;
+            nextEarliestCommitUnexecuted++
+        ) {
+            IPoolCommitter.Commit memory _commit = commits[nextEarliestCommitUnexecuted];
             // These two checks are so a given call to executeCommitment won't revert,
             // allowing us to continue iterations, as well as update nextEarliestCommitUnexecuted.
             if (_commit.owner == address(0)) {
                 // Commit deleted (uncommitted) or already executed
-                nextEarliestCommitUnexecuted += 1; // It makes sense to set the next unexecuted to the next number
                 continue;
             }
             if (lastPriceTimestamp - _commit.created <= frontRunningInterval) {
                 // This commit is the first that was too late.
                 break;
             }
-            emit ExecuteCommit(i);
+            emit ExecuteCommit(nextEarliestCommitUnexecuted);
             try IPoolCommitter(address(this)).executeCommitment(_commit) {
-                delete commits[i];
+                delete commits[nextEarliestCommitUnexecuted];
             } catch {
-                _uncommit(_commit, i);
-                emit FailedCommitExecution(i);
+                _uncommit(_commit, nextEarliestCommitUnexecuted);
+                emit FailedCommitExecution(nextEarliestCommitUnexecuted);
             }
-            if (i == latestCommitUnexecuted) {
+            if (nextEarliestCommitUnexecuted == latestCommitUnexecuted) {
                 // We have reached the last one
                 earliestCommitUnexecuted = NO_COMMITS_REMAINING;
                 return;
