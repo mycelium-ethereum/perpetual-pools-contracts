@@ -301,6 +301,22 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     }
 
     /**
+     * @notice Completes transfer of governance by actually changing permissions
+     *          over the pool.
+     * @dev Second and final step of the two-step governance transfer process
+     * @dev See `transferGovernance`
+     * @dev Sets the governance transfer flag to false
+     * @dev After a successful call to this function, the actual governance
+     *      address and the provisional governance address MUST be equal.
+     */
+    function claimGovernance() external override onlyUnpaused {
+        require(governanceTransferInProgress, "No governance change active");
+        require(msg.sender == provisionalGovernance, "Not provisional governor");
+        governance = provisionalGovernance;
+        governanceTransferInProgress = false;
+    }
+
+    /**
      * @return The price of the pool's feed oracle
      */
     function getOraclePrice() public view override returns (int256) {
