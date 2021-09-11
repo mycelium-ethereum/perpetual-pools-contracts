@@ -74,4 +74,21 @@ describe("LeveragedPool - setters", () => {
             ).to.be.rejectedWith("msg.sender not governance")
         })
     })
+
+    describe("claimGovernance", async () => {
+        context(
+            "When governance transfer is in progress and called by provisional governor",
+            async () => {
+                it("Sets the actual governance address to the provisional governance address", async () => {
+                    /* start governance transfer */
+                    await pool.transferGovernance(signers[1].address)
+
+                    /* claim governance */
+                    await pool.connect(signers[1]).claimGovernance()
+
+                    expect(await pool.governance()).to.be.eq(signers[1].address)
+                })
+            }
+        )
+    })
 })
