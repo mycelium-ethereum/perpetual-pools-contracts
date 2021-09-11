@@ -125,7 +125,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         }
 
         (uint256 shortBalanceAfterRewards, uint256 longBalanceAfterRewards) = PoolSwapLibrary.getBalancesAfterFees(
-            uint256(amount),
+            amount,
             _shortBalance,
             _longBalance
         );
@@ -291,6 +291,25 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         address oldGovAddress = governance;
         governance = _governance;
         emit GovernanceAddressChanged(oldGovAddress, governance);
+    }
+
+    /**
+     * @return _latestPrice The oracle price
+     * @return _lastPriceTimestamp The timestamp of the last upkeep
+     * @return _updateInterval The update frequency for this pool
+     * @dev To save gas so PoolKeeper does not have to make three external calls
+     */
+    function getUpkeepInformation()
+        external
+        view
+        override
+        returns (
+            int256 _latestPrice,
+            uint256 _lastPriceTimestamp,
+            uint256 _updateInterval
+        )
+    {
+        return (IOracleWrapper(oracleWrapper).getPrice(), lastPriceTimestamp, updateInterval);
     }
 
     /**

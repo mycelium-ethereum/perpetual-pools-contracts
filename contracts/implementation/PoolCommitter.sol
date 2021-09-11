@@ -10,8 +10,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./PoolSwapLibrary.sol";
 import "../interfaces/IOracleWrapper.sol";
 
-import "hardhat/console.sol";
-
 /// @title The pool controller contract
 contract PoolCommitter is IPoolCommitter, Ownable {
     // #### Globals
@@ -330,8 +328,6 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         IERC20 _token = IERC20(_quoteToken);
         _token.approve(leveragedPool, _token.totalSupply());
         tokens = ILeveragedPool(leveragedPool).poolTokens();
-        console.log("tokens[0] in setQuoteAndPool");
-        console.log(tokens[0]);
     }
 
     function setMinimumCommitSize(uint128 _minimumCommitSize) external override onlyGov {

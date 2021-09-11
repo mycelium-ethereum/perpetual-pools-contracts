@@ -94,14 +94,13 @@ contract PoolKeeper is IPoolKeeper, Ownable {
             return;
         }
         ILeveragedPool pool = ILeveragedPool(_pool);
-        int256 latestPrice = IOracleWrapper(pool.oracleWrapper()).getPrice();
+        (int256 latestPrice, uint256 savedPreviousUpdatedTimestamp, uint256 updateInterval) = pool
+            .getUpkeepInformation();
+
         // Start a new round
         int256 lastExecutionPrice = executionPrice[_pool];
         executionPrice[_pool] = ABDKMathQuad.toInt(ABDKMathQuad.mul(ABDKMathQuad.fromInt(latestPrice), fixedPoint));
         int256 execPrice = executionPrice[_pool];
-
-        uint256 savedPreviousUpdatedTimestamp = pool.lastPriceTimestamp();
-        uint256 updateInterval = pool.updateInterval();
 
         // This allows us to still batch multiple calls to executePriceChange, even if some are invalid
         // Without reverting the entire transaction
