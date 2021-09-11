@@ -72,7 +72,7 @@ describe("LeveragedPool - commit", () => {
                 await poolCommitter.commit(commitType, amountCommitted)
             ).wait()
         })
-        it("should allow burn commits that are just the right size", async () => {
+        it.only("should allow burn commits that are just the right size", async () => {
             const minimumCommitAmount = ethers.utils.parseEther("250")
             const result = await deployPoolAndTokenContracts(
                 POOL_CODE,
@@ -108,10 +108,10 @@ describe("LeveragedPool - commit", () => {
             // Which gives you the inequality x > 250 * ((6000 + amount) / 5990.55)
             const validAmount = ethers.utils.parseEther("261.299")
 
-            const epsilon = ethers.utils.parseEther("0.015")
+            const epsilon = ethers.utils.parseEther("0.1")
             const tx = result.poolCommitter.commit(
                 [3],
-                validAmount.sub(ethers.utils.parseEther("0.015"))
+                validAmount.sub(epsilon)
             )
             await expect(tx).to.be.revertedWith("Amount less than minimum")
             await result.poolCommitter.commit([3], validAmount.add(epsilon))
