@@ -298,6 +298,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         require(_governance != address(0), "Governance address cannot be 0 address");
         provisionalGovernance = _governance;
         governanceTransferInProgress = true;
+        emit ProvisionalGovernanceChanged(provisionalGovernance);
     }
 
     /**
