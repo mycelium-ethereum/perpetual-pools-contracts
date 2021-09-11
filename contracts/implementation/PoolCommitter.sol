@@ -317,7 +317,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
     /**
      * @return A Commit of a given ID
      */
-    function getCommit(uint128 _commitID) public view override returns (Commit memory) {
+    function getCommit(uint128 _commitID) external view override returns (Commit memory) {
         return commits[_commitID];
     }
 

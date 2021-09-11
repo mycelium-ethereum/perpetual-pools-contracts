@@ -72,7 +72,7 @@ describe("LeveragedPool - commit", () => {
                 await poolCommitter.commit(commitType, amountCommitted)
             ).wait()
         })
-        it.only("should allow burn commits that are just the right size", async () => {
+        it("should allow burn commits that are just the right size", async () => {
             const minimumCommitAmount = ethers.utils.parseEther("250")
             const result = await deployPoolAndTokenContracts(
                 POOL_CODE,

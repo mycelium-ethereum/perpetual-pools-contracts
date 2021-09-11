@@ -50,7 +50,7 @@ library PoolSwapLibrary {
         uint256 reward,
         uint256 shortBalance,
         uint256 longBalance
-    ) public pure returns (uint256, uint256) {
+    ) external pure returns (uint256, uint256) {
         bytes16 ratioShort = getRatio(shortBalance, shortBalance + longBalance);
 
         uint256 shortFees = convertDecimalToUInt(multiplyDecimalByUInt(ratioShort, reward));
@@ -166,7 +166,7 @@ library PoolSwapLibrary {
      * @param priceChange The struct containing necessary data to calculate price change
      */
     function calculatePriceChange(PriceChangeData memory priceChange)
-        public
+        external
         pure
         returns (
             uint256,
