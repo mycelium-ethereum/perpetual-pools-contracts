@@ -216,16 +216,21 @@ library PoolSwapLibrary {
     }
 
     /**
-     * @notice Returns true if the function is being called BEFORE the frontRunningInterval starts,
+     * @notice Returns true if the given timestamp is BEFORE the frontRunningInterval starts,
      *         which is allowed for uncommitment.
      * @dev If you try to uncommit AFTER the frontRunningInterval, it should revert.
+     * @param subjectTime The timestamp for which you want to calculate if it was beforeFrontRunningInterval
+     * @param lastPriceTimestamp The timestamp of the last price update
+     * @param updateInterval The interval between price updates
+     * @param frontRunningInterval The window of time before a price udpate users can not uncommit or have their commit executed from
      */
     function isBeforeFrontRunningInterval(
+        uint256 subjectTime,
         uint256 lastPriceTimestamp,
         uint256 updateInterval,
         uint256 frontRunningInterval
-    ) external view returns (bool) {
-        return lastPriceTimestamp + updateInterval - frontRunningInterval > block.timestamp;
+    ) external pure returns (bool) {
+        return lastPriceTimestamp + updateInterval - frontRunningInterval > subjectTime;
     }
 
     /**

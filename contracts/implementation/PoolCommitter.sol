@@ -27,6 +27,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
     uint128 public minimumCommitSize; // The minimum amount (in settlement tokens) that a user can commit in a single commitment
     uint128 public maximumCommitQueueLength; // The maximum number of commitments that can be made for a given updateInterval
     uint128 public currentCommitQueueLength;
+    uint256 public lastQueueLengthReset; // The time the queue length was last reset
     mapping(uint128 => Commit) public commits;
     mapping(uint256 => uint256) public shadowPools;
 
@@ -48,6 +49,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         minimumCommitSize = _minimumCommitSize;
         maximumCommitQueueLength = _maximumCommitQueueLength;
         governance = IPoolFactory(factory).getOwner();
+        lastQueueLengthReset = block.timestamp;
     }
 
     /**
@@ -58,11 +60,40 @@ contract PoolCommitter is IPoolCommitter, Ownable {
      */
     function commit(CommitType commitType, uint256 amount) external override {
         require(currentCommitQueueLength < maximumCommitQueueLength, "Too many commits in interval");
-        currentCommitQueueLength += 1;
         require(amount > 0, "Amount must not be zero");
+        ILeveragedPool pool = ILeveragedPool(leveragedPool);
+        uint256 updateInterval = pool.updateInterval();
+        uint256 lastPriceTimestamp = pool.lastPriceTimestamp();
+        uint256 frontRunningInterval = pool.frontRunningInterval();
+
+        if (
+            PoolSwapLibrary.isBeforeFrontRunningInterval(
+                lastQueueLengthReset,
+                lastPriceTimestamp,
+                updateInterval,
+                frontRunningInterval
+            ) &&
+            !PoolSwapLibrary.isBeforeFrontRunningInterval(
+                block.timestamp,
+                lastPriceTimestamp,
+                updateInterval,
+                frontRunningInterval
+            )
+        ) {
+            /**
+             * The lastQueueLengthReset occured before the frontRunningInterval,
+             * and we are within the frontRunningInterval,
+             * so this is the first commit since frontRunningInterval has passed.
+             * Note: If and only if there are no `commit` calls within the frontRunningInterval, then
+             * `executeAllCommitments` will reset `currentCommitQueueLength` and update
+             * `lastQueueLengthReset`.
+             */
+            delete currentCommitQueueLength;
+            lastQueueLengthReset = block.timestamp;
+        }
+        currentCommitQueueLength += 1;
         uint128 currentCommitIDCounter = commitIDCounter;
         commitIDCounter = currentCommitIDCounter + 1;
-        ILeveragedPool pool = ILeveragedPool(leveragedPool);
 
         // create commitment
         commits[currentCommitIDCounter] = Commit({
@@ -122,7 +153,12 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         uint256 frontRunningInterval = pool.frontRunningInterval();
         uint256 updateInterval = pool.updateInterval();
         require(
-            PoolSwapLibrary.isBeforeFrontRunningInterval(lastPriceTimestamp, updateInterval, frontRunningInterval),
+            PoolSwapLibrary.isBeforeFrontRunningInterval(
+                block.timestamp,
+                lastPriceTimestamp,
+                updateInterval,
+                frontRunningInterval
+            ),
             "Must uncommit before frontRunningInterval"
         );
         require(msg.sender == _commit.owner, "Unauthorized");
@@ -221,10 +257,26 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         if (earliestCommitUnexecuted == NO_COMMITS_REMAINING) {
             return;
         }
-        currentCommitQueueLength = 0;
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
         uint256 frontRunningInterval = pool.frontRunningInterval();
+        uint256 updateInterval = pool.updateInterval();
         uint256 lastPriceTimestamp = pool.lastPriceTimestamp();
+
+        /**
+         * If the queue length was reset before the frontRunningInterval that just passed, it means
+         * there were no commitments during that frontRunningInterval, meaning we can reset queue length.
+         */
+        if (
+            PoolSwapLibrary.isBeforeFrontRunningInterval(
+                lastQueueLengthReset,
+                lastPriceTimestamp,
+                updateInterval,
+                frontRunningInterval
+            )
+        ) {
+            delete currentCommitQueueLength;
+            lastQueueLengthReset = block.timestamp;
+        }
         uint128 nextEarliestCommitUnexecuted;
 
         uint128 _latestCommitUnexecuted = latestCommitUnexecuted;
@@ -240,7 +292,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
                 // Commit deleted (uncommitted) or already executed
                 continue;
             }
-            if (lastPriceTimestamp - _commit.created <= frontRunningInterval) {
+            if (block.timestamp - _commit.created <= frontRunningInterval) {
                 // This commit is the first that was too late.
                 break;
             }

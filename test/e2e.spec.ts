@@ -35,8 +35,8 @@ const amountCommitted = ethers.utils.parseEther("2000")
 const amountMinted = ethers.utils.parseEther("10000")
 const feeAddress = generateRandomAddress()
 const lastPrice = ethers.utils.parseEther(getRandomInt(99999999, 1).toString())
-const updateInterval = 20
-const frontRunningInterval = 10 // seconds
+const updateInterval = 200
+const frontRunningInterval = 20 // seconds
 const fee = DEFAULT_FEE
 const leverage = 1
 

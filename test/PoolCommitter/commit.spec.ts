@@ -24,15 +24,15 @@ import {
 } from "../utilities"
 
 import { ContractReceipt } from "ethers"
-
 chai.use(chaiAsPromised)
 const { expect } = chai
 
 const amountCommitted = ethers.utils.parseEther("2000")
 const amountMinted = ethers.utils.parseEther("10000")
 const feeAddress = generateRandomAddress()
-const updateInterval = 2
-const frontRunningInterval = 1
+// Update interval and frontrunning interval are in seconds
+const updateInterval = 2000
+const frontRunningInterval = 1000
 const fee = DEFAULT_FEE
 const leverage = 1
 const commitType = [0] // Short mint
@@ -47,7 +47,7 @@ describe("LeveragedPool - commit", () => {
     let poolCommitter: PoolCommitter
     let poolKeeper: PoolKeeper
 
-    describe("Create commit", () => {
+    context("Create commit", () => {
         let receipt: ContractReceipt
         beforeEach(async () => {
             const result = await deployPoolAndTokenContracts(
@@ -101,11 +101,11 @@ describe("LeveragedPool - commit", () => {
             // validAmount is calculated from rearranging the below and solving for amount:
             // longBalance / (longPoolTotalSupply + longBurnShadowPool) * amount > minimumCommitAmount
             // Where longBurnShadowPool is the shadowPools[CommitType.LongBurn] before call + amount
-            // and longBalance = ~5990
+            // and longBalance = ~5990.2463
             // longPoolTokenSupply = amountCommitted * 3 = 6000
             // minimumCommitAmount = 250
             // Which gives you the inequality x > 250 * ((6000 + amount) / 5990.55)
-            const validAmount = ethers.utils.parseEther("261.299")
+            const validAmount = ethers.utils.parseEther("261.313")
 
             const epsilon = ethers.utils.parseEther("0.1")
             const tx = result.poolCommitter.commit(
@@ -323,7 +323,7 @@ describe("LeveragedPool - commit", () => {
         })
     })
 
-    describe("Shadow balances", () => {
+    context("Shadow balances", () => {
         beforeEach(async () => {
             const result = await deployPoolAndTokenContracts(
                 POOL_CODE,
@@ -352,7 +352,7 @@ describe("LeveragedPool - commit", () => {
             const receipt = await (
                 await poolCommitter.commit([0], amountCommitted)
             ).wait()
-            await timeout(2000)
+            await timeout(updateInterval * 1000)
             await pool.setKeeper(signers[0].address)
             await pool.poolUpkeep(1, 2)
 
@@ -374,7 +374,7 @@ describe("LeveragedPool - commit", () => {
             const receipt = await (
                 await poolCommitter.commit([2], amountCommitted)
             ).wait()
-            await timeout(2000)
+            await timeout(updateInterval * 1000)
             await pool.setKeeper(signers[0].address)
             await pool.poolUpkeep(1, 2)
 
@@ -388,7 +388,7 @@ describe("LeveragedPool - commit", () => {
 
     // todo: Figure out where we want quote tokens to sit. Adjust these tests accordingly
     // currently it expects quote tokens to get transferred to the commiter, not the pool
-    describe("Token Transfers", () => {
+    context("Token Transfers", () => {
         beforeEach(async () => {
             const result = await deployPoolAndTokenContracts(
                 POOL_CODE,
@@ -414,7 +414,7 @@ describe("LeveragedPool - commit", () => {
             const receipt = await (
                 await poolCommitter.commit([0], amountCommitted)
             ).wait()
-            await timeout(2000)
+            await timeout(updateInterval * 1000)
             await pool.setKeeper(signers[0].address)
             await pool.poolUpkeep(1, 2)
 
@@ -431,7 +431,7 @@ describe("LeveragedPool - commit", () => {
             const receipt = await (
                 await poolCommitter.commit([2], amountCommitted)
             ).wait()
-            await timeout(2000)
+            await timeout(updateInterval * 1000)
             await pool.setKeeper(signers[0].address)
             await pool.poolUpkeep(1, 2)
             expect((await token.balanceOf(pool.address)).toHexString()).to.eq(
@@ -447,7 +447,7 @@ describe("LeveragedPool - commit", () => {
             const receipt = await (
                 await poolCommitter.commit([0], amountCommitted)
             ).wait()
-            await timeout(2000)
+            await timeout(updateInterval * 1000)
             await pool.setKeeper(signers[0].address)
             await pool.poolUpkeep(1, 2)
 
@@ -462,7 +462,7 @@ describe("LeveragedPool - commit", () => {
             const receipt = await (
                 await poolCommitter.commit([2], amountCommitted)
             ).wait()
-            await timeout(2000)
+            await timeout(updateInterval * 1000)
             await pool.setKeeper(signers[0].address)
             await pool.poolUpkeep(1, 2)
 
@@ -482,6 +482,81 @@ describe("LeveragedPool - commit", () => {
             expect(await token.balanceOf(pool.address)).to.eq(0)
             await poolCommitter.commit([0], amountCommitted)
             expect(await token.balanceOf(pool.address)).to.eq(amountCommitted)
+        })
+    })
+
+    context("Commitments during frontRunningInterval", () => {
+        let longFrontRunningInterval: number
+        let longUpdateInterval: number
+        beforeEach(async () => {
+            longFrontRunningInterval = 1000
+            longUpdateInterval = 1500
+            const result = await deployPoolAndTokenContracts(
+                POOL_CODE,
+                longFrontRunningInterval,
+                longUpdateInterval,
+                leverage,
+                DEFAULT_MIN_COMMIT_SIZE,
+                DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
+                feeAddress,
+                fee
+            )
+            signers = result.signers
+            pool = result.pool
+            token = result.token
+            library = result.library
+            shortToken = result.shortToken
+            longToken = result.longToken
+            poolCommitter = result.poolCommitter
+            poolKeeper = result.poolKeeper
+
+            await token.approve(pool.address, amountCommitted.mul(10))
+        })
+        it("Should reset commitQueueLength if committed during frontRunningInterval", async () => {
+            const shortMint = 0
+            await poolCommitter.commit(0, amountCommitted)
+            await poolCommitter.commit(0, amountCommitted)
+            await poolCommitter.commit(0, amountCommitted)
+
+            // Three commits, so currentCommitQueueLength == 3
+            expect(await poolCommitter.currentCommitQueueLength()).to.equal(3)
+            await timeout((longFrontRunningInterval + 20) * 1000)
+
+            // A new commit within the frontRunningInterval, so currentCommitQueueLength == 1
+            await poolCommitter.commit(0, amountCommitted)
+            expect(await poolCommitter.currentCommitQueueLength()).to.equal(1)
+            await poolCommitter.commit(0, amountCommitted)
+            // A second commit, so currentCommitQueueLength == 2
+            expect(await poolCommitter.currentCommitQueueLength()).to.equal(2)
+        })
+
+        it("Should reset commitQueueLength and not reset after executing", async () => {
+            const shortMint = 0
+            await poolCommitter.commit(0, amountCommitted)
+            await poolCommitter.commit(0, amountCommitted)
+            await poolCommitter.commit(0, amountCommitted)
+
+            // Three commits, so currentCommitQueueLength == 3
+            expect(await poolCommitter.currentCommitQueueLength()).to.equal(3)
+            await timeout((longFrontRunningInterval + 20) * 1000)
+
+            await poolCommitter.commit(0, amountCommitted)
+            // A new commit within the frontRunningInterval, so currentCommitQueueLength == 1
+            expect(await poolCommitter.currentCommitQueueLength()).to.equal(1)
+
+            // currentCommitQueueLength now equals 2
+            await poolCommitter.commit(0, amountCommitted)
+            expect(await poolCommitter.currentCommitQueueLength()).to.equal(2)
+
+            await timeout(longUpdateInterval * 1000)
+
+            // Perform upkeep, and currentCommitQueueLength should remain as 2
+            await poolKeeper.performUpkeepSinglePool(pool.address)
+            expect(await poolCommitter.currentCommitQueueLength()).to.equal(2)
+
+            // currentCommitQueueLength now equals 3
+            await poolCommitter.commit(0, amountCommitted)
+            expect(await poolCommitter.currentCommitQueueLength()).to.equal(3)
         })
     })
 })
