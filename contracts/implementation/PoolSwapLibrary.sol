@@ -224,7 +224,7 @@ library PoolSwapLibrary {
     }
 
     /**
-     * @notice Returns true if the function is being called BEFORE the frontRunningInterval starts,
+     * @notice Returns true if the given timestamp is BEFORE the frontRunningInterval starts,
      *         which is allowed for uncommitment.
      * @dev If you try to uncommit AFTER the frontRunningInterval, it should revert.
      * @param subjectTime The timestamp for which you want to calculate if it was beforeFrontRunningInterval
