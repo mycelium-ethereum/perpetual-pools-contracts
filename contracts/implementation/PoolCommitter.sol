@@ -10,6 +10,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./PoolSwapLibrary.sol";
 import "../interfaces/IOracleWrapper.sol";
 
+import "hardhat/console.sol";
+
 /// @title The pool controller contract
 contract PoolCommitter is IPoolCommitter, Ownable {
     // #### Globals
@@ -123,9 +125,18 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             // long burning: pull in long pool tokens from commiter
 
             // A theoretical amount based on current ratio. Used to get same units as minimumCommitSize
+            /*
             uint256 amountOut = PoolSwapLibrary.getAmountOut(
                 PoolSwapLibrary.getRatio(longBalance, IERC20(tokens[0]).totalSupply() + shadowPools[_commitType]),
                 amount
+            );
+            */
+
+            uint256 amountOut = PoolSwapLibrary.getBurnAmount(
+                IERC20(tokens[0]).totalSupply(),
+                amount,
+                longBalance,
+                shadowPools[_commitType]
             );
             require(amountOut >= minimumCommitSize, "Amount less than minimum");
             pool.burnTokens(0, amount, msg.sender);
@@ -133,9 +144,18 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             // short burning: pull in short pool tokens from commiter
 
             // A theoretical amount based on current ratio. Used to get same units as minimumCommitSize
+            /*
             uint256 amountOut = PoolSwapLibrary.getAmountOut(
                 PoolSwapLibrary.getRatio(shortBalance, IERC20(tokens[1]).totalSupply() + shadowPools[_commitType]),
                 amount
+            );
+            */
+
+            uint256 amountOut = PoolSwapLibrary.getBurnAmount(
+                IERC20(tokens[1]).totalSupply(),
+                amount,
+                shortBalance,
+                shadowPools[_commitType]
             );
             require(amountOut >= minimumCommitSize, "Amount less than minimum");
             pool.burnTokens(1, amount, msg.sender);
