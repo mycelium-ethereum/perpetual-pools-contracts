@@ -17,10 +17,8 @@ import {
     POOL_CODE,
 } from "../constants"
 import {
-    getEventArgs,
     deployPoolAndTokenContracts,
     generateRandomAddress,
-    timeout,
 } from "../utilities"
 
 import { ContractReceipt } from "ethers"
@@ -29,7 +27,6 @@ chai.use(chaiAsPromised)
 const { expect } = chai
 
 const amountCommitted = ethers.utils.parseEther("2000")
-const amountMinted = ethers.utils.parseEther("10000")
 const feeAddress = generateRandomAddress()
 const updateInterval = 2
 const frontRunningInterval = 1

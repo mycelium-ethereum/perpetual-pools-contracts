@@ -45,8 +45,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @param _poolAddress The address of the newly-created pools
      */
     function newPool(address _poolAddress) external override onlyFactory {
-        address oracleWrapper = ILeveragedPool(_poolAddress).oracleWrapper();
-        int256 firstPrice = IOracleWrapper(oracleWrapper).getPrice();
+        int256 firstPrice = ILeveragedPool(_poolAddress).getOraclePrice();
         int256 startingPrice = ABDKMathQuad.toInt(ABDKMathQuad.mul(ABDKMathQuad.fromInt(firstPrice), fixedPoint));
         emit PoolAdded(_poolAddress, firstPrice);
         executionPrice[_poolAddress] = startingPrice;
@@ -94,14 +93,13 @@ contract PoolKeeper is IPoolKeeper, Ownable {
             return;
         }
         ILeveragedPool pool = ILeveragedPool(_pool);
-        int256 latestPrice = IOracleWrapper(pool.oracleWrapper()).getPrice();
+        (int256 latestPrice, uint256 savedPreviousUpdatedTimestamp, uint256 updateInterval) = pool
+            .getUpkeepInformation();
+
         // Start a new round
         int256 lastExecutionPrice = executionPrice[_pool];
         executionPrice[_pool] = ABDKMathQuad.toInt(ABDKMathQuad.mul(ABDKMathQuad.fromInt(latestPrice), fixedPoint));
         int256 execPrice = executionPrice[_pool];
-
-        uint256 savedPreviousUpdatedTimestamp = pool.lastPriceTimestamp();
-        uint256 updateInterval = pool.updateInterval();
 
         // This allows us to still batch multiple calls to executePriceChange, even if some are invalid
         // Without reverting the entire transaction

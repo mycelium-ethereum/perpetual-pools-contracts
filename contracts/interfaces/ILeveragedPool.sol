@@ -60,6 +60,12 @@ interface ILeveragedPool {
     event KeeperAddressChanged(address indexed oldAddress, address indexed newAddress);
 
     /**
+     * @notice Represents proposed change in governance address
+     * @param newAddress Proposed address
+     */
+    event ProvisionalGovernanceChanged(address indexed newAddress);
+
+    /**
      * @notice Represents change in governance address
      * @param oldAddress Previous address
      * @param newAddress Address after change
@@ -112,6 +118,21 @@ interface ILeveragedPool {
 
     function setNewPoolBalances(uint256 _longBalance, uint256 _shortBalance) external;
 
+    /**
+     * @return _latestPrice The oracle price
+     * @return _lastPriceTimestamp The timestamp of the last upkeep
+     * @return _updateInterval The update frequency for this pool
+     * @dev To save gas so PoolKeeper does not have to make three external calls
+     */
+    function getUpkeepInformation()
+        external
+        view
+        returns (
+            int256 _latestPrice,
+            uint256 _lastPriceTimestamp,
+            uint256 _updateInterval
+        );
+
     function getOraclePrice() external view returns (int256);
 
     function intervalPassed() external view returns (bool);
@@ -121,6 +142,8 @@ interface ILeveragedPool {
     function setKeeper(address _keeper) external;
 
     function transferGovernance(address _governance) external;
+
+    function claimGovernance() external;
 
     function updateFeeAddress(address account) external;
 

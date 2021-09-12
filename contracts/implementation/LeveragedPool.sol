@@ -39,6 +39,8 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     address public override oracleWrapper;
     address public override settlementEthOracle;
 
+    address public provisionalGovernance;
+    bool public governanceTransferInProgress;
     bool public paused;
 
     event Paused();
@@ -125,7 +127,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         }
 
         (uint256 shortBalanceAfterRewards, uint256 longBalanceAfterRewards) = PoolSwapLibrary.getBalancesAfterFees(
-            uint256(amount),
+            amount,
             _shortBalance,
             _longBalance
         );
@@ -283,20 +285,63 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     }
 
     /**
-     * @notice Transfer governance of the pool
+     * @notice Starts to transfer governance of the pool. The new governance
+     *          address must call `claimGovernance` in order for this to take
+     *          effect. Until this occurs, the existing governance address
+     *          remains in control of the pool.
      * @param _governance New address of the governance of the pool
+     * @dev First step of the two-step governance transfer process
+     * @dev Sets the governance transfer flag to true
+     * @dev See `claimGovernance`
      */
     function transferGovernance(address _governance) external override onlyGov onlyUnpaused {
         require(_governance != address(0), "Governance address cannot be 0 address");
-        address oldGovAddress = governance;
-        governance = _governance;
-        emit GovernanceAddressChanged(oldGovAddress, governance);
+        provisionalGovernance = _governance;
+        governanceTransferInProgress = true;
+        emit ProvisionalGovernanceChanged(provisionalGovernance);
+    }
+
+    /**
+     * @notice Completes transfer of governance by actually changing permissions
+     *          over the pool.
+     * @dev Second and final step of the two-step governance transfer process
+     * @dev See `transferGovernance`
+     * @dev Sets the governance transfer flag to false
+     * @dev After a successful call to this function, the actual governance
+     *      address and the provisional governance address MUST be equal.
+     */
+    function claimGovernance() external override onlyUnpaused {
+        require(governanceTransferInProgress, "No governance change active");
+        require(msg.sender == provisionalGovernance, "Not provisional governor");
+        address oldGovernance = governance; /* for later event emission */
+        governance = provisionalGovernance;
+        governanceTransferInProgress = false;
+        emit GovernanceAddressChanged(oldGovernance, governance);
+    }
+
+    /**
+     * @return _latestPrice The oracle price
+     * @return _lastPriceTimestamp The timestamp of the last upkeep
+     * @return _updateInterval The update frequency for this pool
+     * @dev To save gas so PoolKeeper does not have to make three external calls
+     */
+    function getUpkeepInformation()
+        external
+        view
+        override
+        returns (
+            int256 _latestPrice,
+            uint256 _lastPriceTimestamp,
+            uint256 _updateInterval
+        )
+    {
+        return (IOracleWrapper(oracleWrapper).getPrice(), lastPriceTimestamp, updateInterval);
     }
 
     /**
      * @return The price of the pool's feed oracle
      */
-    function getOraclePrice() public view override returns (int256) {
+    function getOraclePrice() external view override returns (int256) {
         return IOracleWrapper(oracleWrapper).getPrice();
     }
 

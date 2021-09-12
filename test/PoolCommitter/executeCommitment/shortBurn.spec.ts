@@ -24,7 +24,6 @@ import {
     CommitEventArgs,
     timeout,
 } from "../../utilities"
-import { BytesLike } from "ethers"
 
 chai.use(chaiAsPromised)
 const { expect } = chai

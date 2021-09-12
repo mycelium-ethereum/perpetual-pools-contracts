@@ -20,7 +20,6 @@ import {
     generateRandomAddress,
     getEventArgs,
 } from "../utilities"
-import { Result } from "ethers/lib/utils"
 import { Signer } from "ethers"
 import LeveragedPoolInterface from "../../artifacts/contracts/implementation/LeveragedPool.sol/LeveragedPool.json"
 
