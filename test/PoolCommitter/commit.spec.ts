@@ -20,7 +20,6 @@ import {
     getEventArgs,
     deployPoolAndTokenContracts,
     generateRandomAddress,
-    getRandomInt,
     timeout,
 } from "../utilities"
 

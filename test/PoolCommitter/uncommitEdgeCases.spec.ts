@@ -31,7 +31,6 @@ const { expect } = chai
 const amountCommitted = "1000"
 const amountMinted = ethers.utils.parseEther("10000")
 const feeAddress = generateRandomAddress()
-const lastPrice = getRandomInt(99999999, 1)
 const updateInterval = 3600
 const frontRunningInterval = 1 // seconds
 const fee = DEFAULT_FEE
