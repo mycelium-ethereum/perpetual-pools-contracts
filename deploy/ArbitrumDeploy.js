@@ -115,7 +115,7 @@ module.exports = async (hre) => {
     const updateInterval = 320 // 5 minute
     const frontRunningInterval = 60 // seconds
     const leverage = 1
-    const minimumCommitSize = 500
+    const minimumCommitSize = ethers.utils.parseEther("50")
     const maximumCommitQueueLength = 300
 
     /* deploy LeveragePool */
