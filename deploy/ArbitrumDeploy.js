@@ -115,6 +115,8 @@ module.exports = async (hre) => {
     const updateInterval = 320 // 5 minute
     const frontRunningInterval = 60 // seconds
     const leverage = 1
+    const minimumCommitSize = 500
+    const maximumCommitQueueLength = 300
 
     /* deploy LeveragePool */
     const deploymentData = {
@@ -125,6 +127,8 @@ module.exports = async (hre) => {
         quoteToken: token.address,
         oracleWrapper: oracleWrapper.address,
         settlementEthOracle: keeperOracle.address,
+        minimumCommitSize: minimumCommitSize,
+        maximumCommitQueueLength: maximumCommitQueueLength,
     }
 
     const receipt = await execute(
@@ -137,13 +141,12 @@ module.exports = async (hre) => {
         deploymentData
     )
 
-    const event = receipt?.events?.find((el) => el.event === "DeployPool")
+    const event = receipt.events.find((el) => el.event === "DeployPool")
 
     console.log(`Deployed PoolFactory: ${factory.address}`)
     console.log(`Deployed LeveragedPool: ${event.args.pool}`)
     console.log(`Deploy PoolKeeper: ${poolKeeper.address}`)
     console.log(`Deployed TestToken: ${token.address}`)
-    console.log(`Deployed TestOracle: ${chainlinkOracle.address}`)
     console.log(`Deployed OracleWrapper: ${oracleWrapper.address}`)
 }
 
