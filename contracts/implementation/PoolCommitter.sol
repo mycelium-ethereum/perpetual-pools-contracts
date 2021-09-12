@@ -82,11 +82,11 @@ contract PoolCommitter is IPoolCommitter, Ownable {
 
         // pull in tokens
         if (commitType == CommitType.LongMint || commitType == CommitType.ShortMint) {
-            // minting: pull in the quote token from the commiter
+            // minting: pull in the quote token from the committer
             require(amount >= minimumCommitSize, "Amount less than minimum");
             pool.quoteTokenTransferFrom(msg.sender, leveragedPool, amount);
         } else if (commitType == CommitType.LongBurn) {
-            // long burning: pull in long pool tokens from commiter
+            // long burning: pull in long pool tokens from committer
 
             // A theoretical amount based on current ratio. Used to get same units as minimumCommitSize
             uint256 amountOut = PoolSwapLibrary.getAmountOut(
@@ -99,7 +99,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             require(amountOut >= minimumCommitSize, "Amount less than minimum");
             pool.burnTokens(0, amount, msg.sender);
         } else if (commitType == CommitType.ShortBurn) {
-            // short burning: pull in short pool tokens from commiter
+            // short burning: pull in short pool tokens from committer
 
             // A theoretical amount based on current ratio. Used to get same units as minimumCommitSize
             uint256 amountOut = PoolSwapLibrary.getAmountOut(
@@ -346,7 +346,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
     }
 
     modifier onlyFactory() {
-        require(msg.sender == factory, "Commiter: not factory");
+        require(msg.sender == factory, "Committer: not factory");
         _;
     }
 
