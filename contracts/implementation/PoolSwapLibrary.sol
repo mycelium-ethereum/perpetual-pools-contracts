@@ -50,7 +50,7 @@ library PoolSwapLibrary {
         uint256 reward,
         uint256 shortBalance,
         uint256 longBalance
-    ) public pure returns (uint256, uint256) {
+    ) external pure returns (uint256, uint256) {
         bytes16 ratioShort = getRatio(shortBalance, shortBalance + longBalance);
 
         uint256 shortFees = convertDecimalToUInt(multiplyDecimalByUInt(ratioShort, reward));
@@ -144,15 +144,7 @@ library PoolSwapLibrary {
         //              = 2 ^ (leverage * log2([old/new]))
         return
             ABDKMathQuad.pow_2(
-                ABDKMathQuad.mul(
-                    leverage,
-                    ABDKMathQuad.log_2(
-                        ABDKMathQuad.add(
-                            ABDKMathQuad.mul(direction < 0 ? one : zero, ratio),
-                            ABDKMathQuad.div(ABDKMathQuad.mul(direction >= 0 ? one : zero, one), ratio)
-                        )
-                    )
-                )
+                ABDKMathQuad.mul(leverage, ABDKMathQuad.log_2(direction < 0 ? ratio : ABDKMathQuad.div(one, ratio)))
             );
     }
 
@@ -174,7 +166,7 @@ library PoolSwapLibrary {
      * @param priceChange The struct containing necessary data to calculate price change
      */
     function calculatePriceChange(PriceChangeData memory priceChange)
-        public
+        external
         pure
         returns (
             uint256,
@@ -194,11 +186,11 @@ library PoolSwapLibrary {
         uint256 shortFeeAmount = convertDecimalToUInt(multiplyDecimalByUInt(fee, shortBalance));
         uint256 totalFeeAmount = 0;
 
-        // fee is enforced to be < 1. Therefore, shortFeeAmount < shortBalance, and longFeeAmount < longBalance
+        // fee is enforced to be < 1.
+        // Therefore, shortFeeAmount < shortBalance, and longFeeAmount < longBalance
         shortBalance = shortBalance - shortFeeAmount;
-        totalFeeAmount = totalFeeAmount + shortFeeAmount;
         longBalance = longBalance - longFeeAmount;
-        totalFeeAmount = totalFeeAmount + longFeeAmount;
+        totalFeeAmount = totalFeeAmount + shortFeeAmount + longFeeAmount;
 
         // Use the ratio to determine if the price increased or decreased and therefore which direction
         // the funds should be transferred towards.

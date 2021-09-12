@@ -107,10 +107,10 @@ describe("LeveragedPool - commit", () => {
             // Which gives you the inequality x > 250 * ((6000 + amount) / 5990.55)
             const validAmount = ethers.utils.parseEther("261.299")
 
-            const epsilon = ethers.utils.parseEther("0.01")
+            const epsilon = ethers.utils.parseEther("0.1")
             const tx = result.poolCommitter.commit(
                 [3],
-                validAmount.sub(ethers.utils.parseEther("0.01"))
+                validAmount.sub(epsilon)
             )
             await expect(tx).to.be.revertedWith("Amount less than minimum")
             await result.poolCommitter.commit([3], validAmount.add(epsilon))
