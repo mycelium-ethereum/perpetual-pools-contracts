@@ -93,19 +93,21 @@ contract PoolFactory is IPoolFactory, Ownable {
         address _pool = address(pool);
         emit DeployPool(_pool, deploymentParameters.poolName);
 
+        string memory leverage = uint2str(deploymentParameters.leverageAmount);
+
         address shortToken = deployPairToken(
             _pool,
             string(
-                abi.encodePacked(uint2str(deploymentParameters.leverageAmount), "S-", deploymentParameters.poolName)
+                abi.encodePacked(leverage, "S-", deploymentParameters.poolName)
             ),
-            string(abi.encodePacked(uint2str(deploymentParameters.leverageAmount), "S-", deploymentParameters.poolName))
+            string(abi.encodePacked(leverage, "S-", deploymentParameters.poolName))
         );
         address longToken = deployPairToken(
             _pool,
             string(
-                abi.encodePacked(uint2str(deploymentParameters.leverageAmount), "L-", deploymentParameters.poolName)
+                abi.encodePacked(leverage, "L-", deploymentParameters.poolName)
             ),
-            string(abi.encodePacked(uint2str(deploymentParameters.leverageAmount), "L-", deploymentParameters.poolName))
+            string(abi.encodePacked(leverage, "L-", deploymentParameters.poolName))
         );
         ILeveragedPool.Initialization memory initialization = ILeveragedPool.Initialization(
             owner(), // governance is the owner of pools -- if this changes, `onlyGov` breaks
@@ -115,7 +117,7 @@ contract PoolFactory is IPoolFactory, Ownable {
             longToken,
             shortToken,
             poolCommitter,
-            deploymentParameters.poolName,
+            string(abi.encodePacked(leverage, "-", deploymentParameters.poolName)),
             deploymentParameters.frontRunningInterval,
             deploymentParameters.updateInterval,
             fee,
