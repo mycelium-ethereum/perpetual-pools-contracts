@@ -153,9 +153,6 @@ contract PoolFactory is IPoolFactory, Ownable {
         return address(pairToken);
     }
 
-    // todo -> do we want this to be changeable. This would mean this needs to be propogated to all pools
-    // either we a) use a proxy and don't have a setter
-    // b) go for versioned releases and start with a safety switch we can turn off
     function setPoolKeeper(address _poolKeeper) external override onlyOwner {
         require(_poolKeeper != address(0), "address cannot be null");
         poolKeeper = IPoolKeeper(_poolKeeper);
@@ -183,7 +180,12 @@ contract PoolFactory is IPoolFactory, Ownable {
         return owner();
     }
 
-    function uint2str(uint256 _i) internal pure returns (string memory _uintAsString) {
+    /**
+     * @notice Converts a uint to a str
+     * @dev Assumes ASCII strings
+     * @return raw string representation of the uint
+     */
+    function uint2str(uint256 _i) internal pure returns (string memory) {
         if (_i == 0) {
             return "0";
         }
