@@ -1,18 +1,13 @@
 import { ethers, network, deployments } from "hardhat"
 import {
+    BigNumber,
     BigNumberish,
     ContractReceipt,
     ContractTransaction,
     Event,
 } from "ethers"
 import { BytesLike, Result } from "ethers/lib/utils"
-import {
-    DEFAULT_FEE,
-    DEFAULT_MINT_AMOUNT,
-    MARKET,
-    POOL_CODE,
-    POOL_CODE_2,
-} from "./constants"
+import { DEFAULT_FEE, DEFAULT_MINT_AMOUNT, MARKET } from "./constants"
 import {
     ERC20,
     LeveragedPool,
@@ -185,6 +180,8 @@ export const deployPoolAndTokenContracts = async (
     frontRunningInterval: number,
     updateInterval: number,
     leverage: number,
+    minimumCommitSize: BigNumber,
+    maximumCommitQueueLength: number,
     feeAddress?: string,
     fee?: BytesLike
 ): Promise<{
@@ -212,6 +209,8 @@ export const deployPoolAndTokenContracts = async (
         quoteToken: setupContracts.token.address,
         oracleWrapper: setupContracts.oracleWrapper.address,
         settlementEthOracle: setupContracts.settlementEthOracle.address,
+        minimumCommitSize: minimumCommitSize,
+        maximumCommitQueueLength: maximumCommitQueueLength,
     }
 
     if (fee) {

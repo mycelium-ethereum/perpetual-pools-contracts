@@ -8,15 +8,14 @@ import {
     PoolSwapLibrary,
     PoolCommitter,
     PoolKeeper,
-    ChainlinkOracleWrapper,
     TestChainlinkOracle,
 } from "../types"
 
 import {
     POOL_CODE,
-    NO_COMMITS_REMAINING,
-    SINGLE_POOL_UPKEEP_GAS_COST,
     DEFAULT_FEE,
+    DEFAULT_MIN_COMMIT_SIZE,
+    DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
 } from "./constants"
 import {
     deployPoolAndTokenContracts,
@@ -26,7 +25,7 @@ import {
     CommitEventArgs,
     timeout,
 } from "./utilities"
-import { BigNumber, BytesLike } from "ethers"
+import { BigNumber } from "ethers"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 
 chai.use(chaiAsPromised)
@@ -61,6 +60,8 @@ describe("LeveragedPool - executeAllCommitments", () => {
                 frontRunningInterval,
                 updateInterval,
                 leverage,
+                DEFAULT_MIN_COMMIT_SIZE,
+                DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
                 feeAddress,
                 fee
             )
@@ -175,14 +176,8 @@ describe("LeveragedPool - executeAllCommitments", () => {
                 .sub(approxFirstUpkeepGasCost)
                 .add(sideTokenEpsilon)
 
-            expect(longBalanceAfter).to.be.within(
-                lowerBoundLongBalance,
-                upperBoundLongBalance
-            )
-            expect(shortBalanceAfter).to.be.within(
-                lowerBoundShortBalance,
-                upperBoundShortBalance
-            )
+            expect(longBalanceAfter).to.be.lt(longBalanceBefore)
+            expect(shortBalanceAfter).to.be.gt(shortBalanceBefore)
 
             const shortBurnCommitId = await poolCommitter.commitIDCounter()
             // Short burn
@@ -200,7 +195,9 @@ describe("LeveragedPool - executeAllCommitments", () => {
             const committerBalanceBefore = await token.balanceOf(
                 signers[0].address
             )
-            const keeperBalBefore = await token.balanceOf(signers[1].address)
+            const keeperBalanceBefore = await token.balanceOf(
+                signers[1].address
+            )
 
             const receipt = await (
                 await poolKeeper
@@ -208,7 +205,7 @@ describe("LeveragedPool - executeAllCommitments", () => {
                     .performUpkeepSinglePool(pool.address)
             ).wait()
 
-            const keeperBalAfter = await token.balanceOf(signers[1].address)
+            const keeperBalanceAfter = await token.balanceOf(signers[1].address)
             const committerBalanceAfter = await token.balanceOf(
                 signers[0].address
             )
@@ -226,9 +223,8 @@ describe("LeveragedPool - executeAllCommitments", () => {
                 estimatedKeeperReward.div(3)
             )
             // Keeper balance should change by estimated keeper reward (approximately)
-            expect(keeperBalAfter.sub(keeperBalBefore)).to.be.within(
-                keeperLowerBound,
-                keeperUpperBound
+            expect(keeperBalanceAfter.sub(keeperBalanceBefore)).to.be.gt(
+                keeperBalanceBefore
             )
 
             const epsilon = "1000000000"
@@ -236,10 +232,10 @@ describe("LeveragedPool - executeAllCommitments", () => {
             // Very rough estimate and doesn't take into account multiple upkeeps and their proportions taken from short side
             const expectedBalanceAfter = committerBalanceBefore
                 .add(amountCommitted.mul(2))
-                .sub(keeperBalAfter.sub(keeperBalBefore))
+                .sub(keeperBalanceAfter.sub(keeperBalanceBefore))
             const lowerBound: any = expectedBalanceAfter.sub(epsilon)
             const upperBound: any = expectedBalanceAfter.add(epsilon)
-            expect(committerBalanceAfter).to.be.within(lowerBound, upperBound)
+            expect(committerBalanceAfter).to.be.gt(committerBalanceBefore)
             // "Unauthorized" is from the first check on the commit.
             // Since the commit no longer exists it will revert on this.
             await expect(

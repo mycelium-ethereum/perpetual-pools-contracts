@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.6;
+pragma solidity 0.8.7;
 
 import "../interfaces/ILeveragedPool.sol";
 import "../interfaces/IPoolCommitter.sol";
@@ -39,6 +39,8 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     address public override oracleWrapper;
     address public override settlementEthOracle;
 
+    address public provisionalGovernance;
+    bool public governanceTransferInProgress;
     bool public paused;
 
     event Paused();
@@ -100,7 +102,6 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         executePriceChange(_oldPrice, _newPrice);
         // execute pending commitments to enter and exit the pool
         IPoolCommitter(poolCommitter).executeAllCommitments();
-        emit CompletedUpkeep(_oldPrice, _newPrice);
     }
 
     /**
@@ -179,17 +180,23 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         if (_oldPrice <= 0 || _newPrice <= 0) {
             emit PriceChangeError(_oldPrice, _newPrice);
         } else {
+            uint256 _shortBalance = shortBalance;
+            uint256 _longBalance = longBalance;
             PoolSwapLibrary.PriceChangeData memory priceChangeData = PoolSwapLibrary.PriceChangeData(
                 _oldPrice,
                 _newPrice,
-                longBalance,
-                shortBalance,
+                _longBalance,
+                _shortBalance,
                 leverageAmount,
                 fee
             );
             (uint256 newLongBalance, uint256 newShortBalance, uint256 totalFeeAmount) = PoolSwapLibrary
                 .calculatePriceChange(priceChangeData);
 
+            emit PoolRebalance(
+                int256(newShortBalance) - int256(_shortBalance),
+                int256(newLongBalance) - int256(_longBalance)
+            );
             // Update pool balances
             longBalance = newLongBalance;
             shortBalance = newShortBalance;
@@ -278,14 +285,38 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     }
 
     /**
-     * @notice Transfer governance of the pool
+     * @notice Starts to transfer governance of the pool. The new governance
+     *          address must call `claimGovernance` in order for this to take
+     *          effect. Until this occurs, the existing governance address
+     *          remains in control of the pool.
      * @param _governance New address of the governance of the pool
+     * @dev First step of the two-step governance transfer process
+     * @dev Sets the governance transfer flag to true
+     * @dev See `claimGovernance`
      */
     function transferGovernance(address _governance) external override onlyGov onlyUnpaused {
         require(_governance != address(0), "Governance address cannot be 0 address");
-        address oldGovAddress = governance;
-        governance = _governance;
-        emit GovernanceAddressChanged(oldGovAddress, governance);
+        provisionalGovernance = _governance;
+        governanceTransferInProgress = true;
+        emit ProvisionalGovernanceChanged(provisionalGovernance);
+    }
+
+    /**
+     * @notice Completes transfer of governance by actually changing permissions
+     *          over the pool.
+     * @dev Second and final step of the two-step governance transfer process
+     * @dev See `transferGovernance`
+     * @dev Sets the governance transfer flag to false
+     * @dev After a successful call to this function, the actual governance
+     *      address and the provisional governance address MUST be equal.
+     */
+    function claimGovernance() external override onlyUnpaused {
+        require(governanceTransferInProgress, "No governance change active");
+        require(msg.sender == provisionalGovernance, "Not provisional governor");
+        address oldGovernance = governance; /* for later event emission */
+        governance = provisionalGovernance;
+        governanceTransferInProgress = false;
+        emit GovernanceAddressChanged(oldGovernance, governance);
     }
 
     /**
@@ -297,6 +328,22 @@ contract LeveragedPool is ILeveragedPool, Initializable {
 
     function poolTokens() external view override returns (address[2] memory) {
         return tokens;
+    }
+
+    function balances() external view override returns (uint256 _shortBalance, uint256 _longBalance) {
+        return (shortBalance, longBalance);
+    }
+
+    /**
+     * @notice Withdraws all available quote asset from the pool
+     * @dev Pool must not be paused
+     * @dev ERC20 transfer
+     */
+    function withdrawQuote() external onlyGov {
+        require(paused, "Pool is live");
+        IERC20 quoteERC = IERC20(quoteToken);
+        uint256 balance = quoteERC.balanceOf(address(this));
+        IERC20(quoteToken).safeTransfer(msg.sender, balance);
     }
 
     /**

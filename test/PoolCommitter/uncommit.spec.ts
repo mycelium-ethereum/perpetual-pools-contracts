@@ -9,7 +9,13 @@ import {
     TestToken,
 } from "../../types"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import { DEFAULT_FEE, DEFAULT_MINT_AMOUNT, POOL_CODE } from "../constants"
+import {
+    DEFAULT_FEE,
+    DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
+    DEFAULT_MINT_AMOUNT,
+    DEFAULT_MIN_COMMIT_SIZE,
+    POOL_CODE,
+} from "../constants"
 import {
     getEventArgs,
     deployPoolAndTokenContracts,
@@ -18,7 +24,7 @@ import {
     timeout,
 } from "../utilities"
 
-import { BytesLike, ContractReceipt } from "ethers"
+import { ContractReceipt } from "ethers"
 
 chai.use(chaiAsPromised)
 const { expect } = chai
@@ -50,6 +56,8 @@ describe("PoolCommitter.uncommit", () => {
             frontRunningInterval,
             updateInterval,
             leverage,
+            DEFAULT_MIN_COMMIT_SIZE,
+            DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
             feeAddress,
             fee
         )
@@ -72,6 +80,14 @@ describe("PoolCommitter.uncommit", () => {
                     await committer.commit(commitType, amountCommitted)
                 ).wait()
                 commitID = getEventArgs(receipt, "CreateCommit")?.commitID
+            })
+            it("decrements currentCommitQueueLength", async () => {
+                const currentCommitQueueLength =
+                    await committer.currentCommitQueueLength()
+                await committer.uncommit(commitID)
+                expect(await committer.currentCommitQueueLength()).to.equal(
+                    currentCommitQueueLength.sub(1)
+                )
             })
             it("deletes the specified commitment", async () => {
                 expect(
@@ -338,6 +354,8 @@ describe("PoolCommitter.uncommit", () => {
                     100,
                     250,
                     leverage,
+                    DEFAULT_MIN_COMMIT_SIZE,
+                    DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
                     feeAddress,
                     fee
                 )

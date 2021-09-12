@@ -1,17 +1,17 @@
 import { ethers, network } from "hardhat"
 import chai from "chai"
-import { Bytes, BytesLike } from "ethers"
 import chaiAsPromised from "chai-as-promised"
 import {
-    createCommit,
     deployPoolAndTokenContracts,
     deployPoolSetupContracts,
-    generateRandomAddress,
     incrementPrice,
-    timeout,
 } from "../utilities"
 
-import { POOL_CODE, POOL_CODE_2 } from "../constants"
+import {
+    DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
+    DEFAULT_MIN_COMMIT_SIZE,
+    POOL_CODE,
+} from "../constants"
 import {
     TestChainlinkOracle,
     ChainlinkOracleWrapper,
@@ -57,7 +57,9 @@ const setupHook = async () => {
         POOL_CODE,
         deploymentData.frontRunningInterval,
         deploymentData.updateInterval,
-        1
+        1,
+        DEFAULT_MIN_COMMIT_SIZE,
+        DEFAULT_MAX_COMMIT_QUEUE_LENGTH
     )
 
     token = contracts1.token

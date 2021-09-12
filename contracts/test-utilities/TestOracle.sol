@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.6;
+pragma solidity 0.8.7;
 
 /// @title A mockup oracle wrapper. Don't use for production.
 contract TestOracle {

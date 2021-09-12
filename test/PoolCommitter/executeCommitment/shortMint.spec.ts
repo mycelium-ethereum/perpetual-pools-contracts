@@ -9,7 +9,13 @@ import {
     PoolCommitter,
 } from "../../../types"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import { DEFAULT_FEE, DEFAULT_MINT_AMOUNT, POOL_CODE } from "../../constants"
+import {
+    DEFAULT_FEE,
+    DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
+    DEFAULT_MINT_AMOUNT,
+    DEFAULT_MIN_COMMIT_SIZE,
+    POOL_CODE,
+} from "../../constants"
 import {
     deployPoolAndTokenContracts,
     getRandomInt,
@@ -18,7 +24,6 @@ import {
     CommitEventArgs,
     timeout,
 } from "../../utilities"
-import { BytesLike } from "ethers"
 
 chai.use(chaiAsPromised)
 const { expect } = chai
@@ -26,7 +31,6 @@ const { expect } = chai
 const amountCommitted = ethers.utils.parseEther("2000")
 const amountMinted = DEFAULT_MINT_AMOUNT
 const feeAddress = generateRandomAddress()
-const lastPrice = getRandomInt(99999999, 1)
 const updateInterval = 2
 const frontRunningInterval = 1 // seconds
 const fee = DEFAULT_FEE
@@ -48,6 +52,8 @@ describe("LeveragedPool - executeCommitment: Short Mint", () => {
                 frontRunningInterval,
                 updateInterval,
                 leverage,
+                DEFAULT_MIN_COMMIT_SIZE,
+                DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
                 feeAddress,
                 fee
             )

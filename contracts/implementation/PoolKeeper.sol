@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.6;
+pragma solidity 0.8.7;
 
 import "../interfaces/IPoolKeeper.sol";
 import "../interfaces/IOracleWrapper.sol";
@@ -31,6 +31,8 @@ contract PoolKeeper is IPoolKeeper, Ownable {
 
     IPoolFactory public factory;
     bytes16 constant fixedPoint = 0x403abc16d674ec800000000000000000; // 1 ether
+
+    uint256 public gasPrice = 10 gwei;
 
     // #### Functions
     constructor(address _factory) {
@@ -96,21 +98,19 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         // Start a new round
         int256 lastExecutionPrice = executionPrice[_pool];
         executionPrice[_pool] = ABDKMathQuad.toInt(ABDKMathQuad.mul(ABDKMathQuad.fromInt(latestPrice), fixedPoint));
+        int256 execPrice = executionPrice[_pool];
 
         uint256 savedPreviousUpdatedTimestamp = pool.lastPriceTimestamp();
         uint256 updateInterval = pool.updateInterval();
 
         // This allows us to still batch multiple calls to executePriceChange, even if some are invalid
         // Without reverting the entire transaction
-        try ILeveragedPool(pool).poolUpkeep(lastExecutionPrice, executionPrice[_pool]) {
+        try ILeveragedPool(pool).poolUpkeep(lastExecutionPrice, execPrice) {
             // If poolUpkeep is successful, refund the keeper for their gas costs
             uint256 gasSpent = startGas - gasleft();
 
-            // TODO: poll gas price oracle (or BASEFEE)
-            // _gasPrice = 10 gwei = 10000000000 wei
-            uint256 _gasPrice = 10 gwei;
-
-            payKeeper(_pool, _gasPrice, gasSpent, savedPreviousUpdatedTimestamp, updateInterval);
+            payKeeper(_pool, gasPrice, gasSpent, savedPreviousUpdatedTimestamp, updateInterval);
+            emit UpkeepSuccessful(lastExecutionPrice, execPrice);
         } catch Error(string memory reason) {
             // If poolUpkeep fails for any other reason, emit event
             emit PoolUpkeepError(_pool, reason);
@@ -230,6 +230,15 @@ contract PoolKeeper is IPoolKeeper, Ownable {
 
     function setFactory(address _factory) external override onlyOwner {
         factory = IPoolFactory(_factory);
+    }
+
+    /**
+     * @notice Sets the gas price to be used in compensating keepers for successful upkeep
+     * @param _price Price (in ETH) per unit gas
+     * @dev Only owner
+     */
+    function setGasPrice(uint256 _price) external onlyOwner {
+        gasPrice = _price;
     }
 
     modifier onlyFactory() {

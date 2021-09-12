@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.6;
+pragma solidity 0.8.7;
 
 /// @title The manager contract interface for multiple markets and the pools in them
 interface IPoolKeeper {
@@ -10,6 +10,13 @@ interface IPoolKeeper {
      * @param firstPrice The price of the market oracle when the pool was created
      */
     event PoolAdded(address indexed poolAddress, int256 indexed firstPrice);
+
+    /**
+     * @notice Creates a notification when a call to LeveragedPool:poolUpkeep is successful
+     * @param startPrice The previous price of the pool
+     * @param endPrice The new price of the pool
+     */
+    event UpkeepSuccessful(int256 indexed startPrice, int256 indexed endPrice);
 
     /**
      * @notice Creates a notification when a keeper is paid for doing upkeep for a pool

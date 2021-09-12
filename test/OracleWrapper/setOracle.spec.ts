@@ -8,8 +8,6 @@ import {
     TestChainlinkOracle,
 } from "../../types"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import { MARKET, OPERATOR_ROLE, MARKET_2, ADMIN_ROLE } from "../constants"
-import { isValidMnemonic } from "ethers/lib/utils"
 
 chai.use(chaiAsPromised)
 const { expect } = chai

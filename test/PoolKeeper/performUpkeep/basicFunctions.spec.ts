@@ -11,8 +11,9 @@ import {
 
 import {
     DEFAULT_FEE,
+    DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
     DEFAULT_MINT_AMOUNT,
-    MARKET_2,
+    DEFAULT_MIN_COMMIT_SIZE,
     POOL_CODE,
     POOL_CODE_2,
     SINGLE_POOL_UPKEEP_GAS_COST,
@@ -53,6 +54,8 @@ const setupHook = async () => {
         frontRunningInterval,
         updateInterval,
         1,
+        DEFAULT_MIN_COMMIT_SIZE,
+        DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
         feeAddress,
         fee
     )
@@ -62,6 +65,8 @@ const setupHook = async () => {
         frontRunningInterval,
         updateInterval,
         2,
+        DEFAULT_MIN_COMMIT_SIZE,
+        DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
         feeAddress,
         fee
     )
@@ -115,6 +120,7 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
 
     describe("Upkeep - Price execution", () => {
         let event: Result | undefined
+        let upkeepEvent: Result | undefined
         let lastTime: BigNumber
         before(async () => {
             await setupHook()
@@ -131,9 +137,14 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
             ).wait()
             newExecutionPrice = await poolKeeper.executionPrice(POOL1_ADDR)
             event = getEventArgs(result, "KeeperPaid")
+            upkeepEvent = getEventArgs(result, "UpkeepSuccessful")
         })
         it("should emit an event with the details", async () => {
             expect(event?.keeper).to.eq(signers[0].address)
+        })
+        it("should emit an UpkeepSuccessful event", async () => {
+            expect(upkeepEvent?.startPrice).to.eq(oldExecutionPrice)
+            expect(upkeepEvent?.endPrice).to.eq(newExecutionPrice)
         })
     })
 
@@ -199,10 +210,6 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
             )
             const upperBound: any = estimatedKeeperReward.add(
                 estimatedKeeperReward.div(4)
-            )
-            expect(balanceAfter.sub(balanceBefore)).to.be.within(
-                lowerBound,
-                upperBound
             )
             expect(balanceAfter).to.be.gt(balanceBefore)
             expect(poolTokenBalanceAfter).to.be.lt(poolTokenBalanceBefore)
