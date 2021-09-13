@@ -97,18 +97,18 @@ contract PoolKeeper is IPoolKeeper, Ownable {
             .getUpkeepInformation();
 
         // Start a new round
+        // Get price in WAD format
         int256 lastExecutionPrice = executionPrice[_pool];
-        executionPrice[_pool] = ABDKMathQuad.toInt(ABDKMathQuad.mul(ABDKMathQuad.fromInt(latestPrice), fixedPoint));
-        int256 execPrice = executionPrice[_pool];
+        executionPrice[_pool] = latestPrice;
 
         // This allows us to still batch multiple calls to executePriceChange, even if some are invalid
         // Without reverting the entire transaction
-        try ILeveragedPool(pool).poolUpkeep(lastExecutionPrice, execPrice) {
+        try ILeveragedPool(pool).poolUpkeep(lastExecutionPrice, latestPrice) {
             // If poolUpkeep is successful, refund the keeper for their gas costs
             uint256 gasSpent = startGas - gasleft();
 
             payKeeper(_pool, gasPrice, gasSpent, savedPreviousUpdatedTimestamp, updateInterval);
-            emit UpkeepSuccessful(lastExecutionPrice, execPrice);
+            emit UpkeepSuccessful(lastExecutionPrice, latestPrice);
         } catch Error(string memory reason) {
             // If poolUpkeep fails for any other reason, emit event
             emit PoolUpkeepError(_pool, reason);
