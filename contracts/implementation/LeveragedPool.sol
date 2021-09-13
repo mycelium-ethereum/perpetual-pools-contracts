@@ -11,7 +11,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./PoolSwapLibrary.sol";
 import "../interfaces/IOracleWrapper.sol";
 
-/// @title The pool controller contract
+/// @title The pool contract itself
 contract LeveragedPool is ILeveragedPool, Initializable {
     using SafeERC20 for IERC20;
     // #### Globals
