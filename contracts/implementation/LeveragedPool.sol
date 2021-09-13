@@ -94,7 +94,6 @@ contract LeveragedPool is ILeveragedPool, Initializable {
      */
     function poolUpkeep(int256 _oldPrice, int256 _newPrice) external override onlyKeeper onlyUnpaused {
         require(intervalPassed(), "Update interval hasn't passed");
-        lastPriceTimestamp = block.timestamp;
         // perform price change and update pool balances
         executePriceChange(_oldPrice, _newPrice);
         // execute pending commitments to enter and exit the pool

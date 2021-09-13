@@ -548,9 +548,9 @@ describe("LeveragedPool - commit", () => {
             await poolCommitter.commit(0, amountCommitted)
             expect(await poolCommitter.currentCommitQueueLength()).to.equal(2)
 
-            await timeout(longUpdateInterval * 1000)
-
             // Perform upkeep, and currentCommitQueueLength should remain as 2
+            // This upkeep is happening with 3 commits valid to be minted and 2 invalid. All 3 get processed
+            // and the commit queue length stays as 2
             await poolKeeper.performUpkeepSinglePool(pool.address)
             expect(await poolCommitter.currentCommitQueueLength()).to.equal(2)
 
