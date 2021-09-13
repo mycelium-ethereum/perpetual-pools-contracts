@@ -541,22 +541,21 @@ describe("LeveragedPool - commit", () => {
             await timeout((longFrontRunningInterval + 20) * 1000)
 
             await poolCommitter.commit(0, amountCommitted)
-            // A new commit within the frontRunningInterval, so currentCommitQueueLength == 1
+            // A new commit within the frontRunningInterval, so currentCommitQueueLength gets reset to 1
             expect(await poolCommitter.currentCommitQueueLength()).to.equal(1)
 
-            // currentCommitQueueLength now equals 2
-            await poolCommitter.commit(0, amountCommitted)
-            expect(await poolCommitter.currentCommitQueueLength()).to.equal(2)
-
-            // Perform upkeep, and currentCommitQueueLength should remain as 2
+            // Perform upkeep, and currentCommitQueueLength should remain as 1
             // This upkeep is happening with 3 commits valid to be minted and 2 invalid. All 3 get processed
             // and the commit queue length stays as 2
+
+            // Perform upkeep, and the queue length should not be updated
+            await timeout(updateInterval * 1000)
             await poolKeeper.performUpkeepSinglePool(pool.address)
-            expect(await poolCommitter.currentCommitQueueLength()).to.equal(2)
+            expect(await poolCommitter.currentCommitQueueLength()).to.equal(1)
 
             // currentCommitQueueLength now equals 3
             await poolCommitter.commit(0, amountCommitted)
-            expect(await poolCommitter.currentCommitQueueLength()).to.equal(3)
+            expect(await poolCommitter.currentCommitQueueLength()).to.equal(2)
         })
     })
 })
