@@ -120,8 +120,8 @@ contract PoolFactory is IPoolFactory, Ownable {
             deploymentParameters.quoteToken
         );
 
-        // approve the quote token on the pool commiter to finalise linking
-        // this also stores the pool address in the commiter
+        // approve the quote token on the pool committer to finalise linking
+        // this also stores the pool address in the committer
         IPoolCommitter(poolCommitter).setQuoteAndPool(deploymentParameters.quoteToken, _pool);
 
         // finalise pool setup
