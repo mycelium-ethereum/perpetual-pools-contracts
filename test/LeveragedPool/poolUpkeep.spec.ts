@@ -69,6 +69,7 @@ describe("LeveragedPool - executeAllCommitments", () => {
 
         // Long mint commit
         await createCommit(poolCommitter, [2], amountCommitted)
+        // short mint commit
         await createCommit(poolCommitter, [0], amountCommitted)
 
         await shortToken.approve(pool.address, amountMinted)
@@ -95,13 +96,19 @@ describe("LeveragedPool - executeAllCommitments", () => {
             const longTokenTotalSupplyBefore = await longToken.totalSupply()
             const longBalanceBefore = await pool.longBalance()
             const shortBalanceBefore = await pool.shortBalance()
+            console.log("  ")
+            console.log("  ")
+            console.log(shortTokenTotalSupplyBefore.toString())
+            console.log(longTokenTotalSupplyBefore.toString())
+            console.log(longBalanceBefore.toString())
+            console.log(shortBalanceBefore.toString())
             // Double the price
             await pool.poolUpkeep(lastPrice, BigNumber.from("2").mul(lastPrice))
 
             const shortTokenTotalSupplyAfter = await shortToken.totalSupply()
             const longTokenTotalSupplyAfter = await longToken.totalSupply()
-            // (longTokenTotalSupply + longburnShadowPool) / longBalance * amountCommitted
-            //=(1000 + 1000) / 3000 * 2000 = 1333.333....
+            // (longBalance / (longTokenTotalSupply + longburnShadowPool)) * amountCommitted
+            //= (5000 / (2333.3333 + )
             const expectedLongTokenDifference = "1333333333333333333333"
 
             // Should be equal since the commits are long commits

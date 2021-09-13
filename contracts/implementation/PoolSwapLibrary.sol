@@ -63,21 +63,6 @@ library PoolSwapLibrary {
     }
 
     /**
-     * @notice Gets the amount of tokens a user is entitled to according to the ratio
-     * @dev This is useful for getting the amount of pool tokens to mint, and the amount of quote tokens to remit when minting and burning. Can also be used to provide the user with an estimate of their commit results.
-     * @param ratio The ratio to calculate. Use the getRatio function to calculate this
-     * @param amountIn The amount of tokens the user is providing. This can be quote tokens or pool tokens.
-     * @return The amount of tokens to mint/remit to the user.
-     */
-    function getAmountOut(bytes16 ratio, uint256 amountIn) public pure returns (uint256) {
-        require(amountIn > 0, "Invalid amount");
-        if (ABDKMathQuad.cmp(ratio, 0) == 0 || ABDKMathQuad.cmp(ratio, NEGATIVE_ZERO) == 0) {
-            return amountIn;
-        }
-        return ABDKMathQuad.toUInt(ABDKMathQuad.mul(ratio, ABDKMathQuad.fromUInt(amountIn)));
-    }
-
-    /**
      * @notice Compares two decimal numbers
      * @param x The first number to compare
      * @param y The second number to compare
@@ -235,56 +220,56 @@ library PoolSwapLibrary {
 
     /**
      * @notice Gets the number of settlement tokens to be burnt based on existing tokens
+     * @dev Calculates as `balance * amountIn / (tokenSupply + shadowBalance)
      * @param tokenSupply Total supply of pool tokens
      * @param amountIn Commitment amount of collateral tokens going into the pool
      * @param balance Balance of the pool (no. of underlying collateral tokens in pool)
-     * @param inverseShadowbalance Balance the shadow pool at time of mint
+     * @param shadowBalance Balance the shadow pool at time of mint
      * @return Number of pool tokens to be minted
      */
-    function getAmount(
+    function getBurnAmount(
         uint256 tokenSupply,
         uint256 amountIn,
         uint256 balance,
-        uint256 shadowbalance
+        uint256 shadowBalance
     ) external pure returns (uint256) {
         require(amountIn > 0, "Invalid amount");
 
         // Catch the divide by zero error.
-        if (balance == 0 || tokenSupply + inverseShadowbalance == 0) {
+        if (balance == 0 || tokenSupply + shadowBalance == 0) {
             return amountIn;
         }
-
-        bytes16 ratio = ABDKMathQuad.div(ABDKMathQuad.fromUInt(balance), ABDKMathQuad.fromUInt(tokenSupply + inverseShadowbalance));
-        return ABDKMathQuad.toUInt(ABDKMathQuad.mul(ratio, ABDKMathQuad.fromUInt(amountIn)));
+        bytes16 numerator = ABDKMathQuad.mul(ABDKMathQuad.fromUInt(balance), ABDKMathQuad.fromUInt(amountIn));
+        return ABDKMathQuad.toUInt(ABDKMathQuad.div(numerator, ABDKMathQuad.fromUInt(tokenSupply + shadowBalance)));
     }
 
     /**
      * @notice Gets the number of pool tokens to be minted based on existing tokens
+     * @dev Calculated as (tokenSupply + shadowBalance) * amountIn / balance
      * @param tokenSupply Total supply of pool tokens
      * @param amountIn Commitment amount of collateral tokens going into the pool
      * @param balance Balance of the pool (no. of underlying collateral tokens in pool)
-     * @param inverseShadowbalance Balance the shadow pool at time of mint
+     * @param shadowBalance Balance the shadow pool at time of mint
      * @return Number of pool tokens to be minted
      */
     function getMintAmount(
         uint256 tokenSupply,
         uint256 amountIn,
         uint256 balance,
-        uint256 inverseShadowbalance
+        uint256 shadowBalance
     ) external pure returns (uint256) {
         require(amountIn > 0, "Invalid amount");
 
         // Catch the divide by zero error.
-        if (balance == 0 || tokenSupply + inverseShadowbalance == 0) {
+        if (balance == 0 || tokenSupply + shadowBalance == 0) {
             return amountIn;
         }
 
-        bytes16 ratio = ABDKMathQuad.div(ABDKMathQuad.fromUInt(balance), ABDKMathQuad.fromUInt(tokenSupply + inverseShadowbalance));
-        return ABDKMathQuad.toUInt(ABDKMathQuad.mul(ratio, ABDKMathQuad.fromUInt(amountIn)));
-/*
-        bytes16 numerator = ABDKMathQuad.mul(ABDKMathQuad.fromUInt(tokenSupply + inverseShadowbalance), ABDKMathQuad.fromUInt(amountIn));
+        bytes16 numerator = ABDKMathQuad.mul(
+            ABDKMathQuad.fromUInt(tokenSupply + shadowBalance),
+            ABDKMathQuad.fromUInt(amountIn)
+        );
         return ABDKMathQuad.toUInt(ABDKMathQuad.div(numerator, ABDKMathQuad.fromUInt(balance)));
-        */
     }
 
     /**

@@ -10,8 +10,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./PoolSwapLibrary.sol";
 import "../interfaces/IOracleWrapper.sol";
 
-import "hardhat/console.sol";
-
 /// @title The pool controller contract
 contract PoolCommitter is IPoolCommitter, Ownable {
     // #### Globals
@@ -125,13 +123,6 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             // long burning: pull in long pool tokens from commiter
 
             // A theoretical amount based on current ratio. Used to get same units as minimumCommitSize
-            /*
-            uint256 amountOut = PoolSwapLibrary.getAmountOut(
-                PoolSwapLibrary.getRatio(longBalance, IERC20(tokens[0]).totalSupply() + shadowPools[_commitType]),
-                amount
-            );
-            */
-
             uint256 amountOut = PoolSwapLibrary.getBurnAmount(
                 IERC20(tokens[0]).totalSupply(),
                 amount,
@@ -144,13 +135,6 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             // short burning: pull in short pool tokens from commiter
 
             // A theoretical amount based on current ratio. Used to get same units as minimumCommitSize
-            /*
-            uint256 amountOut = PoolSwapLibrary.getAmountOut(
-                PoolSwapLibrary.getRatio(shortBalance, IERC20(tokens[1]).totalSupply() + shadowPools[_commitType]),
-                amount
-            );
-            */
-
             uint256 amountOut = PoolSwapLibrary.getBurnAmount(
                 IERC20(tokens[1]).totalSupply(),
                 amount,
@@ -354,12 +338,11 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             // update long and short balances
             pool.setNewPoolBalances(longBalance + _commit.amount, shortBalance);
         } else if (_commit.commitType == CommitType.LongBurn) {
-            uint256 amountOut = PoolSwapLibrary.getAmountOut(
-                PoolSwapLibrary.getRatio(
-                    longBalance,
-                    IERC20(tokens[0]).totalSupply() + shadowPools[uint256(CommitType.LongBurn)] + _commit.amount
-                ),
-                _commit.amount
+            uint256 amountOut = PoolSwapLibrary.getBurnAmount(
+                IERC20(tokens[0]).totalSupply(),
+                _commit.amount,
+                longBalance,
+                shadowPools[_commitType] + _commit.amount
             );
 
             // update long and short balances
@@ -376,12 +359,11 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             pool.mintTokens(1, mintAmount, _commit.owner);
             pool.setNewPoolBalances(longBalance, shortBalance + _commit.amount);
         } else if (_commit.commitType == CommitType.ShortBurn) {
-            uint256 amountOut = PoolSwapLibrary.getAmountOut(
-                PoolSwapLibrary.getRatio(
-                    shortBalance,
-                    IERC20(tokens[1]).totalSupply() + shadowPools[uint256(CommitType.ShortBurn)] + _commit.amount
-                ),
-                _commit.amount
+            uint256 amountOut = PoolSwapLibrary.getBurnAmount(
+                IERC20(tokens[1]).totalSupply(),
+                _commit.amount,
+                shortBalance,
+                shadowPools[_commitType] + _commit.amount
             );
 
             // update long and short balances
