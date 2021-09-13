@@ -147,30 +147,6 @@ contract PoolCommitter is IPoolCommitter, Ownable {
     }
 
     /**
-     * @notice Uncommit to minting/burning long/short tokens before the frontrunning interval ticks over
-     * @param _commitID ID of the commit to uncommit (contained within the commits mapping)
-     */
-    function uncommit(uint128 _commitID) external override {
-        Commit memory _commit = commits[_commitID];
-        ILeveragedPool pool = ILeveragedPool(leveragedPool);
-        uint256 lastPriceTimestamp = pool.lastPriceTimestamp();
-        uint256 frontRunningInterval = pool.frontRunningInterval();
-        uint256 updateInterval = pool.updateInterval();
-        require(
-            PoolSwapLibrary.isBeforeFrontRunningInterval(
-                block.timestamp,
-                lastPriceTimestamp,
-                updateInterval,
-                frontRunningInterval
-            ),
-            "Must uncommit before frontRunningInterval"
-        );
-        require(msg.sender == _commit.owner, "Unauthorized");
-        currentCommitQueueLength -= 1;
-        _uncommit(_commit, _commitID);
-    }
-
-    /**
      * @dev When required, scan through the from earliestCommitUnexecuted to latestCommitUnexecuted
      *      and set these variables to be correct based on which of the commits between them are
      *      uncommited.
