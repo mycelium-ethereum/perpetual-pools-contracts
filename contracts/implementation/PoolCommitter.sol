@@ -40,6 +40,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         uint128 _minimumCommitSize,
         uint128 _maximumCommitQueueLength
     ) {
+        require(_factory != address(0), "Factory address cannot be null");
         // set the factory on deploy
         factory = _factory;
         minimumCommitSize = _minimumCommitSize;
