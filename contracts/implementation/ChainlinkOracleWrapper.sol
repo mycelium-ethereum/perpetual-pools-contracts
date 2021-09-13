@@ -39,7 +39,6 @@ contract ChainlinkOracleWrapper is IOracleWrapper, Ownable {
      */
     function getPrice() external view override returns (int256 _price) {
         (_price, ) = _latestRoundData();
-        return _price;
     }
 
     /**
