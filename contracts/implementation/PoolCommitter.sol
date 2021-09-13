@@ -15,6 +15,9 @@ contract PoolCommitter is IPoolCommitter, Ownable {
     // #### Globals
 
     address public leveragedPool;
+    // Index 0 is the LONG token, index 1 is the SHORT token.
+    // Fetched from the LeveragedPool when leveragedPool is set
+    address[2] public tokens;
 
     // MAX_UINT128
     uint128 public constant NO_COMMITS_REMAINING = type(uint128).max;
@@ -24,6 +27,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
     uint128 public minimumCommitSize; // The minimum amount (in settlement tokens) that a user can commit in a single commitment
     uint128 public maximumCommitQueueLength; // The maximum number of commitments that can be made for a given updateInterval
     uint128 public currentCommitQueueLength;
+    uint256 public lastQueueLengthReset; // The time the queue length was last reset
     mapping(uint128 => Commit) public commits;
     mapping(uint256 => uint256) public shadowPools;
 
@@ -46,6 +50,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         minimumCommitSize = _minimumCommitSize;
         maximumCommitQueueLength = _maximumCommitQueueLength;
         governance = IPoolFactory(factory).getOwner();
+        lastQueueLengthReset = block.timestamp;
     }
 
     /**
@@ -56,11 +61,40 @@ contract PoolCommitter is IPoolCommitter, Ownable {
      */
     function commit(CommitType commitType, uint256 amount) external override {
         require(currentCommitQueueLength < maximumCommitQueueLength, "Too many commits in interval");
-        currentCommitQueueLength += 1;
         require(amount > 0, "Amount must not be zero");
+        ILeveragedPool pool = ILeveragedPool(leveragedPool);
+        uint256 updateInterval = pool.updateInterval();
+        uint256 lastPriceTimestamp = pool.lastPriceTimestamp();
+        uint256 frontRunningInterval = pool.frontRunningInterval();
+
+        if (
+            PoolSwapLibrary.isBeforeFrontRunningInterval(
+                lastQueueLengthReset,
+                lastPriceTimestamp,
+                updateInterval,
+                frontRunningInterval
+            ) &&
+            !PoolSwapLibrary.isBeforeFrontRunningInterval(
+                block.timestamp,
+                lastPriceTimestamp,
+                updateInterval,
+                frontRunningInterval
+            )
+        ) {
+            /**
+             * The lastQueueLengthReset occured before the frontRunningInterval,
+             * and we are within the frontRunningInterval,
+             * so this is the first commit since frontRunningInterval has passed.
+             * Note: If and only if there are no `commit` calls within the frontRunningInterval, then
+             * `executeAllCommitments` will reset `currentCommitQueueLength` and update
+             * `lastQueueLengthReset`.
+             */
+            delete currentCommitQueueLength;
+            lastQueueLengthReset = block.timestamp;
+        }
+        currentCommitQueueLength += 1;
         uint128 currentCommitIDCounter = commitIDCounter;
         commitIDCounter = currentCommitIDCounter + 1;
-        ILeveragedPool pool = ILeveragedPool(leveragedPool);
 
         // create commitment
         commits[currentCommitIDCounter] = Commit({
@@ -90,12 +124,11 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             // long burning: pull in long pool tokens from committer
 
             // A theoretical amount based on current ratio. Used to get same units as minimumCommitSize
-            uint256 amountOut = PoolSwapLibrary.getAmountOut(
-                PoolSwapLibrary.getRatio(
-                    longBalance,
-                    IERC20(pool.poolTokens()[0]).totalSupply() + shadowPools[_commitType]
-                ),
-                amount
+            uint256 amountOut = PoolSwapLibrary.getWithdrawAmountOnBurn(
+                IERC20(tokens[0]).totalSupply(),
+                amount,
+                longBalance,
+                shadowPools[_commitType]
             );
             require(amountOut >= minimumCommitSize, "Amount less than minimum");
             pool.burnTokens(0, amount, msg.sender);
@@ -103,35 +136,15 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             // short burning: pull in short pool tokens from committer
 
             // A theoretical amount based on current ratio. Used to get same units as minimumCommitSize
-            uint256 amountOut = PoolSwapLibrary.getAmountOut(
-                PoolSwapLibrary.getRatio(
-                    shortBalance,
-                    IERC20(pool.poolTokens()[1]).totalSupply() + shadowPools[_commitType]
-                ),
-                amount
+            uint256 amountOut = PoolSwapLibrary.getWithdrawAmountOnBurn(
+                IERC20(tokens[1]).totalSupply(),
+                amount,
+                shortBalance,
+                shadowPools[_commitType]
             );
             require(amountOut >= minimumCommitSize, "Amount less than minimum");
             pool.burnTokens(1, amount, msg.sender);
         }
-    }
-
-    /**
-     * @notice Uncommit to minting/burning long/short tokens before the frontrunning interval ticks over
-     * @param _commitID ID of the commit to uncommit (contained within the commits mapping)
-     */
-    function uncommit(uint128 _commitID) external override {
-        Commit memory _commit = commits[_commitID];
-        ILeveragedPool pool = ILeveragedPool(leveragedPool);
-        uint256 lastPriceTimestamp = pool.lastPriceTimestamp();
-        uint256 frontRunningInterval = pool.frontRunningInterval();
-        uint256 updateInterval = pool.updateInterval();
-        require(
-            PoolSwapLibrary.isBeforeFrontRunningInterval(lastPriceTimestamp, updateInterval, frontRunningInterval),
-            "Must uncommit before frontRunningInterval"
-        );
-        require(msg.sender == _commit.owner, "Unauthorized");
-        currentCommitQueueLength -= 1;
-        _uncommit(_commit, _commitID);
     }
 
     /**
@@ -225,33 +238,53 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         if (earliestCommitUnexecuted == NO_COMMITS_REMAINING) {
             return;
         }
-        currentCommitQueueLength = 0;
-        uint128 nextEarliestCommitUnexecuted;
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
         uint256 frontRunningInterval = pool.frontRunningInterval();
+        uint256 updateInterval = pool.updateInterval();
         uint256 lastPriceTimestamp = pool.lastPriceTimestamp();
-        for (uint128 i = earliestCommitUnexecuted; i <= latestCommitUnexecuted; i++) {
-            IPoolCommitter.Commit memory _commit = commits[i];
-            nextEarliestCommitUnexecuted = i;
+
+        /**
+         * If the queue length was reset before the frontRunningInterval that just passed, it means
+         * there were no commitments during that frontRunningInterval, meaning we can reset queue length.
+         */
+        if (
+            PoolSwapLibrary.isBeforeFrontRunningInterval(
+                lastQueueLengthReset,
+                lastPriceTimestamp,
+                updateInterval,
+                frontRunningInterval
+            )
+        ) {
+            delete currentCommitQueueLength;
+            lastQueueLengthReset = block.timestamp;
+        }
+        uint128 nextEarliestCommitUnexecuted;
+
+        uint128 _latestCommitUnexecuted = latestCommitUnexecuted;
+        for (
+            nextEarliestCommitUnexecuted = earliestCommitUnexecuted;
+            nextEarliestCommitUnexecuted <= _latestCommitUnexecuted;
+            nextEarliestCommitUnexecuted++
+        ) {
+            IPoolCommitter.Commit memory _commit = commits[nextEarliestCommitUnexecuted];
             // These two checks are so a given call to executeCommitment won't revert,
             // allowing us to continue iterations, as well as update nextEarliestCommitUnexecuted.
             if (_commit.owner == address(0)) {
                 // Commit deleted (uncommitted) or already executed
-                nextEarliestCommitUnexecuted += 1; // It makes sense to set the next unexecuted to the next number
                 continue;
             }
-            if (lastPriceTimestamp - _commit.created <= frontRunningInterval) {
+            if (block.timestamp - _commit.created <= frontRunningInterval) {
                 // This commit is the first that was too late.
                 break;
             }
-            emit ExecuteCommit(i);
+            emit ExecuteCommit(nextEarliestCommitUnexecuted);
             try IPoolCommitter(address(this)).executeCommitment(_commit) {
-                delete commits[i];
+                delete commits[nextEarliestCommitUnexecuted];
             } catch {
-                _uncommit(_commit, i);
-                emit FailedCommitExecution(i);
+                _uncommit(_commit, nextEarliestCommitUnexecuted);
+                emit FailedCommitExecution(nextEarliestCommitUnexecuted);
             }
-            if (i == latestCommitUnexecuted) {
+            if (nextEarliestCommitUnexecuted == _latestCommitUnexecuted) {
                 // We have reached the last one
                 earliestCommitUnexecuted = NO_COMMITS_REMAINING;
                 return;
@@ -272,7 +305,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         shadowPools[_commitType] = shadowPools[_commitType] - _commit.amount;
         if (_commit.commitType == CommitType.LongMint) {
             uint256 mintAmount = PoolSwapLibrary.getMintAmount(
-                IERC20(pool.poolTokens()[0]).totalSupply(), // long token total supply,
+                IERC20(tokens[0]).totalSupply(), // long token total supply,
                 _commit.amount, // amount of quote tokens commited to enter
                 longBalance, // total quote tokens in the long pull
                 shadowPools[uint256(CommitType.LongBurn)] // total pool tokens commited to be burned
@@ -282,14 +315,11 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             // update long and short balances
             pool.setNewPoolBalances(longBalance + _commit.amount, shortBalance);
         } else if (_commit.commitType == CommitType.LongBurn) {
-            uint256 amountOut = PoolSwapLibrary.getAmountOut(
-                PoolSwapLibrary.getRatio(
-                    longBalance,
-                    IERC20(pool.poolTokens()[0]).totalSupply() +
-                        shadowPools[uint256(CommitType.LongBurn)] +
-                        _commit.amount
-                ),
-                _commit.amount
+            uint256 amountOut = PoolSwapLibrary.getWithdrawAmountOnBurn(
+                IERC20(tokens[0]).totalSupply(),
+                _commit.amount,
+                longBalance,
+                shadowPools[_commitType] + _commit.amount
             );
 
             // update long and short balances
@@ -297,7 +327,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             pool.quoteTokenTransfer(_commit.owner, amountOut);
         } else if (_commit.commitType == CommitType.ShortMint) {
             uint256 mintAmount = PoolSwapLibrary.getMintAmount(
-                IERC20(pool.poolTokens()[1]).totalSupply(), // short token total supply
+                IERC20(tokens[1]).totalSupply(), // short token total supply
                 _commit.amount,
                 shortBalance,
                 shadowPools[uint256(CommitType.ShortBurn)]
@@ -306,14 +336,11 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             pool.mintTokens(1, mintAmount, _commit.owner);
             pool.setNewPoolBalances(longBalance, shortBalance + _commit.amount);
         } else if (_commit.commitType == CommitType.ShortBurn) {
-            uint256 amountOut = PoolSwapLibrary.getAmountOut(
-                PoolSwapLibrary.getRatio(
-                    shortBalance,
-                    IERC20(pool.poolTokens()[1]).totalSupply() +
-                        shadowPools[uint256(CommitType.ShortBurn)] +
-                        _commit.amount
-                ),
-                _commit.amount
+            uint256 amountOut = PoolSwapLibrary.getWithdrawAmountOnBurn(
+                IERC20(tokens[1]).totalSupply(),
+                _commit.amount,
+                shortBalance,
+                shadowPools[_commitType] + _commit.amount
             );
 
             // update long and short balances
@@ -325,7 +352,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
     /**
      * @return A Commit of a given ID
      */
-    function getCommit(uint128 _commitID) public view override returns (Commit memory) {
+    function getCommit(uint128 _commitID) external view override returns (Commit memory) {
         return commits[_commitID];
     }
 
@@ -336,6 +363,8 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         IERC20 _token = IERC20(_quoteToken);
         bool approvalSuccess = _token.approve(leveragedPool, _token.totalSupply());
         require(approvalSuccess, "ERC20 approval failed");
+        _token.approve(leveragedPool, _token.totalSupply());
+        tokens = ILeveragedPool(leveragedPool).poolTokens();
     }
 
     function setMinimumCommitSize(uint128 _minimumCommitSize) external override onlyGov {

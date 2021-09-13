@@ -51,8 +51,6 @@ interface IPoolCommitter {
 
     function commit(CommitType commitType, uint256 amount) external;
 
-    function uncommit(uint128 commitID) external;
-
     function executeAllCommitments() external;
 
     function executeCommitment(Commit memory _commit) external;

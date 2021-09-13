@@ -170,9 +170,7 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
             newLastExecutionTime = await pool.lastPriceTimestamp()
         })
         it("should clear the old round data", async () => {
-            const price = ethers.utils.parseEther(
-                (await derivativeOracleWrapper.getPrice()).toString()
-            )
+            const price = await derivativeOracleWrapper.getPrice()
             expect(newLastExecutionTime.gt(oldLastExecutionTime)).to.equal(true)
             expect(newExecutionPrice).to.be.lt(oldExecutionPrice)
             expect(newExecutionPrice).to.equal(price)

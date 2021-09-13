@@ -89,7 +89,7 @@ describe("PoolFactory.deployPool", () => {
 
     context("When called by the DAO and with valid parameters", async () => {
         it("should deploy a minimal clone", async () => {
-            expect(await pool.poolName()).to.eq(POOL_CODE)
+            expect(await pool.poolName()).to.eq(`${leverage}-${POOL_CODE}`)
         })
         it("should initialize the clone", async () => {
             const initialization = {
@@ -133,8 +133,8 @@ describe("PoolFactory.deployPool", () => {
                 LeveragedPoolInterface.abi,
                 (await ethers.getSigners())[0]
             ) as LeveragedPool
-            expect(await pool2.poolName()).to.eq(POOL_CODE_2)
-            expect(await pool.poolName()).to.eq(POOL_CODE)
+            expect(await pool2.poolName()).to.eq(`5-${POOL_CODE_2}`)
+            expect(await pool.poolName()).to.eq(`${leverage}-${POOL_CODE}`)
         })
 
         it("pool should own tokens", async () => {
