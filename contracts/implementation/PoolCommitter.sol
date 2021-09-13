@@ -334,7 +334,8 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         require(_leveragedPool != address(0), "Leveraged pool address cannot be 0 address");
         leveragedPool = _leveragedPool;
         IERC20 _token = IERC20(_quoteToken);
-        _token.approve(leveragedPool, _token.totalSupply());
+        bool approvalSuccess = _token.approve(leveragedPool, _token.totalSupply());
+        require(approvalSuccess, "ERC20 approval failed");
     }
 
     function setMinimumCommitSize(uint128 _minimumCommitSize) external override onlyGov {
