@@ -95,7 +95,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
             return;
         }
         ILeveragedPool pool = ILeveragedPool(_pool);
-        (int256 latestPrice, uint80 roundID, uint256 savedPreviousUpdatedTimestamp, uint256 updateInterval) = pool
+        (int256 latestPrice, bytes memory data, uint256 savedPreviousUpdatedTimestamp, uint256 updateInterval) = pool
             .getUpkeepInformation();
 
         // Start a new round
@@ -110,8 +110,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
             uint256 gasSpent = startGas - gasleft();
 
             payKeeper(_pool, gasPrice, gasSpent, savedPreviousUpdatedTimestamp, updateInterval);
-            emit UpkeepSuccessful(_pool, lastExecutionPrice, latestPrice);
-            emit UpkeepRoundID(_pool, roundID);
+            emit UpkeepSuccessful(_pool, data, lastExecutionPrice, latestPrice);
         } catch Error(string memory reason) {
             // If poolUpkeep fails for any other reason, emit event
             emit PoolUpkeepError(_pool, reason);

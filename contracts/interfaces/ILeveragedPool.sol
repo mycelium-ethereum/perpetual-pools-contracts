@@ -120,7 +120,7 @@ interface ILeveragedPool {
 
     /**
      * @return _latestPrice The oracle price
-     * @return _roundID The latest roundID
+     * @return _data The oracleWrapper's metadata. Implementations can choose what data to return here
      * @return _lastPriceTimestamp The timestamp of the last upkeep
      * @return _updateInterval The update frequency for this pool
      * @dev To save gas so PoolKeeper does not have to make three external calls
@@ -130,7 +130,7 @@ interface ILeveragedPool {
         view
         returns (
             int256 _latestPrice,
-            uint80 _roundID,
+            bytes memory _data,
             uint256 _lastPriceTimestamp,
             uint256 _updateInterval
         );

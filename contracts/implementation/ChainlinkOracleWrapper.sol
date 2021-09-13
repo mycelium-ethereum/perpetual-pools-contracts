@@ -43,10 +43,12 @@ contract ChainlinkOracleWrapper is IOracleWrapper, Ownable {
 
     /**
      * @return _price The latest round data price
-     * @return _roundID The latest round ID
+     * @return _data The metadata. Implementations can choose what data to return here. This implementation returns the roundID
      */
-    function getPriceAndRoundID() external view override returns (int256 _price, uint80 _roundID) {
-        (_price, _roundID) = _latestRoundData();
+    function getPriceAndMetadata() external view override returns (int256 _price, bytes memory _data) {
+        (int256 price, uint80 roundID) = _latestRoundData();
+        _data = abi.encodePacked(roundID);
+        return (price, _data);
     }
 
     /**

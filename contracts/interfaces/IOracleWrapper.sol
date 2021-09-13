@@ -21,9 +21,9 @@ interface IOracleWrapper {
 
     /**
      * @return _price The latest round data price
-     * @return _roundID The latest round ID
+     * @return _data The metadata. Implementations can choose what data to return here
      */
-    function getPriceAndRoundID() external view returns (int256 _price, uint80 _roundID);
+    function getPriceAndMetadata() external view returns (int256 _price, bytes memory _data);
 
     /**
      * @notice Converts from a WAD to normal value
