@@ -20,6 +20,12 @@ interface IOracleWrapper {
     function getPrice() external view returns (int256);
 
     /**
+     * @return _price The latest round data price
+     * @return _roundID The latest round ID
+     */
+    function getPriceAndRoundID() external view returns (int256 _price, uint80 _roundID);
+
+    /**
      * @notice Converts from a WAD to normal value
      * @return Converted non-WAD value
      */
