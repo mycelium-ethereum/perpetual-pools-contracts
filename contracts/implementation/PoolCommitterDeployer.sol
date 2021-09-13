@@ -9,6 +9,7 @@ contract PoolCommitterDeployer is IPoolCommitterDeployer {
     address public factory;
 
     constructor(address _factory) {
+        require(_factory != address(0), "Factory address cannot be null");
         factory = _factory;
     }
 

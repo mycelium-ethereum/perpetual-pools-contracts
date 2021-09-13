@@ -45,7 +45,9 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @param _poolAddress The address of the newly-created pools
      */
     function newPool(address _poolAddress) external override onlyFactory {
-        int256 firstPrice = ILeveragedPool(_poolAddress).getOraclePrice();
+        address oracleWrapper = ILeveragedPool(_poolAddress).oracleWrapper();
+        int256 firstPrice = IOracleWrapper(oracleWrapper).getPrice();
+        require(firstPrice > 0, "First price is non-positive");
         int256 startingPrice = ABDKMathQuad.toInt(ABDKMathQuad.mul(ABDKMathQuad.fromInt(firstPrice), fixedPoint));
         emit PoolAdded(_poolAddress, firstPrice);
         executionPrice[_poolAddress] = startingPrice;

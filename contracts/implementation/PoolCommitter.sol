@@ -10,7 +10,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./PoolSwapLibrary.sol";
 import "../interfaces/IOracleWrapper.sol";
 
-/// @title The pool controller contract
+/// @title This contract is responsible for handling commitment logic
 contract PoolCommitter is IPoolCommitter, Ownable {
     // #### Globals
 
@@ -44,6 +44,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         uint128 _minimumCommitSize,
         uint128 _maximumCommitQueueLength
     ) {
+        require(_factory != address(0), "Factory address cannot be null");
         // set the factory on deploy
         factory = _factory;
         minimumCommitSize = _minimumCommitSize;
@@ -116,11 +117,11 @@ contract PoolCommitter is IPoolCommitter, Ownable {
 
         // pull in tokens
         if (commitType == CommitType.LongMint || commitType == CommitType.ShortMint) {
-            // minting: pull in the quote token from the commiter
+            // minting: pull in the quote token from the committer
             require(amount >= minimumCommitSize, "Amount less than minimum");
             pool.quoteTokenTransferFrom(msg.sender, leveragedPool, amount);
         } else if (commitType == CommitType.LongBurn) {
-            // long burning: pull in long pool tokens from commiter
+            // long burning: pull in long pool tokens from committer
 
             // A theoretical amount based on current ratio. Used to get same units as minimumCommitSize
             uint256 amountOut = PoolSwapLibrary.getWithdrawAmountOnBurn(
@@ -132,7 +133,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             require(amountOut >= minimumCommitSize, "Amount less than minimum");
             pool.burnTokens(0, amount, msg.sender);
         } else if (commitType == CommitType.ShortBurn) {
-            // short burning: pull in short pool tokens from commiter
+            // short burning: pull in short pool tokens from committer
 
             // A theoretical amount based on current ratio. Used to get same units as minimumCommitSize
             uint256 amountOut = PoolSwapLibrary.getWithdrawAmountOnBurn(
@@ -360,6 +361,8 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         require(_leveragedPool != address(0), "Leveraged pool address cannot be 0 address");
         leveragedPool = _leveragedPool;
         IERC20 _token = IERC20(_quoteToken);
+        bool approvalSuccess = _token.approve(leveragedPool, _token.totalSupply());
+        require(approvalSuccess, "ERC20 approval failed");
         _token.approve(leveragedPool, _token.totalSupply());
         tokens = ILeveragedPool(leveragedPool).poolTokens();
     }
@@ -374,7 +377,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
     }
 
     modifier onlyFactory() {
-        require(msg.sender == factory, "Commiter: not factory");
+        require(msg.sender == factory, "Committer: not factory");
         _;
     }
 
