@@ -13,10 +13,11 @@ interface IPoolKeeper {
 
     /**
      * @notice Creates a notification when a call to LeveragedPool:poolUpkeep is successful
+     * @param pool The pool address being upkept
      * @param startPrice The previous price of the pool
      * @param endPrice The new price of the pool
      */
-    event UpkeepSuccessful(int256 indexed startPrice, int256 indexed endPrice);
+    event UpkeepSuccessful(address indexed pool, int256 indexed startPrice, int256 indexed endPrice);
 
     /**
      * @notice Creates a notification when a keeper is paid for doing upkeep for a pool
