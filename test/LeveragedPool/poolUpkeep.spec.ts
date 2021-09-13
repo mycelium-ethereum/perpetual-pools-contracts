@@ -96,12 +96,6 @@ describe("LeveragedPool - executeAllCommitments", () => {
             const longTokenTotalSupplyBefore = await longToken.totalSupply()
             const longBalanceBefore = await pool.longBalance()
             const shortBalanceBefore = await pool.shortBalance()
-            console.log("  ")
-            console.log("  ")
-            console.log(shortTokenTotalSupplyBefore.toString())
-            console.log(longTokenTotalSupplyBefore.toString())
-            console.log(longBalanceBefore.toString())
-            console.log(shortBalanceBefore.toString())
             // Double the price
             await pool.poolUpkeep(lastPrice, BigNumber.from("2").mul(lastPrice))
 

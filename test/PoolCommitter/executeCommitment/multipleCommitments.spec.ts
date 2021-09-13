@@ -139,10 +139,8 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
 
             await shortToken.approve(pool.address, amountMinted)
             await timeout(2000)
-            console.log((await pool.shortBalance()).toString())
 
             await pool.poolUpkeep(lastPrice, 10)
-            console.log((await pool.shortBalance()).toString())
 
             // Short Mint
             commits.push(
@@ -174,9 +172,7 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
         it("should adjust the balances of the live pools involved", async () => {
             expect(await pool.shortBalance()).to.eq(amountCommitted)
             await timeout(updateInterval * 1000)
-            console.log((await pool.shortBalance()).toString())
             await pool.poolUpkeep(lastPrice, 10)
-            console.log((await pool.shortBalance()).toString())
 
             expect(await pool.shortBalance()).to.eq(
                 amountCommitted.mul(2).sub(amountCommitted.div(2))

@@ -221,9 +221,9 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      */
     function keeperTip(uint256 _savedPreviousUpdatedTimestamp, uint256 _poolInterval) public view returns (uint256) {
         /* the number of blocks that have elapsed since the given pool's updateInterval passed */
-        uint256 elapsedBlocks = (block.timestamp - (_savedPreviousUpdatedTimestamp + _poolInterval)) / BLOCK_TIME;
+        uint256 elapsedBlocksNumerator = (block.timestamp - (_savedPreviousUpdatedTimestamp + _poolInterval));
 
-        return BASE_TIP + TIP_DELTA_PER_BLOCK * elapsedBlocks;
+        return BASE_TIP + (TIP_DELTA_PER_BLOCK * elapsedBlocksNumerator) / BLOCK_TIME;
     }
 
     function setFactory(address _factory) external override onlyOwner {
