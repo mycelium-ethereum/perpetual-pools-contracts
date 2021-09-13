@@ -202,9 +202,6 @@ describe("LeveragedPool - executeAllCommitments", () => {
 
             // Inside the frontRunningInterval, so uncommit will revert
             await timeout((updateInterval - frontRunningInterval / 2) * 1000)
-            await expect(
-                poolCommitter.uncommit(shortBurnCommitId)
-            ).to.be.revertedWith("Must uncommit before frontRunningInterval")
             await timeout(updateInterval * 1000)
 
             const committerBalanceBefore = await token.balanceOf(
@@ -251,11 +248,6 @@ describe("LeveragedPool - executeAllCommitments", () => {
             const lowerBound: any = expectedBalanceAfter.sub(epsilon)
             const upperBound: any = expectedBalanceAfter.add(epsilon)
             expect(committerBalanceAfter).to.be.gt(committerBalanceBefore)
-            // "Unauthorized" is from the first check on the commit.
-            // Since the commit no longer exists it will revert on this.
-            await expect(
-                poolCommitter.uncommit(shortBurnCommitId)
-            ).to.be.revertedWith("Unauthorized")
 
             const longTokens = await longToken.balanceOf(signers[0].address)
             // LONG BURN (undo all the long mints)
