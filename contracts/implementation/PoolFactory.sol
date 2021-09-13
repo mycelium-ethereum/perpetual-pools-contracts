@@ -159,6 +159,7 @@ contract PoolFactory is IPoolFactory, Ownable {
     }
 
     function setMaxLeverage(uint16 newMaxLeverage) external override onlyOwner {
+        require(newMaxLeverage > 0, "Maximum leverage must be non-zero");
         maxLeverage = newMaxLeverage;
     }
 
