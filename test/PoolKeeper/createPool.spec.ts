@@ -62,7 +62,7 @@ describe("PoolKeeper - createPool", () => {
         const justAboveOne = "0x3fff0000000000000000000000000001"
         await factory.setFee(justAboveOne)
         await expect(factory.deployPool(deploymentData)).to.be.revertedWith(
-            "Fee is greater than 100%"
+            "Fee is greater than or equal to 100%"
         )
     })
 
