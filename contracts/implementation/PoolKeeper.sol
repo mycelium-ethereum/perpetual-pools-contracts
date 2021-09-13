@@ -110,7 +110,8 @@ contract PoolKeeper is IPoolKeeper, Ownable {
             uint256 gasSpent = startGas - gasleft();
 
             payKeeper(_pool, gasPrice, gasSpent, savedPreviousUpdatedTimestamp, updateInterval);
-            emit UpkeepSuccessful(_pool, roundID, lastExecutionPrice, latestPrice);
+            emit UpkeepSuccessful(_pool, lastExecutionPrice, latestPrice);
+            emit UpkeepRoundID(_pool, roundID);
         } catch Error(string memory reason) {
             // If poolUpkeep fails for any other reason, emit event
             emit PoolUpkeepError(_pool, reason);
