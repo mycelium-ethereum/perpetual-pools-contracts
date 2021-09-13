@@ -108,7 +108,7 @@ describe("LeveragedPool - executeAllCommitments", () => {
             const shortTokenTotalSupplyAfter = await shortToken.totalSupply()
             const longTokenTotalSupplyAfter = await longToken.totalSupply()
             // (longBalance / (longTokenTotalSupply + longburnShadowPool)) * amountCommitted
-            //= (5000 / (2333.3333 + )
+            //=(1000 + 1000) / 3000 * 2000 = 1333.333....
             const expectedLongTokenDifference = "1333333333333333333333"
 
             // Should be equal since the commits are long commits
