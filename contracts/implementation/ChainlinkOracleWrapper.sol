@@ -37,7 +37,24 @@ contract ChainlinkOracleWrapper is IOracleWrapper, Ownable {
     /**
      * @notice Returns the oracle price in WAD format
      */
-    function getPrice() external view override returns (int256) {
+    function getPrice() external view override returns (int256 _price) {
+        (_price, ) = _latestRoundData();
+    }
+
+    /**
+     * @return _price The latest round data price
+     * @return _data The metadata. Implementations can choose what data to return here. This implementation returns the roundID
+     */
+    function getPriceAndMetadata() external view override returns (int256 _price, bytes memory _data) {
+        (int256 price, uint80 roundID) = _latestRoundData();
+        _data = abi.encodePacked(roundID);
+        return (price, _data);
+    }
+
+    /**
+     * @dev An internal function that gets the WAD value price and latest roundID
+     */
+    function _latestRoundData() internal view returns (int256 _price, uint80 _roundID) {
         (
             uint80 roundID,
             int256 price,
@@ -47,7 +64,7 @@ contract ChainlinkOracleWrapper is IOracleWrapper, Ownable {
         ) = AggregatorV2V3Interface(oracle).latestRoundData();
         require(answeredInRound >= roundID, "COA: Stale answer");
         require(timeStamp != 0, "COA: Round incomplete");
-        return toWad(price);
+        return (toWad(price), roundID);
     }
 
     /**

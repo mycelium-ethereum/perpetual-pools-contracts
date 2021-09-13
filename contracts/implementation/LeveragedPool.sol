@@ -319,6 +319,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
 
     /**
      * @return _latestPrice The oracle price
+     * @return _data The oracleWrapper's metadata. Implementations can choose what data to return here
      * @return _lastPriceTimestamp The timestamp of the last upkeep
      * @return _updateInterval The update frequency for this pool
      * @dev To save gas so PoolKeeper does not have to make three external calls
@@ -329,11 +330,13 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         override
         returns (
             int256 _latestPrice,
+            bytes memory _data,
             uint256 _lastPriceTimestamp,
             uint256 _updateInterval
         )
     {
-        return (IOracleWrapper(oracleWrapper).getPrice(), lastPriceTimestamp, updateInterval);
+        (_latestPrice, _data) = IOracleWrapper(oracleWrapper).getPriceAndMetadata();
+        return (_latestPrice, _data, lastPriceTimestamp, updateInterval);
     }
 
     /**
