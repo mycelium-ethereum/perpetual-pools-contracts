@@ -219,15 +219,15 @@ library PoolSwapLibrary {
     }
 
     /**
-     * @notice Gets the number of settlement tokens to be burnt based on existing tokens
+     * @notice Gets the number of settlement tokens to be withdrawn based on a pool token burn amount
      * @dev Calculates as `balance * amountIn / (tokenSupply + shadowBalance)
      * @param tokenSupply Total supply of pool tokens
      * @param amountIn Commitment amount of collateral tokens going into the pool
      * @param balance Balance of the pool (no. of underlying collateral tokens in pool)
      * @param shadowBalance Balance the shadow pool at time of mint
-     * @return Number of pool tokens to be minted
+     * @return Number of settlement tokens to be withdrawn on a burn
      */
-    function getBurnAmount(
+    function getWithdrawAmountOnBurn(
         uint256 tokenSupply,
         uint256 amountIn,
         uint256 balance,

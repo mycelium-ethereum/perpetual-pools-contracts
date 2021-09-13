@@ -123,7 +123,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             // long burning: pull in long pool tokens from commiter
 
             // A theoretical amount based on current ratio. Used to get same units as minimumCommitSize
-            uint256 amountOut = PoolSwapLibrary.getBurnAmount(
+            uint256 amountOut = PoolSwapLibrary.getWithdrawAmountOnBurn(
                 IERC20(tokens[0]).totalSupply(),
                 amount,
                 longBalance,
@@ -135,7 +135,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             // short burning: pull in short pool tokens from commiter
 
             // A theoretical amount based on current ratio. Used to get same units as minimumCommitSize
-            uint256 amountOut = PoolSwapLibrary.getBurnAmount(
+            uint256 amountOut = PoolSwapLibrary.getWithdrawAmountOnBurn(
                 IERC20(tokens[1]).totalSupply(),
                 amount,
                 shortBalance,
@@ -338,7 +338,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             // update long and short balances
             pool.setNewPoolBalances(longBalance + _commit.amount, shortBalance);
         } else if (_commit.commitType == CommitType.LongBurn) {
-            uint256 amountOut = PoolSwapLibrary.getBurnAmount(
+            uint256 amountOut = PoolSwapLibrary.getWithdrawAmountOnBurn(
                 IERC20(tokens[0]).totalSupply(),
                 _commit.amount,
                 longBalance,
@@ -359,7 +359,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             pool.mintTokens(1, mintAmount, _commit.owner);
             pool.setNewPoolBalances(longBalance, shortBalance + _commit.amount);
         } else if (_commit.commitType == CommitType.ShortBurn) {
-            uint256 amountOut = PoolSwapLibrary.getBurnAmount(
+            uint256 amountOut = PoolSwapLibrary.getWithdrawAmountOnBurn(
                 IERC20(tokens[1]).totalSupply(),
                 _commit.amount,
                 shortBalance,
