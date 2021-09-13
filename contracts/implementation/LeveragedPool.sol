@@ -60,10 +60,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         require(initialization._poolCommitter != address(0), "PoolCommitter cannot be 0 address");
         require(initialization._frontRunningInterval < initialization._updateInterval, "frontRunning > updateInterval");
 
-        require(
-            PoolSwapLibrary.compareDecimals(initialization._fee, PoolSwapLibrary.one) == -1,
-            "Fee >= 100%"
-        );
+        require(PoolSwapLibrary.compareDecimals(initialization._fee, PoolSwapLibrary.one) == -1, "Fee >= 100%");
 
         // set the owner of the pool. This is governance when deployed from the factory
         governance = initialization._owner;
@@ -112,7 +109,13 @@ contract LeveragedPool is ILeveragedPool, Initializable {
      * @return Whether the keeper is going to be paid; false if the amount exceeds the balances of the
      *         long and short pool, and true if the keeper can successfully be paid out
      */
-    function payKeeperFromBalances(address to, uint256 amount) external override onlyKeeper onlyUnpaused returns (bool) {
+    function payKeeperFromBalances(address to, uint256 amount)
+        external
+        override
+        onlyKeeper
+        onlyUnpaused
+        returns (bool)
+    {
         require(to != address(0), "Receipient address cannot be null");
         uint256 _shortBalance = shortBalance;
         uint256 _longBalance = longBalance;
