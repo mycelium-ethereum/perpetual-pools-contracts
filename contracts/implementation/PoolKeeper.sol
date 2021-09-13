@@ -170,7 +170,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
 
         // tip percent in wad units
         bytes16 _tipPercent = ABDKMathQuad.fromUInt(keeperTip(_savedPreviousUpdatedTimestamp, _poolInterval));
-        
+
         // amount of settlement tokens to give to the keeper
         _tipPercent = ABDKMathQuad.div(_tipPercent, ABDKMathQuad.fromUInt(100));
         int256 wadRewardValue = ABDKMathQuad.toInt(
