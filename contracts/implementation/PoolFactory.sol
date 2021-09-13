@@ -16,7 +16,9 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 contract PoolFactory is IPoolFactory, Ownable {
     // #### Globals
     PoolToken public pairTokenBase;
+    address public immutable pairTokenBaseAddress;
     LeveragedPool public poolBase;
+    address public immutable poolBaseAddress;
     IPoolKeeper public poolKeeper;
     IPoolCommitterDeployer public poolCommitterDeployer;
 
@@ -42,7 +44,9 @@ contract PoolFactory is IPoolFactory, Ownable {
     constructor(address _feeReceiver) {
         // Deploy base contracts
         pairTokenBase = new PoolToken();
+        pairTokenBaseAddress = address(pairTokenBase);
         poolBase = new LeveragedPool();
+        poolBaseAddress = address(poolBase);
 
         ILeveragedPool.Initialization memory baseInitialization = ILeveragedPool.Initialization(
             address(this),
@@ -85,24 +89,15 @@ contract PoolFactory is IPoolFactory, Ownable {
             "PoolKeeper: leveraged amount invalid"
         );
         require(IERC20DecimalsWrapper(deploymentParameters.quoteToken).decimals() <= 18, "Token decimals > 18");
-        LeveragedPool pool = LeveragedPool(Clones.clone(address(poolBase)));
+        LeveragedPool pool = LeveragedPool(Clones.clone(poolBaseAddress));
         address _pool = address(pool);
         emit DeployPool(_pool, deploymentParameters.poolName);
 
-        address shortToken = deployPairToken(
-            _pool,
-            string(
-                abi.encodePacked(uint2str(deploymentParameters.leverageAmount), "S-", deploymentParameters.poolName)
-            ),
-            string(abi.encodePacked(uint2str(deploymentParameters.leverageAmount), "S-", deploymentParameters.poolName))
-        );
-        address longToken = deployPairToken(
-            _pool,
-            string(
-                abi.encodePacked(uint2str(deploymentParameters.leverageAmount), "L-", deploymentParameters.poolName)
-            ),
-            string(abi.encodePacked(uint2str(deploymentParameters.leverageAmount), "L-", deploymentParameters.poolName))
-        );
+        string memory leverage = uint2str(deploymentParameters.leverageAmount);
+        string memory longString = string(abi.encodePacked(leverage, "L-", deploymentParameters.poolName));
+        string memory shortString = string(abi.encodePacked(leverage, "S-", deploymentParameters.poolName));
+        address shortToken = deployPairToken(_pool, shortString, shortString);
+        address longToken = deployPairToken(_pool, longString, longString);
         ILeveragedPool.Initialization memory initialization = ILeveragedPool.Initialization(
             owner(), // governance is the owner of pools -- if this changes, `onlyGov` breaks
             _poolKeeper,
@@ -111,7 +106,7 @@ contract PoolFactory is IPoolFactory, Ownable {
             longToken,
             shortToken,
             poolCommitter,
-            deploymentParameters.poolName,
+            string(abi.encodePacked(leverage, "-", deploymentParameters.poolName)),
             deploymentParameters.frontRunningInterval,
             deploymentParameters.updateInterval,
             fee,
@@ -120,12 +115,11 @@ contract PoolFactory is IPoolFactory, Ownable {
             deploymentParameters.quoteToken
         );
 
+        // finalise pool setup
+        pool.initialize(initialization);
         // approve the quote token on the pool commiter to finalise linking
         // this also stores the pool address in the commiter
         IPoolCommitter(poolCommitter).setQuoteAndPool(deploymentParameters.quoteToken, _pool);
-
-        // finalise pool setup
-        pool.initialize(initialization);
         poolKeeper.newPool(_pool);
         pools[numPools] = _pool;
         numPools += 1;
@@ -144,15 +138,12 @@ contract PoolFactory is IPoolFactory, Ownable {
         string memory name,
         string memory symbol
     ) internal returns (address) {
-        PoolToken pairToken = PoolToken(Clones.clone(address(pairTokenBase)));
+        PoolToken pairToken = PoolToken(Clones.clone(pairTokenBaseAddress));
         pairToken.initialize(owner, name, symbol);
 
         return address(pairToken);
     }
 
-    // todo -> do we want this to be changeable. This would mean this needs to be propogated to all pools
-    // either we a) use a proxy and don't have a setter
-    // b) go for versioned releases and start with a safety switch we can turn off
     function setPoolKeeper(address _poolKeeper) external override onlyOwner {
         require(_poolKeeper != address(0), "address cannot be null");
         poolKeeper = IPoolKeeper(_poolKeeper);
@@ -180,7 +171,12 @@ contract PoolFactory is IPoolFactory, Ownable {
         return owner();
     }
 
-    function uint2str(uint256 _i) internal pure returns (string memory _uintAsString) {
+    /**
+     * @notice Converts a uint to a str
+     * @dev Assumes ASCII strings
+     * @return raw string representation of the uint
+     */
+    function uint2str(uint256 _i) internal pure returns (string memory) {
         if (_i == 0) {
             return "0";
         }

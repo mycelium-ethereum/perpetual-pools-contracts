@@ -35,8 +35,8 @@ const amountCommitted = ethers.utils.parseEther("2000")
 const amountMinted = ethers.utils.parseEther("10000")
 const feeAddress = generateRandomAddress()
 const lastPrice = ethers.utils.parseEther(getRandomInt(99999999, 1).toString())
-const updateInterval = 20
-const frontRunningInterval = 10 // seconds
+const updateInterval = 200
+const frontRunningInterval = 20 // seconds
 const fee = DEFAULT_FEE
 const leverage = 1
 
@@ -136,6 +136,21 @@ describe("LeveragedPool - executeAllCommitments", () => {
             // Halve price
             const currentPrice = (await chainlinkOracle.latestRoundData())[1]
             await chainlinkOracle.setPrice(currentPrice.div(2))
+
+            const tenToTheTen = ethers.BigNumber.from("10").pow("10")
+            const upkeepInformation = await pool.getUpkeepInformation()
+            // Multiply currentPrice/2 by 10^10 because that's what the oracle wrapper does
+            expect(upkeepInformation._latestPrice).to.equal(
+                currentPrice.div(2).mul(tenToTheTen)
+            )
+            expect(upkeepInformation._updateInterval).to.equal(updateInterval)
+            // There aren't really any other ways to programatically figure out the last price timestamp
+            // other than just calling it directly, so this isn't really testing anything since it's
+            // basically the same function
+            const lastPriceTimestamp = await pool.lastPriceTimestamp()
+            expect(upkeepInformation._lastPriceTimestamp).to.equal(
+                lastPriceTimestamp
+            )
 
             // Perform upkeep
             await timeout(updateInterval * 1000)

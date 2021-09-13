@@ -33,7 +33,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     address public feeAddress;
     address public override quoteToken;
     address public override poolCommitter;
-    uint256 public override lastPriceTimestamp;
+    uint256 public override lastPriceTimestamp; // The last time the pool was upkept
 
     string public override poolName;
     address public override oracleWrapper;
@@ -78,7 +78,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         fee = initialization._fee;
         leverageAmount = PoolSwapLibrary.convertUIntToDecimal(initialization._leverageAmount);
         feeAddress = initialization._feeAddress;
-        lastPriceTimestamp = uint40(block.timestamp);
+        lastPriceTimestamp = block.timestamp;
         poolName = initialization._poolName;
         tokens[0] = initialization._longToken;
         tokens[1] = initialization._shortToken;
@@ -97,11 +97,11 @@ contract LeveragedPool is ILeveragedPool, Initializable {
      */
     function poolUpkeep(int256 _oldPrice, int256 _newPrice) external override onlyKeeper onlyUnpaused {
         require(intervalPassed(), "Update interval hasn't passed");
-        lastPriceTimestamp = uint40(block.timestamp);
         // perform price change and update pool balances
         executePriceChange(_oldPrice, _newPrice);
         // execute pending commitments to enter and exit the pool
         IPoolCommitter(poolCommitter).executeAllCommitments();
+        lastPriceTimestamp = block.timestamp;
     }
 
     /**
@@ -127,7 +127,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         }
 
         (uint256 shortBalanceAfterRewards, uint256 longBalanceAfterRewards) = PoolSwapLibrary.getBalancesAfterFees(
-            uint256(amount),
+            amount,
             _shortBalance,
             _longBalance
         );
@@ -320,9 +320,28 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     }
 
     /**
+     * @return _latestPrice The oracle price
+     * @return _lastPriceTimestamp The timestamp of the last upkeep
+     * @return _updateInterval The update frequency for this pool
+     * @dev To save gas so PoolKeeper does not have to make three external calls
+     */
+    function getUpkeepInformation()
+        external
+        view
+        override
+        returns (
+            int256 _latestPrice,
+            uint256 _lastPriceTimestamp,
+            uint256 _updateInterval
+        )
+    {
+        return (IOracleWrapper(oracleWrapper).getPrice(), lastPriceTimestamp, updateInterval);
+    }
+
+    /**
      * @return The price of the pool's feed oracle
      */
-    function getOraclePrice() public view override returns (int256) {
+    function getOraclePrice() external view override returns (int256) {
         return IOracleWrapper(oracleWrapper).getPrice();
     }
 
