@@ -25,7 +25,7 @@ contract PoolFactory is IPoolFactory, Ownable {
     // Default max leverage of 10
     uint16 public maxLeverage = 10;
     // Contract address to receive protocol fees
-    address feeReceiver;
+    address public feeReceiver;
     // Default fee; quadruple precision (128 bit) floating point number (64.64)
     bytes16 public fee;
 
@@ -115,6 +115,8 @@ contract PoolFactory is IPoolFactory, Ownable {
             deploymentParameters.quoteToken
         );
 
+        // approve the quote token on the pool committer to finalise linking
+        // this also stores the pool address in the committer
         // finalise pool setup
         pool.initialize(initialization);
         // approve the quote token on the pool commiter to finalise linking
@@ -150,6 +152,7 @@ contract PoolFactory is IPoolFactory, Ownable {
     }
 
     function setMaxLeverage(uint16 newMaxLeverage) external override onlyOwner {
+        require(newMaxLeverage > 0, "Maximum leverage must be non-zero");
         maxLeverage = newMaxLeverage;
     }
 

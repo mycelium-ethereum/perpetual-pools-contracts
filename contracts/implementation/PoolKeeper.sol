@@ -45,7 +45,9 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @param _poolAddress The address of the newly-created pools
      */
     function newPool(address _poolAddress) external override onlyFactory {
-        int256 firstPrice = ILeveragedPool(_poolAddress).getOraclePrice();
+        address oracleWrapper = ILeveragedPool(_poolAddress).oracleWrapper();
+        int256 firstPrice = IOracleWrapper(oracleWrapper).getPrice();
+        require(firstPrice > 0, "First price is non-positive");
         int256 startingPrice = ABDKMathQuad.toInt(ABDKMathQuad.mul(ABDKMathQuad.fromInt(firstPrice), fixedPoint));
         emit PoolAdded(_poolAddress, firstPrice);
         executionPrice[_poolAddress] = startingPrice;
@@ -93,7 +95,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
             return;
         }
         ILeveragedPool pool = ILeveragedPool(_pool);
-        (int256 latestPrice, uint256 savedPreviousUpdatedTimestamp, uint256 updateInterval) = pool
+        (int256 latestPrice, bytes memory data, uint256 savedPreviousUpdatedTimestamp, uint256 updateInterval) = pool
             .getUpkeepInformation();
 
         // Start a new round
@@ -103,12 +105,12 @@ contract PoolKeeper is IPoolKeeper, Ownable {
 
         // This allows us to still batch multiple calls to executePriceChange, even if some are invalid
         // Without reverting the entire transaction
-        try ILeveragedPool(pool).poolUpkeep(lastExecutionPrice, latestPrice) {
+        try pool.poolUpkeep(lastExecutionPrice, latestPrice) {
             // If poolUpkeep is successful, refund the keeper for their gas costs
             uint256 gasSpent = startGas - gasleft();
 
             payKeeper(_pool, gasPrice, gasSpent, savedPreviousUpdatedTimestamp, updateInterval);
-            emit UpkeepSuccessful(lastExecutionPrice, latestPrice);
+            emit UpkeepSuccessful(_pool, data, lastExecutionPrice, latestPrice);
         } catch Error(string memory reason) {
             // If poolUpkeep fails for any other reason, emit event
             emit PoolUpkeepError(_pool, reason);
@@ -219,9 +221,9 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      */
     function keeperTip(uint256 _savedPreviousUpdatedTimestamp, uint256 _poolInterval) public view returns (uint256) {
         /* the number of blocks that have elapsed since the given pool's updateInterval passed */
-        uint256 elapsedBlocks = (block.timestamp - (_savedPreviousUpdatedTimestamp + _poolInterval)) / BLOCK_TIME;
+        uint256 elapsedBlocksNumerator = (block.timestamp - (_savedPreviousUpdatedTimestamp + _poolInterval));
 
-        return BASE_TIP + TIP_DELTA_PER_BLOCK * elapsedBlocks;
+        return BASE_TIP + (TIP_DELTA_PER_BLOCK * elapsedBlocksNumerator) / BLOCK_TIME;
     }
 
     function setFactory(address _factory) external override onlyOwner {

@@ -11,7 +11,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./PoolSwapLibrary.sol";
 import "../interfaces/IOracleWrapper.sol";
 
-/// @title The pool controller contract
+/// @title The pool contract itself
 contract LeveragedPool is ILeveragedPool, Initializable {
     using SafeERC20 for IERC20;
     // #### Globals
@@ -60,10 +60,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         require(initialization._poolCommitter != address(0), "PoolCommitter cannot be 0 address");
         require(initialization._frontRunningInterval < initialization._updateInterval, "frontRunning > updateInterval");
 
-        require(
-            PoolSwapLibrary.compareDecimals(initialization._fee, PoolSwapLibrary.one) == -1,
-            "Fee is greater than 100%"
-        );
+        require(PoolSwapLibrary.compareDecimals(initialization._fee, PoolSwapLibrary.one) == -1, "Fee >= 100%");
 
         // set the owner of the pool. This is governance when deployed from the factory
         governance = initialization._owner;
@@ -114,10 +111,11 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     function payKeeperFromBalances(address to, uint256 amount)
         external
         override
-        onlyPoolKeeper
+        onlyKeeper
         onlyUnpaused
         returns (bool)
     {
+        require(to != address(0), "Receipient address cannot be null");
         uint256 _shortBalance = shortBalance;
         uint256 _longBalance = longBalance;
 
@@ -321,6 +319,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
 
     /**
      * @return _latestPrice The oracle price
+     * @return _data The oracleWrapper's metadata. Implementations can choose what data to return here
      * @return _lastPriceTimestamp The timestamp of the last upkeep
      * @return _updateInterval The update frequency for this pool
      * @dev To save gas so PoolKeeper does not have to make three external calls
@@ -331,11 +330,13 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         override
         returns (
             int256 _latestPrice,
+            bytes memory _data,
             uint256 _lastPriceTimestamp,
             uint256 _updateInterval
         )
     {
-        return (IOracleWrapper(oracleWrapper).getPrice(), lastPriceTimestamp, updateInterval);
+        (_latestPrice, _data) = IOracleWrapper(oracleWrapper).getPriceAndMetadata();
+        return (_latestPrice, _data, lastPriceTimestamp, updateInterval);
     }
 
     /**
@@ -396,11 +397,6 @@ contract LeveragedPool is ILeveragedPool, Initializable {
 
     modifier onlyPoolCommitter() {
         require(msg.sender == poolCommitter, "msg.sender not poolCommitter");
-        _;
-    }
-
-    modifier onlyPoolKeeper() {
-        require(msg.sender == keeper, "sender not keeper");
         _;
     }
 

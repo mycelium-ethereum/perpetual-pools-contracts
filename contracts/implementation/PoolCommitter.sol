@@ -10,7 +10,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./PoolSwapLibrary.sol";
 import "../interfaces/IOracleWrapper.sol";
 
-/// @title The pool controller contract
+/// @title This contract is responsible for handling commitment logic
 contract PoolCommitter is IPoolCommitter, Ownable {
     // #### Globals
 
@@ -44,6 +44,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         uint128 _minimumCommitSize,
         uint128 _maximumCommitQueueLength
     ) {
+        require(_factory != address(0), "Factory address cannot be null");
         // set the factory on deploy
         factory = _factory;
         minimumCommitSize = _minimumCommitSize;
@@ -116,54 +117,34 @@ contract PoolCommitter is IPoolCommitter, Ownable {
 
         // pull in tokens
         if (commitType == CommitType.LongMint || commitType == CommitType.ShortMint) {
-            // minting: pull in the quote token from the commiter
+            // minting: pull in the quote token from the committer
             require(amount >= minimumCommitSize, "Amount less than minimum");
             pool.quoteTokenTransferFrom(msg.sender, leveragedPool, amount);
         } else if (commitType == CommitType.LongBurn) {
-            // long burning: pull in long pool tokens from commiter
+            // long burning: pull in long pool tokens from committer
 
             // A theoretical amount based on current ratio. Used to get same units as minimumCommitSize
-            uint256 amountOut = PoolSwapLibrary.getAmountOut(
-                PoolSwapLibrary.getRatio(longBalance, IERC20(tokens[0]).totalSupply() + shadowPools[_commitType]),
-                amount
+            uint256 amountOut = PoolSwapLibrary.getWithdrawAmountOnBurn(
+                IERC20(tokens[0]).totalSupply(),
+                amount,
+                longBalance,
+                shadowPools[_commitType]
             );
             require(amountOut >= minimumCommitSize, "Amount less than minimum");
             pool.burnTokens(0, amount, msg.sender);
         } else if (commitType == CommitType.ShortBurn) {
-            // short burning: pull in short pool tokens from commiter
+            // short burning: pull in short pool tokens from committer
 
             // A theoretical amount based on current ratio. Used to get same units as minimumCommitSize
-            uint256 amountOut = PoolSwapLibrary.getAmountOut(
-                PoolSwapLibrary.getRatio(shortBalance, IERC20(tokens[1]).totalSupply() + shadowPools[_commitType]),
-                amount
+            uint256 amountOut = PoolSwapLibrary.getWithdrawAmountOnBurn(
+                IERC20(tokens[1]).totalSupply(),
+                amount,
+                shortBalance,
+                shadowPools[_commitType]
             );
             require(amountOut >= minimumCommitSize, "Amount less than minimum");
             pool.burnTokens(1, amount, msg.sender);
         }
-    }
-
-    /**
-     * @notice Uncommit to minting/burning long/short tokens before the frontrunning interval ticks over
-     * @param _commitID ID of the commit to uncommit (contained within the commits mapping)
-     */
-    function uncommit(uint128 _commitID) external override {
-        Commit memory _commit = commits[_commitID];
-        ILeveragedPool pool = ILeveragedPool(leveragedPool);
-        uint256 lastPriceTimestamp = pool.lastPriceTimestamp();
-        uint256 frontRunningInterval = pool.frontRunningInterval();
-        uint256 updateInterval = pool.updateInterval();
-        require(
-            PoolSwapLibrary.isBeforeFrontRunningInterval(
-                block.timestamp,
-                lastPriceTimestamp,
-                updateInterval,
-                frontRunningInterval
-            ),
-            "Must uncommit before frontRunningInterval"
-        );
-        require(msg.sender == _commit.owner, "Unauthorized");
-        currentCommitQueueLength -= 1;
-        _uncommit(_commit, _commitID);
     }
 
     /**
@@ -334,12 +315,11 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             // update long and short balances
             pool.setNewPoolBalances(longBalance + _commit.amount, shortBalance);
         } else if (_commit.commitType == CommitType.LongBurn) {
-            uint256 amountOut = PoolSwapLibrary.getAmountOut(
-                PoolSwapLibrary.getRatio(
-                    longBalance,
-                    IERC20(tokens[0]).totalSupply() + shadowPools[uint256(CommitType.LongBurn)] + _commit.amount
-                ),
-                _commit.amount
+            uint256 amountOut = PoolSwapLibrary.getWithdrawAmountOnBurn(
+                IERC20(tokens[0]).totalSupply(),
+                _commit.amount,
+                longBalance,
+                shadowPools[_commitType] + _commit.amount
             );
 
             // update long and short balances
@@ -356,12 +336,11 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             pool.mintTokens(1, mintAmount, _commit.owner);
             pool.setNewPoolBalances(longBalance, shortBalance + _commit.amount);
         } else if (_commit.commitType == CommitType.ShortBurn) {
-            uint256 amountOut = PoolSwapLibrary.getAmountOut(
-                PoolSwapLibrary.getRatio(
-                    shortBalance,
-                    IERC20(tokens[1]).totalSupply() + shadowPools[uint256(CommitType.ShortBurn)] + _commit.amount
-                ),
-                _commit.amount
+            uint256 amountOut = PoolSwapLibrary.getWithdrawAmountOnBurn(
+                IERC20(tokens[1]).totalSupply(),
+                _commit.amount,
+                shortBalance,
+                shadowPools[_commitType] + _commit.amount
             );
 
             // update long and short balances
@@ -382,6 +361,8 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         require(_leveragedPool != address(0), "Leveraged pool address cannot be 0 address");
         leveragedPool = _leveragedPool;
         IERC20 _token = IERC20(_quoteToken);
+        bool approvalSuccess = _token.approve(leveragedPool, _token.totalSupply());
+        require(approvalSuccess, "ERC20 approval failed");
         _token.approve(leveragedPool, _token.totalSupply());
         tokens = ILeveragedPool(leveragedPool).poolTokens();
     }
@@ -396,7 +377,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
     }
 
     modifier onlyFactory() {
-        require(msg.sender == factory, "Commiter: not factory");
+        require(msg.sender == factory, "Committer: not factory");
         _;
     }
 

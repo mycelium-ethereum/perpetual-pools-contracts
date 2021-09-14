@@ -134,20 +134,19 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
 
             await token.approve(pool.address, amountMinted)
 
-            const commit = await createCommit(
-                poolCommitter,
-                [0],
-                amountCommitted
-            )
+            // Short mint commit
+            await createCommit(poolCommitter, [0], amountCommitted)
 
             await shortToken.approve(pool.address, amountMinted)
             await timeout(2000)
 
             await pool.poolUpkeep(lastPrice, 10)
 
+            // Short Mint
             commits.push(
                 await createCommit(poolCommitter, [0], amountCommitted)
             )
+            // Short burn
             commits.push(
                 await createCommit(poolCommitter, [1], amountCommitted.div(2))
             )
@@ -172,11 +171,11 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
         })
         it("should adjust the balances of the live pools involved", async () => {
             expect(await pool.shortBalance()).to.eq(amountCommitted)
-            await timeout(2000)
+            await timeout(updateInterval * 1000)
             await pool.poolUpkeep(lastPrice, 10)
 
             expect(await pool.shortBalance()).to.eq(
-                amountCommitted.add(amountCommitted.div(2))
+                amountCommitted.mul(2).sub(amountCommitted.div(2))
             )
         })
     })
