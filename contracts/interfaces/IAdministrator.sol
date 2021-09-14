@@ -6,9 +6,9 @@ interface IAdministrator {
     event Unpaused();
     event Withdrew();
 
-    function pause() external payable returns (uint256);
+    function pause(address pool) external payable returns (uint256);
 
-    function unpause() external payable returns (uint256);
+    function unpause(address pool) external payable returns (uint256);
 
-    function withdraw() external payable returns (uint256);
+    function withdraw(address pool) external payable returns (uint256);
 }

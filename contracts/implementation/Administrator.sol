@@ -17,6 +17,8 @@ contract Administrator is Ownable, IAdministrator {
     }
 
     function callL2(address target, bytes memory payload) public payable onlyOwner returns (uint256) {
+        require(target != address(0), "ADMIN: Target address cannot be null");
+
         uint256 max_submission_cost = 1;
         uint256 max_gas = 1;
         uint256 gas_price_bid = 1;
@@ -40,32 +42,38 @@ contract Administrator is Ownable, IAdministrator {
      * @notice Pauses the pool on L2
      * @dev Submits a message to the L2 inbox
      */
-    function pause() external payable override onlyOwner returns (uint256) {
+    function pause(address pool) external payable override onlyOwner returns (uint256) {
+        require(pool != address(0), "ADMIN: Pool address cannot be null");
+
         /* construct desired call data */
         bytes memory data = abi.encodeWithSelector(LeveragedPool.pause.selector);
 
         /* perform the call to L2 */
-        uint256 ticket_id = callL2(data);
+        uint256 ticket_id = callL2(pool, data);
 
         return ticket_id;
     }
 
-    function unpause() external payable override onlyOwner returns (uint256) {
+    function unpause(address pool) external payable override onlyOwner returns (uint256) {
+        require(pool != address(0), "ADMIN: Pool address cannot be null");
+
         /* construct desired call data */
         bytes memory data = abi.encodeWithSelector(LeveragedPool.unpause.selector);
 
         /* perform the call to L2 */
-        uint256 ticket_id = callL2(data);
+        uint256 ticket_id = callL2(pool, data);
 
         return ticket_id;
     }
 
-    function withdraw() external payable override onlyOwner returns (uint256) {
+    function withdraw(address pool) external payable override onlyOwner returns (uint256) {
+        require(pool != address(0), "ADMIN: Pool address cannot be null");
+
         /* construct desired call data */
         bytes memory data = abi.encodeWithSelector(LeveragedPool.withdrawQuote.selector);
 
         /* perform the call to L2 */
-        uint256 ticket_id = callL2(data);
+        uint256 ticket_id = callL2(pool, data);
 
         return ticket_id;
     }
