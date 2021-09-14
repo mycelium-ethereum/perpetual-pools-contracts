@@ -57,10 +57,22 @@ contract Administrator is Ownable, IAdministrator {
     }
 
     function unpause() external payable override onlyOwner returns (uint256) {
-        /* TODO: unpause */
+        /* construct desired call data */
+        bytes memory data = abi.encodeWithSelector(LeveragedPool.unpause.selector);
+
+        /* perform the call to L2 */
+        uint256 ticket_id = callL2(data);
+
+        return ticket_id;
     }
 
     function withdraw() external payable override onlyOwner returns (uint256) {
-        /* TODO: withdraw */
+        /* construct desired call data */
+        bytes memory data = abi.encodeWithSelector(LeveragedPool.withdrawQuote.selector);
+
+        /* perform the call to L2 */
+        uint256 ticket_id = callL2(data);
+
+        return ticket_id;
     }
 }
