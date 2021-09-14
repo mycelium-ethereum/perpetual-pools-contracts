@@ -48,6 +48,7 @@ const config: HardhatUserConfig = {
         arb: {
             url: ALCHEMY_API_TESTNET_URL,
             accounts: [TESTNET_PRIVATE_KEY],
+            // gasPrice: 200000000000,
         },
         coverage: {
             url: "http://127.0.0.1:8555", // Coverage launches its own ganache-cli client

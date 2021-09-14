@@ -5,10 +5,14 @@ module.exports = async (hre) => {
     const accounts = await ethers.getSigners()
 
     // used for both keepers and the eth market
-    const EthUsdOracle = {"address": "0x5f0423B1a6935dc5596e7A24d98532b67A0AeFd8"}
-    const BtcUsdOracle = {"address": "0x0c9973e7a27d00e656B9f153348dA46CaD70d03d"}
+    const RinkebyEthUsdOracle = {"address": "0x5f0423B1a6935dc5596e7A24d98532b67A0AeFd8"}
+    const RinkebyBtcUsdOracle = {"address": "0x0c9973e7a27d00e656B9f153348dA46CaD70d03d"}
+    const MainnetEthUsdOracle = {"address": "0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612"}
+    const MainnetBtcUsdOracle = {"address": "0x6ce185860a4963106506C203335A2910413708e9"}
+    const multisigAddress = "0x3817E346A0eD30349a853bA422A21DB5d5FE0804"
 
     /* deploy testToken */
+    /*
     const token = await deploy("TestToken", {
         args: ["Test Token", "TST"],
         from: deployer,
@@ -28,27 +32,28 @@ module.exports = async (hre) => {
         accounts[0].address
     )
 
-    /* deploy ChainlinkOracleWrapper */
+    // deploy ChainlinkOracleWrapper
     const oracleWrapper = await deploy("ChainlinkOracleWrapper", {
         from: deployer,
         log: true,
         args: [BtcUsdOracle.address],
     })
+    */
 
-    /* deploy ChainlinkOracleWrapper for keeper */
+    // deploy ChainlinkOracleWrapper for keeper
     const keeperOracle = await deploy("ChainlinkOracleWrapper", {
         from: deployer,
         log: true,
         args: [EthUsdOracle.address],
     })
 
-    /* deploy PoolSwapLibrary */
+    // deploy PoolSwapLibrary
     const library = await deploy("PoolSwapLibrary", {
         from: deployer,
         log: true,
     })
 
-    /* deploy PoolFactory */
+    // deploy PoolFactory
     const factory = await deploy("PoolFactory", {
         from: deployer,
         log: true,
@@ -57,7 +62,7 @@ module.exports = async (hre) => {
         args: [accounts[0].address],
     })
 
-    /* deploy PoolFactory */
+    // deploy PoolFactory
     const poolCommitterDeployer = await deploy("PoolCommitterDeployer", {
         from: deployer,
         log: true,
@@ -65,7 +70,7 @@ module.exports = async (hre) => {
         args: [factory.address],
     })
 
-    /* deploy PoolKeeper */
+    // deploy PoolKeeper
     const poolKeeper = await deploy("PoolKeeper", {
         from: deployer,
         log: true,
@@ -73,7 +78,7 @@ module.exports = async (hre) => {
         args: [factory.address],
     })
 
-    /* Set PoolKeeper*/
+    // Set PoolKeeper
     await execute(
         "PoolFactory",
         {
@@ -118,7 +123,7 @@ module.exports = async (hre) => {
     const minimumCommitSize = ethers.utils.parseEther("50")
     const maximumCommitQueueLength = 300
 
-    /* deploy LeveragePool */
+    // deploy LeveragePool
     const deploymentData = {
         poolName: POOL_CODE,
         frontRunningInterval: frontRunningInterval,
