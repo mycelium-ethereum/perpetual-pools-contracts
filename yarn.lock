@@ -1359,6 +1359,10 @@ anymatch@~3.1.1, anymatch@~3.1.2:
     normalize-path "^3.0.0"
     picomatch "^2.0.4"
 
+"arbitrum-tutorials@https://github.com/OffchainLabs/arbitrum-tutorials":
+  version "1.0.0"
+  resolved "https://github.com/OffchainLabs/arbitrum-tutorials#f11a1e0493fb706b35d7f9d78ee8610875f917ae"
+
 arg@^4.1.0:
   version "4.1.3"
   resolved "https://registry.npmjs.org/arg/-/arg-4.1.3.tgz"
