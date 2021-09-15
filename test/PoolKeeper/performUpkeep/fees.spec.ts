@@ -126,7 +126,6 @@ describe("Leveraged pool fees", () => {
 
             await poolKeeper.performUpkeepSinglePool(pool.address)
 
-
             // We are OK with small amounts of dust being left in the contract because
             // over-collateralised pools are OK
             const approxKeeperFee = mintAmount.div(2)
@@ -140,7 +139,6 @@ describe("Leveraged pool fees", () => {
             //@ts-ignore
             expect(fees).to.be.within(lowerBound, upperBound)
 
-            
             let longBalBefore = await pool.longBalance()
             let shortBalBefore = await pool.shortBalance()
             await pool.withdrawFees()
