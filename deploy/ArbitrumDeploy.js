@@ -31,12 +31,9 @@ module.exports = async (hre) => {
         ethers.utils.parseEther("10000000"), // 10 mil supply
         accounts[0].address
     )
-
     */
+
     // deploy ChainlinkOracleWrapper
-    const oracleWrapper = { address: "0x83181d41b3203651216065F5F5601295E8e45DA4" }
-    const keeperOracle = { address: "0x1E761FC72EeD30dcA34CD7770c52EADB2d675eB8" }
-    /*
     const oracleWrapper = await deploy("ChainlinkOracleWrapper", {
         from: deployer,
         log: true,
@@ -49,9 +46,6 @@ module.exports = async (hre) => {
         log: true,
         args: [MainnetEthUsdOracle.address],
     })
-    */
-    console.log("BTCUSD oracle wrapper: ", oracleWrapper.address)
-    console.log("ETHUSD oracle wrapper: ", keeperOracle.address)
 
     // deploy PoolSwapLibrary
     const library = await deploy("PoolSwapLibrary", {
@@ -67,9 +61,6 @@ module.exports = async (hre) => {
         // (fee receiver)
         args: [multisigAddress],
     })
-
-    /*
-    const factory = { address: "0x18fb99925603F68Ccc49c3542EE3296b1B2efC07" }
 
     // deploy PoolCommitterDeployer
     const poolCommitterDeployer = await deploy("PoolCommitterDeployer", {
@@ -87,8 +78,6 @@ module.exports = async (hre) => {
         args: [factory.address],
     })
 
-    /*
-
     // Set PoolKeeper
     await execute(
         "PoolFactory",
@@ -101,7 +90,7 @@ module.exports = async (hre) => {
     )
 
     console.log("Setting factory fee")
-    const fee = "0x00000000000000000000000000000000"
+    const fee = ethers.utils.parseEther("0.000001142")
     await execute(
         "PoolFactory",
         {
@@ -133,7 +122,8 @@ module.exports = async (hre) => {
     const frontRunningInterval = 300 // 5 mins
     const oneLeverage = 1
     const threeLeverage = 3
-    const minimumCommitSize = ethers.utils.parseEther("1000")
+    // USDC precision is 6 decimals
+    const minimumCommitSize = 1000 * (10**6)
     const maximumCommitQueueLength = 100
 
     // deploy LeveragePool
@@ -190,10 +180,8 @@ module.exports = async (hre) => {
     }
 
     const deploymentData = [deploymentData1, deploymentData2, deploymentData3, deploymentData4]
-    */
     
     // console.log(`Deploy PoolKeeper: ${poolKeeper.address}`)
-    /*
     for (var i = 0; i < deploymentData.length; i++) {
         let receipt = await execute(
             "PoolFactory",
@@ -214,7 +202,6 @@ module.exports = async (hre) => {
         console.log(`Deployed TestToken: ${token.address}`)
         console.log(`Deployed OracleWrapper: ${oracleWrapper.address}`)
     }
-    */
     /*
     await hre.run("verify:verify", {
         address: oracleWrapper.address,
