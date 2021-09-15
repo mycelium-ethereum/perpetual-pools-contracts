@@ -154,8 +154,8 @@ library PoolSwapLibrary {
      */
     function calculatePriceChange(PriceChangeData memory priceChange)
         external
+        pure
         returns (
-            // pure
             uint256,
             uint256,
             uint256
