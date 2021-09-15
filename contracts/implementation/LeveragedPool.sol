@@ -62,7 +62,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         require(initialization._poolCommitter != address(0), "PoolCommitter cannot be 0 address");
         require(initialization._frontRunningInterval < initialization._updateInterval, "frontRunning > updateInterval");
 
-        require(initialization._fee < 100 * PoolSwapLibrary.WAD_PRECISION, "Fee >= 100%");
+        require(initialization._fee < 1 * PoolSwapLibrary.WAD_PRECISION, "Fee >= 100%");
 
         // set the owner of the pool. This is governance when deployed from the factory
         governance = initialization._owner;

@@ -4,6 +4,7 @@ import chaiAsPromised from "chai-as-promised"
 import {
     createCommit,
     deployPoolAndTokenContracts,
+    deployPoolSetupContracts,
     generateRandomAddress,
     timeout,
 } from "../../utilities"
@@ -81,6 +82,30 @@ interface Upkeep {
     roundStart: number
 }
 describe("PoolKeeper - performUpkeep: basic functionality", () => {
+    it("Should revert if fee above 100%", async () => {
+        let lastTime: BigNumber
+
+        const setupContracts = await deployPoolSetupContracts()
+
+        // deploy the pool using the factory, not separately
+        const deployParams = {
+            poolName: POOL_CODE,
+            frontRunningInterval: frontRunningInterval,
+            updateInterval: updateInterval,
+            leverageAmount: 1,
+            quoteToken: setupContracts.token.address,
+            oracleWrapper: setupContracts.oracleWrapper.address,
+            settlementEthOracle: setupContracts.settlementEthOracle.address,
+            minimumCommitSize: 120,
+            maximumCommitQueueLength: 1000,
+        }
+
+        await setupContracts.factory.setFee(ethers.utils.parseEther("100"))
+        await expect(
+            setupContracts.factory.deployPool(deployParams)
+        ).to.be.revertedWith("Fee >= 100%")
+    })
+
     describe("Upkeep - Price execution", () => {
         let lastTime: BigNumber
 
