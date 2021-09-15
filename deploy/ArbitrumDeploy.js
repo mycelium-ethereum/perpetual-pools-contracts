@@ -5,10 +5,18 @@ module.exports = async (hre) => {
     const accounts = await ethers.getSigners()
 
     // used for both keepers and the eth market
-    const RinkebyEthUsdOracle = {"address": "0x5f0423B1a6935dc5596e7A24d98532b67A0AeFd8"}
-    const RinkebyBtcUsdOracle = {"address": "0x0c9973e7a27d00e656B9f153348dA46CaD70d03d"}
-    const MainnetEthUsdOracle = {"address": "0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612"}
-    const MainnetBtcUsdOracle = {"address": "0x6ce185860a4963106506C203335A2910413708e9"}
+    const RinkebyEthUsdOracle = {
+        address: "0x5f0423B1a6935dc5596e7A24d98532b67A0AeFd8",
+    }
+    const RinkebyBtcUsdOracle = {
+        address: "0x0c9973e7a27d00e656B9f153348dA46CaD70d03d",
+    }
+    const MainnetEthUsdOracle = {
+        address: "0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612",
+    }
+    const MainnetBtcUsdOracle = {
+        address: "0x6ce185860a4963106506C203335A2910413708e9",
+    }
     const multisigAddress = "0x0f79e82aE88E1318B8cfC8b4A205fE2F982B928A"
 
     const token = { address: "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8" }
@@ -51,7 +59,8 @@ module.exports = async (hre) => {
         args: [MainnetEthUsdOracle.address],
     })
 
-    await execute("BTCChainlinkOracleWrapper",
+    await execute(
+        "BTCChainlinkOracleWrapper",
         {
             from: deployer,
             log: true,
@@ -59,7 +68,8 @@ module.exports = async (hre) => {
         "transferOwnership",
         multisigAddress
     )
-    await execute("ETHChainlinkOracleWrapper",
+    await execute(
+        "ETHChainlinkOracleWrapper",
         {
             from: deployer,
             log: true,
@@ -154,7 +164,7 @@ module.exports = async (hre) => {
     const oneLeverage = 1
     const threeLeverage = 3
     // USDC precision is 6 decimals
-    const minimumCommitSize = 1000 * (10**6)
+    const minimumCommitSize = 1000 * 10 ** 6
     const maximumCommitQueueLength = 100
 
     // deploy LeveragePool
@@ -210,8 +220,13 @@ module.exports = async (hre) => {
         maximumCommitQueueLength: maximumCommitQueueLength,
     }
 
-    const deploymentData = [deploymentData1, deploymentData2, deploymentData3, deploymentData4]
-    
+    const deploymentData = [
+        deploymentData1,
+        deploymentData2,
+        deploymentData3,
+        deploymentData4,
+    ]
+
     // console.log(`Deploy PoolKeeper: ${poolKeeper.address}`)
     for (var i = 0; i < deploymentData.length; i++) {
         let receipt = await execute(
@@ -225,7 +240,6 @@ module.exports = async (hre) => {
         )
 
         const event = receipt.events.find((el) => el.event === "DeployPool")
-    
 
         console.log(`Deployed PoolFactory: ${factory.address}`)
         console.log(`Deployed LeveragedPool: ${event.args.pool}`)
