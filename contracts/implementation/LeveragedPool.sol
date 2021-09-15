@@ -200,7 +200,6 @@ contract LeveragedPool is ILeveragedPool, Initializable {
             shortBalance = newShortBalance;
             // Pay the fee
             IERC20(quoteToken).safeTransfer(feeAddress, totalFeeAmount);
-
         }
     }
 

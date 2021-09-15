@@ -127,7 +127,6 @@ describe("Leveraged pool fees", () => {
             // over-collateralised pools are OK
             const approxKeeperFee = mintAmount.div(2)
 
-
             let balanceBefore = await token.balanceOf(signers[0].address)
             await poolKeeper.performUpkeepSinglePool(pool.address)
             let balanceAfter = await token.balanceOf(signers[0].address)
