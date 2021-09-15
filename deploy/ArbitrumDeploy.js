@@ -9,7 +9,9 @@ module.exports = async (hre) => {
     const RinkebyBtcUsdOracle = {"address": "0x0c9973e7a27d00e656B9f153348dA46CaD70d03d"}
     const MainnetEthUsdOracle = {"address": "0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612"}
     const MainnetBtcUsdOracle = {"address": "0x6ce185860a4963106506C203335A2910413708e9"}
-    const multisigAddress = " 0x0f79e82aE88E1318B8cfC8b4A205fE2F982B928A"
+    const multisigAddress = "0x0f79e82aE88E1318B8cfC8b4A205fE2F982B928A"
+
+    const token = { address: "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8" }
 
     /* deploy testToken */
     /*
@@ -34,18 +36,37 @@ module.exports = async (hre) => {
     */
 
     // deploy ChainlinkOracleWrapper
-    const oracleWrapper = await deploy("ChainlinkOracleWrapper", {
+    const oracleWrapper = await deploy("BTCChainlinkOracleWrapper", {
         from: deployer,
         log: true,
+        contract: "ChainlinkOracleWrapper",
         args: [MainnetBtcUsdOracle.address],
     })
 
     // deploy ChainlinkOracleWrapper for keeper
-    const keeperOracle = await deploy("ChainlinkOracleWrapper", {
+    const keeperOracle = await deploy("ETHChainlinkOracleWrapper", {
         from: deployer,
         log: true,
+        contract: "ChainlinkOracleWrapper",
         args: [MainnetEthUsdOracle.address],
     })
+
+    await execute("BTCChainlinkOracleWrapper",
+        {
+            from: deployer,
+            log: true,
+        },
+        "transferOwnership",
+        multisigAddress
+    )
+    await execute("ETHChainlinkOracleWrapper",
+        {
+            from: deployer,
+            log: true,
+        },
+        "transferOwnership",
+        multisigAddress
+    )
 
     // deploy PoolSwapLibrary
     const library = await deploy("PoolSwapLibrary", {
@@ -77,6 +98,16 @@ module.exports = async (hre) => {
         libraries: { PoolSwapLibrary: library.address },
         args: [factory.address],
     })
+
+    await execute(
+        "PoolKeeper",
+        {
+            from: deployer,
+            log: true,
+        },
+        "transferOwnership",
+        multisigAddress
+    )
 
     // Set PoolKeeper
     await execute(
