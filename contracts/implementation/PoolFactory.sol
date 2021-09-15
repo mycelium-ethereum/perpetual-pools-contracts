@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: CC-BY-NC-3.0
+// SPDX-License-Identifier: CC-BY-NC-ND-3.0
 pragma solidity 0.8.7;
 
 import "../interfaces/IPoolFactory.sol";
