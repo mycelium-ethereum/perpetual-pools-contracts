@@ -161,6 +161,11 @@ contract PoolFactory is IPoolFactory, Ownable {
         feeReceiver = _feeReceiver;
     }
 
+    /**
+     * @notice Set the fee amount. This is a percentage multiplied by 10^18.
+     *         e.g. 5% is 0.05 * 10^18
+     * @param _fee The fee amount as a percentage multiplied by 10^18
+     */
     function setFee(uint256 _fee) external override onlyOwner {
         fee = _fee;
     }

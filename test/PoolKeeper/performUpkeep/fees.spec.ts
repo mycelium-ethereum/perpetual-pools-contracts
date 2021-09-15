@@ -104,6 +104,7 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
             const longBalAfter = await pool.longBalance()
 
             // We are OK with small amounts of dust being left in the contract because
+            // over-collateralised pools are OK
             const approxKeeperFee = ethers.utils.parseEther("5")
             const epsilon = ethers.utils
                 .parseEther("0.000001")

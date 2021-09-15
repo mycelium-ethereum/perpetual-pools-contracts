@@ -258,6 +258,7 @@ describe("LeveragedPool - executeAllCommitments", () => {
             await pool.withdrawFees()
             const balanceAft = await token.balanceOf(signers[0].address)
             expect(balanceAft).to.be.gt(balanceBef)
+            expect(await pool.feesAccumulated()).to.equal("0")
         })
     })
 })
