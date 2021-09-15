@@ -39,6 +39,8 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     address public override oracleWrapper;
     address public override settlementEthOracle;
 
+    uint256 public feesAccumulated;
+
     address public provisionalGovernance;
     bool public governanceTransferInProgress;
     bool public paused;
@@ -60,7 +62,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         require(initialization._poolCommitter != address(0), "PoolCommitter cannot be 0 address");
         require(initialization._frontRunningInterval < initialization._updateInterval, "frontRunning > updateInterval");
 
-        require(PoolSwapLibrary.compareDecimals(initialization._fee, PoolSwapLibrary.one) == -1, "Fee >= 100%");
+        require(initialization._fee < 100 * PoolSwapLibrary.WAD_PRECISION, "Fee >= 100%");
 
         // set the owner of the pool. This is governance when deployed from the factory
         governance = initialization._owner;
@@ -72,7 +74,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         quoteToken = initialization._quoteToken;
         frontRunningInterval = initialization._frontRunningInterval;
         updateInterval = initialization._updateInterval;
-        fee = initialization._fee;
+        fee = PoolSwapLibrary.convertUIntToDecimal(initialization._fee);
         leverageAmount = PoolSwapLibrary.convertUIntToDecimal(initialization._leverageAmount);
         feeAddress = initialization._feeAddress;
         lastPriceTimestamp = block.timestamp;
@@ -199,8 +201,12 @@ contract LeveragedPool is ILeveragedPool, Initializable {
             longBalance = newLongBalance;
             shortBalance = newShortBalance;
             // Pay the fee
-            IERC20(quoteToken).safeTransfer(feeAddress, totalFeeAmount);
+            feesAccumulated += totalFeeAmount;
         }
+    }
+
+    function withdrawFees() external onlyFeeReceiver {
+        IERC20(quoteToken).safeTransfer(feeAddress, feesAccumulated / PoolSwapLibrary.WAD_PRECISION);
     }
 
     /**
@@ -397,6 +403,11 @@ contract LeveragedPool is ILeveragedPool, Initializable {
 
     modifier onlyPoolCommitter() {
         require(msg.sender == poolCommitter, "msg.sender not poolCommitter");
+        _;
+    }
+
+    modifier onlyFeeReceiver() {
+        require(msg.sender == feeAddress, "msg.sender not feeReceiver");
         _;
     }
 

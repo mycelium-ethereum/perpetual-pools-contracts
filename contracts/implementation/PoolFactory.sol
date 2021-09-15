@@ -27,7 +27,7 @@ contract PoolFactory is IPoolFactory, Ownable {
     // Contract address to receive protocol fees
     address public feeReceiver;
     // Default fee; quadruple precision (128 bit) floating point number (64.64)
-    bytes16 public fee;
+    uint256 public fee;
 
     /**
      * @notice Format: Pool counter => pool address
@@ -161,7 +161,7 @@ contract PoolFactory is IPoolFactory, Ownable {
         feeReceiver = _feeReceiver;
     }
 
-    function setFee(bytes16 _fee) external override onlyOwner {
+    function setFee(uint256 _fee) external override onlyOwner {
         fee = _fee;
     }
 

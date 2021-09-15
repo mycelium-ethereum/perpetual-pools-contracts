@@ -183,7 +183,7 @@ export const deployPoolAndTokenContracts = async (
     minimumCommitSize: BigNumber,
     maximumCommitQueueLength: number,
     feeAddress?: string,
-    fee?: BytesLike
+    fee?: any
 ): Promise<{
     signers: SignerWithAddress[]
     pool: LeveragedPool

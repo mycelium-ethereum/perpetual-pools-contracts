@@ -12,6 +12,8 @@ library PoolSwapLibrary {
     bytes16 private constant NEGATIVE_ZERO = 0x80000000000000000000000000000000;
     uint256 public constant MAX_DECIMALS = 18;
 
+    uint256 public constant WAD_PRECISION = 10**18;
+
     struct PriceChangeData {
         int256 oldPrice;
         int256 newPrice;
@@ -152,8 +154,8 @@ library PoolSwapLibrary {
      */
     function calculatePriceChange(PriceChangeData memory priceChange)
         external
-        pure
         returns (
+            // pure
             uint256,
             uint256,
             uint256
@@ -173,8 +175,8 @@ library PoolSwapLibrary {
 
         // fee is enforced to be < 1.
         // Therefore, shortFeeAmount < shortBalance, and longFeeAmount < longBalance
-        shortBalance = shortBalance - shortFeeAmount;
-        longBalance = longBalance - longFeeAmount;
+        shortBalance = shortBalance - (shortFeeAmount / WAD_PRECISION);
+        longBalance = longBalance - (longFeeAmount / WAD_PRECISION);
         totalFeeAmount = totalFeeAmount + shortFeeAmount + longFeeAmount;
 
         // Use the ratio to determine if the price increased or decreased and therefore which direction

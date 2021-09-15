@@ -13,14 +13,12 @@ import {
 
 import {
     POOL_CODE,
-    DEFAULT_FEE,
     DEFAULT_MIN_COMMIT_SIZE,
     DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
 } from "./constants"
 import {
     deployPoolAndTokenContracts,
     getRandomInt,
-    generateRandomAddress,
     createCommit,
     CommitEventArgs,
     timeout,
@@ -33,11 +31,10 @@ const { expect } = chai
 
 const amountCommitted = ethers.utils.parseEther("2000")
 const amountMinted = ethers.utils.parseEther("10000")
-const feeAddress = generateRandomAddress()
 const lastPrice = ethers.utils.parseEther(getRandomInt(99999999, 1).toString())
 const updateInterval = 200
 const frontRunningInterval = 20 // seconds
-const fee = DEFAULT_FEE
+const fee = ethers.utils.parseEther("0.00001")
 const leverage = 1
 
 describe("LeveragedPool - executeAllCommitments", () => {
@@ -62,7 +59,7 @@ describe("LeveragedPool - executeAllCommitments", () => {
                 leverage,
                 DEFAULT_MIN_COMMIT_SIZE,
                 DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
-                feeAddress,
+                signers[0].address,
                 fee
             )
             pool = result.pool
@@ -256,6 +253,11 @@ describe("LeveragedPool - executeAllCommitments", () => {
                 signers[0].address
             )
             expect(longTokensAfter).to.equal(0)
+
+            const balanceBef = await token.balanceOf(signers[0].address)
+            await pool.withdrawFees()
+            const balanceAft = await token.balanceOf(signers[0].address)
+            expect(balanceAft).to.be.gt(balanceBef)
         })
     })
 })
