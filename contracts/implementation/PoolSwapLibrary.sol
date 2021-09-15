@@ -171,13 +171,12 @@ library PoolSwapLibrary {
         // Calculate fees from long and short sides
         uint256 longFeeAmount = convertDecimalToUInt(multiplyDecimalByUInt(fee, longBalance));
         uint256 shortFeeAmount = convertDecimalToUInt(multiplyDecimalByUInt(fee, shortBalance));
-        uint256 totalFeeAmount = 0;
 
         // fee is enforced to be < 1.
         // Therefore, shortFeeAmount < shortBalance, and longFeeAmount < longBalance
-        shortBalance = shortBalance - (shortFeeAmount / WAD_PRECISION);
-        longBalance = longBalance - (longFeeAmount / WAD_PRECISION);
-        totalFeeAmount = totalFeeAmount + shortFeeAmount + longFeeAmount;
+        // shortBalance = shortBalance - (shortFeeAmount / WAD_PRECISION);
+        // longBalance = longBalance - (longFeeAmount / WAD_PRECISION);
+        uint256 totalFeeAmount = shortFeeAmount + longFeeAmount;
 
         // Use the ratio to determine if the price increased or decreased and therefore which direction
         // the funds should be transferred towards.

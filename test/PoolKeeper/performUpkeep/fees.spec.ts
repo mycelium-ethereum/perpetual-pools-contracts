@@ -21,6 +21,7 @@ import {
     TestToken,
     TestChainlinkOracle,
     PoolCommitter,
+    LeveragedPool,
 } from "../../../types"
 import { BigNumber } from "ethers"
 import { Result } from "ethers/lib/utils"
@@ -43,10 +44,10 @@ let token: TestToken
 const updateInterval = 10
 const frontRunningInterval = 1
 const fee = ethers.utils.parseEther("0.5")
-const feeAddress = generateRandomAddress()
 const mintAmount = DEFAULT_MINT_AMOUNT
 
 const setupHook = async () => {
+    signers = await ethers.getSigners()
     /* NOTE: settlementToken in this test is the same as the derivative oracle */
     const contracts1 = await deployPoolAndTokenContracts(
         POOL_CODE,
@@ -55,13 +56,12 @@ const setupHook = async () => {
         1,
         DEFAULT_MIN_COMMIT_SIZE,
         DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
-        feeAddress,
+        signers[0].address,
         fee
     )
     poolCommitter = contracts1.poolCommitter
     token = contracts1.token
     pool = contracts1.pool
-    signers = await ethers.getSigners()
     poolKeeper = contracts1.poolKeeper
     derivativeChainlinkOracle = contracts1.chainlinkOracle
     derivativeOracleWrapper = contracts1.oracleWrapper
@@ -119,24 +119,38 @@ describe("Leveraged pool fees", () => {
 
         it("Takes the right fee amount", async () => {
             await createCommit(poolCommitter, [2], mintAmount.div(2))
+            await createCommit(poolCommitter, [0], mintAmount.div(2))
             await timeout(updateInterval * 1000 + 1000)
             await poolKeeper.performUpkeepSinglePool(pool.address)
-            const longBalBefore = await pool.longBalance()
             await timeout(updateInterval * 1000 + 1000)
 
             await poolKeeper.performUpkeepSinglePool(pool.address)
 
-            const longBalAfter = await pool.longBalance()
 
             // We are OK with small amounts of dust being left in the contract because
             // over-collateralised pools are OK
-            const approxKeeperFee = ethers.utils.parseEther("5")
+            const approxKeeperFee = mintAmount.div(2)
+            let fees = await pool.feesAccumulated()
+            fees = fees.div(ethers.utils.parseEther("1"))
             const epsilon = ethers.utils
                 .parseEther("0.000001")
                 .add(approxKeeperFee)
-            const upperBound = longBalBefore.div(2).add(epsilon)
-            const lowerBound = longBalBefore.div(2).sub(epsilon)
-            expect(longBalAfter).to.be.within(lowerBound, upperBound)
+            const upperBound = approxKeeperFee.div(2).add(epsilon)
+            const lowerBound = approxKeeperFee.div(2).sub(epsilon)
+            //@ts-ignore
+            expect(fees).to.be.within(lowerBound, upperBound)
+
+            
+            let longBalBefore = await pool.longBalance()
+            let shortBalBefore = await pool.shortBalance()
+            await pool.withdrawFees()
+            let longBalAfter = await pool.longBalance()
+            let shortBalAfter = await pool.shortBalance()
+            expect(longBalBefore.sub(longBalAfter)).to.equal(fees.div(2))
+            expect(shortBalBefore.sub(shortBalAfter)).to.equal(fees.div(2))
+            
+            
+
         })
     })
 })
