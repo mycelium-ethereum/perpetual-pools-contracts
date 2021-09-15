@@ -174,8 +174,6 @@ library PoolSwapLibrary {
 
         // fee is enforced to be < 1.
         // Therefore, shortFeeAmount < shortBalance, and longFeeAmount < longBalance
-        // shortBalance = shortBalance - (shortFeeAmount / WAD_PRECISION);
-        // longBalance = longBalance - (longFeeAmount / WAD_PRECISION);
         uint256 totalFeeAmount = shortFeeAmount + longFeeAmount;
 
         // Use the ratio to determine if the price increased or decreased and therefore which direction

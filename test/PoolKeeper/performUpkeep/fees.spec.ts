@@ -148,9 +148,6 @@ describe("Leveraged pool fees", () => {
             let shortBalAfter = await pool.shortBalance()
             expect(longBalBefore.sub(longBalAfter)).to.equal(fees.div(2))
             expect(shortBalBefore.sub(shortBalAfter)).to.equal(fees.div(2))
-            
-            
-
         })
     })
 })

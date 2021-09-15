@@ -207,6 +207,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
 
     function withdrawFees() external onlyFeeReceiver {
         uint256 tempFeesAccumulated = feesAccumulated;
+        // Remove dust
         uint256 feeAsToken = tempFeesAccumulated / PoolSwapLibrary.WAD_PRECISION;
         uint256 feeAsRaw = feeAsToken * PoolSwapLibrary.WAD_PRECISION;
         feesAccumulated = feesAccumulated - feeAsRaw;
