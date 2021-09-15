@@ -26,8 +26,8 @@ contract PoolFactory is IPoolFactory, Ownable {
     uint16 public maxLeverage = 10;
     // Contract address to receive protocol fees
     address public feeReceiver;
-    // Default fee; quadruple precision (128 bit) floating point number (64.64)
-    bytes16 public fee;
+    // Default fee; Fee value as a decimal multiplied by 10^18. For example, 0.5% is represented as 0.5 * 10^18
+    uint256 public fee;
 
     /**
      * @notice Format: Pool counter => pool address
@@ -161,7 +161,12 @@ contract PoolFactory is IPoolFactory, Ownable {
         feeReceiver = _feeReceiver;
     }
 
-    function setFee(bytes16 _fee) external override onlyOwner {
+    /**
+     * @notice Set the fee amount. This is a percentage multiplied by 10^18.
+     *         e.g. 5% is 0.05 * 10^18
+     * @param _fee The fee amount as a percentage multiplied by 10^18
+     */
+    function setFee(uint256 _fee) external override onlyOwner {
         fee = _fee;
     }
 
