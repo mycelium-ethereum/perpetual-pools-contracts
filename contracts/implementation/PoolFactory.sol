@@ -26,7 +26,7 @@ contract PoolFactory is IPoolFactory, Ownable {
     uint16 public maxLeverage = 10;
     // Contract address to receive protocol fees
     address public feeReceiver;
-    // Default fee; quadruple precision (128 bit) floating point number (64.64)
+    // Default fee; Fee value as a decimal multiplied by 10^18. For example, 0.5% is represented as 0.5 * 10^18
     uint256 public fee;
 
     /**
