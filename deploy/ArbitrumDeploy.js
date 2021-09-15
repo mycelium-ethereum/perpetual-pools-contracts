@@ -118,6 +118,15 @@ module.exports = async (hre) => {
         "transferOwnership",
         multisigAddress
     )
+    await execute(
+        "PoolFactory",
+        {
+            from: deployer,
+            log: true,
+        },
+        "transferOwnership",
+        multisigAddress
+    )
 
     // Set PoolKeeper
     await execute(
