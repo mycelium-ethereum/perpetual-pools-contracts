@@ -81,7 +81,7 @@ interface Upkeep {
     updateInterval: number
     roundStart: number
 }
-describe("PoolKeeper - performUpkeep: basic functionality", () => {
+describe("Leveraged pool fees", () => {
     it("Should revert if fee above 100%", async () => {
         let lastTime: BigNumber
 
@@ -106,7 +106,7 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
         ).to.be.revertedWith("Fee >= 100%")
     })
 
-    describe("Upkeep - Price execution", () => {
+    describe("Fees on price change", () => {
         let lastTime: BigNumber
 
         before(async () => {
