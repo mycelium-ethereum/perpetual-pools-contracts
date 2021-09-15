@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: CC-BY-NC-3.0
 pragma solidity 0.8.7;
 
 import "./PoolCommitter.sol";
