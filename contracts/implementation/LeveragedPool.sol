@@ -206,7 +206,9 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     }
 
     function withdrawFees() external onlyFeeReceiver {
-        IERC20(quoteToken).safeTransfer(feeAddress, feesAccumulated / PoolSwapLibrary.WAD_PRECISION);
+        uint256 tempFeesAccumulated = feesAccumulated;
+        feesAccumulated = 0;
+        IERC20(quoteToken).safeTransfer(feeAddress, tempFeesAccumulated / PoolSwapLibrary.WAD_PRECISION);
     }
 
     /**
