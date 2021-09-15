@@ -123,29 +123,23 @@ describe("Leveraged pool fees", () => {
             await timeout(updateInterval * 1000 + 1000)
             await poolKeeper.performUpkeepSinglePool(pool.address)
             await timeout(updateInterval * 1000 + 1000)
-
-            await poolKeeper.performUpkeepSinglePool(pool.address)
-
             // We are OK with small amounts of dust being left in the contract because
             // over-collateralised pools are OK
             const approxKeeperFee = mintAmount.div(2)
-            let fees = await pool.feesAccumulated()
-            fees = fees.div(ethers.utils.parseEther("1"))
+
+
+            let balanceBefore = await token.balanceOf(signers[0].address)
+            await poolKeeper.performUpkeepSinglePool(pool.address)
+            let balanceAfter = await token.balanceOf(signers[0].address)
+            let feesTaken = balanceAfter.sub(balanceBefore)
+
             const epsilon = ethers.utils
                 .parseEther("0.000001")
                 .add(approxKeeperFee)
             const upperBound = approxKeeperFee.div(2).add(epsilon)
             const lowerBound = approxKeeperFee.div(2).sub(epsilon)
             //@ts-ignore
-            expect(fees).to.be.within(lowerBound, upperBound)
-
-            let longBalBefore = await pool.longBalance()
-            let shortBalBefore = await pool.shortBalance()
-            await pool.withdrawFees()
-            let longBalAfter = await pool.longBalance()
-            let shortBalAfter = await pool.shortBalance()
-            expect(longBalBefore.sub(longBalAfter)).to.equal(fees.div(2))
-            expect(shortBalBefore.sub(shortBalAfter)).to.equal(fees.div(2))
+            expect(feesTaken).to.be.within(lowerBound, upperBound)
         })
     })
 })

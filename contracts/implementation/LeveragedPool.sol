@@ -39,8 +39,6 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     address public override oracleWrapper;
     address public override settlementEthOracle;
 
-    uint256 public feesAccumulated;
-
     address public provisionalGovernance;
     bool public governanceTransferInProgress;
     bool public paused;
@@ -201,20 +199,9 @@ contract LeveragedPool is ILeveragedPool, Initializable {
             longBalance = newLongBalance;
             shortBalance = newShortBalance;
             // Pay the fee
-            feesAccumulated += totalFeeAmount;
-        }
-    }
+            IERC20(quoteToken).safeTransfer(feeAddress, totalFeeAmount);
 
-    function withdrawFees() external onlyFeeReceiver {
-        uint256 tempFeesAccumulated = feesAccumulated;
-        // Remove dust
-        uint256 feeAsToken = tempFeesAccumulated / PoolSwapLibrary.WAD_PRECISION;
-        uint256 feeAsRaw = feeAsToken * PoolSwapLibrary.WAD_PRECISION;
-        feesAccumulated = feesAccumulated - feeAsRaw;
-        uint256 individualFee = feeAsToken / 2;
-        longBalance = longBalance - individualFee;
-        shortBalance = shortBalance - individualFee;
-        IERC20(quoteToken).safeTransfer(feeAddress, individualFee * 2);
+        }
     }
 
     /**

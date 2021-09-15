@@ -253,12 +253,6 @@ describe("LeveragedPool - executeAllCommitments", () => {
                 signers[0].address
             )
             expect(longTokensAfter).to.equal(0)
-
-            let shortBalance = await pool.shortBalance()
-            console.log(shortBalance.toString())
-            const balanceBef = await token.balanceOf(signers[0].address)
-
-            await expect(pool.withdrawFees()).to.be.reverted
         })
     })
 })

@@ -169,11 +169,11 @@ library PoolSwapLibrary {
         bytes16 fee = priceChange.fee;
 
         // Calculate fees from long and short sides
-        uint256 longFeeAmount = convertDecimalToUInt(multiplyDecimalByUInt(fee, longBalance));
-        uint256 shortFeeAmount = convertDecimalToUInt(multiplyDecimalByUInt(fee, shortBalance));
+        uint256 longFeeAmount = convertDecimalToUInt(multiplyDecimalByUInt(fee, longBalance)) / PoolSwapLibrary.WAD_PRECISION;
+        uint256 shortFeeAmount = convertDecimalToUInt(multiplyDecimalByUInt(fee, shortBalance)) / PoolSwapLibrary.WAD_PRECISION;
 
-        // fee is enforced to be < 1.
-        // Therefore, shortFeeAmount < shortBalance, and longFeeAmount < longBalance
+        shortBalance = shortBalance - shortFeeAmount;
+        longBalance = longBalance - longFeeAmount;
         uint256 totalFeeAmount = shortFeeAmount + longFeeAmount;
 
         // Use the ratio to determine if the price increased or decreased and therefore which direction
