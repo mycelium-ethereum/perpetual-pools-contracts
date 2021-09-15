@@ -9,12 +9,12 @@ module.exports = async (hre) => {
     const RinkebyBtcUsdOracle = {"address": "0x0c9973e7a27d00e656B9f153348dA46CaD70d03d"}
     const MainnetEthUsdOracle = {"address": "0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612"}
     const MainnetBtcUsdOracle = {"address": "0x6ce185860a4963106506C203335A2910413708e9"}
-    const multisigAddress = "0x3817E346A0eD30349a853bA422A21DB5d5FE0804"
+    const multisigAddress = "0x18fb99925603F68Ccc49c3542EE3296b1B2efC07"
 
     /* deploy testToken */
     /*
     const token = await deploy("TestToken", {
-        args: ["Test Token", "TST"],
+        args: ["Test Tracer USDC", "TUSDC"],
         from: deployer,
         log: true,
         contract: "TestToken",
@@ -32,20 +32,26 @@ module.exports = async (hre) => {
         accounts[0].address
     )
 
+    */
     // deploy ChainlinkOracleWrapper
+    const oracleWrapper = { address: "0x83181d41b3203651216065F5F5601295E8e45DA4" }
+    const keeperOracle = { address: "0x1E761FC72EeD30dcA34CD7770c52EADB2d675eB8" }
+    /*
     const oracleWrapper = await deploy("ChainlinkOracleWrapper", {
         from: deployer,
         log: true,
-        args: [BtcUsdOracle.address],
+        args: [MainnetBtcUsdOracle.address],
     })
-    */
 
     // deploy ChainlinkOracleWrapper for keeper
     const keeperOracle = await deploy("ChainlinkOracleWrapper", {
         from: deployer,
         log: true,
-        args: [EthUsdOracle.address],
+        args: [MainnetEthUsdOracle.address],
     })
+    */
+    console.log("BTCUSD oracle wrapper: ", oracleWrapper.address)
+    console.log("ETHUSD oracle wrapper: ", keeperOracle.address)
 
     // deploy PoolSwapLibrary
     const library = await deploy("PoolSwapLibrary", {
@@ -59,10 +65,13 @@ module.exports = async (hre) => {
         log: true,
         libraries: { PoolSwapLibrary: library.address },
         // (fee receiver)
-        args: [accounts[0].address],
+        args: [multisigAddress],
     })
 
-    // deploy PoolFactory
+    /*
+    const factory = { address: "0x18fb99925603F68Ccc49c3542EE3296b1B2efC07" }
+
+    // deploy PoolCommitterDeployer
     const poolCommitterDeployer = await deploy("PoolCommitterDeployer", {
         from: deployer,
         log: true,
@@ -77,6 +86,8 @@ module.exports = async (hre) => {
         libraries: { PoolSwapLibrary: library.address },
         args: [factory.address],
     })
+
+    /*
 
     // Set PoolKeeper
     await execute(
@@ -115,20 +126,23 @@ module.exports = async (hre) => {
         poolCommitterDeployer.address
     )
 
-    const POOL_CODE = "BTC-USD"
+    const BTC_POOL_CODE = "BTC/USD"
+    const ETH_POOL_CODE = "ETH/USD"
 
-    const updateInterval = 320 // 5 minute
-    const frontRunningInterval = 60 // seconds
-    const leverage = 1
-    const minimumCommitSize = ethers.utils.parseEther("50")
-    const maximumCommitQueueLength = 300
+    const updateInterval = 3600 // 60 mins
+    const frontRunningInterval = 300 // 5 mins
+    const oneLeverage = 1
+    const threeLeverage = 3
+    const minimumCommitSize = ethers.utils.parseEther("1000")
+    const maximumCommitQueueLength = 100
 
     // deploy LeveragePool
-    const deploymentData = {
-        poolName: POOL_CODE,
+    // BTC-USD 1x
+    const deploymentData1 = {
+        poolName: BTC_POOL_CODE,
         frontRunningInterval: frontRunningInterval,
         updateInterval: updateInterval,
-        leverageAmount: leverage,
+        leverageAmount: oneLeverage,
         quoteToken: token.address,
         oracleWrapper: oracleWrapper.address,
         settlementEthOracle: keeperOracle.address,
@@ -136,23 +150,85 @@ module.exports = async (hre) => {
         maximumCommitQueueLength: maximumCommitQueueLength,
     }
 
-    const receipt = await execute(
-        "PoolFactory",
-        {
-            from: deployer,
-            log: true,
-        },
-        "deployPool",
-        deploymentData
-    )
+    // BTC-USD 3x
+    const deploymentData2 = {
+        poolName: BTC_POOL_CODE,
+        frontRunningInterval: frontRunningInterval,
+        updateInterval: updateInterval,
+        leverageAmount: threeLeverage,
+        quoteToken: token.address,
+        oracleWrapper: oracleWrapper.address,
+        settlementEthOracle: keeperOracle.address,
+        minimumCommitSize: minimumCommitSize,
+        maximumCommitQueueLength: maximumCommitQueueLength,
+    }
 
-    const event = receipt.events.find((el) => el.event === "DeployPool")
+    // ETH-USD 1x
+    const deploymentData3 = {
+        poolName: ETH_POOL_CODE,
+        frontRunningInterval: frontRunningInterval,
+        updateInterval: updateInterval,
+        leverageAmount: oneLeverage,
+        quoteToken: token.address,
+        oracleWrapper: keeperOracle.address,
+        settlementEthOracle: keeperOracle.address,
+        minimumCommitSize: minimumCommitSize,
+        maximumCommitQueueLength: maximumCommitQueueLength,
+    }
 
-    console.log(`Deployed PoolFactory: ${factory.address}`)
-    console.log(`Deployed LeveragedPool: ${event.args.pool}`)
-    console.log(`Deploy PoolKeeper: ${poolKeeper.address}`)
-    console.log(`Deployed TestToken: ${token.address}`)
-    console.log(`Deployed OracleWrapper: ${oracleWrapper.address}`)
+    // ETH-USD 3x
+    const deploymentData4 = {
+        poolName: ETH_POOL_CODE,
+        frontRunningInterval: frontRunningInterval,
+        updateInterval: updateInterval,
+        leverageAmount: threeLeverage,
+        quoteToken: token.address,
+        oracleWrapper: keeperOracle.address,
+        settlementEthOracle: keeperOracle.address,
+        minimumCommitSize: minimumCommitSize,
+        maximumCommitQueueLength: maximumCommitQueueLength,
+    }
+
+    const deploymentData = [deploymentData1, deploymentData2, deploymentData3, deploymentData4]
+    */
+    
+    // console.log(`Deploy PoolKeeper: ${poolKeeper.address}`)
+    /*
+    for (var i = 0; i < deploymentData.length; i++) {
+        let receipt = await execute(
+            "PoolFactory",
+            {
+                from: deployer,
+                log: true,
+            },
+            "deployPool",
+            deploymentData[i]
+        )
+
+        const event = receipt.events.find((el) => el.event === "DeployPool")
+    
+
+        console.log(`Deployed PoolFactory: ${factory.address}`)
+        console.log(`Deployed LeveragedPool: ${event.args.pool}`)
+        console.log(`Deploy PoolKeeper: ${poolKeeper.address}`)
+        console.log(`Deployed TestToken: ${token.address}`)
+        console.log(`Deployed OracleWrapper: ${oracleWrapper.address}`)
+    }
+    */
+    /*
+    await hre.run("verify:verify", {
+        address: oracleWrapper.address,
+        constructorArguments: [MainnetBtcUsdOracle.address],
+    })
+    await hre.run("verify:verify", {
+        address: keeperOracle.address,
+        constructorArguments: [MainnetEthUsdOracle.address],
+    })
+    */
+    await hre.run("verify:verify", {
+        address: factory.address,
+        constructorArguments: [multisigAddress],
+    })
 }
 
 module.exports.tags = ["ArbDeploy"]
