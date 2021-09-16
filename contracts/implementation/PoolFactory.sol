@@ -29,6 +29,8 @@ contract PoolFactory is IPoolFactory, Ownable {
     // Default fee; Fee value as a decimal multiplied by 10^18. For example, 0.5% is represented as 0.5 * 10^18
     uint256 public fee;
 
+    // This is required because we must pass along *some* value for decimal
+    // precision to the base pool tokens as we use the Cloneable pattern
     uint8 constant DEFAULT_NUM_DECIMALS = 18;
 
     /**
@@ -137,6 +139,7 @@ contract PoolFactory is IPoolFactory, Ownable {
      * @notice Deploy a contract for pool tokens
      * @param name Name of the token
      * @param symbol Symbol of the token
+     * @param decimals Number of decimal places to be supported
      * @return Address of the pool token
      */
     function deployPairToken(
