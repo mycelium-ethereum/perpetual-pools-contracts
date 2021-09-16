@@ -29,6 +29,10 @@ contract PoolFactory is IPoolFactory, Ownable {
     // Default fee; Fee value as a decimal multiplied by 10^18. For example, 0.5% is represented as 0.5 * 10^18
     uint256 public fee;
 
+    // This is required because we must pass along *some* value for decimal
+    // precision to the base pool tokens as we use the Cloneable pattern
+    uint8 constant DEFAULT_NUM_DECIMALS = 18;
+
     /**
      * @notice Format: Pool counter => pool address
      */
@@ -43,7 +47,7 @@ contract PoolFactory is IPoolFactory, Ownable {
     // #### Functions
     constructor(address _feeReceiver) {
         // Deploy base contracts
-        pairTokenBase = new PoolToken();
+        pairTokenBase = new PoolToken(DEFAULT_NUM_DECIMALS);
         pairTokenBaseAddress = address(pairTokenBase);
         poolBase = new LeveragedPool();
         poolBaseAddress = address(poolBase);
@@ -67,7 +71,7 @@ contract PoolFactory is IPoolFactory, Ownable {
         // Init bases
         poolBase.initialize(baseInitialization);
 
-        pairTokenBase.initialize(address(this), "BASE_TOKEN", "BASE");
+        pairTokenBase.initialize(address(this), "BASE_TOKEN", "BASE", DEFAULT_NUM_DECIMALS);
         feeReceiver = _feeReceiver;
     }
 
@@ -96,8 +100,10 @@ contract PoolFactory is IPoolFactory, Ownable {
         string memory leverage = uint2str(deploymentParameters.leverageAmount);
         string memory longString = string(abi.encodePacked(leverage, "L-", deploymentParameters.poolName));
         string memory shortString = string(abi.encodePacked(leverage, "S-", deploymentParameters.poolName));
-        address shortToken = deployPairToken(_pool, shortString, shortString);
-        address longToken = deployPairToken(_pool, longString, longString);
+
+        uint8 settlementDecimals = IERC20DecimalsWrapper(deploymentParameters.quoteToken).decimals();
+        address shortToken = deployPairToken(_pool, shortString, shortString, settlementDecimals);
+        address longToken = deployPairToken(_pool, longString, longString, settlementDecimals);
         ILeveragedPool.Initialization memory initialization = ILeveragedPool.Initialization(
             owner(), // governance is the owner of pools -- if this changes, `onlyGov` breaks
             _poolKeeper,
@@ -133,15 +139,17 @@ contract PoolFactory is IPoolFactory, Ownable {
      * @notice Deploy a contract for pool tokens
      * @param name Name of the token
      * @param symbol Symbol of the token
+     * @param decimals Number of decimal places to be supported
      * @return Address of the pool token
      */
     function deployPairToken(
         address owner,
         string memory name,
-        string memory symbol
+        string memory symbol,
+        uint8 decimals
     ) internal returns (address) {
         PoolToken pairToken = PoolToken(Clones.clone(pairTokenBaseAddress));
-        pairToken.initialize(owner, name, symbol);
+        pairToken.initialize(owner, name, symbol, decimals);
 
         return address(pairToken);
     }

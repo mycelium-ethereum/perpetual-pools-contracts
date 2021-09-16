@@ -11,7 +11,7 @@ contract PoolToken is ERC20_Cloneable, IPoolToken {
 
     // #### Functions
 
-    constructor() ERC20_Cloneable("BASE_TOKEN", "BASE") {}
+    constructor(uint8 _decimals) ERC20_Cloneable("BASE_TOKEN", "BASE", _decimals) {}
 
     /**
      * @notice Mints pool tokens
