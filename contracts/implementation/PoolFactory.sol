@@ -69,7 +69,7 @@ contract PoolFactory is IPoolFactory, Ownable {
         // Init bases
         poolBase.initialize(baseInitialization);
 
-        pairTokenBase.initialize(address(this), "BASE_TOKEN", "BASE");
+        pairTokenBase.initialize(address(this), "BASE_TOKEN", "BASE", DEFAULT_NUM_DECIMALS);
         feeReceiver = _feeReceiver;
     }
 
@@ -98,8 +98,10 @@ contract PoolFactory is IPoolFactory, Ownable {
         string memory leverage = uint2str(deploymentParameters.leverageAmount);
         string memory longString = string(abi.encodePacked(leverage, "L-", deploymentParameters.poolName));
         string memory shortString = string(abi.encodePacked(leverage, "S-", deploymentParameters.poolName));
-        address shortToken = deployPairToken(_pool, shortString, shortString);
-        address longToken = deployPairToken(_pool, longString, longString);
+
+        uint8 settlementDecimals = IERC20DecimalsWrapper(deploymentParameters.quoteToken).decimals();
+        address shortToken = deployPairToken(_pool, shortString, shortString, settlementDecimals);
+        address longToken = deployPairToken(_pool, longString, longString, settlementDecimals);
         ILeveragedPool.Initialization memory initialization = ILeveragedPool.Initialization(
             owner(), // governance is the owner of pools -- if this changes, `onlyGov` breaks
             _poolKeeper,
@@ -140,10 +142,11 @@ contract PoolFactory is IPoolFactory, Ownable {
     function deployPairToken(
         address owner,
         string memory name,
-        string memory symbol
+        string memory symbol,
+        uint8 decimals
     ) internal returns (address) {
         PoolToken pairToken = PoolToken(Clones.clone(pairTokenBaseAddress));
-        pairToken.initialize(owner, name, symbol);
+        pairToken.initialize(owner, name, symbol, decimals);
 
         return address(pairToken);
     }
