@@ -41,6 +41,7 @@ module.exports = async (hre) => {
         ethers.utils.parseEther("10000000"), // 10 mil supply
         accounts[0].address
     )
+
     */
 
     // deploy ChainlinkOracleWrapper
@@ -51,6 +52,9 @@ module.exports = async (hre) => {
         args: [MainnetBtcUsdOracle.address],
     })
 
+    // const oracleWrapper = { address: "0x57A81f7B72D2703ae7c533F3FB1CdEFa6B8f25F7" }
+    // const keeperOracle = { address: "0x4e8E88BD60027aC138323d86d3F9e6b2E035b435"}
+
     // deploy ChainlinkOracleWrapper for keeper
     const keeperOracle = await deploy("ETHChainlinkOracleWrapper", {
         from: deployer,
@@ -59,6 +63,7 @@ module.exports = async (hre) => {
         args: [MainnetEthUsdOracle.address],
     })
 
+    /* Commented out, because we want to wait till multisig governs pools before doing it for the rest of them
     await execute(
         "BTCChainlinkOracleWrapper",
         {
@@ -77,6 +82,7 @@ module.exports = async (hre) => {
         "transferOwnership",
         multisigAddress
     )
+    */
 
     // deploy PoolSwapLibrary
     const library = await deploy("PoolSwapLibrary", {
@@ -94,6 +100,9 @@ module.exports = async (hre) => {
     })
 
     // deploy PoolCommitterDeployer
+    // const poolCommitterDeployer = { address: "0xF8FfbE626dB009343ECC69FBCEF0B095007BEF31" }
+    // const poolKeeper = { address: "0xf42bb5605277Ffc81fbDb938580bdA86AB7cbbde" }
+    // const factory = { address: "0xAAc9f23D2d4AB7D1E28cd8C9e37C8e1Cb4BA9D96" }
     const poolCommitterDeployer = await deploy("PoolCommitterDeployer", {
         from: deployer,
         log: true,
@@ -109,6 +118,7 @@ module.exports = async (hre) => {
         args: [factory.address],
     })
 
+    /*
     await execute(
         "PoolKeeper",
         {
@@ -118,15 +128,7 @@ module.exports = async (hre) => {
         "transferOwnership",
         multisigAddress
     )
-    await execute(
-        "PoolFactory",
-        {
-            from: deployer,
-            log: true,
-        },
-        "transferOwnership",
-        multisigAddress
-    )
+    */
 
     // Set PoolKeeper
     await execute(
@@ -175,7 +177,6 @@ module.exports = async (hre) => {
     // USDC precision is 6 decimals
     const minimumCommitSize = 1000 * 10 ** 6
     const maximumCommitQueueLength = 100
-
     // deploy LeveragePool
     // BTC-USD 1x
     const deploymentData1 = {
@@ -256,7 +257,19 @@ module.exports = async (hre) => {
         console.log(`Deployed TestToken: ${token.address}`)
         console.log(`Deployed OracleWrapper: ${oracleWrapper.address}`)
     }
-    /*
+
+    /* Commented out, because we want to wait till multisig governs pools before doing it for the rest of them
+    await execute(
+        "PoolFactory",
+        {
+            from: deployer,
+            log: true,
+        },
+        "transferOwnership",
+        multisigAddress
+    )
+    */
+
     await hre.run("verify:verify", {
         address: oracleWrapper.address,
         constructorArguments: [MainnetBtcUsdOracle.address],
@@ -265,11 +278,15 @@ module.exports = async (hre) => {
         address: keeperOracle.address,
         constructorArguments: [MainnetEthUsdOracle.address],
     })
-    */
     await hre.run("verify:verify", {
-        address: factory.address,
-        constructorArguments: [multisigAddress],
+        address: poolCommitterDeployer.address,
+        constructorArguments: [factory.address],
     })
+    await hre.run("verify:verify", {
+        address: poolKeeper.address,
+        constructorArguments: [factory.address],
+    })
+    
 }
 
 module.exports.tags = ["ArbDeploy"]
