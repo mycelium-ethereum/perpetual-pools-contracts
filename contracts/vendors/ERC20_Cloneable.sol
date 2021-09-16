@@ -57,12 +57,13 @@ contract ERC20_Cloneable is Context, ERC20, Initializable {
     function initialize(
         address _pool,
         string memory name_,
-        string memory symbol_
+        string memory symbol_,
+        uint8 decimals_
     ) external initializer {
         owner = _pool;
         _name = name_;
         _symbol = symbol_;
-        _decimals = 18;
+        _decimals = decimals_;
     }
 
     function decimals() public view virtual override returns (uint8) {
