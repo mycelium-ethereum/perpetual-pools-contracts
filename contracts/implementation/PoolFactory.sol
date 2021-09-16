@@ -29,6 +29,8 @@ contract PoolFactory is IPoolFactory, Ownable {
     // Default fee; Fee value as a decimal multiplied by 10^18. For example, 0.5% is represented as 0.5 * 10^18
     uint256 public fee;
 
+    uint8 constant DEFAULT_NUM_DECIMALS = 18;
+
     /**
      * @notice Format: Pool counter => pool address
      */
@@ -43,7 +45,7 @@ contract PoolFactory is IPoolFactory, Ownable {
     // #### Functions
     constructor(address _feeReceiver) {
         // Deploy base contracts
-        pairTokenBase = new PoolToken();
+        pairTokenBase = new PoolToken(DEFAULT_NUM_DECIMALS);
         pairTokenBaseAddress = address(pairTokenBase);
         poolBase = new LeveragedPool();
         poolBaseAddress = address(poolBase);

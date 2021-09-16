@@ -46,8 +46,12 @@ contract ERC20_Cloneable is Context, ERC20, Initializable {
      * All three of these values are immutable: they can only be set once during
      * construction.
      */
-    constructor(string memory name_, string memory symbol_) ERC20(name_, symbol_) {
-        _decimals = 18;
+    constructor(
+        string memory name_,
+        string memory symbol_,
+        uint8 decimals_
+    ) ERC20(name_, symbol_) {
+        _decimals = decimals_;
     }
 
     function initialize(
