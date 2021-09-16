@@ -143,6 +143,9 @@ describe("LeveragedPool - initialize", () => {
             expect(await shortToken.name()).to.eq(
                 leverage.toString().concat("S-".concat(POOL_CODE))
             )
+            // check decimals
+            expect(await shortToken.decimals()).to.eq(18)
+            expect(await longToken.decimals()).to.eq(18)
         })
 
         it("should emit an event containing the details of the new pool", async () => {
