@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+//SPDX-License-Identifier: CC-BY-NC-ND-4.0
 pragma solidity 0.8.7;
 
 import "../interfaces/ILeveragedPool.sol";
@@ -60,7 +60,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         require(initialization._poolCommitter != address(0), "PoolCommitter cannot be 0 address");
         require(initialization._frontRunningInterval < initialization._updateInterval, "frontRunning > updateInterval");
 
-        require(PoolSwapLibrary.compareDecimals(initialization._fee, PoolSwapLibrary.one) == -1, "Fee >= 100%");
+        require(initialization._fee < 1 * PoolSwapLibrary.WAD_PRECISION, "Fee >= 100%");
 
         // set the owner of the pool. This is governance when deployed from the factory
         governance = initialization._owner;
@@ -72,7 +72,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         quoteToken = initialization._quoteToken;
         frontRunningInterval = initialization._frontRunningInterval;
         updateInterval = initialization._updateInterval;
-        fee = initialization._fee;
+        fee = PoolSwapLibrary.convertUIntToDecimal(initialization._fee);
         leverageAmount = PoolSwapLibrary.convertUIntToDecimal(initialization._leverageAmount);
         feeAddress = initialization._feeAddress;
         lastPriceTimestamp = block.timestamp;
@@ -397,6 +397,11 @@ contract LeveragedPool is ILeveragedPool, Initializable {
 
     modifier onlyPoolCommitter() {
         require(msg.sender == poolCommitter, "msg.sender not poolCommitter");
+        _;
+    }
+
+    modifier onlyFeeReceiver() {
+        require(msg.sender == feeAddress, "msg.sender not feeReceiver");
         _;
     }
 

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+//SPDX-License-Identifier: CC-BY-NC-ND-4.0
 pragma solidity 0.8.7;
 
 import "../interfaces/IPoolKeeper.sol";
@@ -223,7 +223,14 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         /* the number of blocks that have elapsed since the given pool's updateInterval passed */
         uint256 elapsedBlocksNumerator = (block.timestamp - (_savedPreviousUpdatedTimestamp + _poolInterval));
 
-        return BASE_TIP + (TIP_DELTA_PER_BLOCK * elapsedBlocksNumerator) / BLOCK_TIME;
+        uint256 keeperTip = BASE_TIP + (TIP_DELTA_PER_BLOCK * elapsedBlocksNumerator) / BLOCK_TIME;
+
+        // In case of network outages or otherwise, we want to cap the tip so that the keeper cost isn't unbounded
+        if (keeperTip > 100) {
+            return 100;
+        } else {
+            return keeperTip;
+        }
     }
 
     function setFactory(address _factory) external override onlyOwner {

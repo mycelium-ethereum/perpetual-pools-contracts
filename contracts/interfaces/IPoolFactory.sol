@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+//SPDX-License-Identifier: CC-BY-NC-ND-4.0
 pragma solidity 0.8.7;
 
 /// @title The contract factory for the keeper and pool contracts. Utilizes minimal clones to keep gas costs low
@@ -41,7 +41,7 @@ interface IPoolFactory {
 
     function setFeeReceiver(address _feeReceiver) external;
 
-    function setFee(bytes16 _fee) external;
+    function setFee(uint256 _fee) external;
 
     function setPoolCommitterDeployer(address _poolCommitterDeployer) external;
 }

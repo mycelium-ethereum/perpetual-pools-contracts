@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+//SPDX-License-Identifier: CC-BY-NC-ND-4.0
 pragma solidity 0.8.7;
 
 import "abdk-libraries-solidity/ABDKMathQuad.sol";
@@ -11,6 +11,8 @@ library PoolSwapLibrary {
     /* ABDKMathQuad defines this but it's private */
     bytes16 private constant NEGATIVE_ZERO = 0x80000000000000000000000000000000;
     uint256 public constant MAX_DECIMALS = 18;
+
+    uint256 public constant WAD_PRECISION = 10**18;
 
     struct PriceChangeData {
         int256 oldPrice;
@@ -167,15 +169,14 @@ library PoolSwapLibrary {
         bytes16 fee = priceChange.fee;
 
         // Calculate fees from long and short sides
-        uint256 longFeeAmount = convertDecimalToUInt(multiplyDecimalByUInt(fee, longBalance));
-        uint256 shortFeeAmount = convertDecimalToUInt(multiplyDecimalByUInt(fee, shortBalance));
-        uint256 totalFeeAmount = 0;
+        uint256 longFeeAmount = convertDecimalToUInt(multiplyDecimalByUInt(fee, longBalance)) /
+            PoolSwapLibrary.WAD_PRECISION;
+        uint256 shortFeeAmount = convertDecimalToUInt(multiplyDecimalByUInt(fee, shortBalance)) /
+            PoolSwapLibrary.WAD_PRECISION;
 
-        // fee is enforced to be < 1.
-        // Therefore, shortFeeAmount < shortBalance, and longFeeAmount < longBalance
         shortBalance = shortBalance - shortFeeAmount;
         longBalance = longBalance - longFeeAmount;
-        totalFeeAmount = totalFeeAmount + shortFeeAmount + longFeeAmount;
+        uint256 totalFeeAmount = shortFeeAmount + longFeeAmount;
 
         // Use the ratio to determine if the price increased or decreased and therefore which direction
         // the funds should be transferred towards.

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+//SPDX-License-Identifier: CC-BY-NC-ND-4.0
 pragma solidity 0.8.7;
 
 /// @title The pool controller contract interface
@@ -15,7 +15,7 @@ interface ILeveragedPool {
         string _poolName; // The pool identification name
         uint32 _frontRunningInterval; // The minimum number of seconds that must elapse before a commit is forced to wait until the next interval
         uint32 _updateInterval; // The minimum number of seconds that must elapse before a commit can be executed
-        bytes16 _fee; // The fund movement fee. This amount is extracted from the deposited asset with every update and sent to the fee address
+        uint256 _fee; // The fund movement fee. This amount is extracted from the deposited asset with every update and sent to the fee address
         uint16 _leverageAmount; // The amount of exposure to price movements for the pool
         address _feeAddress; // The address that the fund movement fee is sent to
         address _quoteToken; //  The digital asset that the pool accepts. Must have a decimals() function
