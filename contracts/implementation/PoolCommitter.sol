@@ -112,8 +112,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         latestCommitUnexecuted = currentCommitIDCounter;
 
         emit CreateCommit(currentCommitIDCounter, amount, commitType);
-        uint256 shortBalance = pool.shortBalance();
-        uint256 longBalance = pool.longBalance();
+        (uint256 shortBalance, uint256 longBalance) = pool.balances();
 
         // pull in tokens
         if (commitType == CommitType.LongMint || commitType == CommitType.ShortMint) {
