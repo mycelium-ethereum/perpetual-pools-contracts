@@ -13,13 +13,13 @@ contract PoolCommitterDeployer is IPoolCommitterDeployer {
         factory = _factory;
     }
 
-    function deploy(uint128 _minimumCommitSize, uint128 _maximumCommitQueueLength)
+    function deploy()
         external
         override
         onlyFactory
         returns (address)
     {
-        return address(new PoolCommitter(factory, _minimumCommitSize, _maximumCommitQueueLength));
+        return address(new PoolCommitter(factory));
     }
 
     modifier onlyFactory() {
