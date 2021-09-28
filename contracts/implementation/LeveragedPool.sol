@@ -89,15 +89,13 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     }
 
     /**
-     * @notice Execute a price change, then execute all commits in PoolCommitter
+     * @notice Execute a price change
      * @dev This is the entry point to upkeep a market
      */
     function poolUpkeep(int256 _oldPrice, int256 _newPrice) external override onlyKeeper onlyUnpaused {
         require(intervalPassed(), "Update interval hasn't passed");
         // perform price change and update pool balances
         executePriceChange(_oldPrice, _newPrice);
-        // execute pending commitments to enter and exit the pool
-        IPoolCommitter(poolCommitter).executeAllCommitments();
         lastPriceTimestamp = block.timestamp;
     }
 
