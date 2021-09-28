@@ -1,5 +1,7 @@
 # Tracer Perpetual Pools
 
+Project base generated with the Typescript Solidity Dev Starter Kit. See [Blog Post](https://medium.com/@rahulsethuram/the-new-solidity-dev-stack-buidler-ethers-waffle-typescript-tutorial-f07917de48ae) for more details
+
 ## Contract Addresses
 
 These are the current contracts that are being used on Arbitrum One.
