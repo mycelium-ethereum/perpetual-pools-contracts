@@ -286,7 +286,6 @@ module.exports = async (hre) => {
         address: poolKeeper.address,
         constructorArguments: [factory.address],
     })
-    
 }
 
 module.exports.tags = ["ArbDeploy"]
