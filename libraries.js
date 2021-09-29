@@ -1,3 +1,3 @@
 module.exports = {
-    PoolSwapLibrary: "0xd046bC64854a7aF5bB61C207A9B2636148B04CAf",
+    PoolSwapLibrary: "0xA541A762270bc825F25cDDc0C0a76D8FeB7A2BE4",
 }
