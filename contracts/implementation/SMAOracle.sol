@@ -5,15 +5,30 @@ import "../interfaces/IOracleWrapper.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract SMAOracle is Ownable, IOracleWrapper {
+    /// Price oracle supplying the spot price of the quote asset
     address public override oracle;
-    int256 public price;
-    int256[24] public observations;
-    uint256 public head;
 
+    /// Current SMA price
+    int256 public price;
+
+    /// Total allowed size of the (**statically-allocated**) array storing the dataset
+    uint256 public constant capacity = 24;
+
+    /// Array storing the dataset of previous spot prices
+    int256[capacity] public observations;
+
+    /// Number of periods to use in calculating the SMA (`k` in the SMA equation)
+    uint256 public periods;
+
+    /// Initial price to report in the base case where the oracle is unpopulated
     int256 public constant INITIAL_PRICE = 1;
 
-    constructor(address _spotOracle) {
+    constructor(address _spotOracle, uint256 _periods) {
+        /* bounds check */
+        require(_periods > 0 && _periods < capacity, "SMA: Out of bounds");
+
         setOracle(_spotOracle);
+        periods = _periods;
         price = INITIAL_PRICE;
     }
 
@@ -26,18 +41,7 @@ contract SMAOracle is Ownable, IOracleWrapper {
     }
 
     function update(int256 _observation) external {
-        observations[head] = _observation;
-        head += 1;
-
-        uint256 smaHead = 0;
-
-        if (head == 24) {
-            head = 0;
-        } else {
-            smaHead = head - 1;
-        }
-
-        price = SMA(observations, smaHead);
+        /* TODO: implement `update` */
     }
 
     /**
@@ -47,15 +51,16 @@ contract SMAOracle is Ownable, IOracleWrapper {
      * @return Simple moving average for `k` periods
      * @dev Throws if `k` is zero (due to necessary division)
      * @dev Throws if `k` is greater than or equal to the length of `xs` (due to buffer overrun potential)
+     * @dev Throws if `k` is the maximum *signed* 256-bit integer (due to necessary division)
      * @dev O(k) time complexity due to linear traversal of the final `k` elements of `xs`
      * @dev Note that the signedness of the return type is due to the signedness of the elements of `xs`
      *
      */
-    function SMA(int256[24] memory xs, uint256 k) internal pure returns (int256) {
+    function SMA(int256[capacity] memory xs, uint256 k) internal pure returns (int256) {
         uint256 n = xs.length;
 
         /* bounds check */
-        require(k > 0 && k > n, "SMA: Out of bounds");
+        require(k > 0 && k > n && k > uint256(type(int256).max), "SMA: Out of bounds");
 
         /* running total */
         int256 S = 0;
@@ -65,7 +70,8 @@ contract SMAOracle is Ownable, IOracleWrapper {
             S += xs[i];
         }
 
-        return S / k;
+        /* cast is safe due to above bounds check */
+        return S / int256(k);
     }
 
     function fromWad(int256 wad) external view override returns (int256) {
