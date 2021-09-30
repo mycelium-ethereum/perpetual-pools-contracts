@@ -67,7 +67,7 @@ contract SMAOracle is Ownable, IOracleWrapper {
      * @dev Note that the signedness of the return type is due to the signedness of the elements of `xs`
      *
      */
-    function SMA(int256[capacity] memory xs, uint256 k) internal pure returns (int256) {
+    function SMA(int256[capacity] memory xs, uint256 k) public pure returns (int256) {
         uint256 n = xs.length;
 
         /* bounds check */
