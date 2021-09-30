@@ -23,7 +23,7 @@ describe("SMAOracle", async () => {
     let nonOwner: SignerWithAddress
     let numPeriods: BigNumberish
 
-    beforeEach(async () => {
+    before(async () => {
         /* retrieve signers */
         signers = await ethers.getSigners()
         owner = signers[0]
@@ -56,5 +56,42 @@ describe("SMAOracle", async () => {
             spotOracle.address,
             numPeriods
         )
+    })
+
+    describe("SMA", async () => {
+        context(
+            "When called with number of periods greater than size of dataset",
+            async () => {
+                it("Reverts", async () => {
+                    /* xs is arbitrary */
+                    const xs: any = [
+                        2, 3, 4, 3, 7, 8, 12, 10, 11, 12, 14, 5, 5, 9, 10, 1, 1,
+                        0, 2, 2, 3, 4, 6, 10,
+                    ]
+                    /* k needs to be greater than the length of xs */
+                    const k: BigNumberish = xs.length + 1
+
+                    await expect(smaOracle.SMA(xs, k)).to.be.revertedWith(
+                        "SMA: Out of bounds"
+                    )
+                })
+            }
+        )
+
+        context("When called with zero periods", async () => {
+            it("Reverts", async () => {
+                /* xs is arbitrary (provided it's 24 elements long) */
+                const xs: any = [
+                    2, 3, 4, 3, 7, 8, 12, 10, 11, 12, 14, 5, 5, 9, 10, 1, 1, 0,
+                    2, 2, 3, 4, 6, 10,
+                ]
+                /* k needs to be greater than the length of xs */
+                const k: BigNumberish = 0
+
+                await expect(smaOracle.SMA(xs, k)).to.be.revertedWith(
+                    "SMA: Out of bounds"
+                )
+            })
+        })
     })
 })
