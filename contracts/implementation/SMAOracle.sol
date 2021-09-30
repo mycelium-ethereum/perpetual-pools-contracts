@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.7.6;
-pragma abicoder v2;
+pragma solidity 0.8.7; 
 
 import "../interfaces/IOracleWrapper.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@chainlink/contracts/src/v0.7/interfaces/AggregatorV2V3Interface.sol";
 
 contract SMAOracle is Ownable, IOracleWrapper {
     address public override oracle;
@@ -42,7 +40,34 @@ contract SMAOracle is Ownable, IOracleWrapper {
         price = SMA(observations, smaHead);
     }
 
-    function SMA(int256[24] memory xs, uint256 n) internal view returns (int256) {
-        /* TODO: implement */
+    /**
+     * @notice Calculates the simple moving average of the provided dataset for the specified number of periods
+     * @param xs Dataset
+     * @param k Number of periods to use for calculation of the SMA
+     * @return Simple moving average for `k` periods
+     * @dev Throws if `k` is zero (due to necessary division) 
+     * @dev Throws if `k` is greater than or equal to the length of `xs` (due to buffer overrun potential)
+     * @dev O(k) time complexity due to linear traversal of the final `k` elements of `xs`
+     * @dev Note that the signedness of the return type is due to the signedness of the elements of `xs`
+     *
+     */
+    function SMA(
+        int256[24] memory xs,
+        uint256 k
+    ) internal pure returns (int256) {
+        uint256 n = xs.length;
+
+        /* bounds check */
+        require(k > 0 && k > n, "SMA: Out of bounds");
+
+        /* running total */
+        int256 S = 0;
+
+        /* linear scan over the [k, n-k+1] subsequence */
+        for (uint256 i=k;i<n-k+1;i++) {
+            S += xs[i];
+        }
+
+        return S / k;
     }
 }
