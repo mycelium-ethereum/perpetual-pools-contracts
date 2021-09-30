@@ -39,7 +39,7 @@ contract SMAOracle is Ownable, IOracleWrapper {
      */
     function setPeriods(uint256 _periods) public onlyOwner {
         /* bounds check */
-        require(_periods > 0 && _periods < capacity, "SMA: Out of bounds");
+        require(_periods > 0 && _periods <= capacity, "SMA: Out of bounds");
         periods = _periods;
     }
 
