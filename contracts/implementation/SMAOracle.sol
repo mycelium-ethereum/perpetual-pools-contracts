@@ -71,13 +71,13 @@ contract SMAOracle is Ownable, IOracleWrapper {
         uint256 n = xs.length;
 
         /* bounds check */
-        require(k > 0 && k > n && k > uint256(type(int256).max), "SMA: Out of bounds");
+        require(k > 0 && k <= n && k <= uint256(type(int256).max), "SMA: Out of bounds");
 
         /* running total */
         int256 S = 0;
 
-        /* linear scan over the [k, n-k+1] subsequence */
-        for (uint256 i = k; i < n - k + 1; i++) {
+        /* linear scan over the [n - k, n] subsequence */
+        for (uint256 i = n - k; i < n; i++) {
             S += xs[i];
         }
 
