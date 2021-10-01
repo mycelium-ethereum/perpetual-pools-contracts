@@ -10,7 +10,7 @@ import {
     SMAOracle,
 } from "../types"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import { BigNumberish } from "ethers"
+import { BigNumber, BigNumberish } from "ethers"
 
 chai.use(chaiAsPromised)
 const { expect } = chai
@@ -60,10 +60,30 @@ describe("SMAOracle", async () => {
 
     describe("SMA", async () => {
         context(
+            "When called with number of periods less than the size of the dataset and with a valid dataset",
+            async () => {
+                it("Returns the correct simple moving average", async () => {
+                    /* xs is arbitrary (provided it's 24 elements long) */
+                    const xs: any = [
+                        2, 3, 4, 3, 7, 8, 12, 10, 11, 12, 14, 5, 5, 9, 10, 1, 1,
+                        0, 2, 2, 3, 4, 6, 10,
+                    ]
+                    const k: BigNumberish = 5
+
+                    const actualSMA: BigNumber = await smaOracle.SMA(xs, k)
+                    /* (10 + 6 + 4 + 3 + 2) / 5 = 25 / 5 = 5 */
+                    const expectedSMA: BigNumberish = 5
+
+                    expect(actualSMA).to.eq(expectedSMA)
+                })
+            }
+        )
+
+        context(
             "When called with number of periods greater than size of dataset",
             async () => {
                 it("Reverts", async () => {
-                    /* xs is arbitrary */
+                    /* xs is arbitrary (provided it's 24 elements long) */
                     const xs: any = [
                         2, 3, 4, 3, 7, 8, 12, 10, 11, 12, 14, 5, 5, 9, 10, 1, 1,
                         0, 2, 2, 3, 4, 6, 10,
