@@ -23,10 +23,15 @@ contract SMAOracle is Ownable, IOracleWrapper {
     /// Initial price to report in the base case where the oracle is unpopulated
     int256 public constant INITIAL_PRICE = 1;
 
+    /// Whether or not `update` has been called on this instance of the contract
+    /// or not
+    bool private updated;
+
     constructor(address _spotOracle, uint256 _periods) {
         setPeriods(_periods);
         setOracle(_spotOracle);
         price = INITIAL_PRICE;
+        updated = false;
     }
 
     /**
