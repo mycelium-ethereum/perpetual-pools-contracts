@@ -80,6 +80,26 @@ describe("SMAOracle", async () => {
         )
 
         context(
+            "When called with number of periods equal to the size of the dataset and with a valid dataset",
+            async () => {
+                it("Returns the correct simple moving average", async () => {
+                    /* xs is arbitrary (provided it's 24 elements long) */
+                    const xs: any = [
+                        2, 3, 4, 3, 7, 8, 12, 10, 11, 12, 14, 5, 5, 9, 10, 1, 1,
+                        0, 2, 2, 3, 4, 6, 10,
+                    ]
+                    const k: BigNumberish = xs.length
+
+                    const actualSMA: BigNumber = await smaOracle.SMA(xs, k)
+                    /* (10 + 6 + 4 + 3 + 2 + 2 + 0 + 1 + 1 + 10 + 9 + 5 + 5 + 14 + 12 + 11 + 10 + 12 + 8 + 7 + 3 + 4 + 3 + 2) / 24 = 144 / 24 = 6 */
+                    const expectedSMA: BigNumberish = 6
+
+                    expect(actualSMA).to.eq(expectedSMA)
+                })
+            }
+        )
+
+        context(
             "When called with number of periods greater than size of dataset",
             async () => {
                 it("Reverts", async () => {
