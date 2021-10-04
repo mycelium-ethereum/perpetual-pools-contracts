@@ -52,7 +52,7 @@ contract SMAOracle is Ownable, IOracleWrapper {
         oracle = _spotOracle;
     }
 
-    function getPrice() external view override returns (int256) {
+    function getPrice() external view override onlyUpdated returns (int256) {
         return price;
     }
 
@@ -94,7 +94,17 @@ contract SMAOracle is Ownable, IOracleWrapper {
         /* TODO: implement `fromWad` */
     }
 
-    function getPriceAndMetadata() external view override returns (int256 _price, bytes memory _data) {
+    function getPriceAndMetadata() external view override onlyUpdated returns (int256 _price, bytes memory _data) {
         /* TODO: implement `getPriceAndMetadata` */
+    }
+
+    /**
+     * @notice Checks that the oracle has been initialised with price data via a
+     *          successful call to `SMAOracle.update`
+     *
+     */
+    modifier onlyUpdated() {
+        require(updated, "SMA: Uninitialised");
+        _;
     }
 }
