@@ -90,6 +90,24 @@ contract SMAOracle is Ownable, IOracleWrapper {
         return S / int256(k);
     }
 
+    /**
+     * @notice Rotates `xs` to the **left** by one element and sets the last element of `xs` to `x`
+     * @param xs Array to rotate
+     * @param x Element to "rotate into" `xs`
+     *
+     */
+    function leftRotateWithPad(int256[capacity] memory xs, int256 x) public pure {
+        uint256 n = xs.length;
+
+        /* linear scan over the [1, n] subsequence */
+        for (uint256 i = 1; i < n; i++) {
+            xs[i - 1] = xs[i];
+        }
+
+        /* rotate `x` into `xs` from the right */
+        xs[n - 1] = x;
+    }
+
     function fromWad(int256 wad) external view override returns (int256) {
         /* TODO: implement `fromWad` */
     }
