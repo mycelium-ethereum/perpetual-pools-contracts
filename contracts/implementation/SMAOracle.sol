@@ -82,15 +82,20 @@ contract SMAOracle is Ownable, IOracleWrapper {
     /**
      * @notice Add a new spot price observation to the SMA oracle
      * @dev O(n) complexity (with n being `capacity`) due to rotation of
-     *      underlying observations array
+     *      underlying observations array and subsequent recalculation of SMA
+     *      price
      *
      */
     function update() public {
+        /* query the underlying spot price oracle */
         IHistoricalOracleWrapper spotOracle = IHistoricalOracleWrapper(oracle);
         int256 latestPrice = spotOracle.getPrice(0);
 
         /* expire the oldest observation and load the fresh one in */
         leftRotateWithPad(observations, latestPrice);
+
+        /* update current reported SMA price */
+        price = SMA(observations, periods);
     }
 
     /**
