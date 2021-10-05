@@ -79,8 +79,18 @@ contract SMAOracle is Ownable, IOracleWrapper {
         updated = true;
     }
 
-    function update(int256 _observation) public {
-        /* TODO: implement `update` */
+    /**
+     * @notice Add a new spot price observation to the SMA oracle
+     * @dev O(n) complexity (with n being `capacity`) due to rotation of
+     *      underlying observations array
+     *
+     */
+    function update() public {
+        IHistoricalOracleWrapper spotOracle = IHistoricalOracleWrapper(oracle);
+        int256 latestPrice = spotOracle.getPrice(0);
+
+        /* expire the oldest observation and load the fresh one in */
+        leftRotateWithPad(observations, latestPrice);
     }
 
     /**
@@ -143,7 +153,7 @@ contract SMAOracle is Ownable, IOracleWrapper {
     /**
      * @notice Checks that the oracle has been initialised with price data via a
      *          successful call to `SMAOracle.update`
-     *
+     * @dev Throws if `updated` is `false`
      */
     modifier onlyUpdated() {
         require(updated, "SMA: Uninitialised");
