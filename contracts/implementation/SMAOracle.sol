@@ -29,24 +29,11 @@ contract SMAOracle is Ownable, IOracleWrapper {
     bool private updated;
 
     constructor(address _spotOracle, uint256 _periods) {
-        setPeriods(_periods);
+        require(_periods > 0 && _periods <= capacity, "SMA: Out of bounds");
+        periods = _periods;
         setOracle(_spotOracle);
         price = INITIAL_PRICE;
         updated = false;
-    }
-
-    /**
-     * @notice Sets the number of periods to be used in performing SMA calculations
-     * @param _periods Number of periods to use in SMA calculation
-     * @dev `_periods` is `k` in the SMA equation
-     * @dev Throws if `_periods` is less than zero
-     * @dev Throws if `_periods` is less than `capacity`
-     *
-     */
-    function setPeriods(uint256 _periods) public onlyOwner {
-        /* bounds check */
-        require(_periods > 0 && _periods <= capacity, "SMA: Out of bounds");
-        periods = _periods;
     }
 
     function setOracle(address _spotOracle) public override onlyOwner {
