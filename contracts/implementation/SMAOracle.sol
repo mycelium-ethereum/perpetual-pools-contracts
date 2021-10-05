@@ -2,6 +2,7 @@
 pragma solidity 0.8.7;
 
 import "../interfaces/IOracleWrapper.sol";
+import "../interfaces/IHistoricalOracleWrapper.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract SMAOracle is Ownable, IOracleWrapper {
@@ -56,7 +57,29 @@ contract SMAOracle is Ownable, IOracleWrapper {
         return price;
     }
 
-    function update(int256 _observation) external {
+    /**
+     * @notice Populates the observations array with historical prices from the
+     *          spot oracle
+     * @dev O(n) cost due to n calls (where n is `capacity`)
+     * @dev Sets the `updated` flag to `true`
+     * @dev Throws if `updated` flag is `true` (prior to the call)
+     *
+     */
+    function initialise() public {
+        /* guard against double-initialisations */
+        require(!updated, "SMA: Already initialised");
+        uint256 n = capacity;
+        IHistoricalOracleWrapper spotOracle = IHistoricalOracleWrapper(oracle);
+
+        /* linear scan over entire observations array */
+        for (uint256 i = 0; i < n; i++) {
+            observations[i] = spotOracle.getPrice(n - i);
+        }
+
+        updated = true;
+    }
+
+    function update(int256 _observation) public {
         /* TODO: implement `update` */
     }
 
@@ -68,7 +91,7 @@ contract SMAOracle is Ownable, IOracleWrapper {
      * @dev Throws if `k` is zero (due to necessary division)
      * @dev Throws if `k` is greater than or equal to the length of `xs` (due to buffer overrun potential)
      * @dev Throws if `k` is the maximum *signed* 256-bit integer (due to necessary division)
-     * @dev O(k) time complexity due to linear traversal of the final `k` elements of `xs`
+     * @dev O(k) complexity due to linear traversal of the final `k` elements of `xs`
      * @dev Note that the signedness of the return type is due to the signedness of the elements of `xs`
      *
      */
@@ -104,7 +127,8 @@ contract SMAOracle is Ownable, IOracleWrapper {
             xs[i - 1] = xs[i];
         }
 
-        /* rotate `x` into `xs` from the right */
+        /* rotate `x` into `xs` from the right (remember, we're **left**
+         * rotating -- with padding!) */
         xs[n - 1] = x;
     }
 
