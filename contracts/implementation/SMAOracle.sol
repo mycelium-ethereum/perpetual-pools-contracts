@@ -151,8 +151,14 @@ contract SMAOracle is Ownable, IOracleWrapper {
         /* TODO: implement `fromWad` */
     }
 
+    /**
+     * @notice Returns the current SMA price and an empty bytes array
+     * @dev Required by the `IOracleWrapper` interface. The interface leaves
+     *          the metadata as implementation-defined. For the SMA oracle, there
+     *          is no clear use case for additional data, so it's left blank
+     */
     function getPriceAndMetadata() external view override onlyUpdated returns (int256 _price, bytes memory _data) {
-        /* TODO: implement `getPriceAndMetadata` */
+        return (price, "");
     }
 
     /**
