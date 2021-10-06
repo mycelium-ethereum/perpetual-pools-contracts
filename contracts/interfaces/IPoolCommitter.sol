@@ -49,7 +49,7 @@ interface IPoolCommitter {
 
     /**
      * @notice Creates a notification when the min commit size changes
-     * @param newMinCommitSize New min commit size for mints and burns
+     * @param _maximumCommitQueueLength New min commit size for mints and burns
      */
     event MinCommitSizeChanged(uint128 _maximumCommitQueueLength);
 
