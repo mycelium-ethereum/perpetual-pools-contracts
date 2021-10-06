@@ -4,6 +4,25 @@ Project base generated with the Typescript Solidity Dev Starter Kit. See [Blog P
 ## Documentation
 [Perpetual Pools - Documentation](https://tracerdao.notion.site/Perpetual-Pools-Documentation-ee935f325a9a448d9ed44e333dff0e74)
 
+## Contract Addresses
+
+These are the current contracts that are being used on Arbitrum One.
+
+| Contract | Pool | Address |
+| -------- | -------- | ------- |
+| `OracleWrapper` for the BTC/USD oracle | N/A | [0xE973E6400B44fd20fc4752c03D112274A1374bA0](https://arbiscan.io/address/0xE973E6400B44fd20fc4752c03D112274A1374bA0) |
+| `OracleWrapper` for the ETH/USD oracle | N/A | [0xeceaea7e0408606714b2559ac9b1d3d51a327afe](https://arbiscan.io/address/0xeceaea7e0408606714b2559ac9b1d3d51a327afe) |
+| `PoolFactory` | N/A | [0x98C58c1cEb01E198F8356763d5CbA8EB7b11e4E2](https://arbiscan.io/address/0x98C58c1cEb01E198F8356763d5CbA8EB7b11e4E2) |
+| `PoolKeeper` | N/A | [0x759E817F0C40B11C775d1071d466B5ff5c6ce28e](https://arbiscan.io/address/0x759E817F0C40B11C775d1071d466B5ff5c6ce28e) |
+| `LeveragedPool` | 3p BTC/USD | [0x70988060e1FD9bbD795CA097A09eA1539896Ff5D](https://arbiscan.io/address/0x70988060e1FD9bbD795CA097A09eA1539896Ff5D) |
+| `PoolCommitter` | 3p BTC/USD | [0xFDE5D7B7596AF6aC5df7C56d76E14518A9F578dF](https://arbiscan.io/address/0xFDE5D7B7596AF6aC5df7C56d76E14518A9F578dF) |
+| `LeveragedPool` | 1p BTC/USD | [0x146808f54DB24Be2902CA9f595AD8f27f56B2E76](https://arbiscan.io/address/0x146808f54DB24Be2902CA9f595AD8f27f56B2E76) |
+| `PoolCommitter` | 1p BTC/USD | [0x539Bf88D729B65F8eC25896cFc7a5f44bbf1816b](https://arbiscan.io/address/0x539Bf88D729B65F8eC25896cFc7a5f44bbf1816b) |
+| `LeveragedPool` | 3p ETH/USD | [0x54114e9e1eEf979070091186D7102805819e916B](https://arbiscan.io/address/0x54114e9e1eEf979070091186D7102805819e916B) |
+| `PoolCommitter` | 3p ETH/USD | [0x759E817F0C40B11C775d1071d466B5ff5c6ce28e](https://arbiscan.io/address/0x759E817F0C40B11C775d1071d466B5ff5c6ce28e) |
+| `LeveragedPool` | 1p ETH/USD | [0x3A52aD74006D927e3471746D4EAC73c9366974Ee](https://arbiscan.io/address/0x3A52aD74006D927e3471746D4EAC73c9366974Ee) |
+| `PoolCommitter` | 1p ETH/USD | [0x047Cd47925C2390ce26dDeB302b8b165d246d450](https://arbiscan.io/address/0x047Cd47925C2390ce26dDeB302b8b165d246d450) |
+
 ## Frontend Notes
 ### Calculating ABDKMathQuad values
 The `PoolSwapLibrary` contains several methods for generating, converting, and using the raw ratio values. These can be used in the frontend to estimate the result of a transaction. It is vital when estimating the result of a transaction that the shadow pool amount for the commit type's opposite is included in the token total supply.
