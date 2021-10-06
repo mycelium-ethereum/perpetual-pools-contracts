@@ -23,6 +23,18 @@ interface IPoolFactory {
      */
     event DeployPool(address indexed pool, string ticker);
 
+    /**
+     * @notice Creates a notification when the pool keeper changes
+     * @param _poolKeeper Address of the new pool keeper
+     */
+    event PoolKeeperChanged(address _poolKeeper);
+
+    /**
+     * @notice Creates a notification when the pool committer deployer for the factory changes
+     * @param _poolCommitterDeployer Address of the new pool committer deployer
+     */
+    event PoolCommitterDeployerChanged(address _poolCommitterDeployer);
+
     // #### Getters for Globals
     function pools(uint256 id) external view returns (address);
 
