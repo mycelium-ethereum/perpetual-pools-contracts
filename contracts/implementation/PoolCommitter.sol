@@ -368,11 +368,13 @@ contract PoolCommitter is IPoolCommitter, Ownable {
 
     function setMinimumCommitSize(uint128 _minimumCommitSize) external override onlyGov {
         minimumCommitSize = _minimumCommitSize;
+        emit MinCommitSizeChanged(_minimumCommitSize);
     }
 
     function setMaxCommitQueueLength(uint128 _maximumCommitQueueLength) external override onlyGov {
         require(_maximumCommitQueueLength > 0, "Commit queue must be > 0");
         maximumCommitQueueLength = _maximumCommitQueueLength;
+        emit MaxCommitQueueLengthChanged(_maximumCommitQueueLength);
     }
 
     modifier onlyFactory() {

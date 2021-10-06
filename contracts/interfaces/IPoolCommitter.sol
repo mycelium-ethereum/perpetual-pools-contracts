@@ -47,6 +47,18 @@ interface IPoolCommitter {
      */
     event FailedCommitExecution(uint128 commitID);
 
+    /**
+     * @notice Creates a notification when the min commit size changes
+     * @param newMinCommitSize New min commit size for mints and burns
+     */
+    event MinCommitSizeChanged(uint128 _maximumCommitQueueLength);
+
+    /**
+     * @notice Creates a notification when the max commit queue length changes
+     * @param newMaxQueueLength New maximum queue length for an update interval
+     */
+    event MaxCommitQueueLengthChanged(uint128 newMaxQueueLength);
+
     // #### Functions
 
     function commit(CommitType commitType, uint256 amount) external;
