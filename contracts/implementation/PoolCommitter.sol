@@ -363,17 +363,18 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         IERC20 _token = IERC20(_quoteToken);
         bool approvalSuccess = _token.approve(leveragedPool, _token.totalSupply());
         require(approvalSuccess, "ERC20 approval failed");
-        _token.approve(leveragedPool, _token.totalSupply());
         tokens = ILeveragedPool(leveragedPool).poolTokens();
     }
 
     function setMinimumCommitSize(uint128 _minimumCommitSize) external override onlyGov {
         minimumCommitSize = _minimumCommitSize;
+        emit MinCommitSizeChanged(_minimumCommitSize);
     }
 
     function setMaxCommitQueueLength(uint128 _maximumCommitQueueLength) external override onlyGov {
         require(_maximumCommitQueueLength > 0, "Commit queue must be > 0");
         maximumCommitQueueLength = _maximumCommitQueueLength;
+        emit MaxCommitQueueLengthChanged(_maximumCommitQueueLength);
     }
 
     modifier onlyFactory() {

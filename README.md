@@ -1,6 +1,8 @@
 # Tracer Perpetual Pools
-
 Project base generated with the Typescript Solidity Dev Starter Kit. See [Blog Post](https://medium.com/@rahulsethuram/the-new-solidity-dev-stack-buidler-ethers-waffle-typescript-tutorial-f07917de48ae) for more details
+
+## Documentation
+[Perpetual Pools - Documentation](https://tracerdao.notion.site/Perpetual-Pools-Documentation-ee935f325a9a448d9ed44e333dff0e74)
 
 ## Contract Addresses
 
