@@ -1,6 +1,9 @@
 # Tracer Perpetual Pools
 Project base generated with the Typescript Solidity Dev Starter Kit. See [Blog Post](https://medium.com/@rahulsethuram/the-new-solidity-dev-stack-buidler-ethers-waffle-typescript-tutorial-f07917de48ae) for more details
 
+## C4 Audit Known Issues
+In `PoolCommitter::commit`, `shadowPools[_commitType]` is passed in as a parameter to this function, but that's already been incremented yet the tokens haven't yet been burnt.
+
 ## Documentation
 [Perpetual Pools - Documentation](https://tracerdao.notion.site/Perpetual-Pools-Documentation-ee935f325a9a448d9ed44e333dff0e74)
 
