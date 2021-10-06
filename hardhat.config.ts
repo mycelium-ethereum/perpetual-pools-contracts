@@ -3,6 +3,7 @@ dotEnvConfig()
 
 import { HardhatUserConfig } from "hardhat/types"
 
+import "@nomiclabs/hardhat-etherscan"
 import "@nomiclabs/hardhat-waffle"
 import "@typechain/hardhat"
 import "@nomiclabs/hardhat-etherscan"
@@ -44,6 +45,16 @@ const config: HardhatUserConfig = {
         kovan: {
             url: ALCHEMY_API_TESTNET_URL,
             accounts: [TESTNET_PRIVATE_KEY],
+        },
+        arbRinkeby: {
+            url: ALCHEMY_API_TESTNET_URL,
+            accounts: [TESTNET_PRIVATE_KEY],
+            // gasPrice: 200000000000,
+        },
+        arb: {
+            url: ALCHEMY_API_TESTNET_URL,
+            accounts: [TESTNET_PRIVATE_KEY],
+            // gasPrice: 200000000000,
         },
         coverage: {
             url: "http://127.0.0.1:8555", // Coverage launches its own ganache-cli client
