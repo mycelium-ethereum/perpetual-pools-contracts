@@ -44,7 +44,7 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
     let library: PoolSwapLibrary
     let poolCommitter: PoolCommitter
 
-    describe("Long mint->Long Burn", () => {
+    describe.skip("Long mint->Long Burn", () => {
         const commits: CommitEventArgs[] | undefined = []
         beforeEach(async () => {
             const result = await deployPoolAndTokenContracts(
@@ -112,7 +112,7 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
             )
         })
     })
-    describe("Short mint->short burn", () => {
+    describe.skip("Short mint->short burn", () => {
         const commits: CommitEventArgs[] | undefined = []
         beforeEach(async () => {
             const result = await deployPoolAndTokenContracts(
@@ -177,51 +177,6 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
             expect(await pool.shortBalance()).to.eq(
                 amountCommitted.mul(2).sub(amountCommitted.div(2))
             )
-        })
-    })
-
-    describe("Executing without any commitments during the frontRunningInterval", () => {
-        const commits: CommitEventArgs[] | undefined = []
-        let longFrontRunningInterval: number
-        let longUpdateInterval: number
-        let poolKeeper: PoolKeeper
-        beforeEach(async () => {
-            longFrontRunningInterval = 1000
-            longUpdateInterval = 1500
-
-            const result = await deployPoolAndTokenContracts(
-                POOL_CODE,
-                longFrontRunningInterval,
-                longUpdateInterval,
-                leverage,
-                DEFAULT_MIN_COMMIT_SIZE,
-                DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
-                feeAddress,
-                fee
-            )
-            pool = result.pool
-            library = result.library
-            token = result.token
-            shortToken = result.shortToken
-            poolCommitter = result.poolCommitter
-            poolKeeper = result.poolKeeper
-
-            // Approve an arbitrarily large amount
-            await token.approve(pool.address, amountCommitted.mul(100))
-        })
-        it("should reset currentCommitQueueLength", async () => {
-            await poolCommitter.commit(0, amountCommitted)
-            await poolCommitter.commit(0, amountCommitted)
-            await poolCommitter.commit(0, amountCommitted)
-
-            // Three commits, so currentCommitQueueLength == 3
-            expect(await poolCommitter.currentCommitQueueLength()).to.equal(3)
-            await timeout((longUpdateInterval + 20) * 1000)
-
-            // Should reset currentCommitQueueLength to 0
-            await poolKeeper.performUpkeepSinglePool(pool.address)
-
-            expect(await poolCommitter.currentCommitQueueLength()).to.equal(0)
         })
     })
 })

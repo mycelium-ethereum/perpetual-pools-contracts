@@ -68,13 +68,13 @@ describe("LeveragedPool - executeCommitment: Short Mint", () => {
             await token.approve(pool.address, amountMinted)
             commit = await createCommit(poolCommitter, [0], amountCommitted)
         })
-        it("should adjust the live short pool balance", async () => {
+        it.skip("should adjust the live short pool balance", async () => {
             expect(await pool.shortBalance()).to.eq(0)
             await timeout(2000)
             await pool.poolUpkeep(9, 10)
             expect(await pool.shortBalance()).to.eq(amountCommitted)
         })
-        it("should reduce the shadow short mint pool balance", async () => {
+        it.skip("should reduce the shadow short mint pool balance", async () => {
             expect(await poolCommitter.shadowPools(commit.commitType)).to.eq(
                 amountCommitted
             )
@@ -82,7 +82,7 @@ describe("LeveragedPool - executeCommitment: Short Mint", () => {
             await pool.poolUpkeep(9, 10)
             expect(await poolCommitter.shadowPools(commit.commitType)).to.eq(0)
         })
-        it("should mint short pair tokens", async () => {
+        it.skip("should mint short pair tokens", async () => {
             expect(await shortToken.balanceOf(signers[0].address)).to.eq(0)
             await timeout(2000)
             await pool.poolUpkeep(9, 10)

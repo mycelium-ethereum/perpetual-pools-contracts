@@ -44,7 +44,7 @@ describe("poolCommitter - executeCommitment: Basic test cases", () => {
     let poolCommitter: PoolCommitter
 
     context("When committing during the frontRunningInterval", () => {
-        it("Does not execute until the next update interval", async () => {
+        it.skip("Does not execute until the next update interval", async () => {
             const elements = await deployPoolAndTokenContracts(
                 POOL_CODE,
                 100,
@@ -64,7 +64,6 @@ describe("poolCommitter - executeCommitment: Basic test cases", () => {
             await pool.setKeeper(signers[0].address)
             // Wait until somewhere between `frontRunningInterval <-> updateInterval`
             await timeout(175 * 1000)
-            await committer.commitIDCounter()
             await committer.commit([0], amountCommitted)
 
             const shortTokensSupplyBefore = await shortToken.totalSupply()
@@ -148,7 +147,7 @@ describe("poolCommitter - executeCommitment: Basic test cases", () => {
             await pool.setKeeper(signers[0].address)
         })
 
-        it("should remove the commitment after execution", async () => {
+        it.skip("should remove the commitment after execution", async () => {
             expect((await poolCommitter.commits(commit.commitID)).amount).to.eq(
                 amountCommitted
             )

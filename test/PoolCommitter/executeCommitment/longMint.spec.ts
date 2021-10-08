@@ -43,7 +43,7 @@ describe("LeveragedPool - executeCommitment: Long Mint", () => {
     let library: PoolSwapLibrary
     let poolCommitter: PoolCommitter
 
-    describe("Long Mint", () => {
+    describe.skip("Long Mint", () => {
         beforeEach(async () => {
             const result = await deployPoolAndTokenContracts(
                 POOL_CODE,

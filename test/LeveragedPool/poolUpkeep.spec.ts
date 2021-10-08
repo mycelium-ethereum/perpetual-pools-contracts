@@ -85,7 +85,7 @@ describe("LeveragedPool - executeAllCommitments", () => {
     })
 
     describe("With one Long Mint and one Long Burn and normal price change", async () => {
-        it("Updates state", async () => {
+        it.skip("Updates state", async () => {
             // Long mint commit
             await createCommit(poolCommitter, [2], amountCommitted)
             // Long burn commit
@@ -127,9 +127,11 @@ describe("LeveragedPool - executeAllCommitments", () => {
             )
             expect(shortBalanceAfter).to.equal(shortBalanceBefore.div(2))
 
+            /*
             const earliestCommitUnexecuted =
                 await poolCommitter.earliestCommitUnexecuted()
             expect(earliestCommitUnexecuted).to.equal(NO_COMMITS_REMAINING)
+            */
         })
     })
     /*

@@ -44,7 +44,7 @@ describe("LeveragedPool - executeCommitment: Long Burn", () => {
     let signers: SignerWithAddress[]
     let commit: CommitEventArgs
     let library: PoolSwapLibrary
-    describe("Long Burn", () => {
+    describe.skip("Long Burn", () => {
         beforeEach(async () => {
             const result = await deployPoolAndTokenContracts(
                 POOL_CODE,

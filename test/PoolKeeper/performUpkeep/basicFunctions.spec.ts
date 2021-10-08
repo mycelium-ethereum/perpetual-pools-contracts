@@ -139,7 +139,7 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
             event = getEventArgs(result, "KeeperPaid")
             upkeepEvent = getEventArgs(result, "UpkeepSuccessful")
         })
-        it("should emit an event with the details", async () => {
+        it.skip("should emit an event with the details", async () => {
             expect(event?.keeper).to.eq(signers[0].address)
         })
         it("should emit an UpkeepSuccessful event", async () => {
@@ -175,7 +175,7 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
             expect(newExecutionPrice).to.be.lt(oldExecutionPrice)
             expect(newExecutionPrice).to.equal(price)
         })
-        it("Should update the keeper's balance", async () => {
+        it.skip("Should update the keeper's balance", async () => {
             await timeout(updateInterval * 1000 + 1000)
             const balanceBefore = await token.balanceOf(signers[0].address)
             const poolTokenBalanceBefore = await token.balanceOf(pool.address)

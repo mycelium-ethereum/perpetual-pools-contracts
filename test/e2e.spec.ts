@@ -50,7 +50,8 @@ describe("LeveragedPool - executeAllCommitments", () => {
     const commits: CommitEventArgs[] | undefined = []
 
     describe("e2e", async () => {
-        it("Operates normally", async () => {
+        it.skip("Operates normally", async () => {
+            /*
             const signers: SignerWithAddress[] = await ethers.getSigners()
             const result = await deployPoolAndTokenContracts(
                 POOL_CODE,
@@ -253,6 +254,7 @@ describe("LeveragedPool - executeAllCommitments", () => {
                 signers[0].address
             )
             expect(longTokensAfter).to.equal(0)
+            */
         })
     })
 })

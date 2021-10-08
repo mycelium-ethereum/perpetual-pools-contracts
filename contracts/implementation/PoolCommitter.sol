@@ -26,9 +26,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
     address public factory;
     address public governance;
 
-    constructor(
-        address _factory
-    ) {
+    constructor(address _factory) {
         require(_factory != address(0), "Factory address cannot be null");
         // set the factory on deploy
         factory = _factory;
@@ -55,9 +53,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
                 updateInterval,
                 frontRunningInterval
             )
-        ) {
-
-        }
+        ) {}
         uint128 currentCommitIDCounter = commitIDCounter;
         commitIDCounter = currentCommitIDCounter + 1;
 
