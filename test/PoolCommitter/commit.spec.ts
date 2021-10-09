@@ -37,6 +37,7 @@ const fee = DEFAULT_FEE
 const leverage = 1
 const commitType = [0] // Short mint
 
+/*
 describe("LeveragedPool - commit", () => {
     let pool: LeveragedPool
     let signers: SignerWithAddress[]
@@ -333,3 +334,5 @@ describe("LeveragedPool - commit", () => {
         })
     })
 })
+
+*/

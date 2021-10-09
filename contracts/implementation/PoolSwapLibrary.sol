@@ -234,10 +234,8 @@ library PoolSwapLibrary {
         uint256 balance,
         uint256 shadowBalance
     ) external pure returns (uint256) {
-        require(amountIn > 0, "Invalid amount");
-
-        // Catch the divide by zero error.
-        if (balance == 0 || tokenSupply + shadowBalance == 0) {
+        // Catch the divide by zero error, or return 0 if amountIn is 0
+        if (balance == 0 || tokenSupply + shadowBalance == 0 || amountIn == 0) {
             return amountIn;
         }
         bytes16 numerator = ABDKMathQuad.mul(ABDKMathQuad.fromUInt(balance), ABDKMathQuad.fromUInt(amountIn));
@@ -259,10 +257,8 @@ library PoolSwapLibrary {
         uint256 balance,
         uint256 shadowBalance
     ) external pure returns (uint256) {
-        require(amountIn > 0, "Invalid amount");
-
-        // Catch the divide by zero error.
-        if (balance == 0 || tokenSupply + shadowBalance == 0) {
+        // Catch the divide by zero error, or return 0 if amountIn is 0
+        if (balance == 0 || tokenSupply + shadowBalance == 0 || amountIn == 0) {
             return amountIn;
         }
 
@@ -271,6 +267,32 @@ library PoolSwapLibrary {
             ABDKMathQuad.fromUInt(amountIn)
         );
         return ABDKMathQuad.toUInt(ABDKMathQuad.div(numerator, ABDKMathQuad.fromUInt(balance)));
+    }
+
+    /**
+     * @notice Get the Settlement/PoolToken price, in ABDK IEE754 precision
+     * @dev Divide the side balance by the pool token's total supply
+     * @param sideBalance no. of underlying collateral tokens on that side of the pool
+     * @param tokenSupply Total supply of pool tokens
+     */
+    function getPrice(uint256 sideBalance, uint256 tokenSupply) external pure returns (bytes16) {
+        if (tokenSupply == 0) {
+            return one;
+        }
+        return ABDKMathQuad.div(ABDKMathQuad.fromUInt(sideBalance), ABDKMathQuad.fromUInt(tokenSupply));
+    }
+
+    function getMint(bytes16 price, uint256 amount) external pure returns (uint256) {
+        require(price != 0, "Price == 0");
+        return ABDKMathQuad.toUInt(ABDKMathQuad.div(ABDKMathQuad.fromUInt(amount), price));
+    }
+
+    /**
+     * @dev amount * price, where amount is in PoolToken and price is in USD/PoolToken
+     */
+    function getBurn(bytes16 price, uint256 amount) external pure returns (uint256) {
+        require(price != 0, "Price == 0");
+        return ABDKMathQuad.toUInt(ABDKMathQuad.mul(ABDKMathQuad.fromUInt(amount), price));
     }
 
     /**

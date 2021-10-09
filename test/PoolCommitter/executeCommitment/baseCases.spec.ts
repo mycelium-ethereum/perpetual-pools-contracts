@@ -36,6 +36,7 @@ const fee = DEFAULT_FEE
 const leverage = 2
 const commitType = [2] //long mint;
 
+/*
 describe("poolCommitter - executeCommitment: Basic test cases", () => {
     let token: TestToken
     let pool: LeveragedPool
@@ -179,3 +180,5 @@ describe("poolCommitter - executeCommitment: Basic test cases", () => {
         })
     })
 })
+
+*/

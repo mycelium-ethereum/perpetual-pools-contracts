@@ -11,6 +11,19 @@ interface IPoolCommitter {
         LongBurn
     }
 
+    // User aggregate balance
+    struct Balance {
+        uint256 longTokens;
+        uint256 shortTokens;
+        uint256 settlementTokens;
+    }
+
+    // Token Prices
+    struct Prices {
+        bytes16 longPrice;
+        bytes16 shortPrice;
+    }
+
     // Commit information
     struct Commit {
         uint256 amount;
@@ -19,19 +32,43 @@ interface IPoolCommitter {
         address owner;
     }
 
+    // Commit information
+    struct Commitment {
+        uint256 longMintAmount;
+        uint256 longBurnAmount;
+        uint256 shortMintAmount;
+        uint256 shortBurnAmount;
+        uint256 updateIntervalId;
+    }
+
     /**
      * @notice Creates a notification when a commit is created
-     * @param commitID ID of the commit
      * @param amount Amount of the commit
      * @param commitType Type of the commit (Short v Long, Mint v Burn)
      */
-    event CreateCommit(uint128 indexed commitID, uint256 indexed amount, CommitType indexed commitType);
+    event CreateCommit(uint256 indexed amount, CommitType indexed commitType);
+
+    /**
+     * @notice Creates a notification when a user's aggregate balance is updated
+     */
+    event AggregateBalanceUpdated(address indexed user);
+
+    /**
+     * @notice Creates a notification when a claim is made, depositing pool tokens in user's wallet
+     */
+    event Claim(address indexed user);
 
     // #### Functions
 
     function commit(CommitType commitType, uint256 amount) external;
 
-    function getCommit(uint128 _commitID) external view returns (Commit memory);
+    function claim(address user) external;
+
+    function executeCommitments() external;
+
+    function updateAggregateBalance(address user) external;
+
+    function getAggregateBalance(address user) external returns (uint256 _longBalance, uint256 _shortBalance);
 
     function setQuoteAndPool(address quoteToken, address leveragedPool) external;
 }

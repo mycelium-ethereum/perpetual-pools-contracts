@@ -44,7 +44,7 @@ describe("LeveragedPool - executeCommitment: Long Burn", () => {
     let signers: SignerWithAddress[]
     let commit: CommitEventArgs
     let library: PoolSwapLibrary
-    describe.skip("Long Burn", () => {
+    describe("Long Burn", () => {
         beforeEach(async () => {
             const result = await deployPoolAndTokenContracts(
                 POOL_CODE,
@@ -67,6 +67,7 @@ describe("LeveragedPool - executeCommitment: Long Burn", () => {
             commit = await createCommit(poolCommitter, [2], amountCommitted)
             await timeout(2000)
             await pool.poolUpkeep(9, 10)
+            await poolCommitter.claim(signers[0].address)
             await longToken.approve(pool.address, amountCommitted)
             commit = await createCommit(poolCommitter, [3], amountCommitted)
         })
@@ -74,6 +75,7 @@ describe("LeveragedPool - executeCommitment: Long Burn", () => {
             expect(await pool.longBalance()).to.eq(amountCommitted)
             await timeout(2000)
             await pool.poolUpkeep(9, 10)
+            await poolCommitter.claim(signers[0].address)
             expect(await pool.longBalance()).to.eq(0)
         })
         it("should reduce the shadow long burn pool balance", async () => {
