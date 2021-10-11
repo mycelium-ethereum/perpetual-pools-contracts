@@ -283,7 +283,7 @@ library PoolSwapLibrary {
     }
 
     function getMint(bytes16 price, uint256 amount) external pure returns (uint256) {
-        require(price != 0, "Price == 0");
+        require(price != 0, "price == 0");
         return ABDKMathQuad.toUInt(ABDKMathQuad.div(ABDKMathQuad.fromUInt(amount), price));
     }
 
@@ -291,7 +291,7 @@ library PoolSwapLibrary {
      * @dev amount * price, where amount is in PoolToken and price is in USD/PoolToken
      */
     function getBurn(bytes16 price, uint256 amount) external pure returns (uint256) {
-        require(price != 0, "Price == 0");
+        require(price != 0, "price == 0");
         return ABDKMathQuad.toUInt(ABDKMathQuad.mul(ABDKMathQuad.fromUInt(amount), price));
     }
 

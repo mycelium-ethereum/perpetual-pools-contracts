@@ -15,6 +15,11 @@ export const POOL_CODE_2 = "CODE2"
 export const DEFAULT_MINT_AMOUNT = ethers.utils.parseEther("100000000")
 export const DEFAULT_FEE = "0"
 
+export const SHORT_MINT = 0
+export const SHORT_BURN = 1
+export const LONG_MINT = 2
+export const LONG_BURN = 3
+
 // MAX UINT128
 export const NO_COMMITS_REMAINING = "340282366920938463463374607431768211455"
 

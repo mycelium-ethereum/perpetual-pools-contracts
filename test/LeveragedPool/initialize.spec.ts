@@ -148,8 +148,7 @@ describe("LeveragedPool - initialize", () => {
             expect(await longToken.decimals()).to.eq(18)
         })
 
-        it.skip("should emit an event containing the details of the new pool", async () => {
-            /*
+        it("should emit an event containing the details of the new pool", async () => {
             const leveragedPoolFactory = (await ethers.getContractFactory(
                 "LeveragedPool",
                 {
@@ -190,9 +189,7 @@ describe("LeveragedPool - initialize", () => {
 
             const poolCommitter = await (
                 await poolCommitterFactory.deploy(
-                    setupContracts.factory.address,
-                    DEFAULT_MIN_COMMIT_SIZE,
-                    DEFAULT_MAX_COMMIT_QUEUE_LENGTH
+                    setupContracts.factory.address
                 )
             ).deployed()
 
@@ -240,7 +237,6 @@ describe("LeveragedPool - initialize", () => {
             expect(!!event?.args?.shortToken).to.eq(true)
             expect(event?.args?.quoteToken).to.eq(quoteToken)
             expect(event?.args?.poolName).to.eq(POOL_CODE)
-            */
         })
     })
 

@@ -18,7 +18,6 @@ import {
 } from "../../constants"
 import {
     deployPoolAndTokenContracts,
-    getRandomInt,
     generateRandomAddress,
     createCommit,
     CommitEventArgs,
@@ -31,8 +30,8 @@ const { expect } = chai
 const amountCommitted = ethers.utils.parseEther("2000")
 const amountMinted = DEFAULT_MINT_AMOUNT
 const feeAddress = generateRandomAddress()
-const updateInterval = 2
-const frontRunningInterval = 1 // seconds
+const updateInterval = 200
+const frontRunningInterval = 100 // seconds
 const fee = DEFAULT_FEE
 const leverage = 2
 
@@ -68,24 +67,27 @@ describe("LeveragedPool - executeCommitment: Short Mint", () => {
             await token.approve(pool.address, amountMinted)
             commit = await createCommit(poolCommitter, [0], amountCommitted)
         })
-        it.skip("should adjust the live short pool balance", async () => {
+        it("should adjust the live short pool balance", async () => {
             expect(await pool.shortBalance()).to.eq(0)
-            await timeout(2000)
+            await timeout(updateInterval * 1000)
             await pool.poolUpkeep(9, 10)
             expect(await pool.shortBalance()).to.eq(amountCommitted)
         })
-        it.skip("should reduce the shadow short mint pool balance", async () => {
-            expect(await poolCommitter.shadowPools(commit.commitType)).to.eq(
-                amountCommitted
-            )
-            await timeout(2000)
+        it("should reduce the shadow short mint pool balance", async () => {
+            expect(
+                (await poolCommitter.totalMostRecentCommit()).shortMintAmount
+            ).to.eq(amountCommitted)
+            await timeout(updateInterval * 1000)
             await pool.poolUpkeep(9, 10)
-            expect(await poolCommitter.shadowPools(commit.commitType)).to.eq(0)
+            expect(
+                (await poolCommitter.totalMostRecentCommit()).shortMintAmount
+            ).to.eq(0)
         })
-        it.skip("should mint short pair tokens", async () => {
+        it("should mint short pair tokens", async () => {
             expect(await shortToken.balanceOf(signers[0].address)).to.eq(0)
-            await timeout(2000)
+            await timeout(updateInterval * 1000)
             await pool.poolUpkeep(9, 10)
+            await poolCommitter.claim(signers[0].address)
             expect(await shortToken.balanceOf(signers[0].address)).to.eq(
                 amountCommitted
             )

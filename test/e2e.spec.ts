@@ -15,6 +15,10 @@ import {
     POOL_CODE,
     DEFAULT_MIN_COMMIT_SIZE,
     DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
+    SHORT_BURN,
+    LONG_BURN,
+    LONG_MINT,
+    SHORT_MINT,
 } from "./constants"
 import {
     deployPoolAndTokenContracts,
@@ -34,7 +38,7 @@ const amountMinted = ethers.utils.parseEther("10000")
 const lastPrice = ethers.utils.parseEther(getRandomInt(99999999, 1).toString())
 const updateInterval = 200
 const frontRunningInterval = 20 // seconds
-const fee = ethers.utils.parseEther("0.00001")
+const fee = "0" // ethers.utils.parseEther("0.00001")
 const leverage = 1
 
 describe("LeveragedPool - executeAllCommitments", () => {
@@ -47,11 +51,8 @@ describe("LeveragedPool - executeAllCommitments", () => {
     let poolKeeper: PoolKeeper
     let chainlinkOracle: TestChainlinkOracle
 
-    const commits: CommitEventArgs[] | undefined = []
-
     describe("e2e", async () => {
-        it.skip("Operates normally", async () => {
-            /*
+        it("Operates normally", async () => {
             const signers: SignerWithAddress[] = await ethers.getSigners()
             const result = await deployPoolAndTokenContracts(
                 POOL_CODE,
@@ -75,27 +76,22 @@ describe("LeveragedPool - executeAllCommitments", () => {
             longToken = result.longToken
 
             await token.approve(pool.address, amountMinted)
+            await createCommit(poolCommitter, LONG_MINT, amountCommitted)
             await timeout(updateInterval * 1000)
-            const commitType = [2] //long mint;
-            const commit = await createCommit(
-                poolCommitter,
-                commitType,
-                amountCommitted
-            )
             await pool.setKeeper(signers[0].address)
             await expect(
                 pool.connect(signers[1]).poolUpkeep(9, 10)
             ).to.be.revertedWith("msg.sender not keeper")
             // Doesn't delete commit
-            expect((await poolCommitter.commits(commit.commitID)).amount).to.eq(
-                amountCommitted
-            )
+            expect(
+                (await poolCommitter.totalMostRecentCommit()).longMintAmount
+            ).to.eq(amountCommitted)
             await pool.poolUpkeep(lastPrice, lastPrice)
 
             // Long mint commit
-            await createCommit(poolCommitter, [2], amountCommitted)
+            await createCommit(poolCommitter, LONG_MINT, amountCommitted)
             // Short mint commit
-            await createCommit(poolCommitter, [0], amountCommitted)
+            await createCommit(poolCommitter, SHORT_MINT, amountCommitted)
 
             await shortToken.approve(pool.address, amountMinted)
             await longToken.approve(pool.address, await longToken.totalSupply())
@@ -107,6 +103,9 @@ describe("LeveragedPool - executeAllCommitments", () => {
             await pool.setKeeper(poolKeeper.address)
             await poolKeeper.performUpkeepSinglePool(pool.address)
 
+            expect(await longToken.balanceOf(signers[0].address)).to.equal(0)
+            expect(await shortToken.balanceOf(signers[0].address)).to.equal(0)
+
             const longTokenSupplyAfter = await longToken.totalSupply()
             const shortTokenSupplyAfter = await shortToken.totalSupply()
 
@@ -116,6 +115,15 @@ describe("LeveragedPool - executeAllCommitments", () => {
             await timeout(updateInterval * 1000)
 
             await poolKeeper.performUpkeepSinglePool(pool.address)
+
+            // Claim, then balance should go to account
+            await poolCommitter.claim(signers[0].address)
+            expect(await longToken.balanceOf(signers[0].address)).to.equal(
+                amountCommitted.mul(2)
+            )
+            expect(await shortToken.balanceOf(signers[0].address)).to.equal(
+                amountCommitted
+            )
 
             const longTokenSupplyAfterSecond = await longToken.totalSupply()
             const shortTokenSupplyAfterSecond = await shortToken.totalSupply()
@@ -192,9 +200,8 @@ describe("LeveragedPool - executeAllCommitments", () => {
             expect(longBalanceAfter).to.be.lt(longBalanceBefore)
             expect(shortBalanceAfter).to.be.gt(shortBalanceBefore)
 
-            const shortBurnCommitId = await poolCommitter.commitIDCounter()
             // Short burn
-            await createCommit(poolCommitter, [1], amountCommitted)
+            await createCommit(poolCommitter, SHORT_BURN, amountCommitted)
             // Short tokens should be decreased by amountCommitted, to 0
             expect(await shortToken.totalSupply()).to.equal(0)
 
@@ -216,6 +223,7 @@ describe("LeveragedPool - executeAllCommitments", () => {
             ).wait()
 
             const keeperBalanceAfter = await token.balanceOf(signers[1].address)
+            await poolCommitter.claim(signers[0].address)
             const committerBalanceAfter = await token.balanceOf(
                 signers[0].address
             )
@@ -249,12 +257,11 @@ describe("LeveragedPool - executeAllCommitments", () => {
 
             const longTokens = await longToken.balanceOf(signers[0].address)
             // LONG BURN (undo all the long mints)
-            await createCommit(poolCommitter, [3], longTokens)
+            await createCommit(poolCommitter, LONG_BURN, longTokens)
             const longTokensAfter = await longToken.balanceOf(
                 signers[0].address
             )
             expect(longTokensAfter).to.equal(0)
-            */
         })
     })
 })

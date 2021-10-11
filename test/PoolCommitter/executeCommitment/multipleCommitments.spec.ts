@@ -7,14 +7,17 @@ import {
     ERC20,
     PoolSwapLibrary,
     PoolCommitter,
-    PoolKeeper,
 } from "../../../types"
 
 import {
     DEFAULT_FEE,
     DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
     DEFAULT_MIN_COMMIT_SIZE,
+    LONG_BURN,
+    LONG_MINT,
     POOL_CODE,
+    SHORT_BURN,
+    SHORT_MINT,
 } from "../../constants"
 import {
     deployPoolAndTokenContracts,
@@ -32,8 +35,8 @@ const amountCommitted = ethers.utils.parseEther("2000")
 const amountMinted = ethers.utils.parseEther("10000")
 const feeAddress = generateRandomAddress()
 const lastPrice = getRandomInt(99999999, 1)
-const updateInterval = 2
-const frontRunningInterval = 1 // seconds
+const updateInterval = 200
+const frontRunningInterval = 100 // seconds
 const fee = DEFAULT_FEE
 const leverage = 1
 
@@ -44,7 +47,7 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
     let library: PoolSwapLibrary
     let poolCommitter: PoolCommitter
 
-    describe.skip("Long mint->Long Burn", () => {
+    describe("Long mint->Long Burn", () => {
         const commits: CommitEventArgs[] | undefined = []
         beforeEach(async () => {
             const result = await deployPoolAndTokenContracts(
@@ -65,46 +68,56 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
 
             await token.approve(pool.address, amountMinted)
 
-            const commit = await createCommit(
-                poolCommitter,
-                [2],
-                amountCommitted
-            )
+            await createCommit(poolCommitter, [2], amountCommitted)
             await shortToken.approve(pool.address, amountMinted)
-            await timeout(2000)
+            await timeout(updateInterval * 1000)
             const signers = await ethers.getSigners()
             await pool.setKeeper(signers[0].address)
 
             await pool.poolUpkeep(lastPrice, lastPrice + 10)
 
+            await poolCommitter.claim(signers[0].address)
+
             commits.push(
-                await createCommit(poolCommitter, [2], amountCommitted)
+                await createCommit(poolCommitter, LONG_MINT, amountCommitted)
             )
             commits.push(
-                await createCommit(poolCommitter, [3], amountCommitted.div(2))
+                await createCommit(
+                    poolCommitter,
+                    LONG_BURN,
+                    amountCommitted.div(2)
+                )
             )
         })
         it("should reduce the balances of the shadows pools involved", async () => {
             // Short mint and burn pools
             expect(
-                await poolCommitter.shadowPools(commits[0].commitType)
+                await (
+                    await poolCommitter.totalMostRecentCommit()
+                ).longMintAmount
             ).to.eq(amountCommitted)
             expect(
-                await poolCommitter.shadowPools(commits[1].commitType)
+                await (
+                    await poolCommitter.totalMostRecentCommit()
+                ).longBurnAmount
             ).to.eq(amountCommitted.div(2))
-            await timeout(2000)
+            await timeout(updateInterval * 1000)
             await pool.poolUpkeep(lastPrice, lastPrice + 10)
 
             expect(
-                await poolCommitter.shadowPools(commits[0].commitType)
+                await (
+                    await poolCommitter.totalMostRecentCommit()
+                ).longBurnAmount
             ).to.eq(0)
             expect(
-                await poolCommitter.shadowPools(commits[1].commitType)
+                await (
+                    await poolCommitter.totalMostRecentCommit()
+                ).longMintAmount
             ).to.eq(0)
         })
         it("should adjust the balances of the live pools involved", async () => {
             expect(await pool.longBalance()).to.eq(amountCommitted)
-            await timeout(2000)
+            await timeout(updateInterval * 1000)
             await pool.poolUpkeep(lastPrice, lastPrice + 10)
 
             expect(await pool.longBalance()).to.eq(
@@ -112,7 +125,7 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
             )
         })
     })
-    describe.skip("Short mint->short burn", () => {
+    describe("Short mint->short burn", () => {
         const commits: CommitEventArgs[] | undefined = []
         beforeEach(async () => {
             const result = await deployPoolAndTokenContracts(
@@ -134,39 +147,41 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
 
             await token.approve(pool.address, amountMinted)
 
-            // Short mint commit
-            await createCommit(poolCommitter, [0], amountCommitted)
+            await createCommit(poolCommitter, SHORT_MINT, amountCommitted)
 
             await shortToken.approve(pool.address, amountMinted)
-            await timeout(2000)
+            await timeout(updateInterval * 1000)
 
-            await pool.poolUpkeep(lastPrice, 10)
+            await pool.poolUpkeep(lastPrice, lastPrice)
+            await poolCommitter.claim(result.signers[0].address)
 
-            // Short Mint
             commits.push(
-                await createCommit(poolCommitter, [0], amountCommitted)
+                await createCommit(poolCommitter, SHORT_MINT, amountCommitted)
             )
-            // Short burn
             commits.push(
-                await createCommit(poolCommitter, [1], amountCommitted.div(2))
+                await createCommit(
+                    poolCommitter,
+                    SHORT_BURN,
+                    amountCommitted.div(2)
+                )
             )
         })
         it("should reduce the balances of the shadows pools involved", async () => {
             // Short mint and burn pools
             expect(
-                await poolCommitter.shadowPools(commits[0].commitType)
+                (await poolCommitter.totalMostRecentCommit()).shortMintAmount
             ).to.eq(amountCommitted)
             expect(
-                await poolCommitter.shadowPools(commits[1].commitType)
+                (await poolCommitter.totalMostRecentCommit()).shortBurnAmount
             ).to.eq(amountCommitted.div(2))
-            await timeout(2000)
+            await timeout(updateInterval * 1000)
             await pool.poolUpkeep(lastPrice, 10)
 
             expect(
-                await poolCommitter.shadowPools(commits[0].commitType)
+                (await poolCommitter.totalMostRecentCommit()).shortMintAmount
             ).to.eq(0)
             expect(
-                await poolCommitter.shadowPools(commits[1].commitType)
+                (await poolCommitter.totalMostRecentCommit()).shortBurnAmount
             ).to.eq(0)
         })
         it("should adjust the balances of the live pools involved", async () => {

@@ -7,7 +7,15 @@ import {
     Event,
 } from "ethers"
 import { BytesLike, Result } from "ethers/lib/utils"
-import { DEFAULT_FEE, DEFAULT_MINT_AMOUNT, MARKET } from "./constants"
+import {
+    LONG_MINT,
+    LONG_BURN,
+    SHORT_BURN,
+    SHORT_MINT,
+    DEFAULT_FEE,
+    DEFAULT_MINT_AMOUNT,
+    MARKET,
+} from "./constants"
 import {
     ERC20,
     LeveragedPool,
@@ -320,4 +328,21 @@ export async function incrementPrice(
     let oldPrice = await oracle.price()
     let newPrice = oldPrice.add("100000000") // 1 * 10^18 (for default chainlink oracle decimals)
     return oracle.setPrice(newPrice)
+}
+
+/*
+ * Returns 0 if given LONG_BURN, 1 if given SHORT_BURN, -1 otherwise
+ */
+export function commitTypeToShadowPoolIndex(commitType: number): number {
+    switch (commitType) {
+        case LONG_BURN: {
+            return 0
+        }
+        case SHORT_BURN: {
+            return 1
+        }
+        default: {
+            return -1
+        }
+    }
 }

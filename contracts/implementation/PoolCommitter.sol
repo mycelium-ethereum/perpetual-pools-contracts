@@ -10,6 +10,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./PoolSwapLibrary.sol";
 import "../interfaces/IOracleWrapper.sol";
 
+import "hardhat/console.sol";
+
 /// @title This contract is responsible for handling commitment logic
 contract PoolCommitter is IPoolCommitter, Ownable {
     // #### Globals
@@ -23,13 +25,12 @@ contract PoolCommitter is IPoolCommitter, Ownable {
     // Fetched from the LeveragedPool when leveragedPool is set
     address[2] public tokens;
 
-    // CommitType => Shadow pool amount
-    // mapping(uint256 => uint256) public shadowPools;
-    uint256[2] public shadowPools;
     // Address => User's commitment amounts in a given updateInterval
     mapping(address => Commitment) public userMostRecentCommit;
-    // updateIntervalId => Total commitment amounts in a given updateInterval
-    mapping(uint256 => Commitment) public totalMostRecentCommit;
+    mapping(address => Commitment) public userNextIntervalCommit;
+    // Total commitment amounts in a given updateInterval
+    Commitment public totalMostRecentCommit;
+    Commitment public totalNextIntervalCommit;
     mapping(uint256 => Prices) priceHistory; // updateIntervalId => tokenPrice
     mapping(address => Balance) userAggregateBalance;
 
@@ -56,6 +57,26 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         uint256 lastPriceTimestamp = pool.lastPriceTimestamp();
         uint256 frontRunningInterval = pool.frontRunningInterval();
 
+        Commitment storage totalCommit;
+        Commitment storage userCommit;
+
+        if (
+            PoolSwapLibrary.isBeforeFrontRunningInterval(
+                block.timestamp,
+                lastPriceTimestamp,
+                updateInterval,
+                frontRunningInterval
+            )
+        ) {
+            totalCommit = totalMostRecentCommit;
+            userCommit = userMostRecentCommit[msg.sender];
+            userCommit.updateIntervalId = updateIntervalId;
+        } else {
+            totalCommit = totalNextIntervalCommit;
+            userCommit = userNextIntervalCommit[msg.sender];
+            userCommit.updateIntervalId = updateIntervalId + 1;
+        }
+
         // TODO aggregate commits or aggregate balance at start
 
         if (commitType == CommitType.LongMint || commitType == CommitType.ShortMint) {
@@ -63,24 +84,21 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             pool.quoteTokenTransferFrom(msg.sender, leveragedPool, amount);
         }
 
-        userMostRecentCommit[msg.sender].updateIntervalId = updateIntervalId;
         if (commitType == CommitType.LongMint) {
-            userMostRecentCommit[msg.sender].longMintAmount += amount;
-            totalMostRecentCommit[updateIntervalId].longMintAmount += amount;
+            userCommit.longMintAmount += amount;
+            totalCommit.longMintAmount += amount;
         } else if (commitType == CommitType.LongBurn) {
-            userMostRecentCommit[msg.sender].longBurnAmount += amount;
-            totalMostRecentCommit[updateIntervalId].longBurnAmount += amount;
+            userCommit.longBurnAmount += amount;
+            totalCommit.longBurnAmount += amount;
             // long burning: pull in long pool tokens from committer
-            shadowPools[LONG_INDEX] += amount;
             pool.burnTokens(0, amount, msg.sender);
         } else if (commitType == CommitType.ShortMint) {
-            userMostRecentCommit[msg.sender].shortMintAmount += amount;
-            totalMostRecentCommit[updateIntervalId].shortMintAmount += amount;
+            userCommit.shortMintAmount += amount;
+            totalCommit.shortMintAmount += amount;
         } else if (commitType == CommitType.ShortBurn) {
-            userMostRecentCommit[msg.sender].shortBurnAmount += amount;
-            totalMostRecentCommit[updateIntervalId].shortBurnAmount += amount;
+            userCommit.shortBurnAmount += amount;
+            totalCommit.shortBurnAmount += amount;
             // short burning: pull in short pool tokens from committer
-            shadowPools[SHORT_INDEX] += amount;
             pool.burnTokens(1, amount, msg.sender);
         } else {
             // Not reachable
@@ -101,7 +119,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
     }
 
     function executeCommitments() external override onlyPool {
-        Commitment memory _commits = totalMostRecentCommit[updateIntervalId];
+        Commitment memory _commits = totalMostRecentCommit;
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
         uint256 shortBalance = pool.shortBalance();
         uint256 longBalance = pool.longBalance();
@@ -111,8 +129,8 @@ contract PoolCommitter is IPoolCommitter, Ownable {
 
         // Update price before values change
         priceHistory[updateIntervalId] = Prices({
-            longPrice: PoolSwapLibrary.getPrice(longBalance, longTotalSupplyBefore + shadowPools[LONG_INDEX]),
-            shortPrice: PoolSwapLibrary.getPrice(shortBalance, shortTotalSupplyBefore + shadowPools[SHORT_INDEX])
+            longPrice: PoolSwapLibrary.getPrice(longBalance, longTotalSupplyBefore + _commits.longBurnAmount),
+            shortPrice: PoolSwapLibrary.getPrice(shortBalance, shortTotalSupplyBefore + _commits.shortBurnAmount)
         });
 
         // Long Mints
@@ -120,7 +138,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             longTotalSupplyBefore, // long token total supply,
             _commits.longMintAmount, // amount of quote tokens commited to enter
             longBalance, // total quote tokens in the long pull
-            shadowPools[LONG_INDEX] // total pool tokens commited to be burned
+            _commits.longBurnAmount // total pool tokens commited to be burned
         );
         pool.mintTokens(0, longMintAmount, leveragedPool);
 
@@ -129,7 +147,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             longTotalSupplyBefore,
             _commits.longBurnAmount,
             longBalance,
-            shadowPools[LONG_INDEX]
+            _commits.longBurnAmount
         );
 
         // Short Mints
@@ -137,7 +155,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             shortTotalSupplyBefore, // short token total supply
             _commits.shortMintAmount,
             shortBalance,
-            shadowPools[SHORT_INDEX]
+            _commits.shortBurnAmount
         );
 
         pool.mintTokens(1, shortMintAmount, leveragedPool);
@@ -147,19 +165,19 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             shortTotalSupplyBefore,
             _commits.shortBurnAmount,
             shortBalance,
-            shadowPools[SHORT_INDEX]
+            _commits.shortBurnAmount
         );
 
         uint256 newLongBalance = longBalance + _commits.longMintAmount - longBurnAmount;
         uint256 newShortBalance = shortBalance + _commits.shortMintAmount - shortBurnAmount;
 
+        totalMostRecentCommit = totalNextIntervalCommit;
+        delete totalNextIntervalCommit;
+
         // TODO update user's aggregate balance
         // TODO setNewPoolBalances once at end
         // TODO only mint/burn if amount is > 0
         updateIntervalId += 1;
-
-        shadowPools[LONG_INDEX] = 0;
-        shadowPools[SHORT_INDEX] = 0;
 
         // Update the collateral on each side
         pool.setNewPoolBalances(newLongBalance, newShortBalance);
@@ -170,22 +188,26 @@ contract PoolCommitter is IPoolCommitter, Ownable {
      */
     function updateAggregateBalance(address user) public override {
         Commitment memory mostRecentCommit = userMostRecentCommit[user];
-        if (mostRecentCommit.updateIntervalId == 0) {
+        if (mostRecentCommit.updateIntervalId == 0 || mostRecentCommit.updateIntervalId == updateIntervalId) {
             return;
         }
         Balance storage balance = userAggregateBalance[user];
         Prices memory prices = priceHistory[mostRecentCommit.updateIntervalId];
+
         uint256 longMintResult; // The amount of long tokens to mint based on settlement tokens deposited
         uint256 longBurnResult; // The amount of settlement tokens to withdraw based on long token burn
         uint256 shortMintResult; // The amount of short tokens to mint based on settlement tokens deposited
         uint256 shortBurnResult; // The amount of settlement tokens to withdraw based on short token burn
         if (mostRecentCommit.longMintAmount > 0) {
             longMintResult = PoolSwapLibrary.getMint(prices.longPrice, mostRecentCommit.longMintAmount);
-        } else if (mostRecentCommit.longBurnAmount > 0) {
+        }
+        if (mostRecentCommit.longBurnAmount > 0) {
             longBurnResult = PoolSwapLibrary.getBurn(prices.longPrice, mostRecentCommit.longBurnAmount);
-        } else if (mostRecentCommit.shortMintAmount > 0) {
+        }
+        if (mostRecentCommit.shortMintAmount > 0) {
             shortMintResult = PoolSwapLibrary.getMint(prices.shortPrice, mostRecentCommit.shortMintAmount);
-        } else if (mostRecentCommit.shortBurnAmount > 0) {
+        }
+        if (mostRecentCommit.shortBurnAmount > 0) {
             shortBurnResult = PoolSwapLibrary.getBurn(prices.shortPrice, mostRecentCommit.shortBurnAmount);
         }
 
@@ -193,6 +215,8 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         balance.shortTokens += shortMintResult;
         balance.settlementTokens += longBurnResult += shortBurnResult;
 
+        delete userMostRecentCommit[user];
+        userMostRecentCommit[user] = userNextIntervalCommit[user];
         delete userMostRecentCommit[user];
 
         emit AggregateBalanceUpdated(user);
