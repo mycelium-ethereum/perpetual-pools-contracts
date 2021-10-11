@@ -2,68 +2,46 @@
 pragma solidity 0.8.7;
 
 import "../interfaces/IOracleWrapper.sol";
-import "../interfaces/IHistoricalOracleWrapper.sol";
+import "../interfaces/IPriceObserver.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract SMAOracle is Ownable, IOracleWrapper {
     /// Price oracle supplying the spot price of the quote asset
     address public override oracle;
 
+    /// Price observer providing the SMA oracle with historical pricing data
+    address public observer;
+
     /// Current SMA price
     int256 public price;
-
-    /// Total allowed size of the (**statically-allocated**) array storing the dataset
-    uint256 public constant capacity = 24;
-
-    /// Array storing the dataset of previous spot prices
-    int256[capacity] public observations;
 
     /// Number of periods to use in calculating the SMA (`k` in the SMA equation)
     uint256 public periods;
 
-    /// Initial price to report in the base case where the oracle is unpopulated
-    int256 public constant INITIAL_PRICE = 1;
-
-    /// Whether or not `update` has been called on this instance of the contract
-    /// or not
-    bool private updated;
-
-    constructor(address _spotOracle, uint256 _periods) {
-        require(_periods > 0 && _periods <= capacity, "SMA: Out of bounds");
+    constructor(
+        address _spotOracle,
+        address _observer,
+        uint256 _periods
+    ) {
+        require(_spotOracle != address(0) && _observer != address(0), "SMA: Null address forbidden");
+        require(_periods > 0 && _periods <= IPriceObserver(_observer).capacity(), "SMA: Out of bounds");
         periods = _periods;
         setOracle(_spotOracle);
-        price = INITIAL_PRICE;
-        updated = false;
+        setObserver(_observer);
+
+        price = SMA(IPriceObserver(_observer).getAll(), _periods);
     }
 
     function setOracle(address _spotOracle) public override onlyOwner {
         oracle = _spotOracle;
     }
 
-    function getPrice() external view override onlyUpdated returns (int256) {
-        return price;
+    function setObserver(address _observer) public onlyOwner {
+        observer = _observer;
     }
 
-    /**
-     * @notice Populates the observations array with historical prices from the
-     *          spot oracle
-     * @dev O(n) cost due to n calls (where n is `capacity`)
-     * @dev Sets the `updated` flag to `true`
-     * @dev Throws if `updated` flag is `true` (prior to the call)
-     *
-     */
-    function initialise() public {
-        /* guard against double-initialisations */
-        require(!updated, "SMA: Already initialised");
-        uint256 n = capacity;
-        IHistoricalOracleWrapper spotOracle = IHistoricalOracleWrapper(oracle);
-
-        /* linear scan over entire observations array */
-        for (uint256 i = 0; i < n; i++) {
-            observations[i] = spotOracle.getPrice(n - i);
-        }
-
-        updated = true;
+    function getPrice() external view override returns (int256) {
+        return price;
     }
 
     /**
@@ -73,16 +51,19 @@ contract SMAOracle is Ownable, IOracleWrapper {
      *      price
      *
      */
-    function update() public {
+    function update() public returns (int256) {
         /* query the underlying spot price oracle */
-        IHistoricalOracleWrapper spotOracle = IHistoricalOracleWrapper(oracle);
-        int256 latestPrice = spotOracle.getPrice(0);
+        IOracleWrapper spotOracle = IOracleWrapper(oracle);
+        int256 latestPrice = spotOracle.getPrice();
 
         /* expire the oldest observation and load the fresh one in */
-        leftRotateWithPad(observations, latestPrice);
+        IPriceObserver priceObserver = IPriceObserver(observer);
+        priceObserver.add(latestPrice);
 
         /* update current reported SMA price */
-        price = SMA(observations, periods);
+        price = SMA(priceObserver.getAll(), periods);
+
+        return price;
     }
 
     /**
@@ -95,9 +76,11 @@ contract SMAOracle is Ownable, IOracleWrapper {
      * @dev Throws if `k` is the maximum *signed* 256-bit integer (due to necessary division)
      * @dev O(k) complexity due to linear traversal of the final `k` elements of `xs`
      * @dev Note that the signedness of the return type is due to the signedness of the elements of `xs`
+     * @dev It's a true tragedy that we have to stipulate a fixed-length array for `xs`, but alas, Solidity's type system cannot
+     *          reason about this at all due to the value's runtime requirement
      *
      */
-    function SMA(int256[capacity] memory xs, uint256 k) public pure returns (int256) {
+    function SMA(int256[24] memory xs, uint256 k) public pure returns (int256) {
         uint256 n = xs.length;
 
         /* bounds check */
@@ -115,25 +98,6 @@ contract SMAOracle is Ownable, IOracleWrapper {
         return S / int256(k);
     }
 
-    /**
-     * @notice Rotates `xs` to the **left** by one element and sets the last element of `xs` to `x`
-     * @param xs Array to rotate
-     * @param x Element to "rotate into" `xs`
-     *
-     */
-    function leftRotateWithPad(int256[capacity] memory xs, int256 x) public pure {
-        uint256 n = xs.length;
-
-        /* linear scan over the [1, n] subsequence */
-        for (uint256 i = 1; i < n; i++) {
-            xs[i - 1] = xs[i];
-        }
-
-        /* rotate `x` into `xs` from the right (remember, we're **left**
-         * rotating -- with padding!) */
-        xs[n - 1] = x;
-    }
-
     function fromWad(int256 wad) external view override returns (int256) {
         /* TODO: implement `fromWad` */
     }
@@ -144,17 +108,7 @@ contract SMAOracle is Ownable, IOracleWrapper {
      *          the metadata as implementation-defined. For the SMA oracle, there
      *          is no clear use case for additional data, so it's left blank
      */
-    function getPriceAndMetadata() external view override onlyUpdated returns (int256 _price, bytes memory _data) {
+    function getPriceAndMetadata() external view override returns (int256 _price, bytes memory _data) {
         return (price, "");
-    }
-
-    /**
-     * @notice Checks that the oracle has been initialised with price data via a
-     *          successful call to `SMAOracle.update`
-     * @dev Throws if `updated` is `false`
-     */
-    modifier onlyUpdated() {
-        require(updated, "SMA: Uninitialised");
-        _;
     }
 }

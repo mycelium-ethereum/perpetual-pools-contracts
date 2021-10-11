@@ -6,6 +6,8 @@ import {
     ChainlinkOracleWrapper,
     TestChainlinkOracle__factory,
     TestChainlinkOracle,
+    PriceObserver__factory,
+    PriceObserver,
     SMAOracle__factory,
     SMAOracle,
 } from "../types"
@@ -18,6 +20,7 @@ const { expect } = chai
 describe("SMAOracle", async () => {
     let smaOracle: SMAOracle
     let spotOracle: ChainlinkOracleWrapper
+    let priceObserver: PriceObserver
     let signers: SignerWithAddress[]
     let owner: SignerWithAddress
     let nonOwner: SignerWithAddress
@@ -47,6 +50,13 @@ describe("SMAOracle", async () => {
         )) as ChainlinkOracleWrapper__factory
         spotOracle = await spotOracleFactory.deploy(chainlinkOracle.address)
 
+        /* deploy price observer contract */
+        const priceObserverFactory = (await ethers.getContractFactory(
+            "PriceObserver",
+            owner
+        )) as PriceObserver__factory
+        priceObserver = await priceObserverFactory.deploy()
+
         /* deploy SMA oracle contract */
         const smaOracleFactory = (await ethers.getContractFactory(
             "SMAOracle",
@@ -54,6 +64,7 @@ describe("SMAOracle", async () => {
         )) as SMAOracle__factory
         smaOracle = await smaOracleFactory.deploy(
             spotOracle.address,
+            priceObserver.address,
             numPeriods
         )
     })
