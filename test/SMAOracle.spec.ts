@@ -30,7 +30,7 @@ describe("SMAOracle", async () => {
         nonOwner = signers[1]
 
         /* configure deployment parameters */
-        numPeriods = 24
+        numPeriods = 5
 
         /* deploy test Chainlink oracle (we need something to feed into the wrapper) */
         signers = await ethers.getSigners()
