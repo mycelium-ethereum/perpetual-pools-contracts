@@ -20,6 +20,7 @@ const { expect } = chai
 describe("SMAOracle", async () => {
     let smaOracle: SMAOracle
     let spotOracle: ChainlinkOracleWrapper
+    let chainlinkOracle: TestChainlinkOracle
     let priceObserver: PriceObserver
     let signers: SignerWithAddress[]
     let owner: SignerWithAddress
@@ -41,7 +42,7 @@ describe("SMAOracle", async () => {
             "TestChainlinkOracle",
             signers[0]
         )) as TestChainlinkOracle__factory
-        const chainlinkOracle = await chainlinkOracleFactory.deploy()
+        chainlinkOracle = await chainlinkOracleFactory.deploy()
 
         /* deploy spot oracle contract */
         const spotOracleFactory = (await ethers.getContractFactory(
@@ -144,5 +145,44 @@ describe("SMAOracle", async () => {
                 )
             })
         })
+    })
+
+    async function updatePrice(
+        price: BigNumberish,
+        chainlink: TestChainlinkOracle,
+        sma: SMAOracle
+    ) {
+        await chainlink.setPrice(price)
+        await sma.update()
+    }
+
+    describe("update", async () => {
+        beforeEach(async () => {
+            /* size of this array needs to be less than the price observer's
+             * capacity */
+            const prices: BigNumberish[] = [
+                2, 3, 4, 3, 7, 8, 12, 10, 11, 12, 14, 5, 5, 9, 10, 1, 1, 0, 2,
+                2, 3, 4, 6,
+            ].map((x) => ethers.BigNumber.from(x))
+
+            /* perform update */
+            for (const price of prices) {
+                await updatePrice(price, chainlinkOracle, smaOracle)
+            }
+
+            /* set the latest price (arbitrary) */
+            chainlinkOracle.setPrice(10)
+        })
+
+        context(
+            "When called with observations array less than capacity",
+            async () => {
+                it("Updates the SMA price correctly", async () => {
+                    await smaOracle.update()
+
+                    expect(await smaOracle.getPrice()).to.be.eq(5)
+                })
+            }
+        )
     })
 })
