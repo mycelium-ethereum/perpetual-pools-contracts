@@ -99,6 +99,40 @@ describe("PriceObserver", async () => {
 
                 expect(await priceObserver.length()).to.be.eq(previousLength)
             })
+
+            it("Rotates the observations array", async () => {
+                const newValue: BigNumberish = 12
+                const expectedPrices: BigNumber[] = [
+                    3,
+                    4,
+                    3,
+                    7,
+                    8,
+                    12,
+                    10,
+                    11,
+                    12,
+                    14,
+                    5,
+                    5,
+                    9,
+                    10,
+                    1,
+                    1,
+                    0,
+                    2,
+                    2,
+                    3,
+                    4,
+                    6,
+                    10,
+                    newValue,
+                ].map((x) => ethers.BigNumber.from(x))
+
+                await priceObserver.add(newValue)
+
+                expect(await priceObserver.getAll()).to.be.eq(expectedPrices)
+            })
         })
     })
 
