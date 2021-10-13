@@ -68,7 +68,7 @@ interface IPoolCommitter {
 
     function updateAggregateBalance(address user) external;
 
-    function getAggregateBalance(address user) external returns (uint256 _longBalance, uint256 _shortBalance);
+    function getAggregateBalance(address user) external view returns (Balance memory _balance);
 
     function setQuoteAndPool(address quoteToken, address leveragedPool) external;
 }

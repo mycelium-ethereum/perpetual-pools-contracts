@@ -14,6 +14,17 @@ library PoolSwapLibrary {
 
     uint256 public constant WAD_PRECISION = 10**18;
 
+    struct UpdateData {
+        bytes16 longPrice;
+        bytes16 shortPrice;
+        uint256 currentUpdateIntervalId;
+        uint256 updateIntervalId;
+        uint256 longMintAmount;
+        uint256 longBurnAmount;
+        uint256 shortMintAmount;
+        uint256 shortBurnAmount;
+    }
+
     struct PriceChangeData {
         int256 oldPrice;
         int256 newPrice;
@@ -282,7 +293,7 @@ library PoolSwapLibrary {
         return ABDKMathQuad.div(ABDKMathQuad.fromUInt(sideBalance), ABDKMathQuad.fromUInt(tokenSupply));
     }
 
-    function getMint(bytes16 price, uint256 amount) external pure returns (uint256) {
+    function getMint(bytes16 price, uint256 amount) public pure returns (uint256) {
         require(price != 0, "price == 0");
         return ABDKMathQuad.toUInt(ABDKMathQuad.div(ABDKMathQuad.fromUInt(amount), price));
     }
@@ -290,7 +301,7 @@ library PoolSwapLibrary {
     /**
      * @dev amount * price, where amount is in PoolToken and price is in USD/PoolToken
      */
-    function getBurn(bytes16 price, uint256 amount) external pure returns (uint256) {
+    function getBurn(bytes16 price, uint256 amount) public pure returns (uint256) {
         require(price != 0, "price == 0");
         return ABDKMathQuad.toUInt(ABDKMathQuad.mul(ABDKMathQuad.fromUInt(amount), price));
     }
@@ -302,5 +313,36 @@ library PoolSwapLibrary {
     function fromWad(uint256 _wadValue, uint256 _decimals) external pure returns (uint256) {
         uint256 scaler = 10**(MAX_DECIMALS - _decimals);
         return _wadValue / scaler;
+    }
+
+    function getUpdatedAggregateBalance(UpdateData memory data)
+        external
+        pure
+        returns (
+            uint256 _newLongTokens,
+            uint256 _newShortTokens,
+            uint256 _newSettlementTokens
+        )
+    {
+        if (data.updateIntervalId == data.currentUpdateIntervalId) {
+            // Update interval has not passed: No change
+            return (0, 0, 0);
+        }
+        uint256 longBurnResult; // The amount of settlement tokens to withdraw based on long token burn
+        uint256 shortBurnResult; // The amount of settlement tokens to withdraw based on short token burn
+        if (data.longMintAmount > 0) {
+            _newLongTokens = getMint(data.longPrice, data.longMintAmount);
+        }
+        if (data.longBurnAmount > 0) {
+            longBurnResult = getBurn(data.longPrice, data.longBurnAmount);
+        }
+        if (data.shortMintAmount > 0) {
+            _newShortTokens = getMint(data.shortPrice, data.shortMintAmount);
+        }
+        if (data.shortBurnAmount > 0) {
+            shortBurnResult = getBurn(data.shortPrice, data.shortBurnAmount);
+        }
+
+        _newSettlementTokens = shortBurnResult + longBurnResult;
     }
 }

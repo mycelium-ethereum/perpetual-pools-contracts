@@ -194,4 +194,307 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
             )
         })
     })
+    describe("Committing during front-running interval", () => {
+        it("Executes all commits when commits are made during front-running interval and before, and executed at the same time", async () => {
+            const result = await deployPoolAndTokenContracts(
+                POOL_CODE,
+                frontRunningInterval,
+                updateInterval,
+                leverage,
+                DEFAULT_MIN_COMMIT_SIZE,
+                DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
+                feeAddress,
+                fee
+            )
+            pool = result.pool
+            library = result.library
+            token = result.token
+            shortToken = result.shortToken
+            poolCommitter = result.poolCommitter
+            await pool.setKeeper(result.signers[0].address)
+
+            await token.approve(
+                pool.address,
+                ethers.utils.parseEther("9999999")
+            )
+
+            await createCommit(poolCommitter, SHORT_MINT, amountCommitted)
+
+            // totalMostRecentCommit, userMostRecentCommit should be populated.
+            // totalNextIntervalCommit, userNextIntervalCommit should be empty.
+
+            let totalMostRecentCommit =
+                await poolCommitter.totalMostRecentCommit()
+            let userMostRecentCommit = await poolCommitter.userMostRecentCommit(
+                result.signers[0].address
+            )
+            let totalNextIntervalCommit =
+                await poolCommitter.totalNextIntervalCommit()
+            let userNextIntervalCommit =
+                await poolCommitter.userNextIntervalCommit(
+                    result.signers[0].address
+                )
+
+            expect(totalMostRecentCommit.shortMintAmount).to.equal(
+                amountCommitted
+            )
+            expect(totalMostRecentCommit.longMintAmount).to.equal(0)
+            expect(userMostRecentCommit.shortMintAmount).to.equal(
+                amountCommitted
+            )
+            expect(userMostRecentCommit.longMintAmount).to.equal(0)
+            expect(totalNextIntervalCommit.shortMintAmount).to.equal(0)
+            expect(totalNextIntervalCommit.longMintAmount).to.equal(0)
+            expect(userNextIntervalCommit.shortMintAmount).to.equal(0)
+            expect(userNextIntervalCommit.longMintAmount).to.equal(0)
+
+            await timeout((updateInterval - frontRunningInterval / 2) * 1000)
+
+            await createCommit(poolCommitter, LONG_MINT, amountCommitted.div(2))
+
+            // Now totalNextIntervalCommit should be populated, but totalMostRecentCommit should remain unchanged
+
+            totalMostRecentCommit = await poolCommitter.totalMostRecentCommit()
+            userMostRecentCommit = await poolCommitter.userMostRecentCommit(
+                result.signers[0].address
+            )
+            totalNextIntervalCommit =
+                await poolCommitter.totalNextIntervalCommit()
+            userNextIntervalCommit = await poolCommitter.userNextIntervalCommit(
+                result.signers[0].address
+            )
+
+            expect(totalMostRecentCommit.shortMintAmount).to.equal(
+                amountCommitted
+            )
+            expect(totalMostRecentCommit.longMintAmount).to.equal(0)
+            expect(userMostRecentCommit.shortMintAmount).to.equal(
+                amountCommitted
+            )
+            expect(userMostRecentCommit.longMintAmount).to.equal(0)
+
+            expect(totalNextIntervalCommit.shortMintAmount).to.equal(0)
+            expect(totalNextIntervalCommit.longMintAmount).to.equal(
+                amountCommitted.div(2)
+            )
+            expect(userNextIntervalCommit.shortMintAmount).to.equal(0)
+            expect(userNextIntervalCommit.longMintAmount).to.equal(
+                amountCommitted.div(2)
+            )
+
+            await timeout(updateInterval * 5 * 1000)
+
+            await pool.poolUpkeep(lastPrice, lastPrice)
+
+            await poolCommitter.updateAggregateBalance(
+                result.signers[0].address
+            )
+
+            // Now, totalNextIntervalCommit should have been shifted into totalMostRecentCommit and same for userNextIntervalCommit
+
+            totalMostRecentCommit = await poolCommitter.totalMostRecentCommit()
+            userMostRecentCommit = await poolCommitter.userMostRecentCommit(
+                result.signers[0].address
+            )
+            totalNextIntervalCommit =
+                await poolCommitter.totalNextIntervalCommit()
+            userNextIntervalCommit = await poolCommitter.userNextIntervalCommit(
+                result.signers[0].address
+            )
+            let userBalance = await poolCommitter.getAggregateBalance(
+                result.signers[0].address
+            )
+
+            expect(totalMostRecentCommit.shortMintAmount).to.equal(0)
+            expect(totalMostRecentCommit.longMintAmount).to.equal(0)
+            expect(userMostRecentCommit.shortMintAmount).to.equal(0)
+            expect(userMostRecentCommit.longMintAmount).to.equal(0)
+
+            expect(totalNextIntervalCommit.shortMintAmount).to.equal(0)
+            expect(totalNextIntervalCommit.longMintAmount).to.equal(0)
+            expect(userNextIntervalCommit.shortMintAmount).to.equal(0)
+            expect(userNextIntervalCommit.longMintAmount).to.equal(0)
+
+            expect(userBalance.longTokens).to.equal(amountCommitted.div(2))
+            expect(userBalance.shortTokens).to.equal(amountCommitted)
+            expect(userBalance.settlementTokens).to.equal(0)
+
+            const settlementTokenBalanceBefore = await result.token.balanceOf(
+                result.signers[0].address
+            )
+
+            await poolCommitter.claim(result.signers[0].address)
+
+            const longTokenBalance = await result.longToken.balanceOf(
+                result.signers[0].address
+            )
+            const shortTokenBalance = await result.shortToken.balanceOf(
+                result.signers[0].address
+            )
+            const settlementTokenBalanceAfter = await result.token.balanceOf(
+                result.signers[0].address
+            )
+
+            expect(longTokenBalance).to.equal(amountCommitted.div(2))
+            expect(shortTokenBalance).to.equal(amountCommitted)
+            expect(settlementTokenBalanceAfter).to.equal(
+                settlementTokenBalanceBefore
+            )
+        })
+
+        it("Allows for commits before front-running interval to execute while maintaining storage of front-running commits", async () => {
+            const result = await deployPoolAndTokenContracts(
+                POOL_CODE,
+                frontRunningInterval,
+                updateInterval,
+                leverage,
+                DEFAULT_MIN_COMMIT_SIZE,
+                DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
+                feeAddress,
+                fee
+            )
+            pool = result.pool
+            library = result.library
+            token = result.token
+            shortToken = result.shortToken
+            poolCommitter = result.poolCommitter
+            await pool.setKeeper(result.signers[0].address)
+
+            await token.approve(
+                pool.address,
+                ethers.utils.parseEther("9999999")
+            )
+
+            await createCommit(poolCommitter, SHORT_MINT, amountCommitted)
+
+            // totalMostRecentCommit, userMostRecentCommit should be populated.
+            // totalNextIntervalCommit, userNextIntervalCommit should be empty.
+
+            let totalMostRecentCommit =
+                await poolCommitter.totalMostRecentCommit()
+            let userMostRecentCommit = await poolCommitter.userMostRecentCommit(
+                result.signers[0].address
+            )
+            let totalNextIntervalCommit =
+                await poolCommitter.totalNextIntervalCommit()
+            let userNextIntervalCommit =
+                await poolCommitter.userNextIntervalCommit(
+                    result.signers[0].address
+                )
+
+            expect(totalMostRecentCommit.shortMintAmount).to.equal(
+                amountCommitted
+            )
+            expect(totalMostRecentCommit.longMintAmount).to.equal(0)
+            expect(userMostRecentCommit.shortMintAmount).to.equal(
+                amountCommitted
+            )
+            expect(userMostRecentCommit.longMintAmount).to.equal(0)
+            expect(totalNextIntervalCommit.shortMintAmount).to.equal(0)
+            expect(totalNextIntervalCommit.longMintAmount).to.equal(0)
+            expect(userNextIntervalCommit.shortMintAmount).to.equal(0)
+            expect(userNextIntervalCommit.longMintAmount).to.equal(0)
+
+            await timeout((updateInterval - frontRunningInterval / 2) * 1000)
+
+            await createCommit(poolCommitter, LONG_MINT, amountCommitted.div(2))
+
+            // Now totalNextIntervalCommit should be populated, but totalMostRecentCommit should remain unchanged
+
+            totalMostRecentCommit = await poolCommitter.totalMostRecentCommit()
+            userMostRecentCommit = await poolCommitter.userMostRecentCommit(
+                result.signers[0].address
+            )
+            totalNextIntervalCommit =
+                await poolCommitter.totalNextIntervalCommit()
+            userNextIntervalCommit = await poolCommitter.userNextIntervalCommit(
+                result.signers[0].address
+            )
+
+            expect(totalMostRecentCommit.shortMintAmount).to.equal(
+                amountCommitted
+            )
+            expect(totalMostRecentCommit.longMintAmount).to.equal(0)
+            expect(userMostRecentCommit.shortMintAmount).to.equal(
+                amountCommitted
+            )
+            expect(userMostRecentCommit.longMintAmount).to.equal(0)
+
+            expect(totalNextIntervalCommit.shortMintAmount).to.equal(0)
+            expect(totalNextIntervalCommit.longMintAmount).to.equal(
+                amountCommitted.div(2)
+            )
+            expect(userNextIntervalCommit.shortMintAmount).to.equal(0)
+            expect(userNextIntervalCommit.longMintAmount).to.equal(
+                amountCommitted.div(2)
+            )
+
+            await timeout(updateInterval * 1000)
+
+            await pool.poolUpkeep(lastPrice, lastPrice)
+
+            await poolCommitter.updateAggregateBalance(
+                result.signers[0].address
+            )
+
+            // Now, totalNextIntervalCommit should have been shifted into totalMostRecentCommit and same for userNextIntervalCommit
+
+            totalMostRecentCommit = await poolCommitter.totalMostRecentCommit()
+            userMostRecentCommit = await poolCommitter.userMostRecentCommit(
+                result.signers[0].address
+            )
+            totalNextIntervalCommit =
+                await poolCommitter.totalNextIntervalCommit()
+            userNextIntervalCommit = await poolCommitter.userNextIntervalCommit(
+                result.signers[0].address
+            )
+            let userBalance = await poolCommitter.getAggregateBalance(
+                result.signers[0].address
+            )
+
+            expect(totalMostRecentCommit.shortMintAmount).to.equal(0)
+            expect(totalMostRecentCommit.longMintAmount).to.equal(
+                amountCommitted.div(2)
+            )
+            expect(userMostRecentCommit.shortMintAmount).to.equal(0)
+            expect(userMostRecentCommit.longMintAmount).to.equal(
+                amountCommitted.div(2)
+            )
+
+            expect(totalNextIntervalCommit.shortMintAmount).to.equal(0)
+            expect(totalNextIntervalCommit.longMintAmount).to.equal(0)
+            expect(userNextIntervalCommit.shortMintAmount).to.equal(0)
+            expect(userNextIntervalCommit.longMintAmount).to.equal(0)
+
+            expect(userBalance.longTokens).to.equal(0)
+            expect(userBalance.shortTokens).to.equal(amountCommitted)
+            expect(userBalance.settlementTokens).to.equal(0)
+
+            await timeout(updateInterval * 1000)
+
+            await pool.poolUpkeep(lastPrice, lastPrice)
+
+            const settlementTokenBalanceBefore = await result.token.balanceOf(
+                result.signers[0].address
+            )
+
+            await poolCommitter.claim(result.signers[0].address)
+
+            const longTokenBalance = await result.longToken.balanceOf(
+                result.signers[0].address
+            )
+            const shortTokenBalance = await result.shortToken.balanceOf(
+                result.signers[0].address
+            )
+            const settlementTokenBalanceAfter = await result.token.balanceOf(
+                result.signers[0].address
+            )
+
+            expect(longTokenBalance).to.equal(amountCommitted.div(2))
+            expect(shortTokenBalance).to.equal(amountCommitted)
+            expect(settlementTokenBalanceAfter).to.equal(
+                settlementTokenBalanceBefore
+            )
+        })
+    })
 })

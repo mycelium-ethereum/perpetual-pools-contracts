@@ -13,6 +13,7 @@ import {
     DEFAULT_FEE,
     DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
     DEFAULT_MIN_COMMIT_SIZE,
+    LONG_MINT,
     POOL_CODE,
 } from "../../constants"
 import {
@@ -63,7 +64,11 @@ describe("LeveragedPool - executeCommitment: Long Mint", () => {
             library = result.library
             longToken = result.longToken
             await token.approve(pool.address, amountMinted)
-            commit = await createCommit(poolCommitter, [2], amountCommitted)
+            commit = await createCommit(
+                poolCommitter,
+                LONG_MINT,
+                amountCommitted
+            )
         })
         it("should adjust the live long pool balance", async () => {
             expect(await pool.longBalance()).to.eq(0)
@@ -76,7 +81,8 @@ describe("LeveragedPool - executeCommitment: Long Mint", () => {
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(9, 10)
             expect(
-                (await poolCommitter.getAggregateBalance(signers[0].address))[0]
+                (await poolCommitter.getAggregateBalance(signers[0].address))
+                    .longTokens
             ).to.eq(amountCommitted)
         })
     })
