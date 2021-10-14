@@ -28,7 +28,7 @@ contract PriceObserver is Ownable, IPriceObserver {
 
     function add(int256 x) public override returns (bool) {
         if (full()) {
-            observations[capacity() - 1] = x;
+            leftRotateWithPad(x);
             return true;
         } else {
             observations[length()] = x;
@@ -44,5 +44,23 @@ contract PriceObserver is Ownable, IPriceObserver {
     function clear() public onlyOwner {
         numElems = 0;
         delete observations;
+    }
+
+    /**
+     * @notice Rotates observations array to the **left** by one element and sets the last element of `xs` to `x`
+     * @param x Element to "rotate into" observations array
+     *
+     */
+    function leftRotateWithPad(int256 x) private onlyOwner {
+        uint256 n = length();
+
+        /* linear scan over the [1, n] subsequence */
+        for (uint256 i = 1; i < n; i++) {
+            observations[i - 1] = observations[i];
+        }
+
+        /* rotate `x` into `observations` from the right (remember, we're **left**
+         * rotating -- with padding!) */
+        observations[n - 1] = x;
     }
 }
