@@ -116,6 +116,12 @@ interface ILeveragedPool {
 
     function quoteTokenTransfer(address to, uint256 amount) external;
 
+    function poolTokenTransfer(
+        uint256 token,
+        address to,
+        uint256 amount
+    ) external;
+
     function setNewPoolBalances(uint256 _longBalance, uint256 _shortBalance) external;
 
     /**

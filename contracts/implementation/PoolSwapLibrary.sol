@@ -14,6 +14,17 @@ library PoolSwapLibrary {
 
     uint256 public constant WAD_PRECISION = 10**18;
 
+    struct UpdateData {
+        bytes16 longPrice;
+        bytes16 shortPrice;
+        uint256 currentUpdateIntervalId;
+        uint256 updateIntervalId;
+        uint256 longMintAmount;
+        uint256 longBurnAmount;
+        uint256 shortMintAmount;
+        uint256 shortBurnAmount;
+    }
+
     struct PriceChangeData {
         int256 oldPrice;
         int256 newPrice;
@@ -152,7 +163,7 @@ library PoolSwapLibrary {
      * @dev This function should be called by the LeveragedPool.
      * @param priceChange The struct containing necessary data to calculate price change
      */
-    function calculatePriceChange(PriceChangeData memory priceChange)
+    function calculatePriceChange(PriceChangeData calldata priceChange)
         external
         pure
         returns (
@@ -234,10 +245,8 @@ library PoolSwapLibrary {
         uint256 balance,
         uint256 shadowBalance
     ) external pure returns (uint256) {
-        require(amountIn > 0, "Invalid amount");
-
-        // Catch the divide by zero error.
-        if (balance == 0 || tokenSupply + shadowBalance == 0) {
+        // Catch the divide by zero error, or return 0 if amountIn is 0
+        if ((balance == 0) || (tokenSupply + shadowBalance == 0) || (amountIn == 0)) {
             return amountIn;
         }
         bytes16 numerator = ABDKMathQuad.mul(ABDKMathQuad.fromUInt(balance), ABDKMathQuad.fromUInt(amountIn));
@@ -259,10 +268,8 @@ library PoolSwapLibrary {
         uint256 balance,
         uint256 shadowBalance
     ) external pure returns (uint256) {
-        require(amountIn > 0, "Invalid amount");
-
-        // Catch the divide by zero error.
-        if (balance == 0 || tokenSupply + shadowBalance == 0) {
+        // Catch the divide by zero error, or return 0 if amountIn is 0
+        if (balance == 0 || tokenSupply + shadowBalance == 0 || amountIn == 0) {
             return amountIn;
         }
 
@@ -274,11 +281,78 @@ library PoolSwapLibrary {
     }
 
     /**
+     * @notice Get the Settlement/PoolToken price, in ABDK IEE754 precision
+     * @dev Divide the side balance by the pool token's total supply
+     * @param sideBalance no. of underlying collateral tokens on that side of the pool
+     * @param tokenSupply Total supply of pool tokens
+     */
+    function getPrice(uint256 sideBalance, uint256 tokenSupply) external pure returns (bytes16) {
+        if (tokenSupply == 0) {
+            return one;
+        }
+        return ABDKMathQuad.div(ABDKMathQuad.fromUInt(sideBalance), ABDKMathQuad.fromUInt(tokenSupply));
+    }
+
+    /**
+     * @notice Calculate the number of pool tokens to mint, given some settlement token amount and a price
+     * @param price The price of a pool token
+     * @param amount The amount of settlement tokens being used to mint
+     */
+    function getMint(bytes16 price, uint256 amount) public pure returns (uint256) {
+        require(price != 0, "price == 0");
+        return ABDKMathQuad.toUInt(ABDKMathQuad.div(ABDKMathQuad.fromUInt(amount), price));
+    }
+
+    /**
+     * @notice Calculate the number of settlement tokens to burn, based on a price and an amount of pool tokens
+     * @dev amount * price, where amount is in PoolToken and price is in USD/PoolToken
+     */
+    function getBurn(bytes16 price, uint256 amount) public pure returns (uint256) {
+        require(price != 0, "price == 0");
+        return ABDKMathQuad.toUInt(ABDKMathQuad.mul(ABDKMathQuad.fromUInt(amount), price));
+    }
+
+    /**
      * @notice Converts from a WAD to normal value
      * @return Converted non-WAD value
      */
     function fromWad(uint256 _wadValue, uint256 _decimals) external pure returns (uint256) {
         uint256 scaler = 10**(MAX_DECIMALS - _decimals);
         return _wadValue / scaler;
+    }
+
+    /**
+     * @notice Calculate the change in a user's balance based on recent commit(s)
+     * @param data Information needed for updating the balance including prices and recent commit amounts
+     */
+    function getUpdatedAggregateBalance(UpdateData calldata data)
+        external
+        pure
+        returns (
+            uint256 _newLongTokens,
+            uint256 _newShortTokens,
+            uint256 _newSettlementTokens
+        )
+    {
+        if (data.updateIntervalId == data.currentUpdateIntervalId) {
+            // Update interval has not passed: No change
+            return (0, 0, 0);
+        }
+        uint256 longBurnResult; // The amount of settlement tokens to withdraw based on long token burn
+        uint256 shortBurnResult; // The amount of settlement tokens to withdraw based on short token burn
+        if (data.longMintAmount > 0) {
+            _newLongTokens = getMint(data.longPrice, data.longMintAmount);
+        }
+        if (data.longBurnAmount > 0) {
+            longBurnResult = getBurn(data.longPrice, data.longBurnAmount);
+        }
+        if (data.shortMintAmount > 0) {
+            _newShortTokens = getMint(data.shortPrice, data.shortMintAmount);
+        }
+        if (data.shortBurnAmount > 0) {
+            shortBurnResult = getBurn(data.shortPrice, data.shortBurnAmount);
+        }
+
+        _newSettlementTokens = shortBurnResult + longBurnResult;
     }
 }
