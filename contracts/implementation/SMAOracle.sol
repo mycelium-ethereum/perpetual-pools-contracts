@@ -18,16 +18,24 @@ contract SMAOracle is Ownable, IOracleWrapper {
     /// Number of periods to use in calculating the SMA (`k` in the SMA equation)
     uint256 public periods;
 
+    int256 public scaler;
+    uint256 public constant MAX_DECIMALS = 18;
+
     constructor(
         address _spotOracle,
+        uint256 _spotDecimals,
         address _observer,
         uint256 _periods
     ) {
         require(_spotOracle != address(0) && _observer != address(0), "SMA: Null address forbidden");
         require(_periods > 0 && _periods <= IPriceObserver(_observer).capacity(), "SMA: Out of bounds");
+        require(_spotDecimals <= MAX_DECIMALS, "SMA: Decimal precision too high");
         periods = _periods;
         setOracle(_spotOracle);
         setObserver(_observer);
+
+        /* `scaler` is always <= 10^18 and >= 1 so this cast is safe */
+        scaler = int256(10**(MAX_DECIMALS - _spotDecimals));
 
         price = SMA(IPriceObserver(_observer).getAll(), _periods);
     }
@@ -98,8 +106,12 @@ contract SMAOracle is Ownable, IOracleWrapper {
         return S / int256(k);
     }
 
+    function toWad(int256 x) private view returns (int256) {
+        return x * scaler;
+    }
+
     function fromWad(int256 wad) external view override returns (int256) {
-        /* TODO: implement `fromWad` */
+        return wad / scaler;
     }
 
     /**

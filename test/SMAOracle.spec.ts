@@ -65,6 +65,7 @@ describe("SMAOracle", async () => {
         )) as SMAOracle__factory
         smaOracle = await smaOracleFactory.deploy(
             spotOracle.address,
+            await chainlinkOracle.decimals(),
             priceObserver.address,
             numPeriods
         )
