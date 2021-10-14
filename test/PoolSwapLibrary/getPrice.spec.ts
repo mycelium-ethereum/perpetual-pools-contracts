@@ -23,7 +23,7 @@ describe("PoolSwapLibrary - getPrice", () => {
         await library.deployed()
     })
 
-    describe("When sideBalance is 0", () => {
+    context("When sideBalance is 0", () => {
         it("returns 0", async () => {
             const sideBalance = ethers.utils.parseEther("0")
             const tokenSupply = ethers.utils.parseEther("101230")
@@ -35,7 +35,7 @@ describe("PoolSwapLibrary - getPrice", () => {
         })
     })
 
-    describe("When totalSupply is 0", () => {
+    context("When totalSupply is 0", () => {
         it("returns 1", async () => {
             const sideBalance = ethers.utils.parseEther("10000")
             const tokenSupply = ethers.utils.parseEther("0")
@@ -47,7 +47,7 @@ describe("PoolSwapLibrary - getPrice", () => {
         })
     })
 
-    describe("When price is == 1", () => {
+    context("When price is == 1", () => {
         it("returns correctly", async () => {
             const sideBalance = ethers.utils.parseEther("10000")
             const tokenSupply = ethers.utils.parseEther("10000")
@@ -59,7 +59,7 @@ describe("PoolSwapLibrary - getPrice", () => {
         })
     })
 
-    describe("When price is > 1", () => {
+    context("When price is > 1", () => {
         it("returns correctly", async () => {
             const sideBalance = ethers.utils.parseEther("10000")
             const tokenSupply = ethers.utils.parseEther("4000")
@@ -72,7 +72,7 @@ describe("PoolSwapLibrary - getPrice", () => {
         })
     })
 
-    describe("When price is 0.5", () => {
+    context("When price is 0.5", () => {
         it("returns correctly", async () => {
             const sideBalance = ethers.utils.parseEther("10000")
             const tokenSupply = ethers.utils.parseEther("20000")
