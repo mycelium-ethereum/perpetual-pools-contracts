@@ -11,9 +11,7 @@ import {
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import {
     DEFAULT_FEE,
-    DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
     DEFAULT_MINT_AMOUNT,
-    DEFAULT_MIN_COMMIT_SIZE,
     POOL_CODE,
     SHORT_BURN,
     SHORT_MINT,
@@ -55,8 +53,6 @@ describe("LeveragedPool - executeCommitment: Short Burn", () => {
                 frontRunningInterval,
                 updateInterval,
                 leverage,
-                DEFAULT_MIN_COMMIT_SIZE,
-                DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
                 feeAddress,
                 fee
             )

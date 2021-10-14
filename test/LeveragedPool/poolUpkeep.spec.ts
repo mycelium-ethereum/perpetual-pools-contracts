@@ -12,8 +12,6 @@ import {
 import {
     POOL_CODE,
     DEFAULT_FEE,
-    DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
-    DEFAULT_MIN_COMMIT_SIZE,
     LONG_MINT,
     LONG_BURN,
     SHORT_MINT,
@@ -54,8 +52,6 @@ describe("LeveragedPool - executeAllCommitments", () => {
             frontRunningInterval,
             updateInterval,
             leverage,
-            DEFAULT_MIN_COMMIT_SIZE,
-            DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
             feeAddress,
             fee
         )
@@ -141,8 +137,6 @@ describe("LeveragedPool - executeAllCommitments", () => {
                 frontRunningInterval,
                 updateInterval,
                 leverage,
-                DEFAULT_MIN_COMMIT_SIZE,
-                DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
                 feeAddress,
                 fee
             )

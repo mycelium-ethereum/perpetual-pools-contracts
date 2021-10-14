@@ -20,8 +20,6 @@ import {
     POOL_CODE_2,
     DEFAULT_MAX_LEVERAGE,
     DEFAULT_MIN_LEVERAGE,
-    DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
-    DEFAULT_MIN_COMMIT_SIZE,
 } from "../constants"
 import {
     deployPoolAndTokenContracts,
@@ -66,8 +64,6 @@ describe("LeveragedPool - initialize", () => {
                 frontRunningInterval,
                 updateInterval,
                 leverage,
-                DEFAULT_MIN_COMMIT_SIZE,
-                DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
                 feeAddress,
                 fee
             )
@@ -252,8 +248,6 @@ describe("LeveragedPool - initialize", () => {
                 frontRunningInterval,
                 updateInterval,
                 leverage,
-                DEFAULT_MIN_COMMIT_SIZE,
-                DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
                 feeAddress,
                 fee
             )

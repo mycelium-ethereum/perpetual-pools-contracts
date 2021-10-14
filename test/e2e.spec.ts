@@ -13,8 +13,6 @@ import {
 
 import {
     POOL_CODE,
-    DEFAULT_MIN_COMMIT_SIZE,
-    DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
     SHORT_BURN,
     LONG_BURN,
     LONG_MINT,
@@ -24,7 +22,6 @@ import {
     deployPoolAndTokenContracts,
     getRandomInt,
     createCommit,
-    CommitEventArgs,
     timeout,
 } from "./utilities"
 import { BigNumber } from "ethers"
@@ -59,8 +56,6 @@ describe("LeveragedPool - executeAllCommitments", () => {
                 frontRunningInterval,
                 updateInterval,
                 leverage,
-                DEFAULT_MIN_COMMIT_SIZE,
-                DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
                 signers[0].address,
                 fee
             )

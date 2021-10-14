@@ -13,11 +13,10 @@ import "../interfaces/IOracleWrapper.sol";
 /// @title This contract is responsible for handling commitment logic
 contract PoolCommitter is IPoolCommitter, Ownable {
     // #### Globals
-
-    address public leveragedPool;
     uint128 public constant LONG_INDEX = 0;
     uint128 public constant SHORT_INDEX = 1;
-    uint128 commitIDCounter;
+
+    address public leveragedPool;
     uint128 public updateIntervalId = 1;
     // Index 0 is the LONG token, index 1 is the SHORT token.
     // Fetched from the LeveragedPool when leveragedPool is set
@@ -96,20 +95,26 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             totalCommit.shortBurnAmount += amount;
             // short burning: pull in short pool tokens from committer
             pool.burnTokens(1, amount, msg.sender);
-        } else {
-            // Not reachable
-            revert("Invalid CommitType");
         }
 
-        emit CreateCommit(amount, commitType);
+        emit CreateCommit(msg.sender, amount, commitType);
     }
 
+    /**
+     * @notice Claim user's balance. This can be done either by the user themself or by somebody else on their behalf.
+     */
     function claim(address user) external override updateBalance {
         Balance memory balance = userAggregateBalance[user];
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
-        pool.quoteTokenTransfer(user, balance.settlementTokens);
-        pool.poolTokenTransfer(LONG_INDEX, user, balance.longTokens);
-        pool.poolTokenTransfer(SHORT_INDEX, user, balance.shortTokens);
+        if (balance.settlementTokens > 0) {
+            pool.quoteTokenTransfer(user, balance.settlementTokens);
+        }
+        if (balance.longTokens > 0) {
+            pool.poolTokenTransfer(LONG_INDEX, user, balance.longTokens);
+        }
+        if (balance.shortTokens > 0) {
+            pool.poolTokenTransfer(SHORT_INDEX, user, balance.shortTokens);
+        }
         delete userAggregateBalance[user];
         emit Claim(user);
     }
@@ -121,7 +126,6 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         uint256 longBalance = pool.longBalance();
         uint256 longTotalSupplyBefore = IERC20(tokens[0]).totalSupply();
         uint256 shortTotalSupplyBefore = IERC20(tokens[1]).totalSupply();
-        // TODO figure out shadow pool usage
 
         // Update price before values change
         priceHistory[updateIntervalId] = Prices({
@@ -136,7 +140,10 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             longBalance, // total quote tokens in the long pull
             _commits.longBurnAmount // total pool tokens commited to be burned
         );
-        pool.mintTokens(0, longMintAmount, leveragedPool);
+
+        if (longMintAmount > 0) {
+            pool.mintTokens(0, longMintAmount, leveragedPool);
+        }
 
         // Long Burns
         uint256 longBurnAmount = PoolSwapLibrary.getWithdrawAmountOnBurn(
@@ -154,7 +161,9 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             _commits.shortBurnAmount
         );
 
-        pool.mintTokens(1, shortMintAmount, leveragedPool);
+        if (shortMintAmount > 0) {
+            pool.mintTokens(1, shortMintAmount, leveragedPool);
+        }
 
         // Short Burns
         uint256 shortBurnAmount = PoolSwapLibrary.getWithdrawAmountOnBurn(
@@ -167,9 +176,6 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         uint256 newLongBalance = longBalance + _commits.longMintAmount - longBurnAmount;
         uint256 newShortBalance = shortBalance + _commits.shortMintAmount - shortBurnAmount;
 
-        // TODO update user's aggregate balance
-        // TODO setNewPoolBalances once at end
-        // TODO only mint/burn if amount is > 0
         updateIntervalId += 1;
 
         // Update the collateral on each side
@@ -177,7 +183,6 @@ contract PoolCommitter is IPoolCommitter, Ownable {
     }
 
     function executeCommitments() external override onlyPool {
-        Commitment memory _commits = totalMostRecentCommit;
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
         executeGivenCommitments(totalMostRecentCommit);
 
@@ -192,7 +197,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         }
     }
 
-    function updateSingleCommitment(address user, Commitment memory commit)
+    function updateBalanceSingleCommitment(Commitment memory _commit)
         internal
         view
         returns (
@@ -202,14 +207,14 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         )
     {
         PoolSwapLibrary.UpdateData memory updateData = PoolSwapLibrary.UpdateData({
-            longPrice: priceHistory[commit.updateIntervalId].longPrice,
-            shortPrice: priceHistory[commit.updateIntervalId].shortPrice,
+            longPrice: priceHistory[_commit.updateIntervalId].longPrice,
+            shortPrice: priceHistory[_commit.updateIntervalId].shortPrice,
             currentUpdateIntervalId: updateIntervalId,
-            updateIntervalId: commit.updateIntervalId,
-            longMintAmount: commit.longMintAmount,
-            longBurnAmount: commit.longBurnAmount,
-            shortMintAmount: commit.shortMintAmount,
-            shortBurnAmount: commit.shortBurnAmount
+            updateIntervalId: _commit.updateIntervalId,
+            longMintAmount: _commit.longMintAmount,
+            longBurnAmount: _commit.longBurnAmount,
+            shortMintAmount: _commit.shortMintAmount,
+            shortBurnAmount: _commit.shortBurnAmount
         });
 
         (_newLongTokens, _newShortTokens, _newSettlementTokens) = PoolSwapLibrary.getUpdatedAggregateBalance(
@@ -230,7 +235,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         uint256 _newSettlementTokens;
 
         if (mostRecentCommit.updateIntervalId != 0 && mostRecentCommit.updateIntervalId < updateIntervalId) {
-            (_newLongTokens, _newShortTokens, _newSettlementTokens) = updateSingleCommitment(user, mostRecentCommit);
+            (_newLongTokens, _newShortTokens, _newSettlementTokens) = updateBalanceSingleCommitment(mostRecentCommit);
             delete userMostRecentCommit[user];
         }
 
@@ -240,8 +245,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         uint256 _newSettlementTokensSecond;
 
         if (nextIntervalCommit.updateIntervalId != 0 && nextIntervalCommit.updateIntervalId < updateIntervalId) {
-            (_newLongTokensSecond, _newShortTokensSecond, _newSettlementTokensSecond) = updateSingleCommitment(
-                user,
+            (_newLongTokensSecond, _newShortTokensSecond, _newSettlementTokensSecond) = updateBalanceSingleCommitment(
                 nextIntervalCommit
             );
             delete userNextIntervalCommit[user];
@@ -251,9 +255,9 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             delete userNextIntervalCommit[user];
         }
 
-        balance.longTokens += _newLongTokens += _newLongTokensSecond;
-        balance.shortTokens += _newShortTokens += _newShortTokensSecond;
-        balance.settlementTokens += _newSettlementTokens += _newSettlementTokensSecond;
+        balance.longTokens += _newLongTokens + _newLongTokensSecond;
+        balance.shortTokens += _newShortTokens + _newShortTokensSecond;
+        balance.settlementTokens += _newSettlementTokens + _newSettlementTokensSecond;
 
         emit AggregateBalanceUpdated(user);
     }
@@ -271,7 +275,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         uint256 _newSettlementTokens;
 
         if (mostRecentCommit.updateIntervalId != 0 && mostRecentCommit.updateIntervalId < updateIntervalId) {
-            (_newLongTokens, _newShortTokens, _newSettlementTokens) = updateSingleCommitment(user, mostRecentCommit);
+            (_newLongTokens, _newShortTokens, _newSettlementTokens) = updateBalanceSingleCommitment(mostRecentCommit);
         }
 
         Commitment memory nextIntervalCommit = userNextIntervalCommit[user];
@@ -280,8 +284,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         uint256 _newSettlementTokensSecond;
 
         if (nextIntervalCommit.updateIntervalId != 0 && nextIntervalCommit.updateIntervalId < updateIntervalId) {
-            (_newLongTokensSecond, _newShortTokensSecond, _newSettlementTokensSecond) = updateSingleCommitment(
-                user,
+            (_newLongTokensSecond, _newShortTokensSecond, _newSettlementTokensSecond) = updateBalanceSingleCommitment(
                 mostRecentCommit
             );
         }

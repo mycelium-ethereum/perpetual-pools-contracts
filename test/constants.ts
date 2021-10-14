@@ -20,14 +20,8 @@ export const SHORT_BURN = 1
 export const LONG_MINT = 2
 export const LONG_BURN = 3
 
-// MAX UINT128
-export const NO_COMMITS_REMAINING = "340282366920938463463374607431768211455"
-
 // Calculated by commenting out the keeper reward logic and calling performUpkeepSinglePool
 export const SINGLE_POOL_UPKEEP_GAS_COST = "67678"
 
 export const DEFAULT_MAX_LEVERAGE = 10
 export const DEFAULT_MIN_LEVERAGE = 1
-
-export const DEFAULT_MIN_COMMIT_SIZE = ethers.BigNumber.from("0")
-export const DEFAULT_MAX_COMMIT_QUEUE_LENGTH = 300

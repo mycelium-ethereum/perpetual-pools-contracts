@@ -9,12 +9,7 @@ import {
     timeout,
 } from "../../utilities"
 
-import {
-    DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
-    DEFAULT_MINT_AMOUNT,
-    DEFAULT_MIN_COMMIT_SIZE,
-    POOL_CODE,
-} from "../../constants"
+import { DEFAULT_MINT_AMOUNT, POOL_CODE } from "../../constants"
 import {
     PoolKeeper,
     ChainlinkOracleWrapper,
@@ -54,8 +49,6 @@ const setupHook = async () => {
         frontRunningInterval,
         updateInterval,
         1,
-        DEFAULT_MIN_COMMIT_SIZE,
-        DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
         signers[0].address,
         fee
     )

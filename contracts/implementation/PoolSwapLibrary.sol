@@ -163,7 +163,7 @@ library PoolSwapLibrary {
      * @dev This function should be called by the LeveragedPool.
      * @param priceChange The struct containing necessary data to calculate price change
      */
-    function calculatePriceChange(PriceChangeData memory priceChange)
+    function calculatePriceChange(PriceChangeData calldata priceChange)
         external
         pure
         returns (
@@ -246,7 +246,7 @@ library PoolSwapLibrary {
         uint256 shadowBalance
     ) external pure returns (uint256) {
         // Catch the divide by zero error, or return 0 if amountIn is 0
-        if (balance == 0 || tokenSupply + shadowBalance == 0 || amountIn == 0) {
+        if ((balance == 0) || (tokenSupply + shadowBalance == 0) || (amountIn == 0)) {
             return amountIn;
         }
         bytes16 numerator = ABDKMathQuad.mul(ABDKMathQuad.fromUInt(balance), ABDKMathQuad.fromUInt(amountIn));
@@ -293,12 +293,18 @@ library PoolSwapLibrary {
         return ABDKMathQuad.div(ABDKMathQuad.fromUInt(sideBalance), ABDKMathQuad.fromUInt(tokenSupply));
     }
 
+    /**
+     * @notice Calculate the number of pool tokens to mint, given some settlement token amount and a price
+     * @param price The price of a pool token
+     * @param amount The amount of settlement tokens being used to mint
+     */
     function getMint(bytes16 price, uint256 amount) public pure returns (uint256) {
         require(price != 0, "price == 0");
         return ABDKMathQuad.toUInt(ABDKMathQuad.div(ABDKMathQuad.fromUInt(amount), price));
     }
 
     /**
+     * @notice Calculate the number of settlement tokens to burn, based on a price and an amount of pool tokens
      * @dev amount * price, where amount is in PoolToken and price is in USD/PoolToken
      */
     function getBurn(bytes16 price, uint256 amount) public pure returns (uint256) {
@@ -315,7 +321,11 @@ library PoolSwapLibrary {
         return _wadValue / scaler;
     }
 
-    function getUpdatedAggregateBalance(UpdateData memory data)
+    /**
+     * @notice Calculate the change in a user's balance based on recent commit(s)
+     * @param data Information needed for updating the balance including prices and recent commit amounts
+     */
+    function getUpdatedAggregateBalance(UpdateData calldata data)
         external
         pure
         returns (

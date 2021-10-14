@@ -43,10 +43,11 @@ interface IPoolCommitter {
 
     /**
      * @notice Creates a notification when a commit is created
+     * @param user The user making the commitment
      * @param amount Amount of the commit
      * @param commitType Type of the commit (Short v Long, Mint v Burn)
      */
-    event CreateCommit(uint256 indexed amount, CommitType indexed commitType);
+    event CreateCommit(address indexed user, uint256 indexed amount, CommitType indexed commitType);
 
     /**
      * @notice Creates a notification when a user's aggregate balance is updated

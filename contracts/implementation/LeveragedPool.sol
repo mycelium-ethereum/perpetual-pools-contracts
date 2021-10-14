@@ -162,7 +162,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     ) external override onlyPoolCommitter onlyUnpaused {
         require(to != address(0), "To address cannot be 0 address");
         require(token == LONG_INDEX || token == SHORT_INDEX, "Pool: token out of range");
-        IERC20(tokens[token]).transfer(to, amount);
+        IERC20(tokens[token]).safeTransfer(to, amount);
     }
 
     /**

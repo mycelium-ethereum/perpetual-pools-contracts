@@ -4,11 +4,7 @@ import chaiAsPromised from "chai-as-promised"
 import { PoolKeeper, PoolFactory } from "../../types"
 
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import {
-    POOL_CODE,
-    DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
-    DEFAULT_MIN_COMMIT_SIZE,
-} from "../constants"
+import { POOL_CODE } from "../constants"
 import { deployPoolSetupContracts, generateRandomAddress } from "../utilities"
 
 chai.use(chaiAsPromised)
@@ -42,8 +38,6 @@ describe("PoolKeeper - createPool", () => {
             quoteToken: token.address,
             oracleWrapper: oracleWrapper.address,
             settlementEthOracle: settlementEthOracle.address,
-            minimumCommitSize: DEFAULT_MIN_COMMIT_SIZE,
-            maximumCommitQueueLength: DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
         }
     })
 
