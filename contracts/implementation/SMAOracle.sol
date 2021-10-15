@@ -1,11 +1,14 @@
-// SPDX-License-Identifier: MIT
-pragma solidity 0.8.7;
-
+// SPDX-License-Identifier: MIT pragma solidity 0.8.7;
 import "../interfaces/IOracleWrapper.sol";
 import "../interfaces/IPriceObserver.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "prb-math/contracts/PRBMathSD59x18.sol";
+
+import "hardhat/console.sol";
 
 contract SMAOracle is Ownable, IOracleWrapper {
+    using PRBMathSD59x18 for int256;
+
     /// Price oracle supplying the spot price of the quote asset
     address public override oracle;
 
@@ -36,6 +39,7 @@ contract SMAOracle is Ownable, IOracleWrapper {
 
         /* `scaler` is always <= 10^18 and >= 1 so this cast is safe */
         scaler = int256(10**(MAX_DECIMALS - _spotDecimals));
+        console.log(MAX_DECIMALS - _spotDecimals); // DEBUG
 
         price = SMA(IPriceObserver(_observer).getAll(), _periods);
     }
@@ -48,8 +52,12 @@ contract SMAOracle is Ownable, IOracleWrapper {
         observer = _observer;
     }
 
+    function fromWad(int256 wad) external view override returns (int256) {
+        return wad / scaler;
+    }
+
     function getPrice() external view override returns (int256) {
-        return price;
+        return price / scaler;
     }
 
     /**
@@ -103,15 +111,11 @@ contract SMAOracle is Ownable, IOracleWrapper {
         }
 
         /* cast is safe due to above bounds check */
-        return S / int256(k);
+        return S.div(int256(k));
     }
 
     function toWad(int256 x) private view returns (int256) {
         return x * scaler;
-    }
-
-    function fromWad(int256 wad) external view override returns (int256) {
-        return wad / scaler;
     }
 
     /**
