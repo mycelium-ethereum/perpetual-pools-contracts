@@ -38,6 +38,46 @@ describe("PriceObserver", async () => {
         })
     })
 
+    describe("clear", async () => {
+        context("When called", async () => {
+            it("Sets the length of the observations array to zero", async () => {
+                await priceObserver.clear()
+
+                expect(await priceObserver.length()).to.be.eq(0)
+            })
+        })
+    })
+
+    describe("get", async () => {
+        context(
+            "When called with an index greater than the length of the observations array",
+            async () => {
+                it("Reverts", async () => {
+                    let index: BigNumber = (await priceObserver.length()).add(
+                        ethers.BigNumber.from(1)
+                    )
+
+                    await expect(priceObserver.get(index)).to.be.revertedWith(
+                        "PO: Out of bounds"
+                    )
+                })
+            }
+        )
+
+        context(
+            "When called with an index equal to the length of the observations array",
+            async () => {
+                it("Reverts", async () => {
+                    let index: BigNumber = await priceObserver.length()
+
+                    await expect(priceObserver.get(index)).to.be.revertedWith(
+                        "PO: Out of bounds"
+                    )
+                })
+            }
+        )
+    })
+
     describe("add", async () => {
         context(
             "When called with an observations array less than capacity",
