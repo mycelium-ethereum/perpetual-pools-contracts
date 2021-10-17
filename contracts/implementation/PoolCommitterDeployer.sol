@@ -6,7 +6,7 @@ import "../interfaces/IPoolCommitterDeployer.sol";
 
 /// @title The deployer of the PoolCommitter contract
 contract PoolCommitterDeployer is IPoolCommitterDeployer {
-    address public factory;
+    address public immutable factory;
 
     constructor(address _factory) {
         require(_factory != address(0), "Factory address cannot be null");
