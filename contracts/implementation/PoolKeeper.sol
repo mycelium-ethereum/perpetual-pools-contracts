@@ -70,7 +70,8 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @return upkeepNeeded Whether or not at least one pool needs upkeeping
      */
     function checkUpkeepMultiplePools(address[] calldata _pools) external view override returns (bool) {
-        for (uint256 i = 0; i < _pools.length; i++) {
+        uint256 poolsLength = _pools.length;
+        for (uint256 i = 0; i < poolsLength; i++) {
             if (checkUpkeepSinglePool(_pools[i])) {
                 // One has been found that requires upkeeping
                 return true;
@@ -118,7 +119,8 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @param pools pool codes to perform the update for
      */
     function performUpkeepMultiplePools(address[] calldata pools) external override {
-        for (uint256 i = 0; i < pools.length; i++) {
+        uint256 poolsLength = pools.length;
+        for (uint256 i = 0; i < poolsLength; i++) {
             performUpkeepSinglePool(pools[i]);
         }
     }
