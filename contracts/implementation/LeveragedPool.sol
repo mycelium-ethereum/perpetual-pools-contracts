@@ -207,10 +207,12 @@ contract LeveragedPool is ILeveragedPool, Initializable {
             (uint256 newLongBalance, uint256 newShortBalance, uint256 totalFeeAmount) = PoolSwapLibrary
                 .calculatePriceChange(priceChangeData);
 
-            emit PoolRebalance(
-                int256(newShortBalance) - int256(_shortBalance),
-                int256(newLongBalance) - int256(_longBalance)
-            );
+            unchecked {
+                emit PoolRebalance(
+                    int256(newShortBalance) - int256(_shortBalance),
+                    int256(newLongBalance) - int256(_longBalance)
+                );
+            }
             // Update pool balances
             longBalance = newLongBalance;
             shortBalance = newShortBalance;
@@ -273,7 +275,9 @@ contract LeveragedPool is ILeveragedPool, Initializable {
      * @return true if the price was last updated more than updateInterval seconds ago
      */
     function intervalPassed() public view override returns (bool) {
-        return block.timestamp >= lastPriceTimestamp + updateInterval;
+        unchecked {
+            return block.timestamp >= lastPriceTimestamp + updateInterval;
+        }
     }
 
     /**
@@ -312,7 +316,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         require(_governance != address(0), "Governance address cannot be 0 address");
         provisionalGovernance = _governance;
         governanceTransferInProgress = true;
-        emit ProvisionalGovernanceChanged(provisionalGovernance);
+        emit ProvisionalGovernanceChanged(_governance);
     }
 
     /**
