@@ -11,6 +11,19 @@ interface IPoolCommitter {
         LongBurn
     }
 
+    // User aggregate balance
+    struct Balance {
+        uint256 longTokens;
+        uint256 shortTokens;
+        uint256 settlementTokens;
+    }
+
+    // Token Prices
+    struct Prices {
+        bytes16 longPrice;
+        bytes16 shortPrice;
+    }
+
     // Commit information
     struct Commit {
         uint256 amount;
@@ -19,33 +32,32 @@ interface IPoolCommitter {
         address owner;
     }
 
+    // Commit information
+    struct Commitment {
+        uint256 longMintAmount;
+        uint256 longBurnAmount;
+        uint256 shortMintAmount;
+        uint256 shortBurnAmount;
+        uint256 updateIntervalId;
+    }
+
     /**
      * @notice Creates a notification when a commit is created
-     * @param commitID ID of the commit
+     * @param user The user making the commitment
      * @param amount Amount of the commit
      * @param commitType Type of the commit (Short v Long, Mint v Burn)
      */
-    event CreateCommit(uint128 indexed commitID, uint256 indexed amount, CommitType indexed commitType);
+    event CreateCommit(address indexed user, uint256 indexed amount, CommitType indexed commitType);
 
     /**
-     * @notice Creates a notification when a commit is removed (uncommitted)
-     * @param commitID ID of the commit
-     * @param amount Amount of the commit
-     * @param commitType Type of the commit (Short v Long, Mint v Burn)
+     * @notice Creates a notification when a user's aggregate balance is updated
      */
-    event RemoveCommit(uint128 indexed commitID, uint256 indexed amount, CommitType indexed commitType);
+    event AggregateBalanceUpdated(address indexed user);
 
     /**
-     * @notice Creates a notification when a commit is executed
-     * @param commitID ID of the commit that's executed
+     * @notice Creates a notification when a claim is made, depositing pool tokens in user's wallet
      */
-    event ExecuteCommit(uint128 commitID);
-
-    /**
-     * @notice Creates a notification when a commit fails to execute
-     * @param commitID ID of the commit
-     */
-    event FailedCommitExecution(uint128 commitID);
+    event Claim(address indexed user);
 
     /**
      * @notice Creates a notification when the min commit size changes
@@ -63,15 +75,13 @@ interface IPoolCommitter {
 
     function commit(CommitType commitType, uint256 amount) external;
 
-    function executeAllCommitments() external;
+    function claim(address user) external;
 
-    function executeCommitment(Commit memory _commit) external;
+    function executeCommitments() external;
 
-    function getCommit(uint128 _commitID) external view returns (Commit memory);
+    function updateAggregateBalance(address user) external;
+
+    function getAggregateBalance(address user) external view returns (Balance memory _balance);
 
     function setQuoteAndPool(address quoteToken, address leveragedPool) external;
-
-    function setMinimumCommitSize(uint128 _minimumCommitSize) external;
-
-    function setMaxCommitQueueLength(uint128 _maximumCommitQueueLength) external;
 }

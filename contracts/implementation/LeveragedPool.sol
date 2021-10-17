@@ -21,11 +21,12 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     uint256 public override longBalance;
     uint32 public override frontRunningInterval;
     uint32 public override updateInterval;
+    uint256 public constant LONG_INDEX = 0;
+    uint256 public constant SHORT_INDEX = 1;
 
     bytes16 public fee;
     bytes16 public override leverageAmount;
 
-    // Index 0 is the LONG token, index 1 is the SHORT token
     address[2] public tokens;
 
     address public governance;
@@ -77,8 +78,8 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         feeAddress = initialization._feeAddress;
         lastPriceTimestamp = block.timestamp;
         poolName = initialization._poolName;
-        tokens[0] = initialization._longToken;
-        tokens[1] = initialization._shortToken;
+        tokens[LONG_INDEX] = initialization._longToken;
+        tokens[SHORT_INDEX] = initialization._shortToken;
         poolCommitter = initialization._poolCommitter;
         emit PoolInitialized(
             initialization._longToken,
@@ -89,15 +90,14 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     }
 
     /**
-     * @notice Execute a price change, then execute all commits in PoolCommitter
+     * @notice Execute a price change
      * @dev This is the entry point to upkeep a market
      */
     function poolUpkeep(int256 _oldPrice, int256 _newPrice) external override onlyKeeper onlyUnpaused {
         require(intervalPassed(), "Update interval hasn't passed");
         // perform price change and update pool balances
         executePriceChange(_oldPrice, _newPrice);
-        // execute pending commitments to enter and exit the pool
-        IPoolCommitter(poolCommitter).executeAllCommitments();
+        IPoolCommitter(poolCommitter).executeCommitments();
         lastPriceTimestamp = block.timestamp;
     }
 
@@ -140,13 +140,29 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     }
 
     /**
-     * @notice Transfer tokens from pool to user
+     * @notice Transfer settlement tokens from pool to user
      * @param to Address of account to transfer to
      * @param amount Amount of quote tokens being transferred
      */
     function quoteTokenTransfer(address to, uint256 amount) external override onlyPoolCommitter onlyUnpaused {
         require(to != address(0), "To address cannot be 0 address");
         IERC20(quoteToken).safeTransfer(to, amount);
+    }
+
+    /**
+     * @notice Transfer long tokens from pool to user
+     * @param to Address of account to transfer to
+     * @param token Long or short token. LONG_INDEX == 0 && SHORT_INDEX == 1
+     * @param amount Amount of quote tokens being transferred
+     */
+    function poolTokenTransfer(
+        uint256 token,
+        address to,
+        uint256 amount
+    ) external override onlyPoolCommitter onlyUnpaused {
+        require(to != address(0), "To address cannot be 0 address");
+        require(token == LONG_INDEX || token == SHORT_INDEX, "Pool: token out of range");
+        IERC20(tokens[token]).safeTransfer(to, amount);
     }
 
     /**
@@ -232,7 +248,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         address minter
     ) external override onlyPoolCommitter onlyUnpaused {
         require(minter != address(0), "Minter address cannot be 0 address");
-        require(token == 0 || token == 1, "Pool: token out of range");
+        require(token == LONG_INDEX || token == SHORT_INDEX, "Pool: token out of range");
         require(IPoolToken(tokens[token]).mint(amount, minter), "Mint failed");
     }
 
@@ -249,7 +265,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         address burner
     ) external override onlyPoolCommitter onlyUnpaused {
         require(burner != address(0), "Burner address cannot be 0 address");
-        require(token == 0 || token == 1, "Pool: token out of range");
+        require(token == LONG_INDEX || token == SHORT_INDEX, "Pool: token out of range");
         require(IPoolToken(tokens[token]).burn(amount, burner), "Burn failed");
     }
 
