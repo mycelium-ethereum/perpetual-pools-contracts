@@ -240,35 +240,41 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     /**
      * @notice Mint tokens to a user
      * @dev Can only be called by & used by the pool committer
-     * @param token Index of token
+     * @param isLongToken True if minting short token
      * @param amount Amount of tokens to mint
      * @param minter Address of user/minter
      */
     function mintTokens(
-        uint256 token,
+        bool isLongToken,
         uint256 amount,
         address minter
     ) external override onlyPoolCommitter onlyUnpaused {
         require(minter != address(0), "Minter address cannot be 0 address");
-        require(token == LONG_INDEX || token == SHORT_INDEX, "Pool: token out of range");
-        require(IPoolToken(tokens[token]).mint(amount, minter), "Mint failed");
+        if (isLongToken) {
+            require(IPoolToken(tokens[LONG_INDEX]).mint(amount, minter), "Mint failed");
+        } else {
+            require(IPoolToken(tokens[SHORT_INDEX]).mint(amount, minter), "Mint failed");
+        }
     }
 
     /**
      * @notice Burn tokens by a user
      * @dev Can only be called by & used by the pool committer
-     * @param token Index of token
+     * @param isLongToken True if burning short token
      * @param amount Amount of tokens to burn
      * @param burner Address of user/burner
      */
     function burnTokens(
-        uint256 token,
+        bool isLongToken,
         uint256 amount,
         address burner
     ) external override onlyPoolCommitter onlyUnpaused {
         require(burner != address(0), "Burner address cannot be 0 address");
-        require(token == LONG_INDEX || token == SHORT_INDEX, "Pool: token out of range");
-        require(IPoolToken(tokens[token]).burn(amount, burner), "Burn failed");
+        if (isLongToken) {
+            require(IPoolToken(tokens[LONG_INDEX]).burn(amount, burner), "Burn failed");
+        } else {
+            require(IPoolToken(tokens[SHORT_INDEX]).burn(amount, burner), "Burn failed");
+        }
     }
 
     /**

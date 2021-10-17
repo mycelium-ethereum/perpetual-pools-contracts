@@ -85,7 +85,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             userCommit.longBurnAmount += amount;
             totalCommit.longBurnAmount += amount;
             // long burning: pull in long pool tokens from committer
-            pool.burnTokens(0, amount, msg.sender);
+            pool.burnTokens(true, amount, msg.sender);
         } else if (commitType == CommitType.ShortMint) {
             userCommit.shortMintAmount += amount;
             totalCommit.shortMintAmount += amount;
@@ -93,7 +93,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             userCommit.shortBurnAmount += amount;
             totalCommit.shortBurnAmount += amount;
             // short burning: pull in short pool tokens from committer
-            pool.burnTokens(1, amount, msg.sender);
+            pool.burnTokens(false, amount, msg.sender);
         }
 
         emit CreateCommit(msg.sender, amount, commitType);
@@ -141,7 +141,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         );
 
         if (longMintAmount > 0) {
-            pool.mintTokens(0, longMintAmount, leveragedPool);
+            pool.mintTokens(true, longMintAmount, leveragedPool);
         }
 
         // Long Burns
@@ -161,7 +161,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         );
 
         if (shortMintAmount > 0) {
-            pool.mintTokens(1, shortMintAmount, leveragedPool);
+            pool.mintTokens(false, shortMintAmount, leveragedPool);
         }
 
         // Short Burns
