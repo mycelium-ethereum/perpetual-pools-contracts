@@ -149,9 +149,7 @@ describe("LeveragedPool - executeAllCommitments", () => {
             // other than just calling it directly, so this isn't really testing anything since it's
             // basically the same function
             const lastPriceTimestamp = await pool.lastPriceTimestamp()
-            expect(upkeepInformation[2]).to.equal(
-                lastPriceTimestamp
-            )
+            expect(upkeepInformation[2]).to.equal(lastPriceTimestamp)
 
             // Perform upkeep
             await timeout(updateInterval * 1000)
