@@ -109,10 +109,10 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             pool.quoteTokenTransfer(user, balance.settlementTokens);
         }
         if (balance.longTokens > 0) {
-            pool.poolTokenTransfer(LONG_INDEX, user, balance.longTokens);
+            pool.poolTokenTransfer(true, user, balance.longTokens);
         }
         if (balance.shortTokens > 0) {
-            pool.poolTokenTransfer(SHORT_INDEX, user, balance.shortTokens);
+            pool.poolTokenTransfer(false, user, balance.shortTokens);
         }
         delete userAggregateBalance[user];
         emit Claim(user);

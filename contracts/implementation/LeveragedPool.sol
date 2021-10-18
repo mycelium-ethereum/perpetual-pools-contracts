@@ -157,9 +157,9 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         uint256 amount
     ) external override onlyPoolCommitter onlyUnpaused {
         if (isLongToken) {
-            IPoolToken(tokens[LONG_INDEX]).safeTransfer(to, amount);
+            IERC20(tokens[LONG_INDEX]).safeTransfer(to, amount);
         } else {
-            IPoolToken(tokens[SHORT_INDEX]).safeTransfer(to, amount);
+            IERC20(tokens[SHORT_INDEX]).safeTransfer(to, amount);
         }
     }
 

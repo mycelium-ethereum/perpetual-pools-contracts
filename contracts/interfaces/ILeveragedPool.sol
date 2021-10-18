@@ -117,7 +117,7 @@ interface ILeveragedPool {
     function quoteTokenTransfer(address to, uint256 amount) external;
 
     function poolTokenTransfer(
-        uint256 token,
+        bool isLongToken,
         address to,
         uint256 amount
     ) external;
