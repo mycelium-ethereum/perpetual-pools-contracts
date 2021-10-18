@@ -416,11 +416,6 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         _;
     }
 
-    modifier onlyFeeReceiver() {
-        require(msg.sender == feeAddress, "msg.sender not feeReceiver");
-        _;
-    }
-
     modifier onlyGov() {
         require(msg.sender == governance, "msg.sender not governance");
         _;
