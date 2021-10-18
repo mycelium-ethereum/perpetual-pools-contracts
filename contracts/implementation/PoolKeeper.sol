@@ -131,7 +131,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     /**
      * @notice Pay keeper for upkeep
      * @param _pool Address of the given pool
-     * @param _gasPrice Price of a single gas unit (in ETH)
+     * @param _gasPrice Price of a single gas unit (in ETH (wei))
      * @param _gasSpent Number of gas units spent
      * @param _savedPreviousUpdatedTimestamp Last timestamp when the pool's price execution happened
      * @param _updateInterval Pool interval of the given pool
@@ -155,7 +155,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     /**
      * @notice Payment keeper receives for performing upkeep on a given pool
      * @param _pool Address of the given pool
-     * @param _gasPrice Price of a single gas unit (in ETH)
+     * @param _gasPrice Price of a single gas unit (in ETH (wei))
      * @param _gasSpent Number of gas units spent
      * @param _savedPreviousUpdatedTimestamp Last timestamp when the pool's price execution happened
      * @param _poolInterval Pool interval of the given pool
@@ -191,7 +191,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     /**
      * @notice Compensation a keeper will receive for their gas expenditure
      * @param _pool Address of the given pool
-     * @param _gasPrice Price of a single gas unit (in ETH)
+     * @param _gasPrice Price of a single gas unit (in ETH (wei))
      * @param _gasSpent Number of gas units spent
      * @return Keeper's gas compensation
      */
