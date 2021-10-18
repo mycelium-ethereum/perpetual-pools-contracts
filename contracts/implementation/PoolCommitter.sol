@@ -300,7 +300,6 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         IERC20 _token = IERC20(_quoteToken);
         bool approvalSuccess = _token.approve(leveragedPool, _token.totalSupply());
         require(approvalSuccess, "ERC20 approval failed");
-        _token.approve(leveragedPool, _token.totalSupply());
         tokens = ILeveragedPool(leveragedPool).poolTokens();
     }
 

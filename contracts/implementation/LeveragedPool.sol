@@ -148,16 +148,19 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     /**
      * @notice Transfer long tokens from pool to user
      * @param to Address of account to transfer to
-     * @param token Long or short token. LONG_INDEX == 0 && SHORT_INDEX == 1
+     * @param isLongToken True if transferring long pool token
      * @param amount Amount of quote tokens being transferred
      */
     function poolTokenTransfer(
-        uint256 token,
+        bool isLongToken,
         address to,
         uint256 amount
     ) external override onlyPoolCommitter onlyUnpaused {
-        require(token == LONG_INDEX || token == SHORT_INDEX, "Pool: token out of range");
-        IERC20(tokens[token]).safeTransfer(to, amount);
+        if (isLongToken) {
+            IPoolToken(tokens[LONG_INDEX]).safeTransfer(to, amount);
+        } else {
+            IPoolToken(tokens[SHORT_INDEX]).safeTransfer(to, amount);
+        }
     }
 
     /**
