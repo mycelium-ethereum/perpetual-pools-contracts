@@ -54,7 +54,7 @@ contract ChainlinkOracleWrapper is IOracleWrapper, Ownable {
     /**
      * @dev An internal function that gets the WAD value price and latest roundID
      */
-    function _latestRoundData() internal view returns (int256 _price, uint80 _roundID) {
+    function _latestRoundData() internal view returns (int256, uint80) {
         (
             uint80 roundID,
             int256 price,

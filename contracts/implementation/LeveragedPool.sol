@@ -115,7 +115,6 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         onlyUnpaused
         returns (bool)
     {
-        require(to != address(0), "Receipient address cannot be null");
         uint256 _shortBalance = shortBalance;
         uint256 _longBalance = longBalance;
 
@@ -145,7 +144,6 @@ contract LeveragedPool is ILeveragedPool, Initializable {
      * @param amount Amount of quote tokens being transferred
      */
     function quoteTokenTransfer(address to, uint256 amount) external override onlyPoolCommitter onlyUnpaused {
-        require(to != address(0), "To address cannot be 0 address");
         IERC20(quoteToken).safeTransfer(to, amount);
     }
 
@@ -160,7 +158,6 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         address to,
         uint256 amount
     ) external override onlyPoolCommitter onlyUnpaused {
-        require(to != address(0), "To address cannot be 0 address");
         require(token == LONG_INDEX || token == SHORT_INDEX, "Pool: token out of range");
         IERC20(tokens[token]).safeTransfer(to, amount);
     }
@@ -176,8 +173,6 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         address to,
         uint256 amount
     ) external override onlyPoolCommitter onlyUnpaused {
-        require(from != address(0), "From address cannot be 0 address");
-        require(to != address(0), "To address cannot be 0 address");
         IERC20(quoteToken).safeTransferFrom(from, to, amount);
     }
 
@@ -249,7 +244,6 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         uint256 amount,
         address minter
     ) external override onlyPoolCommitter onlyUnpaused {
-        require(minter != address(0), "Minter address cannot be 0 address");
         if (isLongToken) {
             require(IPoolToken(tokens[LONG_INDEX]).mint(amount, minter), "Mint failed");
         } else {
@@ -269,7 +263,6 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         uint256 amount,
         address burner
     ) external override onlyPoolCommitter onlyUnpaused {
-        require(burner != address(0), "Burner address cannot be 0 address");
         if (isLongToken) {
             require(IPoolToken(tokens[LONG_INDEX]).burn(amount, burner), "Burn failed");
         } else {
@@ -355,13 +348,13 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         view
         override
         returns (
-            int256 _latestPrice,
-            bytes memory _data,
-            uint256 _lastPriceTimestamp,
-            uint256 _updateInterval
+            int256,
+            bytes memory,
+            uint256,
+            uint256
         )
     {
-        (_latestPrice, _data) = IOracleWrapper(oracleWrapper).getPriceAndMetadata();
+        (int256 _latestPrice, bytes memory _data) = IOracleWrapper(oracleWrapper).getPriceAndMetadata();
         return (_latestPrice, _data, lastPriceTimestamp, updateInterval);
     }
 
@@ -376,7 +369,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         return tokens;
     }
 
-    function balances() external view override returns (uint256 _shortBalance, uint256 _longBalance) {
+    function balances() external view override returns (uint256, uint256) {
         return (shortBalance, longBalance);
     }
 
