@@ -21,28 +21,26 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     uint256 public override longBalance;
     uint32 public override frontRunningInterval;
     uint32 public override updateInterval;
+    bytes16 public fee;
+    bytes16 public override leverageAmount;
     uint256 public constant LONG_INDEX = 0;
     uint256 public constant SHORT_INDEX = 1;
 
-    bytes16 public fee;
-    bytes16 public override leverageAmount;
-
-    address[2] public tokens;
-
     address public governance;
+    bool public paused;
     address public keeper;
+    bool public governanceTransferInProgress;
     address public feeAddress;
     address public override quoteToken;
     address public override poolCommitter;
+    address public override oracleWrapper;
+    address public override settlementEthOracle;
+    address public provisionalGovernance;
+
+    address[2] public tokens;
     uint256 public override lastPriceTimestamp; // The last time the pool was upkept
 
     string public override poolName;
-    address public override oracleWrapper;
-    address public override settlementEthOracle;
-
-    address public provisionalGovernance;
-    bool public governanceTransferInProgress;
-    bool public paused;
 
     event Paused();
     event Unpaused();
