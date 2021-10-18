@@ -396,7 +396,7 @@ describe("LeveragedPool - initialize", () => {
                     _feeAddress: feeAddress,
                     _quoteToken: quoteToken,
                 })
-            ).to.rejectedWith("frontRunning > updateInterval")
+            ).to.rejectedWith("frontRunning >= updateInterval")
         })
         it("should be able to coexist with other clones", async () => {
             const secondPoolReceipt = await (
