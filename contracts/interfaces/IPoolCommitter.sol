@@ -61,6 +61,8 @@ interface IPoolCommitter {
 
     // #### Functions
 
+    function getPendingCommits() external view returns (Commitment memory, Commitment memory);
+
     function commit(CommitType commitType, uint256 amount) external;
 
     function claim(address user) external;

@@ -13,8 +13,8 @@ contract PoolCommitterDeployer is IPoolCommitterDeployer {
         factory = _factory;
     }
 
-    function deploy() external override onlyFactory returns (address) {
-        return address(new PoolCommitter(factory));
+    function deploy(address invariantCheckContract) external override onlyFactory returns (address) {
+        return address(new PoolCommitter(factory, invariantCheckContract));
     }
 
     modifier onlyFactory() {

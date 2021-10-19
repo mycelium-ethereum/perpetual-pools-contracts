@@ -4,18 +4,18 @@ pragma solidity 0.8.7;
 import "../interfaces/IPoolCommitter.sol";
 import "../interfaces/ILeveragedPool.sol";
 import "../interfaces/IPoolFactory.sol";
+import "../interfaces/IPausable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "./PoolSwapLibrary.sol";
 
 /// @title This contract is responsible for handling commitment logic
-contract PoolCommitter is IPoolCommitter, Ownable {
+contract PoolCommitter is IPoolCommitter, Ownable, IPausable {
     // #### Globals
     uint128 public constant LONG_INDEX = 0;
     uint128 public constant SHORT_INDEX = 1;
 
-    address public leveragedPool;
     uint128 public updateIntervalId = 1;
     // Index 0 is the LONG token, index 1 is the SHORT token.
     // Fetched from the LeveragedPool when leveragedPool is set
@@ -32,12 +32,16 @@ contract PoolCommitter is IPoolCommitter, Ownable {
 
     address public factory;
     address public governance;
+    address public leveragedPool;
+    address public invariantCheckContract;
+    bool public override paused;
 
-    constructor(address _factory) {
+    constructor(address _factory, address _invariantCheckContract) {
         require(_factory != address(0), "Factory address cannot be null");
         // set the factory on deploy
         factory = _factory;
         governance = IPoolFactory(factory).getOwner();
+        invariantCheckContract = _invariantCheckContract;
     }
 
     /**
@@ -293,6 +297,10 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         _balance.settlementTokens = balance.settlementTokens + _newSettlementTokens + _newSettlementTokensSecond;
     }
 
+    function getPendingCommits() external view override returns (Commitment memory, Commitment memory) {
+        return (totalMostRecentCommit, totalNextIntervalCommit);
+    }
+
     function setQuoteAndPool(address _quoteToken, address _leveragedPool) external override onlyFactory {
         require(_quoteToken != address(0), "Quote token address cannot be 0 address");
         require(_leveragedPool != address(0), "Leveraged pool address cannot be 0 address");
@@ -303,8 +311,31 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         tokens = ILeveragedPool(leveragedPool).poolTokens();
     }
 
+    /**
+     * @notice Pauses the pool
+     * @dev Prevents all state updates until unpaused
+     */
+    function pause() external override onlyInvariantCheckContract {
+        paused = true;
+        emit Paused();
+    }
+
+    /**
+     * @notice Unpauses the pool
+     * @dev Prevents all state updates until unpaused
+     */
+    function unpause() external override onlyInvariantCheckContract {
+        paused = false;
+        emit Unpaused();
+    }
+
     modifier updateBalance() {
         updateAggregateBalance(msg.sender);
+        _;
+    }
+
+    modifier onlyInvariantCheckContract() {
+        require(msg.sender == invariantCheckContract, "msg.sender not invariantCheckContract");
         _;
     }
 

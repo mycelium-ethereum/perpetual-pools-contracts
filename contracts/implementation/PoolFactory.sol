@@ -59,6 +59,7 @@ contract PoolFactory is IPoolFactory, Ownable {
             address(this),
             address(this),
             address(this),
+            address(this),
             "BASE_POOL",
             15,
             30,
@@ -84,7 +85,7 @@ contract PoolFactory is IPoolFactory, Ownable {
         require(_poolKeeper != address(0), "PoolKeeper not set");
         require(address(poolCommitterDeployer) != address(0), "PoolCommitterDeployer not set");
 
-        address poolCommitter = poolCommitterDeployer.deploy();
+        address poolCommitter = poolCommitterDeployer.deploy(deploymentParameters.invariantCheckContract);
         require(
             deploymentParameters.leverageAmount >= 1 && deploymentParameters.leverageAmount <= maxLeverage,
             "PoolKeeper: leveraged amount invalid"
@@ -102,22 +103,23 @@ contract PoolFactory is IPoolFactory, Ownable {
         uint8 settlementDecimals = IERC20DecimalsWrapper(deploymentParameters.quoteToken).decimals();
         address shortToken = deployPairToken(_pool, shortString, shortString, settlementDecimals);
         address longToken = deployPairToken(_pool, longString, longString, settlementDecimals);
-        ILeveragedPool.Initialization memory initialization = ILeveragedPool.Initialization(
-            owner(), // governance is the owner of pools -- if this changes, `onlyGov` breaks
-            _poolKeeper,
-            deploymentParameters.oracleWrapper,
-            deploymentParameters.settlementEthOracle,
-            longToken,
-            shortToken,
-            poolCommitter,
-            string(abi.encodePacked(leverage, "-", deploymentParameters.poolName)),
-            deploymentParameters.frontRunningInterval,
-            deploymentParameters.updateInterval,
-            fee,
-            deploymentParameters.leverageAmount,
-            feeReceiver,
-            deploymentParameters.quoteToken
-        );
+        ILeveragedPool.Initialization memory initialization = ILeveragedPool.Initialization({
+            _owner: owner(), // governance is the owner of pools -- if this changes, `onlyGov` breaks
+            _keeper: _poolKeeper,
+            _oracleWrapper: deploymentParameters.oracleWrapper,
+            _settlementEthOracle: deploymentParameters.settlementEthOracle,
+            _longToken: longToken,
+            _shortToken: shortToken,
+            _poolCommitter: poolCommitter,
+            _invariantCheckContract: deploymentParameters.invariantCheckContract,
+            _poolName: string(abi.encodePacked(leverage, "-", deploymentParameters.poolName)),
+            _frontRunningInterval: deploymentParameters.frontRunningInterval,
+            _updateInterval: deploymentParameters.updateInterval,
+            _fee: fee,
+            _leverageAmount: deploymentParameters.leverageAmount,
+            _feeAddress: feeReceiver,
+            _quoteToken: deploymentParameters.quoteToken
+        });
 
         // approve the quote token on the pool committer to finalise linking
         // this also stores the pool address in the committer

@@ -33,6 +33,8 @@ import {
     PoolCommitterDeployer__factory,
     TestChainlinkOracle,
     ChainlinkOracleWrapper,
+    InvariantCheck__factory,
+    InvariantCheck,
 } from "../types"
 
 import { abi as ERC20Abi } from "../artifacts/@openzeppelin/contracts/token/ERC20/ERC20.sol/ERC20.json"
@@ -119,6 +121,13 @@ export const deployPoolSetupContracts = deployments.createFixture(async () => {
         ethOracle.address
     )
 
+    const invariantCheckFactory = (await ethers.getContractFactory(
+        "InvariantCheck",
+        signers[0]
+    )) as InvariantCheck__factory
+
+    const invariantCheck = await invariantCheckFactory.deploy()
+
     // Deploy and initialise pool
     const libraryFactory = (await ethers.getContractFactory(
         "PoolSwapLibrary",
@@ -168,6 +177,7 @@ export const deployPoolSetupContracts = deployments.createFixture(async () => {
         settlementEthOracle,
         token,
         library,
+        invariantCheck,
     }
 })
 
@@ -203,6 +213,7 @@ export const deployPoolAndTokenContracts = async (
     factory: PoolFactory
     oracleWrapper: ChainlinkOracleWrapper
     settlementEthOracle: ChainlinkOracleWrapper
+    invariantCheck: InvariantCheck
 }> => {
     const setupContracts = await deployPoolSetupContracts()
 
@@ -215,6 +226,7 @@ export const deployPoolAndTokenContracts = async (
         quoteToken: setupContracts.token.address,
         oracleWrapper: setupContracts.oracleWrapper.address,
         settlementEthOracle: setupContracts.settlementEthOracle.address,
+        invariantCheckContract: setupContracts.invariantCheck.address
     }
 
     if (fee) {
@@ -247,6 +259,7 @@ export const deployPoolAndTokenContracts = async (
     const factory = setupContracts.factory
     const oracleWrapper = setupContracts.oracleWrapper
     const settlementEthOracle = setupContracts.settlementEthOracle
+    const invariantCheck = setupContracts.invariantCheck
 
     return {
         signers,
@@ -265,6 +278,7 @@ export const deployPoolAndTokenContracts = async (
         factory,
         oracleWrapper,
         settlementEthOracle,
+        invariantCheck,
     }
 }
 

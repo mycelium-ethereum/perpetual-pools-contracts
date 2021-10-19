@@ -3,5 +3,5 @@ pragma solidity 0.8.7;
 
 /// @title The PoolCommitterDeployer interface
 interface IPoolCommitterDeployer {
-    function deploy() external returns (address);
+    function deploy(address invariantCheckContract) external returns (address);
 }

@@ -4,6 +4,7 @@ pragma solidity 0.8.7;
 import "../interfaces/ILeveragedPool.sol";
 import "../interfaces/IPoolCommitter.sol";
 import "../interfaces/IPoolToken.sol";
+import "../interfaces/IPausable.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -12,7 +13,7 @@ import "./PoolSwapLibrary.sol";
 import "../interfaces/IOracleWrapper.sol";
 
 /// @title The pool contract itself
-contract LeveragedPool is ILeveragedPool, Initializable {
+contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
     using SafeERC20 for IERC20;
     // #### Globals
 
@@ -27,7 +28,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     uint256 public constant SHORT_INDEX = 1;
 
     address public governance;
-    bool public paused;
+    bool public override paused;
     address public keeper;
     bool public governanceTransferInProgress;
     address public feeAddress;
@@ -36,14 +37,11 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     address public override oracleWrapper;
     address public override settlementEthOracle;
     address public provisionalGovernance;
-
+    address public invariantCheckContract;
     address[2] public tokens;
     uint256 public override lastPriceTimestamp; // The last time the pool was upkept
 
     string public override poolName;
-
-    event Paused();
-    event Unpaused();
 
     // #### Functions
 
@@ -57,6 +55,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         require(initialization._longToken != address(0), "Long token cannot be 0 address");
         require(initialization._shortToken != address(0), "Short token cannot be 0 address");
         require(initialization._poolCommitter != address(0), "PoolCommitter cannot be 0 address");
+        require(initialization._invariantCheckContract != address(0), "InvariantCheck cannot be 0 address");
         require(initialization._frontRunningInterval < initialization._updateInterval, "frontRunning > updateInterval");
 
         require(initialization._fee < PoolSwapLibrary.WAD_PRECISION, "Fee >= 100%");
@@ -79,6 +78,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         tokens[LONG_INDEX] = initialization._longToken;
         tokens[SHORT_INDEX] = initialization._shortToken;
         poolCommitter = initialization._poolCommitter;
+        invariantCheckContract = initialization._invariantCheckContract;
         emit PoolInitialized(
             initialization._longToken,
             initialization._shortToken,
@@ -390,7 +390,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
      * @notice Pauses the pool
      * @dev Prevents all state updates until unpaused
      */
-    function pause() external onlyGov {
+    function pause() external override onlyInvariantCheckContract {
         paused = true;
         emit Paused();
     }
@@ -399,7 +399,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
      * @notice Unpauses the pool
      * @dev Prevents all state updates until unpaused
      */
-    function unpause() external onlyGov {
+    function unpause() external override onlyInvariantCheckContract {
         paused = false;
         emit Unpaused();
     }
@@ -412,6 +412,11 @@ contract LeveragedPool is ILeveragedPool, Initializable {
 
     modifier onlyKeeper() {
         require(msg.sender == keeper, "msg.sender not keeper");
+        _;
+    }
+
+    modifier onlyInvariantCheckContract() {
+        require(msg.sender == invariantCheckContract, "msg.sender not invariantCheckContract");
         _;
     }
 
