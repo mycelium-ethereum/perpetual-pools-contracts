@@ -21,28 +21,26 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     uint256 public override longBalance;
     uint32 public override frontRunningInterval;
     uint32 public override updateInterval;
+    bytes16 public fee;
+    bytes16 public override leverageAmount;
     uint256 public constant LONG_INDEX = 0;
     uint256 public constant SHORT_INDEX = 1;
 
-    bytes16 public fee;
-    bytes16 public override leverageAmount;
-
-    address[2] public tokens;
-
     address public governance;
+    bool public paused;
     address public keeper;
+    bool public governanceTransferInProgress;
     address public feeAddress;
     address public override quoteToken;
     address public override poolCommitter;
+    address public override oracleWrapper;
+    address public override settlementEthOracle;
+    address public provisionalGovernance;
+
+    address[2] public tokens;
     uint256 public override lastPriceTimestamp; // The last time the pool was upkept
 
     string public override poolName;
-    address public override oracleWrapper;
-    address public override settlementEthOracle;
-
-    address public provisionalGovernance;
-    bool public governanceTransferInProgress;
-    bool public paused;
 
     event Paused();
     event Unpaused();
@@ -64,7 +62,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
             "frontRunning >= updateInterval"
         );
 
-        require(initialization._fee < 1 * PoolSwapLibrary.WAD_PRECISION, "Fee >= 100%");
+        require(initialization._fee < PoolSwapLibrary.WAD_PRECISION, "Fee >= 100%");
 
         // set the owner of the pool. This is governance when deployed from the factory
         governance = initialization._owner;
@@ -118,7 +116,6 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         onlyUnpaused
         returns (bool)
     {
-        require(to != address(0), "Receipient address cannot be null");
         uint256 _shortBalance = shortBalance;
         uint256 _longBalance = longBalance;
 
@@ -148,24 +145,25 @@ contract LeveragedPool is ILeveragedPool, Initializable {
      * @param amount Amount of quote tokens being transferred
      */
     function quoteTokenTransfer(address to, uint256 amount) external override onlyPoolCommitter onlyUnpaused {
-        require(to != address(0), "To address cannot be 0 address");
         IERC20(quoteToken).safeTransfer(to, amount);
     }
 
     /**
      * @notice Transfer long tokens from pool to user
      * @param to Address of account to transfer to
-     * @param token Long or short token. LONG_INDEX == 0 && SHORT_INDEX == 1
+     * @param isLongToken True if transferring long pool token
      * @param amount Amount of quote tokens being transferred
      */
     function poolTokenTransfer(
-        uint256 token,
+        bool isLongToken,
         address to,
         uint256 amount
     ) external override onlyPoolCommitter onlyUnpaused {
-        require(to != address(0), "To address cannot be 0 address");
-        require(token == LONG_INDEX || token == SHORT_INDEX, "Pool: token out of range");
-        IERC20(tokens[token]).safeTransfer(to, amount);
+        if (isLongToken) {
+            IERC20(tokens[LONG_INDEX]).safeTransfer(to, amount);
+        } else {
+            IERC20(tokens[SHORT_INDEX]).safeTransfer(to, amount);
+        }
     }
 
     /**
@@ -179,8 +177,6 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         address to,
         uint256 amount
     ) external override onlyPoolCommitter onlyUnpaused {
-        require(from != address(0), "From address cannot be 0 address");
-        require(to != address(0), "To address cannot be 0 address");
         IERC20(quoteToken).safeTransferFrom(from, to, amount);
     }
 
@@ -210,10 +206,12 @@ contract LeveragedPool is ILeveragedPool, Initializable {
             (uint256 newLongBalance, uint256 newShortBalance, uint256 totalFeeAmount) = PoolSwapLibrary
                 .calculatePriceChange(priceChangeData);
 
-            emit PoolRebalance(
-                int256(newShortBalance) - int256(_shortBalance),
-                int256(newLongBalance) - int256(_longBalance)
-            );
+            unchecked {
+                emit PoolRebalance(
+                    int256(newShortBalance) - int256(_shortBalance),
+                    int256(newLongBalance) - int256(_longBalance)
+                );
+            }
             // Update pool balances
             longBalance = newLongBalance;
             shortBalance = newShortBalance;
@@ -241,42 +239,48 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     /**
      * @notice Mint tokens to a user
      * @dev Can only be called by & used by the pool committer
-     * @param token Index of token
+     * @param isLongToken True if minting short token
      * @param amount Amount of tokens to mint
      * @param minter Address of user/minter
      */
     function mintTokens(
-        uint256 token,
+        bool isLongToken,
         uint256 amount,
         address minter
     ) external override onlyPoolCommitter onlyUnpaused {
-        require(minter != address(0), "Minter address cannot be 0 address");
-        require(token == LONG_INDEX || token == SHORT_INDEX, "Pool: token out of range");
-        require(IPoolToken(tokens[token]).mint(amount, minter), "Mint failed");
+        if (isLongToken) {
+            require(IPoolToken(tokens[LONG_INDEX]).mint(amount, minter), "Mint failed");
+        } else {
+            require(IPoolToken(tokens[SHORT_INDEX]).mint(amount, minter), "Mint failed");
+        }
     }
 
     /**
      * @notice Burn tokens by a user
      * @dev Can only be called by & used by the pool committer
-     * @param token Index of token
+     * @param isLongToken True if burning short token
      * @param amount Amount of tokens to burn
      * @param burner Address of user/burner
      */
     function burnTokens(
-        uint256 token,
+        bool isLongToken,
         uint256 amount,
         address burner
     ) external override onlyPoolCommitter onlyUnpaused {
-        require(burner != address(0), "Burner address cannot be 0 address");
-        require(token == LONG_INDEX || token == SHORT_INDEX, "Pool: token out of range");
-        require(IPoolToken(tokens[token]).burn(amount, burner), "Burn failed");
+        if (isLongToken) {
+            require(IPoolToken(tokens[LONG_INDEX]).burn(amount, burner), "Burn failed");
+        } else {
+            require(IPoolToken(tokens[SHORT_INDEX]).burn(amount, burner), "Burn failed");
+        }
     }
 
     /**
      * @return true if the price was last updated more than updateInterval seconds ago
      */
     function intervalPassed() public view override returns (bool) {
-        return block.timestamp >= lastPriceTimestamp + updateInterval;
+        unchecked {
+            return block.timestamp >= lastPriceTimestamp + updateInterval;
+        }
     }
 
     /**
@@ -315,7 +319,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         require(_governance != address(0), "Governance address cannot be 0 address");
         provisionalGovernance = _governance;
         governanceTransferInProgress = true;
-        emit ProvisionalGovernanceChanged(provisionalGovernance);
+        emit ProvisionalGovernanceChanged(_governance);
     }
 
     /**
@@ -348,13 +352,13 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         view
         override
         returns (
-            int256 _latestPrice,
-            bytes memory _data,
-            uint256 _lastPriceTimestamp,
-            uint256 _updateInterval
+            int256,
+            bytes memory,
+            uint256,
+            uint256
         )
     {
-        (_latestPrice, _data) = IOracleWrapper(oracleWrapper).getPriceAndMetadata();
+        (int256 _latestPrice, bytes memory _data) = IOracleWrapper(oracleWrapper).getPriceAndMetadata();
         return (_latestPrice, _data, lastPriceTimestamp, updateInterval);
     }
 
@@ -369,7 +373,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         return tokens;
     }
 
-    function balances() external view override returns (uint256 _shortBalance, uint256 _longBalance) {
+    function balances() external view override returns (uint256, uint256) {
         return (shortBalance, longBalance);
     }
 

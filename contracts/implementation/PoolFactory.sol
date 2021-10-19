@@ -25,6 +25,7 @@ contract PoolFactory is IPoolFactory, Ownable {
 
     // Default max leverage of 10
     uint16 public maxLeverage = 10;
+
     // Contract address to receive protocol fees
     address public feeReceiver;
     // Default fee; Fee value as a decimal multiplied by 10^18. For example, 0.5% is represented as 0.5 * 10^18
@@ -162,7 +163,6 @@ contract PoolFactory is IPoolFactory, Ownable {
     function setPoolKeeper(address _poolKeeper) external override onlyOwner {
         require(_poolKeeper != address(0), "address cannot be null");
         poolKeeper = IPoolKeeper(_poolKeeper);
-        emit PoolKeeperChanged(_poolKeeper);
     }
 
     function setMaxLeverage(uint16 newMaxLeverage) external override onlyOwner {
@@ -187,7 +187,6 @@ contract PoolFactory is IPoolFactory, Ownable {
     function setPoolCommitterDeployer(address _poolCommitterDeployer) external override onlyOwner {
         require(_poolCommitterDeployer != address(0), "address cannot be null");
         poolCommitterDeployer = IPoolCommitterDeployer(_poolCommitterDeployer);
-        emit PoolCommitterDeployerChanged(_poolCommitterDeployer);
     }
 
     function getOwner() external view override returns (address) {

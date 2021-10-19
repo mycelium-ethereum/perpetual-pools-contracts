@@ -141,17 +141,15 @@ describe("LeveragedPool - executeAllCommitments", () => {
             const tenToTheTen = ethers.BigNumber.from("10").pow("10")
             const upkeepInformation = await pool.getUpkeepInformation()
             // Multiply currentPrice/2 by 10^10 because that's what the oracle wrapper does
-            expect(upkeepInformation._latestPrice).to.equal(
+            expect(upkeepInformation[0]).to.equal(
                 currentPrice.div(2).mul(tenToTheTen)
             )
-            expect(upkeepInformation._updateInterval).to.equal(updateInterval)
+            expect(upkeepInformation[3]).to.equal(updateInterval)
             // There aren't really any other ways to programatically figure out the last price timestamp
             // other than just calling it directly, so this isn't really testing anything since it's
             // basically the same function
             const lastPriceTimestamp = await pool.lastPriceTimestamp()
-            expect(upkeepInformation._lastPriceTimestamp).to.equal(
-                lastPriceTimestamp
-            )
+            expect(upkeepInformation[2]).to.equal(lastPriceTimestamp)
 
             // Perform upkeep
             await timeout(updateInterval * 1000)

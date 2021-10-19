@@ -6,10 +6,8 @@ import "abdk-libraries-solidity/ABDKMathQuad.sol";
 /// @title Library for various useful (mostly) mathematical functions
 library PoolSwapLibrary {
     bytes16 public constant one = 0x3fff0000000000000000000000000000;
-    bytes16 public constant zero = 0x00000000000000000000000000000000;
 
     /* ABDKMathQuad defines this but it's private */
-    bytes16 private constant NEGATIVE_ZERO = 0x80000000000000000000000000000000;
     uint256 public constant MAX_DECIMALS = 18;
 
     uint256 public constant WAD_PRECISION = 10**18;
