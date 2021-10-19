@@ -5,6 +5,7 @@ import "../interfaces/IPoolCommitter.sol";
 import "../interfaces/ILeveragedPool.sol";
 import "../interfaces/IPoolFactory.sol";
 import "../interfaces/IPausable.sol";
+import "../interfaces/IInvariantCheck.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
@@ -35,6 +36,7 @@ contract PoolCommitter is IPoolCommitter, Ownable, IPausable {
     address public leveragedPool;
     address public invariantCheckContract;
     bool public override paused;
+    IInvariantCheck public invariantCheck;
 
     constructor(address _factory, address _invariantCheckContract) {
         require(_factory != address(0), "Factory address cannot be null");
@@ -42,6 +44,7 @@ contract PoolCommitter is IPoolCommitter, Ownable, IPausable {
         factory = _factory;
         governance = IPoolFactory(factory).getOwner();
         invariantCheckContract = _invariantCheckContract;
+        invariantCheck = IInvariantCheck(_invariantCheckContract);
     }
 
     /**
@@ -50,7 +53,7 @@ contract PoolCommitter is IPoolCommitter, Ownable, IPausable {
      * @param amount Amount of quote tokens you want to commit to minting; OR amount of pool
      *               tokens you want to burn
      */
-    function commit(CommitType commitType, uint256 amount) external override updateBalance {
+    function commit(CommitType commitType, uint256 amount) external override updateBalance checkInvariantsAndUnpaused {
         require(amount > 0, "Amount must not be zero");
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
         uint256 updateInterval = pool.updateInterval();
@@ -106,7 +109,7 @@ contract PoolCommitter is IPoolCommitter, Ownable, IPausable {
     /**
      * @notice Claim user's balance. This can be done either by the user themself or by somebody else on their behalf.
      */
-    function claim(address user) external override updateBalance {
+    function claim(address user) external override updateBalance checkInvariantsAndUnpaused {
         Balance memory balance = userAggregateBalance[user];
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
         if (balance.settlementTokens > 0) {
@@ -122,7 +125,7 @@ contract PoolCommitter is IPoolCommitter, Ownable, IPausable {
         emit Claim(user);
     }
 
-    function executeGivenCommitments(Commitment memory _commits) internal {
+    function executeGivenCommitments(Commitment memory _commits) internal checkInvariantsAndUnpaused {
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
 
         uint256 shortBalance = pool.shortBalance();
@@ -185,7 +188,7 @@ contract PoolCommitter is IPoolCommitter, Ownable, IPausable {
         pool.setNewPoolBalances(newLongBalance, newShortBalance);
     }
 
-    function executeCommitments() external override onlyPool {
+    function executeCommitments() external override onlyPool checkInvariantsAndUnpaused {
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
         executeGivenCommitments(totalMostRecentCommit);
 
@@ -228,7 +231,7 @@ contract PoolCommitter is IPoolCommitter, Ownable, IPausable {
     /**
      * @notice Add the result of a user's most recent commit to their aggregateBalance
      */
-    function updateAggregateBalance(address user) public override {
+    function updateAggregateBalance(address user) public override checkInvariantsAndUnpaused {
         Balance storage balance = userAggregateBalance[user];
 
         Commitment memory mostRecentCommit = userMostRecentCommit[user];
@@ -301,7 +304,7 @@ contract PoolCommitter is IPoolCommitter, Ownable, IPausable {
         return (totalMostRecentCommit, totalNextIntervalCommit);
     }
 
-    function setQuoteAndPool(address _quoteToken, address _leveragedPool) external override onlyFactory {
+    function setQuoteAndPool(address _quoteToken, address _leveragedPool) external override onlyFactory onlyUnpaused {
         require(_quoteToken != address(0), "Quote token address cannot be 0 address");
         require(_leveragedPool != address(0), "Leveraged pool address cannot be 0 address");
         leveragedPool = _leveragedPool;
@@ -324,7 +327,7 @@ contract PoolCommitter is IPoolCommitter, Ownable, IPausable {
      * @notice Unpauses the pool
      * @dev Prevents all state updates until unpaused
      */
-    function unpause() external override onlyInvariantCheckContract {
+    function unpause() external override onlyInvariantCheckOrGovernance {
         paused = false;
         emit Unpaused();
     }
@@ -334,8 +337,27 @@ contract PoolCommitter is IPoolCommitter, Ownable, IPausable {
         _;
     }
 
+    modifier onlyUnpaused() {
+        require(!paused, "Pool is paused");
+        _;
+    }
+
+    modifier checkInvariantsAndUnpaused() {
+        invariantCheck.checkInvariants(leveragedPool);
+        // require(!paused, "Pool is paused");
+        if (paused) {
+            return;
+        }
+        _;
+    }
+
     modifier onlyInvariantCheckContract() {
         require(msg.sender == invariantCheckContract, "msg.sender not invariantCheckContract");
+        _;
+    }
+
+    modifier onlyInvariantCheckOrGovernance() {
+        require(msg.sender == invariantCheckContract || msg.sender == governance, "sender not invariantCheck or Gov");
         _;
     }
 

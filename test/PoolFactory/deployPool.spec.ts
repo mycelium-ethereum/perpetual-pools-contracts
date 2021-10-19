@@ -56,6 +56,7 @@ describe("PoolFactory.deployPool", () => {
         settlementEthOracle = contracts.settlementEthOracle
         pool = contracts.pool
         token = contracts.token
+        invariantCheck = contracts.invariantCheck
     })
 
     context(
@@ -71,7 +72,7 @@ describe("PoolFactory.deployPool", () => {
                     quoteToken: token.address,
                     oracleWrapper: oracleWrapper.address,
                     settlementEthOracle: settlementEthOracle.address,
-                    invariantCheckContract: invariantCheck.address
+                    invariantCheckContract: invariantCheck.address,
                 }
 
                 await expect(
@@ -101,7 +102,7 @@ describe("PoolFactory.deployPool", () => {
                 _leverageAmount: 5,
                 _feeAddress: generateRandomAddress(),
                 _quoteToken: token.address,
-                _invariantCheckContract: invariantCheck.address
+                _invariantCheckContract: invariantCheck.address,
             }
             await expect(pool.initialize(initialization)).to.be.rejectedWith(
                 Error
@@ -116,7 +117,7 @@ describe("PoolFactory.deployPool", () => {
                 quoteToken: token.address,
                 oracleWrapper: oracleWrapper.address,
                 settlementEthOracle: settlementEthOracle.address,
-                invariantCheckContract: invariantCheck.address
+                invariantCheckContract: invariantCheck.address,
             }
             const secondPool = getEventArgs(
                 await (await factory.deployPool(deploymentData)).wait(),
@@ -153,7 +154,7 @@ describe("PoolFactory.deployPool", () => {
                 quoteToken: token.address,
                 oracleWrapper: oracleWrapper.address,
                 settlementEthOracle: settlementEthOracle.address,
-                invariantCheckContract: invariantCheck.address
+                invariantCheckContract: invariantCheck.address,
             }
             const secondPool = getEventArgs(
                 await (await factory.deployPool(deploymentData)).wait(),
@@ -178,7 +179,7 @@ describe("PoolFactory.deployPool", () => {
                 quoteToken: token.address,
                 oracleWrapper: oracleWrapper.address,
                 settlementEthOracle: settlementEthOracle.address,
-                invariantCheckContract: invariantCheck.address
+                invariantCheckContract: invariantCheck.address,
             }
 
             await expect(factory.deployPool(deploymentData)).to.be.revertedWith(
@@ -194,7 +195,7 @@ describe("PoolFactory.deployPool", () => {
                 quoteToken: generateRandomAddress(),
                 oracleWrapper: oracleWrapper.address,
                 settlementEthOracle: settlementEthOracle.address,
-                invariantCheckContract: invariantCheck.address
+                invariantCheckContract: invariantCheck.address,
             }
 
             await expect(factory.deployPool(deploymentData)).to.be.revertedWith(
@@ -211,7 +212,7 @@ describe("PoolFactory.deployPool", () => {
                 quoteToken: token.address,
                 oracleWrapper: oracleWrapper.address,
                 settlementEthOracle: settlementEthOracle.address,
-                invariantCheckContract: invariantCheck.address
+                invariantCheckContract: invariantCheck.address,
             }
 
             await expect(factory.deployPool(deploymentData)).to.be.revertedWith(

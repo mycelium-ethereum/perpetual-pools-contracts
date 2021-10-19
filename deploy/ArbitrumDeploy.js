@@ -23,7 +23,7 @@ module.exports = async (hre) => {
     }
 
     const KovanEthUsdOracle = {
-        address: "0x9326BFA02ADD2366b30bacB125260Af641031331"
+        address: "0x9326BFA02ADD2366b30bacB125260Af641031331",
     }
 
     const multisigAddress = "0x0f79e82aE88E1318B8cfC8b4A205fE2F982B928A"

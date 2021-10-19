@@ -19,11 +19,14 @@ contract InvariantCheck is IInvariantCheck {
         ILeveragedPool pool = ILeveragedPool(poolToCheck);
         IPoolCommitter poolCommitter = IPoolCommitter(pool.poolCommitter());
         uint256 poolBalance = IERC20(pool.quoteToken()).balanceOf(poolToCheck);
-        (IPoolCommitter.Commitment memory totalMostRecentCommits, IPoolCommitter.Commitment memory totalNextIntervalCommit) = poolCommitter
-            .getPendingCommits();
+        (
+            IPoolCommitter.Commitment memory totalMostRecentCommits,
+            IPoolCommitter.Commitment memory totalNextIntervalCommit
+        ) = poolCommitter.getPendingCommits();
         uint256 pendingMints;
         unchecked {
-            pendingMints = totalMostRecentCommits.longMintAmount +
+            pendingMints =
+                totalMostRecentCommits.longMintAmount +
                 totalMostRecentCommits.shortMintAmount +
                 totalNextIntervalCommit.longMintAmount +
                 totalNextIntervalCommit.shortMintAmount;
@@ -36,15 +39,20 @@ contract InvariantCheck is IInvariantCheck {
     }
 
     function pauseAll(IPausable pool, IPausable poolCommitter) internal {
-            pool.pause();
-            poolCommitter.pause();
+        pool.pause();
+        poolCommitter.pause();
     }
 
     /**
      * @notice Check that the balance of a pool is equal to or greater than the summation of pending mints, long balance and short balance
      * @return true if balance invariant holds. False if not
      */
-    function balanceInvariant(uint256 balance, uint256 pendingMints, uint256 longBalance, uint256 shortBalance) internal pure returns (bool) {
+    function balanceInvariant(
+        uint256 balance,
+        uint256 pendingMints,
+        uint256 longBalance,
+        uint256 shortBalance
+    ) internal pure returns (bool) {
         return balance >= pendingMints + longBalance + shortBalance;
     }
 }

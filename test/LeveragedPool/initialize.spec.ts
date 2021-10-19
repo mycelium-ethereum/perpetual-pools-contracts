@@ -186,7 +186,8 @@ describe("LeveragedPool - initialize", () => {
 
             const poolCommitter = await (
                 await poolCommitterFactory.deploy(
-                    setupContracts.factory.address, setupContracts.invariantCheck.address
+                    setupContracts.factory.address,
+                    setupContracts.invariantCheck.address
                 )
             ).deployed()
 
@@ -224,7 +225,8 @@ describe("LeveragedPool - initialize", () => {
                     _leverageAmount: leverage,
                     _feeAddress: feeAddress,
                     _quoteToken: quoteToken,
-                    _invariantCheckContract: setupContracts.invariantCheck.address
+                    _invariantCheckContract:
+                        setupContracts.invariantCheck.address,
                 })
             ).wait()
             const event: Event | undefined = receipt?.events?.find(
@@ -301,7 +303,7 @@ describe("LeveragedPool - initialize", () => {
                 _leverageAmount: leverage,
                 _feeAddress: feeAddress,
                 _quoteToken: quoteToken,
-                _invariantCheckContract: invariantCheck.address
+                _invariantCheckContract: invariantCheck.address,
             })
             await expect(
                 leveragedPool.initialize({
@@ -319,7 +321,7 @@ describe("LeveragedPool - initialize", () => {
                     _leverageAmount: leverage,
                     _feeAddress: feeAddress,
                     _quoteToken: quoteToken,
-                    _invariantCheckContract: invariantCheck.address
+                    _invariantCheckContract: invariantCheck.address,
                 })
             ).to.rejectedWith(Error)
         })
@@ -340,7 +342,7 @@ describe("LeveragedPool - initialize", () => {
                     _leverageAmount: leverage,
                     _feeAddress: feeAddress,
                     _quoteToken: ethers.constants.AddressZero,
-                    _invariantCheckContract: invariantCheck.address
+                    _invariantCheckContract: invariantCheck.address,
                 })
             ).to.rejectedWith(Error)
         })
@@ -361,7 +363,7 @@ describe("LeveragedPool - initialize", () => {
                     _leverageAmount: leverage,
                     _feeAddress: feeAddress,
                     _quoteToken: quoteToken,
-                    _invariantCheckContract: invariantCheck.address
+                    _invariantCheckContract: invariantCheck.address,
                 })
             ).to.rejectedWith(Error)
         })
@@ -382,7 +384,7 @@ describe("LeveragedPool - initialize", () => {
                     _leverageAmount: leverage,
                     _feeAddress: ethers.constants.AddressZero,
                     _quoteToken: quoteToken,
-                    _invariantCheckContract: invariantCheck.address
+                    _invariantCheckContract: invariantCheck.address,
                 })
             ).to.rejectedWith(Error)
         })
@@ -404,7 +406,7 @@ describe("LeveragedPool - initialize", () => {
                     _leverageAmount: leverage,
                     _feeAddress: feeAddress,
                     _quoteToken: quoteToken,
-                    _invariantCheckContract: invariantCheck.address
+                    _invariantCheckContract: invariantCheck.address,
                 })
             ).to.rejectedWith("frontRunning > updateInterval")
         })
@@ -434,7 +436,7 @@ describe("LeveragedPool - initialize", () => {
                 _leverageAmount: leverage,
                 _feeAddress: feeAddress,
                 _quoteToken: quoteToken,
-                _invariantCheckContract: invariantCheck.address
+                _invariantCheckContract: invariantCheck.address,
             })
             await leveragedPool.initialize({
                 _owner: signers[0].address,
@@ -451,7 +453,7 @@ describe("LeveragedPool - initialize", () => {
                 _leverageAmount: leverage,
                 _feeAddress: feeAddress,
                 _quoteToken: quoteToken,
-                _invariantCheckContract: invariantCheck.address
+                _invariantCheckContract: invariantCheck.address,
             })
 
             expect(await secondPool.poolName()).to.eq(POOL_CODE_2)

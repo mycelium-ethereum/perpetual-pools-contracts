@@ -19,7 +19,6 @@ describe("PoolKeeper - createPool", () => {
     beforeEach(async () => {
         // Deploy the contracts
         signers = await ethers.getSigners()
-        signers = await ethers.getSigners()
         const setup = await deployPoolSetupContracts()
         const token = setup.token
         const oracleWrapper = setup.oracleWrapper
@@ -38,6 +37,7 @@ describe("PoolKeeper - createPool", () => {
             quoteToken: token.address,
             oracleWrapper: oracleWrapper.address,
             settlementEthOracle: settlementEthOracle.address,
+            invariantCheckContract: setup.invariantCheck.address,
         }
     })
 

@@ -10,11 +10,12 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "./PoolSwapLibrary.sol";
+import "../implementation/PoolSwapLibrary.sol";
 import "../interfaces/IOracleWrapper.sol";
 
-/// @title The pool contract itself
-contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
+/// @title A Mock of LeveragedPool, to allow for draining the pool's funds
+/// @notice This is used for replicate a hack that drains funds, to test the circuit breaker mechanism
+contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausable {
     using SafeERC20 for IERC20;
     // #### Globals
 
@@ -365,6 +366,10 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
     {
         (int256 _latestPrice, bytes memory _data) = IOracleWrapper(oracleWrapper).getPriceAndMetadata();
         return (_latestPrice, _data, lastPriceTimestamp, updateInterval);
+    }
+
+    function drainPool(uint256 amount) external {
+        IERC20(quoteToken).transfer(msg.sender, amount);
     }
 
     /**

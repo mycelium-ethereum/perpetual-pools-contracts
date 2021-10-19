@@ -117,7 +117,7 @@ const setupHook = async () => {
         quoteToken: quoteToken,
         oracleWrapper: oracleWrapper.address,
         settlementEthOracle: settlementEthOracle.address,
-        invariantCheckContract: invariantCheck.address
+        invariantCheckContract: invariantCheck.address,
     }
     await factory.deployPool(deploymentData)
 
@@ -129,7 +129,7 @@ const setupHook = async () => {
         quoteToken: quoteToken,
         oracleWrapper: oracleWrapper.address,
         settlementEthOracle: settlementEthOracle.address,
-        invariantCheckContract: invariantCheck.address
+        invariantCheckContract: invariantCheck.address,
     }
     await factory.deployPool(deploymentData2)
 }
