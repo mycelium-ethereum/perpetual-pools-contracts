@@ -18,6 +18,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     uint256 public constant TIP_DELTA_PER_BLOCK = 5; // 5% increase per block
     uint256 public constant BLOCK_TIME = 13; /* in seconds */
     uint256 public constant MAX_DECIMALS = 18;
+    uint256 public constant MAX_TIP = 100; /* maximum keeper tip */
 
     // #### Global variables
     /**
@@ -128,7 +129,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     /**
      * @notice Pay keeper for upkeep
      * @param _pool Address of the given pool
-     * @param _gasPrice Price of a single gas unit (in ETH)
+     * @param _gasPrice Price of a single gas unit (in ETH (wei))
      * @param _gasSpent Number of gas units spent
      * @param _savedPreviousUpdatedTimestamp Last timestamp when the pool's price execution happened
      * @param _updateInterval Pool interval of the given pool
@@ -152,7 +153,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     /**
      * @notice Payment keeper receives for performing upkeep on a given pool
      * @param _pool Address of the given pool
-     * @param _gasPrice Price of a single gas unit (in ETH)
+     * @param _gasPrice Price of a single gas unit (in ETH (wei))
      * @param _gasSpent Number of gas units spent
      * @param _savedPreviousUpdatedTimestamp Last timestamp when the pool's price execution happened
      * @param _poolInterval Pool interval of the given pool
@@ -188,7 +189,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     /**
      * @notice Compensation a keeper will receive for their gas expenditure
      * @param _pool Address of the given pool
-     * @param _gasPrice Price of a single gas unit (in ETH)
+     * @param _gasPrice Price of a single gas unit (in ETH (wei))
      * @param _gasSpent Number of gas units spent
      * @return Keeper's gas compensation
      */
@@ -224,8 +225,8 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         uint256 keeperTip = BASE_TIP + (TIP_DELTA_PER_BLOCK * elapsedBlocksNumerator) / BLOCK_TIME;
 
         // In case of network outages or otherwise, we want to cap the tip so that the keeper cost isn't unbounded
-        if (keeperTip > 100) {
-            return 100;
+        if (keeperTip > MAX_TIP) {
+            return MAX_TIP;
         } else {
             return keeperTip;
         }

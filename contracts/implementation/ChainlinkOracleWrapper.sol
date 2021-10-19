@@ -54,14 +54,9 @@ contract ChainlinkOracleWrapper is IOracleWrapper, Ownable {
     /**
      * @dev An internal function that gets the WAD value price and latest roundID
      */
-    function _latestRoundData() internal view returns (int256, uint80) {
-        (
-            uint80 roundID,
-            int256 price,
-            uint256 startedAt,
-            uint256 timeStamp,
-            uint80 answeredInRound
-        ) = AggregatorV2V3Interface(oracle).latestRoundData();
+    function _latestRoundData() internal view returns (int256 _price, uint80 _roundID) {
+        (uint80 roundID, int256 price, , uint256 timeStamp, uint80 answeredInRound) = AggregatorV2V3Interface(oracle)
+            .latestRoundData();
         require(answeredInRound >= roundID, "COA: Stale answer");
         require(timeStamp != 0, "COA: Round incomplete");
         return (toWad(price), roundID);
