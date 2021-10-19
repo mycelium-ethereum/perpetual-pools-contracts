@@ -4,13 +4,14 @@ pragma solidity 0.8.7;
 import "../interfaces/IPoolCommitter.sol";
 import "../interfaces/ILeveragedPool.sol";
 import "../interfaces/IPoolFactory.sol";
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "./PoolSwapLibrary.sol";
 
 /// @title This contract is responsible for handling commitment logic
-contract PoolCommitter is IPoolCommitter, Ownable {
+contract PoolCommitter is IPoolCommitter, Ownable, Initializable {
     // #### Globals
     uint128 public constant LONG_INDEX = 0;
     uint128 public constant SHORT_INDEX = 1;
@@ -34,10 +35,13 @@ contract PoolCommitter is IPoolCommitter, Ownable {
     address public governance;
 
     constructor(address _factory) {
-        require(_factory != address(0), "Factory address cannot be null");
-        // set the factory on deploy
         factory = _factory;
-        governance = IPoolFactory(factory).getOwner();
+    }
+
+    function initialize(address _factory) external override initializer {
+        require(_factory != address(0), "Factory address cannot be 0 address");
+        factory = _factory;
+        governance = IPoolFactory(_factory).getOwner();
     }
 
     /**
