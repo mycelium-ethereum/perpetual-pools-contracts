@@ -30,9 +30,9 @@ import {
     PoolKeeper__factory,
     PoolFactory,
     PoolCommitter,
-    PoolCommitterDeployer__factory,
     TestChainlinkOracle,
     ChainlinkOracleWrapper,
+    PoolCommitter__factory,
 } from "../types"
 
 import { abi as ERC20Abi } from "../artifacts/@openzeppelin/contracts/token/ERC20/ERC20.sol/ERC20.json"
@@ -127,6 +127,11 @@ export const deployPoolSetupContracts = deployments.createFixture(async () => {
     const library = await libraryFactory.deploy()
     await library.deployed()
 
+    // const poolCommitter = (await ethers.getContractFactory("PoolCommitter", {
+    //     signer: signers[0],
+    //     libraries: { PoolSwapLibrary: library.address },
+    // })) as PoolCommitter__factory
+
     const PoolFactory = (await ethers.getContractFactory("PoolFactory", {
         signer: signers[0],
         libraries: { PoolSwapLibrary: library.address },
@@ -135,21 +140,6 @@ export const deployPoolSetupContracts = deployments.createFixture(async () => {
     const factory = await (
         await PoolFactory.deploy(generateRandomAddress())
     ).deployed()
-
-    const poolCommitterDeployerFactory = (await ethers.getContractFactory(
-        "PoolCommitterDeployer",
-        {
-            signer: signers[0],
-            libraries: { PoolSwapLibrary: library.address },
-        }
-    )) as PoolCommitterDeployer__factory
-
-    let poolCommitterDeployer = await poolCommitterDeployerFactory.deploy(
-        factory.address
-    )
-    poolCommitterDeployer = await poolCommitterDeployer.deployed()
-
-    await factory.setPoolCommitterDeployer(poolCommitterDeployer.address)
 
     const poolKeeperFactory = (await ethers.getContractFactory("PoolKeeper", {
         signer: signers[0],

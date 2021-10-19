@@ -154,6 +154,7 @@ describe("poolCommitter - executeCommitment: Basic test cases", () => {
                 commit.commitID
             )
         })
+        
         it("should not allow anyone to execute a commitment", async () => {
             await timeout(updateInterval * 1000)
             await expect(
