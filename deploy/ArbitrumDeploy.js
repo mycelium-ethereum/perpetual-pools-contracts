@@ -142,7 +142,7 @@ module.exports = async (hre) => {
     )
 
     console.log("Setting factory fee")
-    const fee = ethers.utils.parseEther("0.000001142")
+    const fee = ethers.utils.parseEther("0.1")
     await execute(
         "PoolFactory",
         {

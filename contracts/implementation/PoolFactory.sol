@@ -110,22 +110,23 @@ contract PoolFactory is IPoolFactory, Ownable {
         uint8 settlementDecimals = IERC20DecimalsWrapper(deploymentParameters.quoteToken).decimals();
         address shortToken = deployPairToken(_pool, shortString, shortString, settlementDecimals);
         address longToken = deployPairToken(_pool, longString, longString, settlementDecimals);
-        ILeveragedPool.Initialization memory initialization = ILeveragedPool.Initialization(
-            owner(), // governance is the owner of pools -- if this changes, `onlyGov` breaks
-            _poolKeeper,
-            deploymentParameters.oracleWrapper,
-            deploymentParameters.settlementEthOracle,
-            longToken,
-            shortToken,
-            poolCommitter,
-            string(abi.encodePacked(leverage, "-", deploymentParameters.poolName)),
-            deploymentParameters.frontRunningInterval,
-            deploymentParameters.updateInterval,
-            fee,
-            deploymentParameters.leverageAmount,
-            feeReceiver,
-            deploymentParameters.quoteToken
-        );
+
+        ILeveragedPool.Initialization memory initialization = ILeveragedPool.Initialization({
+            _owner: owner(), // governance is the owner of pools -- if this changes, `onlyGov` breaks
+            _keeper: _poolKeeper,
+            _oracleWrapper: deploymentParameters.oracleWrapper,
+            _settlementEthOracle: deploymentParameters.settlementEthOracle,
+            _longToken: longToken,
+            _shortToken: shortToken,
+            _poolCommitter: poolCommitter,
+            _poolName: string(abi.encodePacked(leverage, "-", deploymentParameters.poolName)),
+            _frontRunningInterval: deploymentParameters.frontRunningInterval,
+            _updateInterval: deploymentParameters.updateInterval,
+            _fee: (fee * deploymentParameters.updateInterval) / (365 days),
+            _leverageAmount: deploymentParameters.leverageAmount,
+            _feeAddress: feeReceiver,
+            _quoteToken: deploymentParameters.quoteToken
+        });
 
         // approve the quote token on the pool committer to finalise linking
         // this also stores the pool address in the committer
@@ -176,11 +177,12 @@ contract PoolFactory is IPoolFactory, Ownable {
     }
 
     /**
-     * @notice Set the fee amount. This is a percentage multiplied by 10^18.
-     *         e.g. 5% is 0.05 * 10^18
-     * @param _fee The fee amount as a percentage multiplied by 10^18
+     * @notice Set the yearly fee amount. The max yearly fee is 10%
+     * @dev This is a percentage in WAD; multiplied by 10^18 e.g. 5% is 0.05 * 10^18
+     * @param _fee The fee amount as a percentage
      */
     function setFee(uint256 _fee) external override onlyOwner {
+        require(_fee <= 0.1e18, "Fee cannot be >10%");
         fee = _fee;
     }
 
