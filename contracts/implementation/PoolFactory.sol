@@ -50,6 +50,8 @@ contract PoolFactory is IPoolFactory, Ownable {
 
     // #### Functions
     constructor(address _feeReceiver) {
+        require(_feeReceiver != address(0), "Address cannot be null");
+
         // Deploy base contracts
         pairTokenBase = new PoolToken(DEFAULT_NUM_DECIMALS);
         pairTokenBaseAddress = address(pairTokenBase);
