@@ -25,13 +25,12 @@ contract PoolFactory is IPoolFactory, Ownable {
 
     // Default max leverage of 10
     uint16 public maxLeverage = 10;
-    
-    
+
     // Contract address to receive protocol fees
     address public feeReceiver;
     // Default fee; Fee value as a decimal multiplied by 10^18. For example, 0.5% is represented as 0.5 * 10^18
     uint256 public fee;
-    
+
     // This is required because we must pass along *some* value for decimal
     // precision to the base pool tokens as we use the Cloneable pattern
     uint8 constant DEFAULT_NUM_DECIMALS = 18;
