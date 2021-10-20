@@ -35,6 +35,7 @@ contract PoolCommitter is IPoolCommitter, Ownable, Initializable {
     address public governance;
 
     constructor(address _factory) {
+        require(_factory != address(0), "Factory address cannot be null");
         factory = _factory;
     }
 
