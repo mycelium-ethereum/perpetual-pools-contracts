@@ -51,7 +51,7 @@ contract PriceObserver is Ownable, IPriceObserver {
      * @param x Element to "rotate into" observations array
      *
      */
-    function leftRotateWithPad(int256 x) private onlyOwner {
+    function leftRotateWithPad(int256 x) private {
         uint256 n = length();
 
         /* linear scan over the [1, n] subsequence */

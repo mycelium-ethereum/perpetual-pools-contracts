@@ -1,4 +1,5 @@
-// SPDX-License-Identifier: MIT pragma solidity 0.8.7;
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.7;
 import "../interfaces/IOracleWrapper.sol";
 import "../interfaces/IPriceObserver.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -39,7 +40,6 @@ contract SMAOracle is Ownable, IOracleWrapper {
 
         /* `scaler` is always <= 10^18 and >= 1 so this cast is safe */
         scaler = int256(10**(MAX_DECIMALS - _spotDecimals));
-        console.log(MAX_DECIMALS - _spotDecimals); // DEBUG
 
         price = SMA(IPriceObserver(_observer).getAll(), _periods);
     }
@@ -57,7 +57,7 @@ contract SMAOracle is Ownable, IOracleWrapper {
     }
 
     function getPrice() external view override returns (int256) {
-        return price / scaler;
+        return price;
     }
 
     /**
@@ -111,7 +111,7 @@ contract SMAOracle is Ownable, IOracleWrapper {
         }
 
         /* cast is safe due to above bounds check */
-        return S.div(int256(k));
+        return S / int256(k);
     }
 
     function toWad(int256 x) private view returns (int256) {
