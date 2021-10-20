@@ -83,7 +83,7 @@ describe("SMAOracle", async () => {
                     ].map((x) => ethers.utils.parseEther(x.toString()))
                     const k: BigNumberish = 5 /* don't WAD */
 
-                    const actualSMA /*: BigNumber*/ = await smaOracle.SMA(xs, k)
+                    const actualSMA: BigNumber = await smaOracle.SMA(xs, k)
                     /* (10 + 6 + 4 + 3 + 2) / 5 = 25 / 5 = 5 */
                     const expectedSMA: BigNumberish =
                         ethers.utils.parseEther("5")
@@ -104,10 +104,7 @@ describe("SMAOracle", async () => {
                     ].map((x) => ethers.utils.parseEther(x.toString()))
                     const k: BigNumberish = xs.length
 
-                    const actualSMA /*: BigNumber */ = await smaOracle.SMA(
-                        xs,
-                        k
-                    )
+                    const actualSMA: BigNumber = await smaOracle.SMA(xs, k)
                     /* (10 + 6 + 4 + 3 + 2 + 2 + 0 + 1 + 1 + 10 + 9 + 5 + 5 + 14 + 12 + 11 + 10 + 12 + 8 + 7 + 3 + 4 + 3 + 2) / 24 = 144 / 24 = 6 */
                     const expectedSMA: BigNumber = ethers.utils.parseEther("6")
 
