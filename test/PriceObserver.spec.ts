@@ -16,7 +16,7 @@ describe("PriceObserver", async () => {
     let nonOwner: SignerWithAddress
     const capacity: BigNumberish = 24
 
-    before(async () => {
+    beforeEach(async () => {
         /* retrieve signers */
         signers = await ethers.getSigners()
         owner = signers[0]
@@ -109,7 +109,7 @@ describe("PriceObserver", async () => {
         )
 
         context("When called with a full observations array", async () => {
-            before(async () => {
+            beforeEach(async () => {
                 /* arbitrary values, but must have length of capacity */
                 const prices: BigNumberish[] = [
                     2, 3, 4, 3, 7, 8, 12, 10, 11, 12, 14, 5, 5, 9, 10, 1, 1, 0,
@@ -171,14 +171,14 @@ describe("PriceObserver", async () => {
 
                 await priceObserver.add(newValue)
 
-                expect(await priceObserver.getAll()).to.be.eq(expectedPrices)
+                expect(await priceObserver.getAll()).to.deep.eq(expectedPrices)
             })
         })
     })
 
     describe("getAll", async () => {
         context("When called", async () => {
-            before(async () => {
+            beforeEach(async () => {
                 /* arbitrary values, length less than or equal to capacity */
                 const prices: BigNumberish[] = [
                     2, 3, 4, 3, 7, 8, 12, 10, 11, 12, 14, 5, 5, 9, 10, 1, 1, 0,
@@ -197,7 +197,7 @@ describe("PriceObserver", async () => {
                     2, 2, 3, 4, 6, 10,
                 ].map((x) => ethers.BigNumber.from(x))
 
-                expect(await priceObserver.getAll()).to.be.eq(
+                expect(await priceObserver.getAll()).to.deep.equal(
                     expectedObservations
                 )
             })
