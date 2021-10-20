@@ -148,7 +148,9 @@ contract PoolFactory is IPoolFactory, Ownable {
     }
 
     function clonePoolCommitterBase(bytes32 uniquePoolHash) internal returns (address) {
-        PoolCommitter poolCommitter = PoolCommitter(Clones.cloneDeterministic(poolCommitterBaseAddress, uniquePoolHash));
+        PoolCommitter poolCommitter = PoolCommitter(
+            Clones.cloneDeterministic(poolCommitterBaseAddress, uniquePoolHash)
+        );
         poolCommitter.initialize(address(this));
         return address(poolCommitter);
     }

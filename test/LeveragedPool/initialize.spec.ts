@@ -193,15 +193,19 @@ describe("LeveragedPool - initialize", () => {
                 signers[0]
             ) as LeveragedPool
 
-            const poolCommitterFactory = (await ethers.getContractFactory("PoolCommitter", {
-                signer: signers[0],
-                libraries: { PoolSwapLibrary: library.address },
-            }
+            const poolCommitterFactory = (await ethers.getContractFactory(
+                "PoolCommitter",
+                {
+                    signer: signers[0],
+                    libraries: { PoolSwapLibrary: library.address },
+                }
             )) as PoolCommitter__factory
 
-            const poolCommitter = await poolCommitterFactory.deploy(setupContracts.factory.address)
+            const poolCommitter = await poolCommitterFactory.deploy(
+                setupContracts.factory.address
+            )
             await poolCommitter.deployed()
-            poolCommitter.initialize(setupContracts.factory.address);
+            poolCommitter.initialize(setupContracts.factory.address)
 
             receipt = await (
                 await leveragedPool.initialize({

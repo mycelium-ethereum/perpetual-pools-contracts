@@ -127,11 +127,6 @@ export const deployPoolSetupContracts = deployments.createFixture(async () => {
     const library = await libraryFactory.deploy()
     await library.deployed()
 
-    // const poolCommitter = (await ethers.getContractFactory("PoolCommitter", {
-    //     signer: signers[0],
-    //     libraries: { PoolSwapLibrary: library.address },
-    // })) as PoolCommitter__factory
-
     const PoolFactory = (await ethers.getContractFactory("PoolFactory", {
         signer: signers[0],
         libraries: { PoolSwapLibrary: library.address },
