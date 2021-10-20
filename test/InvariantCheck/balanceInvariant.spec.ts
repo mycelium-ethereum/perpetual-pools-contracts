@@ -123,5 +123,22 @@ describe("InvariantCheck - balanceInvariant", () => {
             expect(await pool.paused()).to.equal(false)
             expect(await poolCommitter.paused()).to.equal(false)
         })
+        it("Once paused, can not unpause if not governance", async () => {
+            const signers = await ethers.getSigners()
+
+            await pool.drainPool(1)
+            await invariantCheck.checkInvariants(pool.address)
+            expect(await pool.paused()).to.equal(true)
+            expect(await poolCommitter.paused()).to.equal(true)
+
+            await expect(pool.connect(signers[1]).unpause()).to.be.revertedWith(
+                "msg.sender not governance"
+            )
+            await expect(
+                poolCommitter.connect(signers[1]).unpause()
+            ).to.be.revertedWith("msg.sender not governance")
+            expect(await pool.paused()).to.equal(true)
+            expect(await poolCommitter.paused()).to.equal(true)
+        })
     })
 })

@@ -327,7 +327,7 @@ contract PoolCommitter is IPoolCommitter, Ownable, IPausable {
      * @notice Unpauses the pool
      * @dev Prevents all state updates until unpaused
      */
-    function unpause() external override onlyInvariantCheckOrGovernance {
+    function unpause() external override onlyGov {
         paused = false;
         emit Unpaused();
     }
@@ -353,11 +353,6 @@ contract PoolCommitter is IPoolCommitter, Ownable, IPausable {
 
     modifier onlyInvariantCheckContract() {
         require(msg.sender == invariantCheckContract, "msg.sender not invariantCheckContract");
-        _;
-    }
-
-    modifier onlyInvariantCheckOrGovernance() {
-        require(msg.sender == invariantCheckContract || msg.sender == governance, "sender not invariantCheck or Gov");
         _;
     }
 
