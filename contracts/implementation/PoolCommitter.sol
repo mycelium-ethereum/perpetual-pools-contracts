@@ -31,13 +31,11 @@ contract PoolCommitter is IPoolCommitter, Ownable {
     mapping(address => Balance) public userAggregateBalance;
 
     address public factory;
-    address public governance;
 
     constructor(address _factory) {
         require(_factory != address(0), "Factory address cannot be null");
         // set the factory on deploy
         factory = _factory;
-        governance = IPoolFactory(factory).getOwner();
     }
 
     /**
@@ -315,16 +313,6 @@ contract PoolCommitter is IPoolCommitter, Ownable {
 
     modifier onlyPool() {
         require(msg.sender == leveragedPool, "msg.sender not leveragedPool");
-        _;
-    }
-
-    modifier onlySelf() {
-        require(msg.sender == address(this), "msg.sender not self");
-        _;
-    }
-
-    modifier onlyGov() {
-        require(msg.sender == governance, "msg.sender not governance");
         _;
     }
 }
