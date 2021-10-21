@@ -2,11 +2,10 @@
 pragma solidity 0.8.7;
 
 import "../interfaces/IOracleWrapper.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV2V3Interface.sol";
 
 /// @title The oracle management contract for chainlink V3 oracles
-contract ChainlinkOracleWrapper is IOracleWrapper, Ownable {
+contract ChainlinkOracleWrapper is IOracleWrapper {
     // #### Globals
     /**
      * @notice The address of the feed oracle
