@@ -116,6 +116,11 @@ contract SMAOracle is Ownable, IOracleWrapper {
         return S / int256(k);
     }
 
+    /**
+     * @notice Converts `x` to a wad value
+     * @param x Number to convert to wad value
+     * @return `x` but wad
+     */
     function toWad(int256 x) private view returns (int256) {
         return x * scaler;
     }
