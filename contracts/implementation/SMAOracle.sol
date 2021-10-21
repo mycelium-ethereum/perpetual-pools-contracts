@@ -50,6 +50,11 @@ contract SMAOracle is Ownable, IOracleWrapper {
         observer = _observer;
     }
 
+    /**
+     * @notice Converts `wad` to a raw integer
+     * @param wad wad maths value
+     * @return Raw (signed) integer
+     */
     function fromWad(int256 wad) external view override returns (int256) {
         return wad / scaler;
     }
