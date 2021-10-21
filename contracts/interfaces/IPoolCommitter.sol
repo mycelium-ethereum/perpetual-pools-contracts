@@ -61,6 +61,8 @@ interface IPoolCommitter {
 
     // #### Functions
 
+    function initialize(address _factory) external;
+
     function commit(CommitType commitType, uint256 amount) external;
 
     function claim(address user) external;

@@ -12,6 +12,7 @@ import {
 import {
     DEFAULT_FEE,
     DEFAULT_MINT_AMOUNT,
+    LONG_MINT,
     POOL_CODE,
     POOL_CODE_2,
     SINGLE_POOL_UPKEEP_GAS_COST,
@@ -21,6 +22,7 @@ import {
     ChainlinkOracleWrapper,
     TestToken,
     TestChainlinkOracle,
+    LeveragedPool,
 } from "../../../types"
 import { BigNumber } from "ethers"
 import { Result } from "ethers/lib/utils"
@@ -32,7 +34,7 @@ const { expect } = chai
 let derivativeChainlinkOracle: TestChainlinkOracle
 let derivativeOracleWrapper: ChainlinkOracleWrapper
 let poolKeeper: PoolKeeper
-let pool: any
+let pool: LeveragedPool
 let pool2: any
 let POOL1_ADDR: string
 let POOL2_ADDR: string
@@ -73,9 +75,9 @@ const setupHook = async () => {
     derivativeChainlinkOracle = contracts1.chainlinkOracle
     derivativeOracleWrapper = contracts1.oracleWrapper
     await token.approve(pool.address, mintAmount)
-    await token.approve(pool2.address, mintAmount)
-    await createCommit(poolCommitter, [2], mintAmount.div(2))
-    await createCommit(poolCommitter2, [2], mintAmount.div(2))
+    await contracts2.token.approve(pool2.address, mintAmount)
+    await createCommit(poolCommitter, LONG_MINT, mintAmount.div(2))
+    await createCommit(poolCommitter2, LONG_MINT, mintAmount.div(2))
     await timeout(updateInterval * 1000 * 2)
     await pool.setKeeper(signers[0].address)
     await pool.poolUpkeep(9, 10)
@@ -115,8 +117,8 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
     describe("Upkeep - Price execution", () => {
         let event: Result | undefined
         let upkeepEvent: Result | undefined
-        let lastTime: BigNumber
-        before(async () => {
+        let lastTime: any
+        beforeEach(async () => {
             await setupHook()
             // process a few upkeeps
             lastTime = await pool.lastPriceTimestamp()
@@ -143,7 +145,7 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
     })
 
     describe("Upkeep - New round", () => {
-        before(async () => {
+        beforeEach(async () => {
             // Check starting conditions
             await setupHook()
             // process a few upkeeps
