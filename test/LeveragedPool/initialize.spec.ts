@@ -20,8 +20,6 @@ import {
     POOL_CODE_2,
     DEFAULT_MAX_LEVERAGE,
     DEFAULT_MIN_LEVERAGE,
-    DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
-    DEFAULT_MIN_COMMIT_SIZE,
 } from "../constants"
 import {
     deployPoolAndTokenContracts,
@@ -29,7 +27,7 @@ import {
     generateRandomAddress,
     getRandomInt,
 } from "../utilities"
-import { Event } from "@ethersproject/contracts"
+import { Contract, Event } from "@ethersproject/contracts"
 
 import { abi as Token } from "../../artifacts/contracts/implementation/PoolToken.sol/PoolToken.json"
 import { abi as Pool } from "../../artifacts/contracts/implementation/LeveragedPool.sol/LeveragedPool.json"
@@ -66,8 +64,6 @@ describe("LeveragedPool - initialize", () => {
                 frontRunningInterval,
                 updateInterval,
                 leverage,
-                DEFAULT_MIN_COMMIT_SIZE,
-                DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
                 feeAddress,
                 fee
             )
@@ -189,9 +185,7 @@ describe("LeveragedPool - initialize", () => {
 
             const poolCommitter = await (
                 await poolCommitterFactory.deploy(
-                    setupContracts.factory.address,
-                    DEFAULT_MIN_COMMIT_SIZE,
-                    DEFAULT_MAX_COMMIT_QUEUE_LENGTH
+                    setupContracts.factory.address
                 )
             ).deployed()
 
@@ -246,14 +240,14 @@ describe("LeveragedPool - initialize", () => {
         let leveragedPool: LeveragedPool
         let testFactoryActual: TestPoolFactory
         let poolCommitter: PoolCommitter
+        let long: Contract
+        let short: Contract
         beforeEach(async () => {
             const setupContracts = await deployPoolAndTokenContracts(
                 POOL_CODE,
                 frontRunningInterval,
                 updateInterval,
                 leverage,
-                DEFAULT_MIN_COMMIT_SIZE,
-                DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
                 feeAddress,
                 fee
             )
@@ -261,6 +255,8 @@ describe("LeveragedPool - initialize", () => {
             settlementEthOracle = setupContracts.settlementEthOracle
             quoteToken = setupContracts.token.address
             poolCommitter = setupContracts.poolCommitter
+            long = setupContracts.longToken
+            short = setupContracts.shortToken
 
             const testFactory = (await ethers.getContractFactory(
                 "TestPoolFactory",
@@ -400,7 +396,7 @@ describe("LeveragedPool - initialize", () => {
                     _feeAddress: feeAddress,
                     _quoteToken: quoteToken,
                 })
-            ).to.rejectedWith("frontRunning > updateInterval")
+            ).to.rejectedWith("frontRunning >= updateInterval")
         })
         it("should be able to coexist with other clones", async () => {
             const secondPoolReceipt = await (

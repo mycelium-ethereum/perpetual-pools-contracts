@@ -6,14 +6,10 @@ import "../interfaces/IOracleWrapper.sol";
 import "../interfaces/IPoolFactory.sol";
 import "../interfaces/ILeveragedPool.sol";
 import "../interfaces/IERC20DecimalsWrapper.sol";
-import "../interfaces/IERC20DecimalsWrapper.sol";
 import "./PoolSwapLibrary.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/proxy/Clones.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "abdk-libraries-solidity/ABDKMathQuad.sol";
-import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV2V3Interface.sol";
 
 /// @title The manager contract for multiple markets and the pools in them
 contract PoolKeeper is IPoolKeeper, Ownable {
@@ -22,6 +18,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     uint256 public constant TIP_DELTA_PER_BLOCK = 5; // 5% increase per block
     uint256 public constant BLOCK_TIME = 13; /* in seconds */
     uint256 public constant MAX_DECIMALS = 18;
+    uint256 public constant MAX_TIP = 100; /* maximum keeper tip */
 
     // #### Global variables
     /**
@@ -74,7 +71,8 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @return upkeepNeeded Whether or not at least one pool needs upkeeping
      */
     function checkUpkeepMultiplePools(address[] calldata _pools) external view override returns (bool) {
-        for (uint256 i = 0; i < _pools.length; i++) {
+        uint256 poolsLength = _pools.length;
+        for (uint256 i = 0; i < poolsLength; i++) {
             if (checkUpkeepSinglePool(_pools[i])) {
                 // One has been found that requires upkeeping
                 return true;
@@ -122,7 +120,8 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @param pools pool codes to perform the update for
      */
     function performUpkeepMultiplePools(address[] calldata pools) external override {
-        for (uint256 i = 0; i < pools.length; i++) {
+        uint256 poolsLength = pools.length;
+        for (uint256 i = 0; i < poolsLength; i++) {
             performUpkeepSinglePool(pools[i]);
         }
     }
@@ -130,7 +129,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     /**
      * @notice Pay keeper for upkeep
      * @param _pool Address of the given pool
-     * @param _gasPrice Price of a single gas unit (in ETH)
+     * @param _gasPrice Price of a single gas unit (in ETH (wei))
      * @param _gasSpent Number of gas units spent
      * @param _savedPreviousUpdatedTimestamp Last timestamp when the pool's price execution happened
      * @param _updateInterval Pool interval of the given pool
@@ -154,7 +153,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     /**
      * @notice Payment keeper receives for performing upkeep on a given pool
      * @param _pool Address of the given pool
-     * @param _gasPrice Price of a single gas unit (in ETH)
+     * @param _gasPrice Price of a single gas unit (in ETH (wei))
      * @param _gasSpent Number of gas units spent
      * @param _savedPreviousUpdatedTimestamp Last timestamp when the pool's price execution happened
      * @param _poolInterval Pool interval of the given pool
@@ -190,7 +189,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     /**
      * @notice Compensation a keeper will receive for their gas expenditure
      * @param _pool Address of the given pool
-     * @param _gasPrice Price of a single gas unit (in ETH)
+     * @param _gasPrice Price of a single gas unit (in ETH (wei))
      * @param _gasSpent Number of gas units spent
      * @return Keeper's gas compensation
      */
@@ -226,8 +225,8 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         uint256 keeperTip = BASE_TIP + (TIP_DELTA_PER_BLOCK * elapsedBlocksNumerator) / BLOCK_TIME;
 
         // In case of network outages or otherwise, we want to cap the tip so that the keeper cost isn't unbounded
-        if (keeperTip > 100) {
-            return 100;
+        if (keeperTip > MAX_TIP) {
+            return MAX_TIP;
         } else {
             return keeperTip;
         }

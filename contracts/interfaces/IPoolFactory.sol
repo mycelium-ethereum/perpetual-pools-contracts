@@ -11,8 +11,6 @@ interface IPoolFactory {
         address quoteToken; // The digital asset that the pool accepts
         address oracleWrapper; // The IOracleWrapper implementation for fetching price feed data
         address settlementEthOracle; // The oracle to fetch the price of Ether in terms of the settlement token
-        uint128 minimumCommitSize; // The minimum amount (in settlement tokens) that a user can commit in a single commitment
-        uint128 maximumCommitQueueLength; // The maximum number of commitments that can be made for a given updateInterval
     }
 
     // #### Events
@@ -22,6 +20,18 @@ interface IPoolFactory {
      * @param ticker Ticker of the neew pool
      */
     event DeployPool(address indexed pool, string ticker);
+
+    /**
+     * @notice Creates a notification when the pool keeper changes
+     * @param _poolKeeper Address of the new pool keeper
+     */
+    event PoolKeeperChanged(address _poolKeeper);
+
+    /**
+     * @notice Creates a notification when the pool committer deployer for the factory changes
+     * @param _poolCommitterDeployer Address of the new pool committer deployer
+     */
+    event PoolCommitterDeployerChanged(address _poolCommitterDeployer);
 
     // #### Getters for Globals
     function pools(uint256 id) external view returns (address);

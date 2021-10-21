@@ -116,6 +116,12 @@ interface ILeveragedPool {
 
     function quoteTokenTransfer(address to, uint256 amount) external;
 
+    function poolTokenTransfer(
+        bool isLongToken,
+        address to,
+        uint256 amount
+    ) external;
+
     function setNewPoolBalances(uint256 _longBalance, uint256 _shortBalance) external;
 
     /**
@@ -150,13 +156,13 @@ interface ILeveragedPool {
     function updateFeeAddress(address account) external;
 
     function mintTokens(
-        uint256 token,
+        bool isLongToken,
         uint256 amount,
         address burner
     ) external;
 
     function burnTokens(
-        uint256 token,
+        bool isLongToken,
         uint256 amount,
         address burner
     ) external;

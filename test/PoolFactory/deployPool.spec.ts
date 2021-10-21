@@ -9,12 +9,7 @@ import {
     ChainlinkOracleWrapper,
     PoolToken__factory,
 } from "../../types"
-import {
-    DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
-    DEFAULT_MIN_COMMIT_SIZE,
-    POOL_CODE,
-    POOL_CODE_2,
-} from "../constants"
+import { POOL_CODE, POOL_CODE_2 } from "../constants"
 import {
     deployPoolAndTokenContracts,
     generateRandomAddress,
@@ -50,8 +45,6 @@ describe("PoolFactory.deployPool", () => {
             frontRunningInterval,
             updateInterval,
             leverage,
-            DEFAULT_MIN_COMMIT_SIZE,
-            DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
             feeAddress,
             fee
         )
@@ -76,8 +69,6 @@ describe("PoolFactory.deployPool", () => {
                     quoteToken: token.address,
                     oracleWrapper: oracleWrapper.address,
                     settlementEthOracle: settlementEthOracle.address,
-                    minimumCommitSize: DEFAULT_MIN_COMMIT_SIZE,
-                    maximumCommitQueueLength: DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
                 }
 
                 await expect(
@@ -121,8 +112,6 @@ describe("PoolFactory.deployPool", () => {
                 quoteToken: token.address,
                 oracleWrapper: oracleWrapper.address,
                 settlementEthOracle: settlementEthOracle.address,
-                minimumCommitSize: DEFAULT_MIN_COMMIT_SIZE,
-                maximumCommitQueueLength: DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
             }
             const secondPool = getEventArgs(
                 await (await factory.deployPool(deploymentData)).wait(),
@@ -159,8 +148,6 @@ describe("PoolFactory.deployPool", () => {
                 quoteToken: token.address,
                 oracleWrapper: oracleWrapper.address,
                 settlementEthOracle: settlementEthOracle.address,
-                minimumCommitSize: DEFAULT_MIN_COMMIT_SIZE,
-                maximumCommitQueueLength: DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
             }
             const secondPool = getEventArgs(
                 await (await factory.deployPool(deploymentData)).wait(),
@@ -185,8 +172,6 @@ describe("PoolFactory.deployPool", () => {
                 quoteToken: token.address,
                 oracleWrapper: oracleWrapper.address,
                 settlementEthOracle: settlementEthOracle.address,
-                minimumCommitSize: DEFAULT_MIN_COMMIT_SIZE,
-                maximumCommitQueueLength: DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
             }
 
             await expect(factory.deployPool(deploymentData)).to.be.revertedWith(
@@ -202,8 +187,6 @@ describe("PoolFactory.deployPool", () => {
                 quoteToken: generateRandomAddress(),
                 oracleWrapper: oracleWrapper.address,
                 settlementEthOracle: settlementEthOracle.address,
-                minimumCommitSize: DEFAULT_MIN_COMMIT_SIZE,
-                maximumCommitQueueLength: DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
             }
 
             await expect(factory.deployPool(deploymentData)).to.be.revertedWith(
@@ -220,12 +203,10 @@ describe("PoolFactory.deployPool", () => {
                 quoteToken: token.address,
                 oracleWrapper: oracleWrapper.address,
                 settlementEthOracle: settlementEthOracle.address,
-                minimumCommitSize: DEFAULT_MIN_COMMIT_SIZE,
-                maximumCommitQueueLength: DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
             }
 
             await expect(factory.deployPool(deploymentData)).to.be.revertedWith(
-                "Token decimals > 18"
+                "Decimal precision too high"
             )
         })
     })

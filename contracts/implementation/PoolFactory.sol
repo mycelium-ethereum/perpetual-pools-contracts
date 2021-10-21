@@ -11,6 +11,7 @@ import "./PoolToken.sol";
 import "./PoolKeeper.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 
 /// @title The pool factory contract
 contract PoolFactory is IPoolFactory, Ownable {
@@ -24,6 +25,7 @@ contract PoolFactory is IPoolFactory, Ownable {
 
     // Default max leverage of 10
     uint16 public maxLeverage = 10;
+
     // Contract address to receive protocol fees
     address public feeReceiver;
     // Default fee; Fee value as a decimal multiplied by 10^18. For example, 0.5% is represented as 0.5 * 10^18
@@ -32,6 +34,8 @@ contract PoolFactory is IPoolFactory, Ownable {
     // This is required because we must pass along *some* value for decimal
     // precision to the base pool tokens as we use the Cloneable pattern
     uint8 constant DEFAULT_NUM_DECIMALS = 18;
+
+    uint8 constant MAX_DECIMALS = DEFAULT_NUM_DECIMALS;
 
     /**
      * @notice Format: Pool counter => pool address
@@ -84,20 +88,22 @@ contract PoolFactory is IPoolFactory, Ownable {
         address _poolKeeper = address(poolKeeper);
         require(_poolKeeper != address(0), "PoolKeeper not set");
         require(address(poolCommitterDeployer) != address(0), "PoolCommitterDeployer not set");
-        address poolCommitter = poolCommitterDeployer.deploy(
-            deploymentParameters.minimumCommitSize,
-            deploymentParameters.maximumCommitQueueLength
-        );
+
+        address poolCommitter = poolCommitterDeployer.deploy();
         require(
             deploymentParameters.leverageAmount >= 1 && deploymentParameters.leverageAmount <= maxLeverage,
             "PoolKeeper: leveraged amount invalid"
         );
-        require(IERC20DecimalsWrapper(deploymentParameters.quoteToken).decimals() <= 18, "Token decimals > 18");
+        require(
+            IERC20DecimalsWrapper(deploymentParameters.quoteToken).decimals() <= MAX_DECIMALS,
+            "Decimal precision too high"
+        );
+
         LeveragedPool pool = LeveragedPool(Clones.clone(poolBaseAddress));
         address _pool = address(pool);
         emit DeployPool(_pool, deploymentParameters.poolName);
 
-        string memory leverage = uint2str(deploymentParameters.leverageAmount);
+        string memory leverage = Strings.toString(deploymentParameters.leverageAmount);
         string memory longString = string(abi.encodePacked(leverage, "L-", deploymentParameters.poolName));
         string memory shortString = string(abi.encodePacked(leverage, "S-", deploymentParameters.poolName));
 
@@ -185,33 +191,6 @@ contract PoolFactory is IPoolFactory, Ownable {
 
     function getOwner() external view override returns (address) {
         return owner();
-    }
-
-    /**
-     * @notice Converts a uint to a str
-     * @dev Assumes ASCII strings
-     * @return raw string representation of the uint
-     */
-    function uint2str(uint256 _i) internal pure returns (string memory) {
-        if (_i == 0) {
-            return "0";
-        }
-        uint256 j = _i;
-        uint256 len;
-        while (j != 0) {
-            len++;
-            j /= 10;
-        }
-        bytes memory bstr = new bytes(len);
-        uint256 k = len;
-        while (_i != 0) {
-            k = k - 1;
-            uint8 temp = (48 + uint8(_i - (_i / 10) * 10));
-            bytes1 b1 = bytes1(temp);
-            bstr[k] = b1;
-            _i /= 10;
-        }
-        return string(bstr);
     }
 
     modifier onlyGov() {

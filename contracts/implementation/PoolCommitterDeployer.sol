@@ -6,20 +6,15 @@ import "../interfaces/IPoolCommitterDeployer.sol";
 
 /// @title The deployer of the PoolCommitter contract
 contract PoolCommitterDeployer is IPoolCommitterDeployer {
-    address public factory;
+    address public immutable factory;
 
     constructor(address _factory) {
         require(_factory != address(0), "Factory address cannot be null");
         factory = _factory;
     }
 
-    function deploy(uint128 _minimumCommitSize, uint128 _maximumCommitQueueLength)
-        external
-        override
-        onlyFactory
-        returns (address)
-    {
-        return address(new PoolCommitter(factory, _minimumCommitSize, _maximumCommitQueueLength));
+    function deploy() external override onlyFactory returns (address) {
+        return address(new PoolCommitter(factory));
     }
 
     modifier onlyFactory() {
