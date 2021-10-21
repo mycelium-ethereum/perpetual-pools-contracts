@@ -43,11 +43,6 @@ describe("OracleWrapper - getPrice", () => {
         )) as TestChainlinkOracle__factory
         testOracle = await oracleFactory.deploy()
         testOracle2 = await oracleFactory.deploy()
-
-        await oracleWrapper.setOracle(testOracle.address)
-
-        // Sanity check the deployment
-        expect(await oracleWrapper.oracle()).to.eq(testOracle.address)
     })
     it("should return the current price for the requested market", async () => {
         expect((await oracleWrapper.getPrice()).gte(0)).to.eq(true)

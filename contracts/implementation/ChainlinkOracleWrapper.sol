@@ -2,11 +2,10 @@
 pragma solidity 0.8.7;
 
 import "../interfaces/IOracleWrapper.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV2V3Interface.sol";
 
 /// @title The oracle management contract for chainlink V3 oracles
-contract ChainlinkOracleWrapper is IOracleWrapper, Ownable {
+contract ChainlinkOracleWrapper is IOracleWrapper {
     // #### Globals
     /**
      * @notice The address of the feed oracle
@@ -17,21 +16,15 @@ contract ChainlinkOracleWrapper is IOracleWrapper, Ownable {
 
     // #### Functions
     constructor(address _oracle) {
-        setOracle(_oracle);
-    }
-
-    /**
-     * @notice Sets the address of the underlying oracle and related information
-     * @param _oracle New address
-     */
-    function setOracle(address _oracle) public override onlyOwner {
         require(_oracle != address(0), "Oracle cannot be 0 address");
         oracle = _oracle;
         // reset the scaler for consistency
         uint8 _decimals = AggregatorV2V3Interface(oracle).decimals();
         require(_decimals <= MAX_DECIMALS, "COA: too many decimals");
         // scaler is always <= 10^18 and >= 1 so this cast is safe
-        scaler = int256(10**(MAX_DECIMALS - _decimals));
+        unchecked {
+            scaler = int256(10**(MAX_DECIMALS - _decimals));
+        }
     }
 
     /**
@@ -54,14 +47,9 @@ contract ChainlinkOracleWrapper is IOracleWrapper, Ownable {
     /**
      * @dev An internal function that gets the WAD value price and latest roundID
      */
-    function _latestRoundData() internal view returns (int256, uint80) {
-        (
-            uint80 roundID,
-            int256 price,
-            uint256 startedAt,
-            uint256 timeStamp,
-            uint80 answeredInRound
-        ) = AggregatorV2V3Interface(oracle).latestRoundData();
+    function _latestRoundData() internal view returns (int256 _price, uint80 _roundID) {
+        (uint80 roundID, int256 price, , uint256 timeStamp, uint80 answeredInRound) = AggregatorV2V3Interface(oracle)
+            .latestRoundData();
         require(answeredInRound >= roundID, "COA: Stale answer");
         require(timeStamp != 0, "COA: Round incomplete");
         return (toWad(price), roundID);

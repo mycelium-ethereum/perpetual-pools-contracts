@@ -216,7 +216,7 @@ describe("PoolFactory.deployPool", () => {
             }
 
             await expect(factory.deployPool(deploymentData)).to.be.revertedWith(
-                "Token decimals > 18"
+                "Decimal precision too high"
             )
         })
     })

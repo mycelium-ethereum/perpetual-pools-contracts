@@ -58,7 +58,10 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
         require(initialization._shortToken != address(0), "Short token cannot be 0 address");
         require(initialization._poolCommitter != address(0), "PoolCommitter cannot be 0 address");
         require(initialization._invariantCheckContract != address(0), "InvariantCheck cannot be 0 address");
-        require(initialization._frontRunningInterval < initialization._updateInterval, "frontRunning > updateInterval");
+        require(
+            initialization._frontRunningInterval < initialization._updateInterval,
+            "frontRunning >= updateInterval"
+        );
 
         require(initialization._fee < PoolSwapLibrary.WAD_PRECISION, "Fee >= 100%");
 
@@ -431,11 +434,6 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
 
     modifier onlyPoolCommitter() {
         require(msg.sender == poolCommitter, "msg.sender not poolCommitter");
-        _;
-    }
-
-    modifier onlyFeeReceiver() {
-        require(msg.sender == feeAddress, "msg.sender not feeReceiver");
         _;
     }
 
