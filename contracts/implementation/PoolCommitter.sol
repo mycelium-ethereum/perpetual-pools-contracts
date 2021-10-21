@@ -41,7 +41,6 @@ contract PoolCommitter is IPoolCommitter, Ownable, Initializable {
     function initialize(address _factory) external override initializer {
         require(_factory != address(0), "Factory address cannot be 0 address");
         factory = _factory;
-        governance = IPoolFactory(_factory).getOwner();
     }
 
     /**
