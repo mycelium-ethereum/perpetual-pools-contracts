@@ -342,6 +342,11 @@ contract PoolCommitter is IPoolCommitter, Ownable, IPausable {
         _;
     }
 
+    modifier onlyGov() {
+        require(msg.sender == governance, "msg.sender not governance");
+        _;
+    }
+
     modifier checkInvariantsAndUnpaused() {
         invariantCheck.checkInvariants(leveragedPool);
         // require(!paused, "Pool is paused");
@@ -363,16 +368,6 @@ contract PoolCommitter is IPoolCommitter, Ownable, IPausable {
 
     modifier onlyPool() {
         require(msg.sender == leveragedPool, "msg.sender not leveragedPool");
-        _;
-    }
-
-    modifier onlySelf() {
-        require(msg.sender == address(this), "msg.sender not self");
-        _;
-    }
-
-    modifier onlyGov() {
-        require(msg.sender == governance, "msg.sender not governance");
         _;
     }
 }
