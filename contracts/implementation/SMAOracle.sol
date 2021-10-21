@@ -5,8 +5,6 @@ import "../interfaces/IPriceObserver.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "prb-math/contracts/PRBMathSD59x18.sol";
 
-import "hardhat/console.sol";
-
 contract SMAOracle is Ownable, IOracleWrapper {
     using PRBMathSD59x18 for int256;
 
