@@ -301,11 +301,6 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         require(_leveragedPool != address(0), "Leveraged pool address cannot be 0 address");
 
         leveragedPool = _leveragedPool;
-
-        // Approve quote token
-        IERC20 _token = IERC20(_quoteToken);
-        _token.safeApprove(_leveragedPool, _token.totalSupply());
-
         tokens = ILeveragedPool(leveragedPool).poolTokens();
     }
 
