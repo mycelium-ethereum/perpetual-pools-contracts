@@ -3,7 +3,6 @@ import chai from "chai"
 const { expect } = chai
 import chaiAsPromised from "chai-as-promised"
 import {
-    LeveragedPool,
     TestToken,
     ERC20,
     PoolSwapLibrary,
@@ -11,16 +10,22 @@ import {
     InvariantCheck,
     LeveragedPoolBalanceDrainMock,
     PoolKeeper,
+    TestToken__factory,
+    TestPoolFactory__factory,
+    PoolCommitter__factory,
+    InvariantCheck__factory,
+    LeveragedPoolBalanceDrainMock__factory,
+    LeveragedPool__factory,
 } from "../../types"
 
 import { POOL_CODE, DEFAULT_FEE, LONG_MINT, SHORT_MINT } from "../constants"
 import {
-    getRandomInt,
     generateRandomAddress,
     createCommit,
-    CommitEventArgs,
     deployMockPool,
     timeout,
+    deployPoolSetupContracts,
+    deployPoolAndTokenContracts,
 } from "../utilities"
 chai.use(chaiAsPromised)
 
@@ -42,35 +47,94 @@ describe("InvariantCheck - balanceInvariant", () => {
     let poolKeeper: PoolKeeper
     let library: PoolSwapLibrary
 
-    const commits: CommitEventArgs[] | undefined = []
-    beforeEach(async () => {
-        const result = await deployMockPool(
-            POOL_CODE,
-            frontRunningInterval,
-            updateInterval,
-            leverage,
-            feeAddress,
-            fee
-        )
-        pool = result.pool
-        poolKeeper = result.poolKeeper
-        library = result.library
-        poolCommitter = result.poolCommitter
-        invariantCheck = result.invariantCheck
+    context("Pool not made by factory", async () => {
+        it("Reverts due to not being valid pool", async () => {
+            const signers = await ethers.getSigners()
+            const result = await deployMockPool(
+                POOL_CODE,
+                frontRunningInterval,
+                updateInterval,
+                leverage,
+                feeAddress,
+                fee
+            )
+            library = result.library
+            const oracleWrapper = result.oracleWrapper
+            const settlementEthOracle = result.settlementEthOracle
+            const quoteToken = result.token.address
+            const long = result.longToken
+            const short = result.shortToken
+            const invariantCheck = result.invariantCheck
+            poolCommitter = result.poolCommitter
 
-        token = result.token
-        shortToken = result.shortToken
-        longToken = result.longToken
+            // Deploy a fake pool
+            const leveragedPoolFactory = (await ethers.getContractFactory(
+                "LeveragedPoolBalanceDrainMock",
+                {
+                    signer: signers[0],
+                    libraries: { PoolSwapLibrary: library.address },
+                }
+            )) as LeveragedPoolBalanceDrainMock__factory
+            const pool = await leveragedPoolFactory.deploy()
+            await pool.deployed()
+            await await pool.initialize({
+                _owner: signers[0].address,
+                _keeper: generateRandomAddress(),
+                _oracleWrapper: oracleWrapper.address,
+                _settlementEthOracle: settlementEthOracle.address,
+                _longToken: long.address,
+                _shortToken: short.address,
+                _poolCommitter: poolCommitter.address,
+                _poolName: POOL_CODE,
+                _frontRunningInterval: frontRunningInterval,
+                _updateInterval: updateInterval,
+                _fee: fee,
+                _leverageAmount: leverage,
+                _feeAddress: feeAddress,
+                _quoteToken: quoteToken,
+                _invariantCheckContract: invariantCheck.address,
+            })
 
-        await token.approve(pool.address, amountMinted)
+            await result.token.approve(result.pool.address, amountMinted)
 
-        // Long mint commit
-        await createCommit(poolCommitter, LONG_MINT, amountCommitted)
-        // short mint commit
-        await createCommit(poolCommitter, SHORT_MINT, amountCommitted)
+            // Long mint commit
+            await createCommit(poolCommitter, LONG_MINT, amountCommitted)
+            // short mint commit
+            await createCommit(poolCommitter, SHORT_MINT, amountCommitted)
+
+            await expect(
+                invariantCheck.checkInvariants(pool.address)
+            ).to.be.revertedWith("Pool is invalid")
+        })
     })
-
     context("Pool funds getting drained", async () => {
+        beforeEach(async () => {
+            const result = await deployMockPool(
+                POOL_CODE,
+                frontRunningInterval,
+                updateInterval,
+                leverage,
+                feeAddress,
+                fee
+            )
+            pool = result.pool
+            poolKeeper = result.poolKeeper
+            library = result.library
+            poolCommitter = result.poolCommitter
+            invariantCheck = result.invariantCheck
+
+            token = result.token
+            shortToken = result.shortToken
+            longToken = result.longToken
+
+            await token.approve(pool.address, amountMinted)
+
+            // Long mint commit
+            await createCommit(poolCommitter, LONG_MINT, amountCommitted)
+            // short mint commit
+            await createCommit(poolCommitter, SHORT_MINT, amountCommitted)
+        })
+
         it("Pauses contracts", async () => {
             await pool.drainPool(1)
             const shortMintAmountBefore = (

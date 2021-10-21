@@ -106,7 +106,7 @@ const setupHook = async () => {
         signers[0]
     )) as InvariantCheck__factory
 
-    const invariantCheck = await invariantCheckFactory.deploy()
+    const invariantCheck = await invariantCheckFactory.deploy(factory.address)
 
     // Create pool
     const deploymentData = {

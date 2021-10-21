@@ -5,11 +5,18 @@ import "../interfaces/IInvariantCheck.sol";
 import "../interfaces/IPoolCommitter.sol";
 import "../interfaces/IPausable.sol";
 import "../interfaces/ILeveragedPool.sol";
+import "../interfaces/IPoolFactory.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /// @title The contract for checking invariants and pausing if necessary
 /// @notice Every time certain functions are called, known invariants are checked and if any do not hold, contracts are paused.
 contract InvariantCheck is IInvariantCheck {
+    IPoolFactory public immutable poolFactory;
+
+    constructor(address _factory) {
+        poolFactory = IPoolFactory(_factory);
+    }
+
     /**
      * @notice Checks all invariants, and pauses all contracts if
      *         any invariant does not hold.
@@ -17,6 +24,7 @@ contract InvariantCheck is IInvariantCheck {
      */
     function checkInvariants(address poolToCheck) external override {
         ILeveragedPool pool = ILeveragedPool(poolToCheck);
+        require(poolFactory.isValidPool(poolToCheck), "Pool is invalid");
         IPoolCommitter poolCommitter = IPoolCommitter(pool.poolCommitter());
         uint256 poolBalance = IERC20(pool.quoteToken()).balanceOf(poolToCheck);
         (

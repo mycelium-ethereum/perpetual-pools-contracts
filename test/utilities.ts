@@ -124,13 +124,6 @@ export const deployPoolSetupContracts = deployments.createFixture(async () => {
         ethOracle.address
     )
 
-    const invariantCheckFactory = (await ethers.getContractFactory(
-        "InvariantCheck",
-        signers[0]
-    )) as InvariantCheck__factory
-
-    const invariantCheck = await invariantCheckFactory.deploy()
-
     // Deploy and initialise pool
     const libraryFactory = (await ethers.getContractFactory(
         "PoolSwapLibrary",
@@ -147,6 +140,13 @@ export const deployPoolSetupContracts = deployments.createFixture(async () => {
     const factory = await (
         await PoolFactory.deploy(generateRandomAddress())
     ).deployed()
+
+    const invariantCheckFactory = (await ethers.getContractFactory(
+        "InvariantCheck",
+        signers[0]
+    )) as InvariantCheck__factory
+
+    const invariantCheck = await invariantCheckFactory.deploy(factory.address)
 
     const poolCommitterDeployerFactory = (await ethers.getContractFactory(
         "PoolCommitterDeployer",
@@ -367,13 +367,6 @@ export const deployMockPool = async (
         ethOracle.address
     )
 
-    const invariantCheckFactory = (await ethers.getContractFactory(
-        "InvariantCheck",
-        signers[0]
-    )) as InvariantCheck__factory
-
-    const invariantCheck = await invariantCheckFactory.deploy()
-
     // Deploy and initialise pool
     const libraryFactory = (await ethers.getContractFactory(
         "PoolSwapLibrary",
@@ -393,6 +386,13 @@ export const deployMockPool = async (
     const factory = await (
         await PoolFactory.deploy(generateRandomAddress())
     ).deployed()
+
+    const invariantCheckFactory = (await ethers.getContractFactory(
+        "InvariantCheck",
+        signers[0]
+    )) as InvariantCheck__factory
+
+    const invariantCheck = await invariantCheckFactory.deploy(factory.address)
 
     const poolCommitterDeployerFactory = (await ethers.getContractFactory(
         "PoolCommitterDeployer",
