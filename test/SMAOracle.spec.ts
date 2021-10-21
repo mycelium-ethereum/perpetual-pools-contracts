@@ -155,10 +155,10 @@ describe("SMAOracle", async () => {
         sma: SMAOracle
     ) {
         await chainlink.setPrice(price)
-        await sma.update()
+        await sma.poll()
     }
 
-    describe("update", async () => {
+    describe("poll", async () => {
         beforeEach(async () => {
             /* size of this array needs to be less than the price observer's
              * capacity */
@@ -182,7 +182,7 @@ describe("SMAOracle", async () => {
             "When called with observations array less than capacity",
             async () => {
                 it("Updates the SMA price correctly", async () => {
-                    await smaOracle.update()
+                    await smaOracle.poll()
 
                     expect(await smaOracle.getPrice()).to.be.eq(
                         ethers.utils.parseEther("4.2")

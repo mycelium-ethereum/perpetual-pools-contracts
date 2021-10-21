@@ -42,7 +42,7 @@ contract SMAOracle is Ownable, IOracleWrapper {
         price = SMA(IPriceObserver(_observer).getAll(), _periods);
     }
 
-    function setOracle(address _spotOracle) public override onlyOwner {
+    function setOracle(address _spotOracle) internal onlyOwner {
         oracle = _spotOracle;
     }
 
