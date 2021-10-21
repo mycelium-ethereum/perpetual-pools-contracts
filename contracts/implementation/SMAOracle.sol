@@ -65,7 +65,7 @@ contract SMAOracle is Ownable, IOracleWrapper {
      *      price
      *
      */
-    function update() public returns (int256) {
+    function update() internal returns (int256) {
         /* query the underlying spot price oracle */
         IOracleWrapper spotOracle = IOracleWrapper(oracle);
         int256 latestPrice = spotOracle.getPrice();
@@ -78,6 +78,10 @@ contract SMAOracle is Ownable, IOracleWrapper {
         price = SMA(priceObserver.getAll(), periods);
 
         return price;
+    }
+
+    function poll() external override returns (int256) {
+        return update();
     }
 
     /**

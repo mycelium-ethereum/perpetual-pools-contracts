@@ -30,4 +30,10 @@ interface IOracleWrapper {
      * @return Converted non-WAD value
      */
     function fromWad(int256 wad) external view returns (int256);
+
+    /**
+     * @notice Updates the underlying oracle state and returns the new price
+     * @dev Spot oracles must implement but it will be a no-op
+     */
+    function poll() external returns (int256);
 }

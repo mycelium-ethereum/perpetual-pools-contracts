@@ -80,4 +80,9 @@ contract ChainlinkOracleWrapper is IOracleWrapper, Ownable {
     function fromWad(int256 wad) external view override returns (int256) {
         return wad / scaler;
     }
+
+    function poll() external override returns (int256) {
+        (int256 _price, ) = _latestRoundData();
+        return _price;
+    }
 }
