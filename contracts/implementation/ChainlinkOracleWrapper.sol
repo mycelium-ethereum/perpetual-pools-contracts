@@ -17,14 +17,6 @@ contract ChainlinkOracleWrapper is IOracleWrapper, Ownable {
 
     // #### Functions
     constructor(address _oracle) {
-        setOracle(_oracle);
-    }
-
-    /**
-     * @notice Sets the address of the underlying oracle and related information
-     * @param _oracle New address
-     */
-    function setOracle(address _oracle) public override onlyOwner {
         require(_oracle != address(0), "Oracle cannot be 0 address");
         oracle = _oracle;
         // reset the scaler for consistency
