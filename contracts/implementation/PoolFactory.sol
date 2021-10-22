@@ -103,7 +103,11 @@ contract PoolFactory is IPoolFactory, Ownable {
             )
         );
 
-        address poolCommitterAddress = clonePoolCommitterBase(uniquePoolHash);
+        PoolCommitter poolCommitter = PoolCommitter(
+            Clones.cloneDeterministic(poolCommitterBaseAddress, uniquePoolHash)
+        );
+        poolCommitter.initialize(address(this));
+        address poolCommitterAddress = address(poolCommitter);
 
         require(
             deploymentParameters.leverageAmount >= 1 && deploymentParameters.leverageAmount <= maxLeverage,
@@ -156,32 +160,25 @@ contract PoolFactory is IPoolFactory, Ownable {
      * @param deploymentParameters Deployment parameters of the market. Some may be reconfigurable
      * @return Address of the created pool
      */
-    function deployPool(PoolDeployment calldata deploymentParameters) external override onlyGov returns (address) {
-        address _poolKeeper = address(poolKeeper);
-        require(_poolKeeper != address(0), "PoolKeeper not set");
+    function deployPool(PoolDeployment calldata deploymentParameters, address poolKeeperAddress) external override returns (address) {
+        require(poolKeeperAddress != address(0), "PoolKeeper not set");
 
-        bytes32 uniquePoolHash = keccak256(
-            abi.encode(
-                deploymentParameters.leverageAmount,
-                deploymentParameters.quoteToken,
-                deploymentParameters.oracleWrapper,
-                deploymentParameters.updateInterval,
-                deploymentParameters.frontRunningInterval
-            )
+        PoolCommitter poolCommitter = PoolCommitter(
+            Clones.clone(poolCommitterBaseAddress)
         );
-
-        address poolCommitterAddress = clonePoolCommitterBase(uniquePoolHash);
+        poolCommitter.initialize(address(this));
+        address poolCommitterAddress = address(poolCommitter);
 
         require(
             deploymentParameters.leverageAmount >= 1 && deploymentParameters.leverageAmount <= maxLeverage,
-            "PoolKeeper: leveraged amount invalid"
+            "Pool: leveraged amount invalid"
         );
         require(
             IERC20DecimalsWrapper(deploymentParameters.quoteToken).decimals() <= MAX_DECIMALS,
             "Decimal precision too high"
         );
 
-        LeveragedPool pool = LeveragedPool(Clones.cloneDeterministic(poolBaseAddress, uniquePoolHash));
+        LeveragedPool pool = LeveragedPool(Clones.clone(poolBaseAddress));
         address _pool = address(pool);
         emit DeployPool(_pool, deploymentParameters.poolName);
 
@@ -189,7 +186,7 @@ contract PoolFactory is IPoolFactory, Ownable {
 
         ILeveragedPool.Initialization memory initialization = ILeveragedPool.Initialization(
             owner(), // governance is the owner of pools -- if this changes, `onlyGov` breaks
-            _poolKeeper,
+            poolKeeperAddress,
             deploymentParameters.oracleWrapper,
             deploymentParameters.settlementEthOracle,
             deployPairToken(_pool, leverage, deploymentParameters, "L-"),
@@ -216,14 +213,6 @@ contract PoolFactory is IPoolFactory, Ownable {
         numPools += 1;
         isValidPool[_pool] = true;
         return _pool;
-    }
-
-    function clonePoolCommitterBase(bytes32 uniquePoolHash) internal returns (address) {
-        PoolCommitter poolCommitter = PoolCommitter(
-            Clones.cloneDeterministic(poolCommitterBaseAddress, uniquePoolHash)
-        );
-        poolCommitter.initialize(address(this));
-        return address(poolCommitter);
     }
 
     /**

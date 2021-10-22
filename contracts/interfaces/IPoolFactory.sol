@@ -48,7 +48,7 @@ interface IPoolFactory {
     function isValidPool(address _pool) external view returns (bool);
 
     // #### Functions
-    function deployPool(PoolDeployment calldata deploymentParameters) external returns (address);
+    function deployPool(PoolDeployment calldata deploymentParameters, address poolKeeperAddress) external returns (address);
 
     function daoDeployPool(PoolDeployment calldata deploymentParameters) external returns (address);
 
