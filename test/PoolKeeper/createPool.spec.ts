@@ -42,26 +42,42 @@ describe("PoolKeeper - createPool", () => {
 
     it("should Revert if leverageAmount == 0 and if leveragedAmount > maxLeverage", async () => {
         deploymentData.leverageAmount = 0
-        await expect(factory.deployPool(deploymentData)).to.be.revertedWith(
+        await expect(factory.daoDeployPool(deploymentData)).to.be.revertedWith(
             "PoolKeeper: leveraged amount invalid"
         )
         deploymentData.leverageAmount = (await factory.maxLeverage()) + 1
-        await expect(factory.deployPool(deploymentData)).to.be.revertedWith(
+        await expect(factory.daoDeployPool(deploymentData)).to.be.revertedWith(
             "PoolKeeper: leveraged amount invalid"
         )
     })
 
+    it("should Revert if fee > one (in ABDK Math IEEE precision)", async () => {
+        const justAboveOne = "0x3fff0000000000000000000000000001"
+        await factory.setFee(justAboveOne)
+        await expect(factory.daoDeployPool(deploymentData)).to.be.revertedWith(
+            "Fee >= 100%"
+        )
+    })
+
     it("should create a new pool in the given market", async () => {
-        const receipt = await (await factory.deployPool(deploymentData)).wait()
-        const event = receipt?.events?.find((el) => el.event === "DeployPool")
+        const receipt = await (
+            await factory.daoDeployPool(deploymentData)
+        ).wait()
+        const event = receipt?.events?.find(
+            (el) => el.event === "DaoDeployPool"
+        )
         expect(!!(await signers[0].provider?.getCode(event?.args?.pool))).to.eq(
             true
         )
     })
 
     it("should emit an event containing the details of the new pool", async () => {
-        const receipt = await (await factory.deployPool(deploymentData)).wait()
-        const event = receipt?.events?.find((el) => el.event === "DeployPool")
+        const receipt = await (
+            await factory.daoDeployPool(deploymentData)
+        ).wait()
+        const event = receipt?.events?.find(
+            (el) => el.event === "DaoDeployPool"
+        )
         expect(!!event).to.eq(true)
         expect(!!event?.args?.pool).to.eq(true)
     })

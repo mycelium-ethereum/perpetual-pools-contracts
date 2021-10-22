@@ -23,6 +23,11 @@ contract TestPoolFactory {
     event DeployPool(address indexed pool);
 
     /**
+     * @notice Creates a notification for the test suite so it knows where the new pool is located
+     */
+    event DaoDeployPool(address indexed pool);
+
+    /**
      * @notice Clones the base pool and leaves it in an uninitialised state
      * @dev Don't use this in production. The clone factory must call to initialise the clone.
      * @param _poolCode The pool code for the new pool. This is used as salt for the pool address

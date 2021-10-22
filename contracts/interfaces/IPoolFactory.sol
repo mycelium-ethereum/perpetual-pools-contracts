@@ -22,6 +22,13 @@ interface IPoolFactory {
     event DeployPool(address indexed pool, string ticker);
 
     /**
+     * @notice Creates a notification when a pool is deployed by the DAO
+     * @param pool Address of the new pool
+     * @param ticker Ticker of the neew pool
+     */
+    event DaoDeployPool(address indexed pool, string ticker);
+
+    /**
      * @notice Creates a notification when the pool keeper changes
      * @param _poolKeeper Address of the new pool keeper
      */
@@ -42,6 +49,8 @@ interface IPoolFactory {
 
     // #### Functions
     function deployPool(PoolDeployment calldata deploymentParameters) external returns (address);
+
+    function daoDeployPool(PoolDeployment calldata deploymentParameters) external returns (address);
 
     function getOwner() external returns (address);
 

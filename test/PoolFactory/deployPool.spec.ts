@@ -72,7 +72,7 @@ describe("PoolFactory.deployPool", () => {
                 }
 
                 await expect(
-                    factory.connect(nonDAO).deployPool(deploymentParameters)
+                    factory.connect(nonDAO).daoDeployPool(deploymentParameters)
                 ).to.be.rejectedWith("msg.sender not governance")
             })
         }
@@ -114,8 +114,8 @@ describe("PoolFactory.deployPool", () => {
                 settlementEthOracle: settlementEthOracle.address,
             }
             const secondPool = getEventArgs(
-                await (await factory.deployPool(deploymentData)).wait(),
-                "DeployPool"
+                await (await factory.daoDeployPool(deploymentData)).wait(),
+                "DaoDeployPool"
             )
             const pool2 = new ethers.Contract(
                 secondPool?.pool,
@@ -150,8 +150,8 @@ describe("PoolFactory.deployPool", () => {
                 settlementEthOracle: settlementEthOracle.address,
             }
             const secondPool = getEventArgs(
-                await (await factory.deployPool(deploymentData)).wait(),
-                "DeployPool"
+                await (await factory.daoDeployPool(deploymentData)).wait(),
+                "DaoDeployPool"
             )
             const pool2 = new ethers.Contract(
                 secondPool?.pool,
@@ -174,9 +174,9 @@ describe("PoolFactory.deployPool", () => {
                 settlementEthOracle: settlementEthOracle.address,
             }
 
-            await expect(factory.deployPool(deploymentData)).to.be.revertedWith(
-                "PoolKeeper: leveraged amount invalid"
-            )
+            await expect(
+                factory.daoDeployPool(deploymentData)
+            ).to.be.revertedWith("PoolKeeper: leveraged amount invalid")
         })
         it("should reject leverages greater than the MAX_LEVERAGE amount", async () => {
             const deploymentData = {
@@ -189,9 +189,9 @@ describe("PoolFactory.deployPool", () => {
                 settlementEthOracle: settlementEthOracle.address,
             }
 
-            await expect(factory.deployPool(deploymentData)).to.be.revertedWith(
-                "PoolKeeper: leveraged amount invalid"
-            )
+            await expect(
+                factory.daoDeployPool(deploymentData)
+            ).to.be.revertedWith("PoolKeeper: leveraged amount invalid")
         })
         it("should reject tokens with more than 18 decimals", async () => {
             await token.setDecimals(19)

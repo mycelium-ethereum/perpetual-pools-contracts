@@ -214,7 +214,7 @@ export const deployPoolAndTokenContracts = async (
     if (feeAddress) {
         await setupContracts.factory.setFeeReceiver(feeAddress)
     }
-    await setupContracts.factory.deployPool(deployParams)
+    await setupContracts.factory.daoDeployPool(deployParams)
     const poolAddress = await setupContracts.factory.pools(0)
     const pool = await ethers.getContractAt("LeveragedPool", poolAddress)
 

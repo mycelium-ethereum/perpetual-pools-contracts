@@ -89,6 +89,73 @@ contract PoolFactory is IPoolFactory, Ownable {
      * @param deploymentParameters Deployment parameters of the market. Some may be reconfigurable
      * @return Address of the created pool
      */
+    function daoDeployPool(PoolDeployment calldata deploymentParameters) external override onlyGov returns (address) {
+        address _poolKeeper = address(poolKeeper);
+        require(_poolKeeper != address(0), "PoolKeeper not set");
+
+        bytes32 uniquePoolHash = keccak256(
+            abi.encode(
+                deploymentParameters.leverageAmount,
+                deploymentParameters.quoteToken,
+                deploymentParameters.oracleWrapper,
+                deploymentParameters.updateInterval,
+                deploymentParameters.frontRunningInterval
+            )
+        );
+
+        address poolCommitterAddress = clonePoolCommitterBase(uniquePoolHash);
+
+        require(
+            deploymentParameters.leverageAmount >= 1 && deploymentParameters.leverageAmount <= maxLeverage,
+            "PoolKeeper: leveraged amount invalid"
+        );
+        require(
+            IERC20DecimalsWrapper(deploymentParameters.quoteToken).decimals() <= MAX_DECIMALS,
+            "Decimal precision too high"
+        );
+
+        LeveragedPool pool = LeveragedPool(Clones.cloneDeterministic(poolBaseAddress, uniquePoolHash));
+        address _pool = address(pool);
+        emit DaoDeployPool(_pool, deploymentParameters.poolName);
+
+        string memory leverage = Strings.toString(deploymentParameters.leverageAmount);
+
+        ILeveragedPool.Initialization memory initialization = ILeveragedPool.Initialization(
+            owner(), // governance is the owner of pools -- if this changes, `onlyGov` breaks
+            _poolKeeper,
+            deploymentParameters.oracleWrapper,
+            deploymentParameters.settlementEthOracle,
+            deployPairToken(_pool, leverage, deploymentParameters, "L-"),
+            deployPairToken(_pool, leverage, deploymentParameters, "S-"),
+            poolCommitterAddress,
+            string(abi.encodePacked(leverage, "-", deploymentParameters.poolName)),
+            deploymentParameters.frontRunningInterval,
+            deploymentParameters.updateInterval,
+            fee,
+            deploymentParameters.leverageAmount,
+            feeReceiver,
+            deploymentParameters.quoteToken
+        );
+
+        // approve the quote token on the pool committer to finalise linking
+        // this also stores the pool address in the committer
+        // finalise pool setup
+        pool.initialize(initialization);
+        // approve the quote token on the pool commiter to finalise linking
+        // this also stores the pool address in the commiter
+        IPoolCommitter(poolCommitterAddress).setQuoteAndPool(deploymentParameters.quoteToken, _pool);
+        poolKeeper.newPool(_pool);
+        pools[numPools] = _pool;
+        numPools += 1;
+        isValidPool[_pool] = true;
+        return _pool;
+    }
+
+    /**
+     * @notice Deploy a leveraged pool with given parameters
+     * @param deploymentParameters Deployment parameters of the market. Some may be reconfigurable
+     * @return Address of the created pool
+     */
     function deployPool(PoolDeployment calldata deploymentParameters) external override onlyGov returns (address) {
         address _poolKeeper = address(poolKeeper);
         require(_poolKeeper != address(0), "PoolKeeper not set");

@@ -95,7 +95,7 @@ const setupHook = async () => {
         oracleWrapper: oracleWrapper.address,
         settlementEthOracle: settlementEthOracle.address,
     }
-    await factory.deployPool(deploymentData)
+    await factory.daoDeployPool(deploymentData)
 
     const deploymentData2 = {
         poolName: POOL_CODE_2,
@@ -106,7 +106,7 @@ const setupHook = async () => {
         oracleWrapper: oracleWrapper.address,
         settlementEthOracle: settlementEthOracle.address,
     }
-    await factory.deployPool(deploymentData2)
+    await factory.daoDeployPool(deploymentData2)
 }
 describe("PoolKeeper - checkUpkeepMultiplePools", () => {
     let underlyingOracle: TestChainlinkOracle

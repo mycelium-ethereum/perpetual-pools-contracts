@@ -45,7 +45,7 @@ async function main() {
     ).connect(deployer) as ChainlinkOracleWrapper
 
     /* Get deployed pool */
-    const createdMarkets = factoryInstance.filters.DeployPool()
+    const createdMarkets = factoryInstance.filters.daoDeployPool()
     const allEvents = await factoryInstance?.queryFilter(createdMarkets)
     let pool: LeveragedPool = allEvents.map(
         (event: any) =>
