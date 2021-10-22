@@ -314,7 +314,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         require(account == secondaryFeeAddress);
         address oldFeeAddress = secondaryFeeAddress;
         secondaryFeeAddress = account;
-        emit FeeAddressUpdated(oldFeeAddress, secondaryFeeAddress); //update this to diff event
+        emit SecondaryFeeAddressUpdated(oldFeeAddress, secondaryFeeAddress);
     }
 
     /**
