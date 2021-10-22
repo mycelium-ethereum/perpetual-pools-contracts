@@ -59,10 +59,16 @@ const setupHook = async () => {
         "ChainlinkOracleWrapper",
         signers[0]
     )) as ChainlinkOracleWrapper__factory
-    oracleWrapper = await oracleWrapperFactory.deploy(oracle.address)
+    oracleWrapper = await oracleWrapperFactory.deploy(
+        oracle.address,
+        signers[0].address
+    )
     await oracleWrapper.deployed()
 
-    settlementEthOracle = await oracleWrapperFactory.deploy(oracle.address)
+    settlementEthOracle = await oracleWrapperFactory.deploy(
+        oracle.address,
+        signers[0].address
+    )
     await settlementEthOracle.deployed()
 
     // Deploy pool keeper

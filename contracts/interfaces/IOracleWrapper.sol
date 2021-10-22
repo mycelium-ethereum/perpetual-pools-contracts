@@ -30,4 +30,10 @@ interface IOracleWrapper {
      * @dev Spot oracles must implement but it will be a no-op
      */
     function poll() external returns (int256);
+
+    /**
+     * Owner is deployer.
+     * @return Returns owner of oracle wrapper.
+     */
+    function getOwner() external view returns (address);
 }

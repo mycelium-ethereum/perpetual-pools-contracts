@@ -32,6 +32,7 @@ describe("PoolFactory.deployPool", () => {
     let oracleWrapper: ChainlinkOracleWrapper
     let settlementEthOracle: ChainlinkOracleWrapper
     let pool: LeveragedPool
+    let permissionlessPool: LeveragedPool
     let token: TestToken
     let signers: Signer[]
     let nonDAO: Signer
@@ -57,7 +58,7 @@ describe("PoolFactory.deployPool", () => {
     })
 
     context(
-        "When not called by the DAO and with valid parameters",
+        "When not called by the owner of oraclewrapper and with valid parameters",
         async () => {
             it("Reverts", async () => {
                 const deploymentParameters = {
@@ -73,7 +74,7 @@ describe("PoolFactory.deployPool", () => {
 
                 await expect(
                     factory.connect(nonDAO).deployPool(deploymentParameters)
-                ).to.be.rejectedWith("msg.sender not governance")
+                ).to.be.rejectedWith("Deployer must be oracle wrapper owner")
             })
         }
     )
@@ -97,6 +98,7 @@ describe("PoolFactory.deployPool", () => {
                 _fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
                 _leverageAmount: 5,
                 _feeAddress: generateRandomAddress(),
+                _secondaryFeeAddress: ethers.constants.AddressZero,
                 _quoteToken: token.address,
             }
             await expect(pool.initialize(initialization)).to.be.rejectedWith(

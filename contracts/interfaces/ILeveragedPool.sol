@@ -18,6 +18,7 @@ interface ILeveragedPool {
         uint256 _fee; // The fund movement fee. This amount is extracted from the deposited asset with every update and sent to the fee address
         uint16 _leverageAmount; // The amount of exposure to price movements for the pool
         address _feeAddress; // The address that the fund movement fee is sent to
+        address _secondaryFeeAddress; // The address of fee recieved by third party deployers
         address _quoteToken; //  The digital asset that the pool accepts. Must have a decimals() function
     }
 
@@ -51,6 +52,13 @@ interface ILeveragedPool {
      * @param newAddress Address after change
      */
     event FeeAddressUpdated(address indexed oldAddress, address indexed newAddress);
+
+    /**
+     * @notice Represents change in secondary fee receiver's address
+     * @param oldAddress Previous address
+     * @param newAddress Address after change
+     */
+    event SecondaryFeeAddressUpdated(address indexed oldAddress, address indexed newAddress);
 
     /**
      * @notice Represents change in keeper's address
@@ -154,6 +162,8 @@ interface ILeveragedPool {
     function claimGovernance() external;
 
     function updateFeeAddress(address account) external;
+
+    function updateSecondaryFeeAddress(address account) external;
 
     function mintTokens(
         bool isLongToken,

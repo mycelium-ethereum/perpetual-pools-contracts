@@ -11,13 +11,15 @@ contract ChainlinkOracleWrapper is IOracleWrapper {
      * @notice The address of the feed oracle
      */
     address public override oracle;
+    address public immutable owner;
     uint256 private constant MAX_DECIMALS = 18;
     int256 public scaler;
 
     // #### Functions
-    constructor(address _oracle) {
+    constructor(address _oracle, address _owner) {
         require(_oracle != address(0), "Oracle cannot be 0 address");
         oracle = _oracle;
+        owner = _owner;
         // reset the scaler for consistency
         uint8 _decimals = AggregatorV2V3Interface(oracle).decimals();
         require(_decimals <= MAX_DECIMALS, "COA: too many decimals");
@@ -75,5 +77,12 @@ contract ChainlinkOracleWrapper is IOracleWrapper {
     function poll() external view override returns (int256) {
         (int256 _price, ) = _latestRoundData();
         return _price;
+    }
+    
+    /**
+     * @notice Returns the owner of the Oraclewrapper.
+     */
+    function getOwner() external view override returns (address) {
+        return owner;
     }
 }
