@@ -122,6 +122,16 @@ library PoolSwapLibrary {
     }
 
     /**
+     * @notice Multiply an integer by a fraction
+     * @return The result as an integer
+     */
+    function mulFraction(uint256 number, int256 numerator, int256 denominator) public pure returns (uint256) {
+        bytes16 fraction = divInt(numerator, denominator);
+        bytes16 result = ABDKMathQuad.mul(ABDKMathQuad.fromUInt(number), fraction);
+        return convertDecimalToUInt(result);
+    }
+
+    /**
      * @notice Calculates the loss multiplier to apply to the losing pool. Includes the power leverage
      * @param ratio The ratio of new price to old price
      * @param direction The direction of the change. -1 if it's decreased, 0 if it hasn't changed, and 1 if it's increased

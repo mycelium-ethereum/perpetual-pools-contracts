@@ -75,6 +75,7 @@ contract PoolFactory is IPoolFactory, Ownable {
             0,
             1,
             address(this),
+            address(0),
             address(this)
         );
         // Init bases
@@ -138,6 +139,7 @@ contract PoolFactory is IPoolFactory, Ownable {
             fee,
             deploymentParameters.leverageAmount,
             feeReceiver,
+            address(0),
             deploymentParameters.quoteToken
         );
 
@@ -198,6 +200,7 @@ contract PoolFactory is IPoolFactory, Ownable {
             (fee * deploymentParameters.updateInterval) / (365 days),
             deploymentParameters.leverageAmount,
             feeReceiver,
+            msg.sender,
             deploymentParameters.quoteToken
         );
 

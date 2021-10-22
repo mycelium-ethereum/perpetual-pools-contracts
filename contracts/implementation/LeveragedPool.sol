@@ -31,6 +31,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     address public keeper;
     bool public governanceTransferInProgress;
     address public feeAddress;
+    address public secondaryFeeAddress;
     address public override quoteToken;
     address public override poolCommitter;
     address public override oracleWrapper;
@@ -77,6 +78,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         fee = PoolSwapLibrary.convertUIntToDecimal(initialization._fee);
         leverageAmount = PoolSwapLibrary.convertUIntToDecimal(initialization._leverageAmount);
         feeAddress = initialization._feeAddress;
+        secondaryFeeAddress = initialization._secondaryFeeAddress;
         lastPriceTimestamp = block.timestamp;
         poolName = initialization._poolName;
         tokens[LONG_INDEX] = initialization._longToken;
@@ -216,7 +218,17 @@ contract LeveragedPool is ILeveragedPool, Initializable {
             longBalance = newLongBalance;
             shortBalance = newShortBalance;
             // Pay the fee
+            feeTransfer(totalFeeAmount);
+        }
+    }
+
+    function feeTransfer(uint256 totalFeeAmount) internal {
+        if(secondaryFeeAddress == address(0)) {
             IERC20(quoteToken).safeTransfer(feeAddress, totalFeeAmount);
+        }
+        else {
+            IERC20(quoteToken).safeTransfer(feeAddress, PoolSwapLibrary.mulFraction(totalFeeAmount, 9, 10));
+            IERC20(quoteToken).safeTransfer(secondaryFeeAddress, PoolSwapLibrary.mulFraction(totalFeeAmount, 1, 10));
         }
     }
 
@@ -292,6 +304,17 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         address oldFeeAddress = feeAddress;
         feeAddress = account;
         emit FeeAddressUpdated(oldFeeAddress, feeAddress);
+    }
+
+    /**
+     * @notice Updates the secondary fee address of the pool
+     * @param account New address of the fee address/receiver
+     */
+    function updateSecondaryFeeAddress(address account) external override onlyUnpaused {
+        require(account == secondaryFeeAddress);
+        address oldFeeAddress = secondaryFeeAddress;
+        secondaryFeeAddress = account;
+        emit FeeAddressUpdated(oldFeeAddress, secondaryFeeAddress); //update this to diff event
     }
 
     /**
