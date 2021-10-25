@@ -54,6 +54,13 @@ interface ILeveragedPool {
     event FeeAddressUpdated(address indexed oldAddress, address indexed newAddress);
 
     /**
+     * @notice Represents change in secondary fee receiver's address
+     * @param oldAddress Previous address
+     * @param newAddress Address after change
+     */
+    event SecondaryFeeAddressUpdated(address indexed oldAddress, address indexed newAddress);
+
+    /**
      * @notice Represents change in keeper's address
      * @param oldAddress Previous address
      * @param newAddress Address after change
