@@ -6,12 +6,11 @@ import "../interfaces/ILeveragedPool.sol";
 import "../interfaces/IPoolFactory.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "./PoolSwapLibrary.sol";
 
 /// @title This contract is responsible for handling commitment logic
-contract PoolCommitter is IPoolCommitter, Ownable, Initializable {
+contract PoolCommitter is IPoolCommitter, Initializable {
     // #### Globals
     uint128 public constant LONG_INDEX = 0;
     uint128 public constant SHORT_INDEX = 1;
