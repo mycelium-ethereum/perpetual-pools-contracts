@@ -51,6 +51,8 @@ contract PoolFactory is IPoolFactory, Ownable {
 
     // #### Functions
     constructor(address _feeReceiver) {
+        require(_feeReceiver != address(0), "Address cannot be null");
+
         // Deploy base contracts
         pairTokenBase = new PoolToken(DEFAULT_NUM_DECIMALS);
         pairTokenBaseAddress = address(pairTokenBase);
@@ -129,7 +131,7 @@ contract PoolFactory is IPoolFactory, Ownable {
             string(abi.encodePacked(leverage, "-", deploymentParameters.poolName)),
             deploymentParameters.frontRunningInterval,
             deploymentParameters.updateInterval,
-            fee,
+            (fee * deploymentParameters.updateInterval) / (365 days),
             deploymentParameters.leverageAmount,
             feeReceiver,
             deploymentParameters.quoteToken
@@ -202,11 +204,12 @@ contract PoolFactory is IPoolFactory, Ownable {
     }
 
     /**
-     * @notice Set the fee amount. This is a percentage multiplied by 10^18.
-     *         e.g. 5% is 0.05 * 10^18
-     * @param _fee The fee amount as a percentage multiplied by 10^18
+     * @notice Set the yearly fee amount. The max yearly fee is 10%
+     * @dev This is a percentage in WAD; multiplied by 10^18 e.g. 5% is 0.05 * 10^18
+     * @param _fee The fee amount as a percentage
      */
     function setFee(uint256 _fee) external override onlyOwner {
+        require(_fee <= 0.1e18, "Fee cannot be >10%");
         fee = _fee;
     }
 
