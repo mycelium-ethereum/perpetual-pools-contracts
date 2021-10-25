@@ -3,14 +3,15 @@ pragma solidity 0.8.7;
 
 import "../interfaces/IPoolFactory.sol";
 import "../interfaces/ILeveragedPool.sol";
-import "../interfaces/IPoolCommitterDeployer.sol";
 import "../interfaces/IPoolCommitter.sol";
 import "../interfaces/IERC20DecimalsWrapper.sol";
-import "./LeveragedPoolBalanceDrainMock.sol";
+import "../test-utilities/LeveragedPoolBalanceDrainMock.sol";
 import "../implementation/PoolToken.sol";
 import "../implementation/PoolKeeper.sol";
+import "../implementation/PoolCommitter.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 
 /// @title The pool factory contract
 contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
@@ -20,17 +21,22 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
     LeveragedPoolBalanceDrainMock public poolBase;
     address public immutable poolBaseAddress;
     IPoolKeeper public poolKeeper;
-    IPoolCommitterDeployer public poolCommitterDeployer;
+    PoolCommitter public poolCommitterBase;
+    address public immutable poolCommitterBaseAddress;
 
     // Default max leverage of 10
     uint16 public maxLeverage = 10;
-    // This is required because we must pass along *some* value for decimal
-    // precision to the base pool tokens as we use the Cloneable pattern
-    uint8 constant DEFAULT_NUM_DECIMALS = 18;
+
     // Contract address to receive protocol fees
     address public feeReceiver;
     // Default fee; Fee value as a decimal multiplied by 10^18. For example, 0.5% is represented as 0.5 * 10^18
     uint256 public fee;
+
+    // This is required because we must pass along *some* value for decimal
+    // precision to the base pool tokens as we use the Cloneable pattern
+    uint8 constant DEFAULT_NUM_DECIMALS = 18;
+
+    uint8 constant MAX_DECIMALS = DEFAULT_NUM_DECIMALS;
 
     /**
      * @notice Format: Pool counter => pool address
@@ -50,6 +56,8 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
         pairTokenBaseAddress = address(pairTokenBase);
         poolBase = new LeveragedPoolBalanceDrainMock();
         poolBaseAddress = address(poolBase);
+        poolCommitterBase = new PoolCommitter(address(this), address(this));
+        poolCommitterBaseAddress = address(poolCommitterBase);
 
         ILeveragedPool.Initialization memory baseInitialization = ILeveragedPool.Initialization(
             address(this),
@@ -83,34 +91,47 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
     function deployPool(PoolDeployment calldata deploymentParameters) external override onlyGov returns (address) {
         address _poolKeeper = address(poolKeeper);
         require(_poolKeeper != address(0), "PoolKeeper not set");
-        require(address(poolCommitterDeployer) != address(0), "PoolCommitterDeployer not set");
 
-        address poolCommitter = poolCommitterDeployer.deploy(deploymentParameters.invariantCheckContract);
+        bytes32 uniquePoolHash = keccak256(
+            abi.encode(
+                deploymentParameters.leverageAmount,
+                deploymentParameters.quoteToken,
+                deploymentParameters.oracleWrapper,
+                deploymentParameters.updateInterval,
+                deploymentParameters.frontRunningInterval
+            )
+        );
+
+        address poolCommitterAddress = clonePoolCommitterBase(
+            uniquePoolHash,
+            deploymentParameters.invariantCheckContract
+        );
+
         require(
             deploymentParameters.leverageAmount >= 1 && deploymentParameters.leverageAmount <= maxLeverage,
             "PoolKeeper: leveraged amount invalid"
         );
-        require(IERC20DecimalsWrapper(deploymentParameters.quoteToken).decimals() <= 18, "Token decimals > 18");
+        require(
+            IERC20DecimalsWrapper(deploymentParameters.quoteToken).decimals() <= MAX_DECIMALS,
+            "Decimal precision too high"
+        );
 
-        LeveragedPoolBalanceDrainMock pool = LeveragedPoolBalanceDrainMock(Clones.clone(poolBaseAddress));
+        LeveragedPoolBalanceDrainMock pool = LeveragedPoolBalanceDrainMock(
+            Clones.cloneDeterministic(poolBaseAddress, uniquePoolHash)
+        );
         address _pool = address(pool);
         emit DeployPool(_pool, deploymentParameters.poolName);
 
-        string memory leverage = uint2str(deploymentParameters.leverageAmount);
-        string memory longString = string(abi.encodePacked(leverage, "L-", deploymentParameters.poolName));
-        string memory shortString = string(abi.encodePacked(leverage, "S-", deploymentParameters.poolName));
+        string memory leverage = Strings.toString(deploymentParameters.leverageAmount);
 
-        uint8 settlementDecimals = IERC20DecimalsWrapper(deploymentParameters.quoteToken).decimals();
-        address shortToken = deployPairToken(_pool, shortString, shortString, settlementDecimals);
-        address longToken = deployPairToken(_pool, longString, longString, settlementDecimals);
         ILeveragedPool.Initialization memory initialization = ILeveragedPool.Initialization({
             _owner: owner(), // governance is the owner of pools -- if this changes, `onlyGov` breaks
             _keeper: _poolKeeper,
             _oracleWrapper: deploymentParameters.oracleWrapper,
             _settlementEthOracle: deploymentParameters.settlementEthOracle,
-            _longToken: longToken,
-            _shortToken: shortToken,
-            _poolCommitter: poolCommitter,
+            _longToken: deployPairToken(_pool, leverage, deploymentParameters, "L-"),
+            _shortToken: deployPairToken(_pool, leverage, deploymentParameters, "S-"),
+            _poolCommitter: poolCommitterAddress,
             _invariantCheckContract: deploymentParameters.invariantCheckContract,
             _poolName: string(abi.encodePacked(leverage, "-", deploymentParameters.poolName)),
             _frontRunningInterval: deploymentParameters.frontRunningInterval,
@@ -127,7 +148,7 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
         pool.initialize(initialization);
         // approve the quote token on the pool commiter to finalise linking
         // this also stores the pool address in the commiter
-        IPoolCommitter(poolCommitter).setQuoteAndPool(deploymentParameters.quoteToken, _pool);
+        IPoolCommitter(poolCommitterAddress).setQuoteAndPool(deploymentParameters.quoteToken, _pool);
         poolKeeper.newPool(_pool);
         pools[numPools] = _pool;
         numPools += 1;
@@ -135,22 +156,40 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
         return _pool;
     }
 
+    function clonePoolCommitterBase(bytes32 uniquePoolHash, address invariantCheckContract) internal returns (address) {
+        PoolCommitter poolCommitter = PoolCommitter(
+            Clones.cloneDeterministic(poolCommitterBaseAddress, uniquePoolHash)
+        );
+        poolCommitter.initialize(address(this), invariantCheckContract);
+        return address(poolCommitter);
+    }
+
     /**
      * @notice Deploy a contract for pool tokens
-     * @param name Name of the token
-     * @param symbol Symbol of the token
-     * @param decimals Number of decimal places to be supported
+     * @param leverage Amount of leverage for pool
+     * @param deploymentParameters Deployment parameters for parent function
+     * @param direction Long or short token, L- or S-
      * @return Address of the pool token
      */
     function deployPairToken(
         address owner,
-        string memory name,
-        string memory symbol,
-        uint8 decimals
+        string memory leverage,
+        PoolDeployment memory deploymentParameters,
+        string memory direction
     ) internal returns (address) {
-        PoolToken pairToken = PoolToken(Clones.clone(pairTokenBaseAddress));
-        pairToken.initialize(owner, name, symbol, decimals);
+        string memory poolNameAndSymbol = string(abi.encodePacked(leverage, direction, deploymentParameters.poolName));
+        uint8 settlementDecimals = IERC20DecimalsWrapper(deploymentParameters.quoteToken).decimals();
+        bytes32 uniqueTokenHash = keccak256(
+            abi.encode(
+                deploymentParameters.leverageAmount,
+                deploymentParameters.quoteToken,
+                deploymentParameters.oracleWrapper,
+                direction
+            )
+        );
 
+        PoolToken pairToken = PoolToken(Clones.cloneDeterministic(pairTokenBaseAddress, uniqueTokenHash));
+        pairToken.initialize(owner, poolNameAndSymbol, poolNameAndSymbol, settlementDecimals);
         return address(pairToken);
     }
 
@@ -178,40 +217,8 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
         fee = _fee;
     }
 
-    function setPoolCommitterDeployer(address _poolCommitterDeployer) external override onlyOwner {
-        require(_poolCommitterDeployer != address(0), "address cannot be null");
-        poolCommitterDeployer = IPoolCommitterDeployer(_poolCommitterDeployer);
-    }
-
     function getOwner() external view override returns (address) {
         return owner();
-    }
-
-    /**
-     * @notice Converts a uint to a str
-     * @dev Assumes ASCII strings
-     * @return raw string representation of the uint
-     */
-    function uint2str(uint256 _i) internal pure returns (string memory) {
-        if (_i == 0) {
-            return "0";
-        }
-        uint256 j = _i;
-        uint256 len;
-        while (j != 0) {
-            len++;
-            j /= 10;
-        }
-        bytes memory bstr = new bytes(len);
-        uint256 k = len;
-        while (_i != 0) {
-            k = k - 1;
-            uint8 temp = (48 + uint8(_i - (_i / 10) * 10));
-            bytes1 b1 = bytes1(temp);
-            bstr[k] = b1;
-            _i /= 10;
-        }
-        return string(bstr);
     }
 
     modifier onlyGov() {

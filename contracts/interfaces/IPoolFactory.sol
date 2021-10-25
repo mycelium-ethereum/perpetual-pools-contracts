@@ -28,12 +28,6 @@ interface IPoolFactory {
      */
     event PoolKeeperChanged(address _poolKeeper);
 
-    /**
-     * @notice Creates a notification when the pool committer deployer for the factory changes
-     * @param _poolCommitterDeployer Address of the new pool committer deployer
-     */
-    event PoolCommitterDeployerChanged(address _poolCommitterDeployer);
-
     // #### Getters for Globals
     function pools(uint256 id) external view returns (address);
 
@@ -53,6 +47,4 @@ interface IPoolFactory {
     function setFeeReceiver(address _feeReceiver) external;
 
     function setFee(uint256 _fee) external;
-
-    function setPoolCommitterDeployer(address _poolCommitterDeployer) external;
 }

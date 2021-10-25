@@ -151,7 +151,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
         external
         override
         onlyPoolCommitter
-        checkInvariantsAndUnpaused
+        checkInvariantsAndUnpausedBeforeOnly
     {
         IERC20(quoteToken).safeTransfer(to, amount);
     }
@@ -166,7 +166,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
         bool isLongToken,
         address to,
         uint256 amount
-    ) external override onlyPoolCommitter checkInvariantsAndUnpaused {
+    ) external override onlyPoolCommitter checkInvariantsAndUnpausedBeforeOnly {
         if (isLongToken) {
             IERC20(tokens[LONG_INDEX]).safeTransfer(to, amount);
         } else {
@@ -184,7 +184,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
         address from,
         address to,
         uint256 amount
-    ) external override onlyPoolCommitter checkInvariantsAndUnpaused {
+    ) external override onlyPoolCommitter checkInvariantsAndUnpausedBeforeOnly {
         IERC20(quoteToken).safeTransferFrom(from, to, amount);
     }
 
@@ -195,7 +195,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
      * @param _oldPrice Old price from the oracle
      * @param _newPrice New price from the oracle
      */
-    function executePriceChange(int256 _oldPrice, int256 _newPrice) internal checkInvariantsAndUnpaused {
+    function executePriceChange(int256 _oldPrice, int256 _newPrice) internal checkInvariantsAndUnpausedBeforeOnly {
         // prevent a division by 0 in computing the price change
         // prevent negative pricing
         if (_oldPrice <= 0 || _newPrice <= 0) {
@@ -238,7 +238,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
         external
         override
         onlyPoolCommitter
-        checkInvariantsAndUnpaused
+        checkInvariantsAndUnpausedBeforeOnly
     {
         longBalance = _longBalance;
         shortBalance = _shortBalance;
@@ -255,7 +255,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
         bool isLongToken,
         uint256 amount,
         address minter
-    ) external override onlyPoolCommitter checkInvariantsAndUnpaused {
+    ) external override onlyPoolCommitter checkInvariantsAndUnpausedBeforeOnly {
         if (isLongToken) {
             require(IPoolToken(tokens[LONG_INDEX]).mint(amount, minter), "Mint failed");
         } else {
@@ -415,11 +415,21 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
         emit Unpaused();
     }
 
-    // #### Modifiers
-    modifier checkInvariantsAndUnpaused() {
+    /**
+     * @dev Check invariants before function body only. This is used in functions where the state of the pool is updated after exiting PoolCommitter (i.e. executeCommitments)
+     */
+    modifier checkInvariantsAndUnpausedBeforeOnly() {
         invariantCheck.checkInvariants(address(this));
         require(!paused, "Pool is paused");
         _;
+    }
+
+    // #### Modifiers
+    modifier checkInvariantsAndUnpaused() {
+        require(!paused, "Pool is paused");
+        _;
+        invariantCheck.checkInvariants(address(this));
+        require(!paused, "Pool is paused");
     }
 
     modifier onlyKeeper() {

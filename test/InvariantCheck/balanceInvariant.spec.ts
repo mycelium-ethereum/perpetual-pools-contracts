@@ -10,12 +10,7 @@ import {
     InvariantCheck,
     LeveragedPoolBalanceDrainMock,
     PoolKeeper,
-    TestToken__factory,
-    TestPoolFactory__factory,
-    PoolCommitter__factory,
-    InvariantCheck__factory,
     LeveragedPoolBalanceDrainMock__factory,
-    LeveragedPool__factory,
 } from "../../types"
 
 import { POOL_CODE, DEFAULT_FEE, LONG_MINT, SHORT_MINT } from "../constants"
@@ -24,8 +19,6 @@ import {
     createCommit,
     deployMockPool,
     timeout,
-    deployPoolSetupContracts,
-    deployPoolAndTokenContracts,
 } from "../utilities"
 chai.use(chaiAsPromised)
 
@@ -145,21 +138,18 @@ describe("InvariantCheck - balanceInvariant", () => {
                 await poolCommitter.totalMostRecentCommit()
             ).longMintAmount
 
-            // Creating a commit does not work
-            await createCommit(poolCommitter, SHORT_MINT, amountCommitted)
-            let shortMintAmountAfter = (
-                await poolCommitter.totalMostRecentCommit()
-            ).shortMintAmount
-            let balanceAfter = await token.balanceOf(pool.address)
-            expect(shortMintAmountAfter).to.equal(shortMintAmountBefore)
-            expect(balanceAfter).to.equal(balanceBefore)
+            // Creating a commit reverts, since pools is drained
+            await expect(
+                createCommit(poolCommitter, SHORT_MINT, amountCommitted)
+            ).to.be.revertedWith("Pool is paused")
 
             // Performing upkeep does not work
             await timeout(updateInterval * 2000)
             await poolKeeper.performUpkeepSinglePool(pool.address)
-            shortMintAmountAfter = (await poolCommitter.totalMostRecentCommit())
-                .shortMintAmount
-            balanceAfter = await token.balanceOf(pool.address)
+            const shortMintAmountAfter = (
+                await poolCommitter.totalMostRecentCommit()
+            ).shortMintAmount
+            const balanceAfter = await token.balanceOf(pool.address)
             let longMintAmountAfter = (
                 await poolCommitter.totalMostRecentCommit()
             ).longMintAmount

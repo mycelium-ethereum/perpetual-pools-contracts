@@ -176,21 +176,6 @@ describe("LeveragedPool - initialize", () => {
             )
             await long.deployed()
 
-            const poolCommitterFactory = (await ethers.getContractFactory(
-                "PoolCommitter",
-                {
-                    signer: signers[0],
-                    libraries: { PoolSwapLibrary: library.address },
-                }
-            )) as PoolCommitter__factory
-
-            const poolCommitter = await (
-                await poolCommitterFactory.deploy(
-                    setupContracts.factory.address,
-                    setupContracts.invariantCheck.address
-                )
-            ).deployed()
-
             const testFactory = (await ethers.getContractFactory(
                 "TestPoolFactory",
                 signers[0]
@@ -208,6 +193,24 @@ describe("LeveragedPool - initialize", () => {
                 Pool,
                 signers[0]
             ) as LeveragedPool
+
+            const poolCommitterFactory = (await ethers.getContractFactory(
+                "PoolCommitter",
+                {
+                    signer: signers[0],
+                    libraries: { PoolSwapLibrary: library.address },
+                }
+            )) as PoolCommitter__factory
+
+            const poolCommitter = await poolCommitterFactory.deploy(
+                setupContracts.factory.address,
+                setupContracts.invariantCheck.address
+            )
+            await poolCommitter.deployed()
+            poolCommitter.initialize(
+                setupContracts.factory.address,
+                setupContracts.invariantCheck.address
+            )
 
             receipt = await (
                 await leveragedPool.initialize({

@@ -13,8 +13,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../implementation/PoolSwapLibrary.sol";
 import "../interfaces/IOracleWrapper.sol";
 
-/// @title A Mock of LeveragedPool, to allow for draining the pool's funds
-/// @notice This is used for replicate a hack that drains funds, to test the circuit breaker mechanism
+/// @title The pool contract itself
 contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausable {
     using SafeERC20 for IERC20;
     // #### Globals
@@ -59,7 +58,10 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
         require(initialization._shortToken != address(0), "Short token cannot be 0 address");
         require(initialization._poolCommitter != address(0), "PoolCommitter cannot be 0 address");
         require(initialization._invariantCheckContract != address(0), "InvariantCheck cannot be 0 address");
-        require(initialization._frontRunningInterval < initialization._updateInterval, "frontRunning > updateInterval");
+        require(
+            initialization._frontRunningInterval < initialization._updateInterval,
+            "frontRunning >= updateInterval"
+        );
 
         require(initialization._fee < PoolSwapLibrary.WAD_PRECISION, "Fee >= 100%");
 
@@ -149,7 +151,7 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
         external
         override
         onlyPoolCommitter
-        checkInvariantsAndUnpaused
+        checkInvariantsAndUnpausedBeforeOnly
     {
         IERC20(quoteToken).safeTransfer(to, amount);
     }
@@ -164,7 +166,7 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
         bool isLongToken,
         address to,
         uint256 amount
-    ) external override onlyPoolCommitter checkInvariantsAndUnpaused {
+    ) external override onlyPoolCommitter checkInvariantsAndUnpausedBeforeOnly {
         if (isLongToken) {
             IERC20(tokens[LONG_INDEX]).safeTransfer(to, amount);
         } else {
@@ -182,7 +184,7 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
         address from,
         address to,
         uint256 amount
-    ) external override onlyPoolCommitter checkInvariantsAndUnpaused {
+    ) external override onlyPoolCommitter checkInvariantsAndUnpausedBeforeOnly {
         IERC20(quoteToken).safeTransferFrom(from, to, amount);
     }
 
@@ -193,7 +195,7 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
      * @param _oldPrice Old price from the oracle
      * @param _newPrice New price from the oracle
      */
-    function executePriceChange(int256 _oldPrice, int256 _newPrice) internal checkInvariantsAndUnpaused {
+    function executePriceChange(int256 _oldPrice, int256 _newPrice) internal checkInvariantsAndUnpausedBeforeOnly {
         // prevent a division by 0 in computing the price change
         // prevent negative pricing
         if (_oldPrice <= 0 || _newPrice <= 0) {
@@ -236,7 +238,7 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
         external
         override
         onlyPoolCommitter
-        checkInvariantsAndUnpaused
+        checkInvariantsAndUnpausedBeforeOnly
     {
         longBalance = _longBalance;
         shortBalance = _shortBalance;
@@ -253,7 +255,7 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
         bool isLongToken,
         uint256 amount,
         address minter
-    ) external override onlyPoolCommitter checkInvariantsAndUnpaused {
+    ) external override onlyPoolCommitter checkInvariantsAndUnpausedBeforeOnly {
         if (isLongToken) {
             require(IPoolToken(tokens[LONG_INDEX]).mint(amount, minter), "Mint failed");
         } else {
@@ -417,11 +419,21 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
         emit Unpaused();
     }
 
-    // #### Modifiers
-    modifier checkInvariantsAndUnpaused() {
+    /**
+     * @dev Check invariants before function body only. This is used in functions where the state of the pool is updated after exiting PoolCommitter (i.e. executeCommitments)
+     */
+    modifier checkInvariantsAndUnpausedBeforeOnly() {
         invariantCheck.checkInvariants(address(this));
         require(!paused, "Pool is paused");
         _;
+    }
+
+    // #### Modifiers
+    modifier checkInvariantsAndUnpaused() {
+        require(!paused, "Pool is paused");
+        _;
+        invariantCheck.checkInvariants(address(this));
+        require(!paused, "Pool is paused");
     }
 
     modifier onlyKeeper() {
@@ -436,11 +448,6 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
 
     modifier onlyPoolCommitter() {
         require(msg.sender == poolCommitter, "msg.sender not poolCommitter");
-        _;
-    }
-
-    modifier onlyFeeReceiver() {
-        require(msg.sender == feeAddress, "msg.sender not feeReceiver");
         _;
     }
 

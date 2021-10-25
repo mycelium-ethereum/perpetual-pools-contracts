@@ -6,13 +6,14 @@ import "../interfaces/ILeveragedPool.sol";
 import "../interfaces/IPoolFactory.sol";
 import "../interfaces/IPausable.sol";
 import "../interfaces/IInvariantCheck.sol";
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "./PoolSwapLibrary.sol";
 
 /// @title This contract is responsible for handling commitment logic
-contract PoolCommitter is IPoolCommitter, Ownable, IPausable {
+contract PoolCommitter is IPoolCommitter, Ownable, IPausable, Initializable {
     // #### Globals
     uint128 public constant LONG_INDEX = 0;
     uint128 public constant SHORT_INDEX = 1;
@@ -40,7 +41,14 @@ contract PoolCommitter is IPoolCommitter, Ownable, IPausable {
 
     constructor(address _factory, address _invariantCheckContract) {
         require(_factory != address(0), "Factory address cannot be null");
-        // set the factory on deploy
+        invariantCheckContract = _invariantCheckContract;
+        invariantCheck = IInvariantCheck(_invariantCheckContract);
+        factory = _factory;
+    }
+
+    function initialize(address _factory, address _invariantCheckContract) external override initializer {
+        require(_factory != address(0), "Factory address cannot be 0 address");
+        require(_invariantCheckContract != address(0), "InvariantCheck address cannot be 0 address");
         factory = _factory;
         governance = IPoolFactory(factory).getOwner();
         invariantCheckContract = _invariantCheckContract;
@@ -125,7 +133,7 @@ contract PoolCommitter is IPoolCommitter, Ownable, IPausable {
         emit Claim(user);
     }
 
-    function executeGivenCommitments(Commitment memory _commits) internal checkInvariantsAndUnpaused {
+    function executeGivenCommitments(Commitment memory _commits) internal {
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
 
         uint256 shortBalance = pool.shortBalance();
@@ -188,7 +196,7 @@ contract PoolCommitter is IPoolCommitter, Ownable, IPausable {
         pool.setNewPoolBalances(newLongBalance, newShortBalance);
     }
 
-    function executeCommitments() external override onlyPool checkInvariantsAndUnpaused {
+    function executeCommitments() external override onlyPool checkInvariantsAndUnpausedBeforeOnly {
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
         executeGivenCommitments(totalMostRecentCommit);
 
@@ -347,13 +355,20 @@ contract PoolCommitter is IPoolCommitter, Ownable, IPausable {
         _;
     }
 
-    modifier checkInvariantsAndUnpaused() {
+    /**
+     * @dev Check invariants before function body only. This is used in functions where the state of the pool is updated after exiting PoolCommitter (i.e. executeCommitments)
+     */
+    modifier checkInvariantsAndUnpausedBeforeOnly() {
         invariantCheck.checkInvariants(leveragedPool);
-        // require(!paused, "Pool is paused");
-        if (paused) {
-            return;
-        }
+        require(!paused, "Pool is paused");
         _;
+    }
+
+    modifier checkInvariantsAndUnpaused() {
+        require(!paused, "Pool is paused");
+        _;
+        invariantCheck.checkInvariants(leveragedPool);
+        require(!paused, "Pool is paused");
     }
 
     modifier onlyInvariantCheckContract() {
