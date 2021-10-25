@@ -86,7 +86,7 @@ contract PoolFactory is IPoolFactory, Ownable {
     }
 
     /**
-     * @notice Deploy a leveraged pool with given parameters
+     * @notice Deploy a leveraged pool and its committer/pool tokens with given parameters
      * @param deploymentParameters Deployment parameters of the market. Some may be reconfigurable
      * @return Address of the created pool
      */
@@ -158,7 +158,7 @@ contract PoolFactory is IPoolFactory, Ownable {
     }
 
     /**
-     * @notice Deploy a leveraged pool with given parameters
+     * @notice Deploy a leveraged pool and its committer/pool tokens with given parameters
      * @param deploymentParameters Deployment parameters of the market. Some may be reconfigurable
      * @return Address of the created pool
      */
@@ -166,9 +166,7 @@ contract PoolFactory is IPoolFactory, Ownable {
         address _poolKeeper = address(poolKeeper);
         require(_poolKeeper != address(0), "PoolKeeper not set");
 
-        PoolCommitter poolCommitter = PoolCommitter(
-            Clones.clone(poolCommitterBaseAddress)
-        );
+        PoolCommitter poolCommitter = PoolCommitter(Clones.clone(poolCommitterBaseAddress));
         poolCommitter.initialize(address(this));
         address poolCommitterAddress = address(poolCommitter);
 

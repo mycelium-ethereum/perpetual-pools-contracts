@@ -206,9 +206,9 @@ describe("PoolFactory.deployPool", () => {
                 settlementEthOracle: settlementEthOracle.address,
             }
 
-            await expect(factory.daoDeployPool(deploymentData)).to.be.revertedWith(
-                "Decimal precision too high"
-            )
+            await expect(
+                factory.daoDeployPool(deploymentData)
+            ).to.be.revertedWith("Decimal precision too high")
         })
     })
 })

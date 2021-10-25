@@ -222,11 +222,15 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         }
     }
 
+    /**
+     * @notice Execute the fee transfer transactions. Transfers fees to primary fee address (DAO) and secondary (pool deployer).
+     *         If the DAO is the fee deployer, secondary fee address should be address(0) and all fees go to DAO.
+     * @param totalFeeAmount total amount of fees paid
+     */
     function feeTransfer(uint256 totalFeeAmount) internal {
-        if(secondaryFeeAddress == address(0)) {
+        if (secondaryFeeAddress == address(0)) {
             IERC20(quoteToken).safeTransfer(feeAddress, totalFeeAmount);
-        }
-        else {
+        } else {
             IERC20(quoteToken).safeTransfer(feeAddress, PoolSwapLibrary.mulFraction(totalFeeAmount, 9, 10));
             IERC20(quoteToken).safeTransfer(secondaryFeeAddress, PoolSwapLibrary.mulFraction(totalFeeAmount, 1, 10));
         }

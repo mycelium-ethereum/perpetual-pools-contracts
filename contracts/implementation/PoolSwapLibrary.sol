@@ -125,7 +125,11 @@ library PoolSwapLibrary {
      * @notice Multiply an integer by a fraction
      * @return The result as an integer
      */
-    function mulFraction(uint256 number, int256 numerator, int256 denominator) public pure returns (uint256) {
+    function mulFraction(
+        uint256 number,
+        int256 numerator,
+        int256 denominator
+    ) public pure returns (uint256) {
         bytes16 fraction = divInt(numerator, denominator);
         bytes16 result = ABDKMathQuad.mul(ABDKMathQuad.fromUInt(number), fraction);
         return convertDecimalToUInt(result);

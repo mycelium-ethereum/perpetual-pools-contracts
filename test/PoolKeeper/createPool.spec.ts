@@ -72,13 +72,9 @@ describe("PoolKeeper - createPool", () => {
     })
 
     it("should emit an event containing the details of the new pool", async () => {
-        const receipt = await (
-            await factory.daoDeployPool(deploymentData)
-        ).wait()
-        const event = receipt?.events?.find(
-            (el) => el.event === "DaoDeployPool"
+        expect(await factory.daoDeployPool(deploymentData)).to.emit(
+            factory,
+            "DaoDeployPool"
         )
-        expect(!!event).to.eq(true)
-        expect(!!event?.args?.pool).to.eq(true)
     })
 })
