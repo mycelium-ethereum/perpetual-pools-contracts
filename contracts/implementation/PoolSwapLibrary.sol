@@ -127,11 +127,14 @@ library PoolSwapLibrary {
      */
     function mulFraction(
         uint256 number,
-        int256 numerator,
-        int256 denominator
+        uint256 numerator,
+        uint256 denominator
     ) public pure returns (uint256) {
-        bytes16 fraction = divInt(numerator, denominator);
-        bytes16 result = ABDKMathQuad.mul(ABDKMathQuad.fromUInt(number), fraction);
+        if (denominator == 0) {
+            return 0;
+        }
+        bytes16 multiplyResult = ABDKMathQuad.mul(ABDKMathQuad.fromUInt(number), ABDKMathQuad.fromUInt(numerator));
+        bytes16 result = ABDKMathQuad.div(multiplyResult, ABDKMathQuad.fromUInt(denominator));
         return convertDecimalToUInt(result);
     }
 
