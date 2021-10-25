@@ -24,12 +24,16 @@ describe("PoolSwapLibrary - mulFraction", () => {
     })
     it("should return 0 if the denominator is 0", async () => {
         expect(
-            ethers.BigNumber.from(await library.mulFraction(1, 1, 0)).toHexString()
+            ethers.BigNumber.from(
+                await library.mulFraction(1, 1, 0)
+            ).toHexString()
         ).to.eq("0x00")
     })
     it("should return 0 if the numerator is 0", async () => {
         expect(
-            ethers.BigNumber.from(await library.mulFraction(1, 0, 1)).toHexString()
+            ethers.BigNumber.from(
+                await library.mulFraction(1, 0, 1)
+            ).toHexString()
         ).to.eq("0x00")
     })
     it("should return the correct result", async () => {

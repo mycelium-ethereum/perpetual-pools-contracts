@@ -136,7 +136,7 @@ contract PoolFactory is IPoolFactory, Ownable {
             string(abi.encodePacked(leverage, "-", deploymentParameters.poolName)),
             deploymentParameters.frontRunningInterval,
             deploymentParameters.updateInterval,
-            fee,
+            (fee * deploymentParameters.updateInterval) / (365 days),
             deploymentParameters.leverageAmount,
             feeReceiver,
             address(0),

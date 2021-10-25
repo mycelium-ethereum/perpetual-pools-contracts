@@ -32,6 +32,7 @@ describe("PoolFactory.deployPool", () => {
     let oracleWrapper: ChainlinkOracleWrapper
     let settlementEthOracle: ChainlinkOracleWrapper
     let pool: LeveragedPool
+    let permissionlessPool: LeveragedPool
     let token: TestToken
     let signers: Signer[]
     let nonDAO: Signer
@@ -54,6 +55,77 @@ describe("PoolFactory.deployPool", () => {
         settlementEthOracle = contracts.settlementEthOracle
         pool = contracts.pool
         token = contracts.token
+    })
+
+    context("Non dao member can also deploy pool", async () => {
+        before(async () => {
+            const deployParams = {
+                poolName: POOL_CODE,
+                frontRunningInterval: frontRunningInterval,
+                updateInterval: updateInterval,
+                leverageAmount: 2,
+                quoteToken: token.address,
+                oracleWrapper: oracleWrapper.address,
+                settlementEthOracle: settlementEthOracle.address,
+            }
+            const permissionlessPoolTransaction = await factory
+                .connect(nonDAO)
+                .deployPool(deployParams)
+            permissionlessPoolTransaction.wait()
+            const permissionlessPoolAddress = await factory.pools(1)
+            permissionlessPool = (await ethers.getContractAt(
+                "LeveragedPool",
+                permissionlessPoolAddress
+            )) as LeveragedPool
+        })
+
+        it("should deploy a minimal clone", async () => {
+            expect(await permissionlessPool.poolName()).to.eq(`2-${POOL_CODE}`)
+        })
+
+        it("should initialize the clone", async () => {
+            const initialization = {
+                _owner: generateRandomAddress(),
+                _keeper: generateRandomAddress(),
+                _oracleWrapper: generateRandomAddress(),
+                _settlementEthOracle: generateRandomAddress(),
+                _longToken: generateRandomAddress(),
+                _shortToken: generateRandomAddress(),
+                _poolCommitter: generateRandomAddress(),
+                _poolName: POOL_CODE,
+                _frontRunningInterval: 3,
+                _updateInterval: 5,
+                _fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+                _leverageAmount: 5,
+                _feeAddress: generateRandomAddress(),
+                _secondaryFeeAddress: ethers.constants.AddressZero,
+                _quoteToken: token.address,
+            }
+            await expect(
+                permissionlessPool.initialize(initialization)
+            ).to.be.rejectedWith(Error)
+        })
+
+        it("pool should own tokens", async () => {
+            const longToken = await permissionlessPool.tokens(0)
+            const shortToken = await permissionlessPool.tokens(1)
+            let tokenInstance = new ethers.Contract(
+                longToken,
+                PoolToken__factory.abi
+            ).connect((await ethers.getSigners())[0])
+            expect(await tokenInstance.owner()).to.eq(
+                permissionlessPool.address
+            )
+
+            tokenInstance = tokenInstance.attach(shortToken)
+            expect(await tokenInstance.owner()).to.eq(
+                permissionlessPool.address
+            )
+        })
+
+        it("should use the default keeper", async () => {
+            expect(await permissionlessPool.keeper()).to.eq(poolKeeper.address)
+        })
     })
 
     context(
