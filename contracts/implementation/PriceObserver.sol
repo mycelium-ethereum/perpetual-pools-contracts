@@ -38,7 +38,7 @@ contract PriceObserver is Ownable, IPriceObserver {
         }
     }
 
-    function setWriter(address _writer) public onlyOwner returns (address) {
+    function setWriter(address _writer) public onlyOwner {
         require(_writer != address(0), "PO: Null address not allowed");
         writer = _writer;
     }
