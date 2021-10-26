@@ -9,9 +9,12 @@ import {
     ChainlinkOracleWrapper,
     ChainlinkOracleWrapper__factory,
     TestChainlinkOracle__factory,
+    PriceObserver__factory,
+    PriceObserver,
     PoolFactory__factory,
     PoolKeeper,
     PoolKeeper__factory,
+    PoolCommitterDeployer__factory,
     PoolSwapLibrary__factory,
     TestToken__factory,
     PoolFactory,
@@ -81,8 +84,35 @@ const setupHook = async () => {
         await PoolFactory.deploy(generateRandomAddress())
     ).deployed()
 
+    const PoolCommiterDeployerFactory = (await ethers.getContractFactory(
+        "PoolCommitterDeployer",
+        {
+            signer: signers[0],
+            libraries: { PoolSwapLibrary: library.address },
+        }
+    )) as PoolCommitterDeployer__factory
+
+    let poolCommiterDeployer = await PoolCommiterDeployerFactory.deploy(
+        factory.address
+    )
+    poolCommiterDeployer = await poolCommiterDeployer.deployed()
+    await factory.setPoolCommitterDeployer(poolCommiterDeployer.address)
+
     poolKeeper = await poolKeeperFactory.deploy(factory.address)
     await poolKeeper.deployed()
+
+    /* deploy price observer contract */
+    const priceObserverFactory = (await ethers.getContractFactory(
+        "PriceObserver",
+        signers[0]
+    )) as PriceObserver__factory
+    const priceObserver: PriceObserver = await priceObserverFactory.deploy()
+    await priceObserver.deployed()
+    await priceObserver.setWriter(oracleWrapper.address)
+
+    /* inform PoolKeeper of our newly-deployed PriceObserver contract */
+    await poolKeeper.setPriceObserver(priceObserver.address)
+
     await factory.connect(signers[0]).setPoolKeeper(poolKeeper.address)
 
     // Create pool

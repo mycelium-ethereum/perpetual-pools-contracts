@@ -57,12 +57,4 @@ describe("PoolFactory - Basic functions", () => {
         )
         await expect(pair.initialize()).to.be.rejectedWith(Error)
     })
-    it("should not let the yearly fee be greater than 10%", async () => {
-        await expect(
-            factory.setFee(ethers.utils.parseEther("0.5"))
-        ).to.be.revertedWith("Fee cannot be >10%")
-    })
-    it("should let the yearly fee be less than 10%", async () => {
-        await expect(factory.setFee(ethers.utils.parseEther("0.1")))
-    })
 })
