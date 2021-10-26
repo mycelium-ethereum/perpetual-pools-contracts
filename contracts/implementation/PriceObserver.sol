@@ -10,7 +10,7 @@ contract PriceObserver is Ownable, IPriceObserver {
     int256[MAX_NUM_ELEMS] public observations;
     address writer = address(0);
 
-    function capacity() public view override returns (uint256) {
+    function capacity() public pure override returns (uint256) {
         return MAX_NUM_ELEMS;
     }
 
