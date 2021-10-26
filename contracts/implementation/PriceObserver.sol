@@ -27,7 +27,7 @@ contract PriceObserver is Ownable, IPriceObserver {
         return observations;
     }
 
-    function add(int256 x) public override returns (bool) {
+    function add(int256 x) public override onlyWriter returns (bool) {
         if (full()) {
             leftRotateWithPad(x);
             return true;
@@ -72,5 +72,10 @@ contract PriceObserver is Ownable, IPriceObserver {
         /* rotate `x` into `observations` from the right (remember, we're **left**
          * rotating -- with padding!) */
         observations[n - 1] = x;
+    }
+
+    modifier onlyWriter() {
+        require(msg.sender == writer, "PO: Permission denied");
+        _;
     }
 }
