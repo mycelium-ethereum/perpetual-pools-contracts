@@ -25,7 +25,7 @@ describe("PriceObserver", async () => {
     let nonOwner: SignerWithAddress
     let feeReceiver: SignerWithAddress
     let poolKeeper: PoolKeeper
-    const capacity: BigNumberish = 24
+    const CAPACITY: BigNumberish = 24
 
     beforeEach(async () => {
         /* retrieve signers */
@@ -80,7 +80,7 @@ describe("PriceObserver", async () => {
     describe("capacity", async () => {
         context("When called", async () => {
             it("Returns the correct capacity", async () => {
-                expect(await priceObserver.capacity()).to.be.eq(capacity)
+                expect(await priceObserver.capacity()).to.be.eq(CAPACITY)
             })
         })
     })
