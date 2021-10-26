@@ -113,6 +113,9 @@ describe("SMAOracle", async () => {
             numPeriods
         )
         await smaOracle.deployed()
+
+        /* set our SMA oracle to the writer for the price observer contract */
+        await priceObserver.setWriter(smaOracle.address)
     })
 
     describe("SMA", async () => {

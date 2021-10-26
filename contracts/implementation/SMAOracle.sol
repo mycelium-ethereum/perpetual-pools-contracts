@@ -60,7 +60,8 @@ contract SMAOracle is Ownable, IOracleWrapper {
     }
 
     function getPrice() external view override returns (int256) {
-        return price;
+        /* update current reported SMA price */
+        return SMA(IPriceObserver(observer).getAll(), periods);
     }
 
     /**
@@ -80,9 +81,7 @@ contract SMAOracle is Ownable, IOracleWrapper {
         priceObserver.add(latestPrice);
 
         /* update current reported SMA price */
-        price = SMA(priceObserver.getAll(), periods);
-
-        return price;
+        return SMA(priceObserver.getAll(), periods);
     }
 
     function poll() external override returns (int256) {
@@ -137,6 +136,7 @@ contract SMAOracle is Ownable, IOracleWrapper {
      *          is no clear use case for additional data, so it's left blank
      */
     function getPriceAndMetadata() external view override returns (int256 _price, bytes memory _data) {
-        return (price, "");
+        _price = SMA(IPriceObserver(observer).getAll(), periods);
+        _data = "";
     }
 }
