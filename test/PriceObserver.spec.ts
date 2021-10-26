@@ -1,7 +1,16 @@
 import { ethers } from "hardhat"
 import chai from "chai"
 import chaiAsPromised from "chai-as-promised"
-import { PriceObserver__factory, PriceObserver } from "../types"
+import {
+    PriceObserver__factory,
+    PriceObserver,
+    PoolSwapLibrary__factory,
+    PoolSwapLibrary,
+    PoolFactory__factory,
+    PoolFactory,
+    PoolKeeper__factory,
+    PoolKeeper,
+} from "../types"
 
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { BigNumber, BigNumberish } from "ethers"
@@ -14,6 +23,8 @@ describe("PriceObserver", async () => {
     let signers: SignerWithAddress[]
     let owner: SignerWithAddress
     let nonOwner: SignerWithAddress
+    let feeReceiver: SignerWithAddress
+    let poolKeeper: PoolKeeper
     const capacity: BigNumberish = 24
 
     beforeEach(async () => {
@@ -21,6 +32,39 @@ describe("PriceObserver", async () => {
         signers = await ethers.getSigners()
         owner = signers[0]
         nonOwner = signers[1]
+        feeReceiver = signers[2]
+
+        /* deploy PoolSwapLibrary (PoolFactory needs to be linked to it) */
+        const poolSwapLibraryFactory: PoolSwapLibrary__factory =
+            (await ethers.getContractFactory(
+                "PoolSwapLibrary",
+                signers[0]
+            )) as PoolSwapLibrary__factory
+        const poolSwapLibrary: PoolSwapLibrary =
+            await poolSwapLibraryFactory.deploy()
+        await poolSwapLibrary.deployed()
+
+        /* deploy PoolFactory (PoolKeeper needs it) */
+        const poolFactoryFactory = (await ethers.getContractFactory(
+            "PoolFactory",
+            {
+                signer: signers[0],
+                libraries: { PoolSwapLibrary: poolSwapLibrary.address },
+            }
+        )) as PoolFactory__factory
+        const poolFactory = await poolFactoryFactory.deploy(feeReceiver.address)
+        await poolFactory.deployed()
+
+        /* deploy PoolKeeper */
+        const poolKeeperFactory = (await ethers.getContractFactory(
+            "PoolKeeper",
+            {
+                signer: signers[0],
+                libraries: { PoolSwapLibrary: poolSwapLibrary.address },
+            }
+        )) as PoolKeeper__factory
+        poolKeeper = await poolKeeperFactory.deploy(feeReceiver.address)
+        await poolKeeper.deployed()
 
         /* deploy price observer contract */
         const priceObserverFactory = (await ethers.getContractFactory(
@@ -28,6 +72,9 @@ describe("PriceObserver", async () => {
             owner
         )) as PriceObserver__factory
         priceObserver = await priceObserverFactory.deploy()
+        await priceObserver.deployed()
+
+        await priceObserver.setWriter(await owner.getAddress())
     })
 
     describe("capacity", async () => {

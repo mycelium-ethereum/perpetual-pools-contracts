@@ -8,6 +8,12 @@ contract PriceObserver is Ownable, IPriceObserver {
     uint256 public constant maxNumElems = 24;
     uint256 public numElems = 0;
     int256[maxNumElems] public observations;
+    address public writer;
+
+    function setWriter(address _writer) public onlyOwner {
+        require(_writer != address(0), "PO: Null address not allowed");
+        writer = _writer;
+    }
 
     function capacity() public view override returns (uint256) {
         return maxNumElems;
@@ -26,7 +32,7 @@ contract PriceObserver is Ownable, IPriceObserver {
         return observations;
     }
 
-    function add(int256 x) public override returns (bool) {
+    function add(int256 x) public override onlyWriter returns (bool) {
         if (full()) {
             leftRotateWithPad(x);
             return true;
@@ -47,7 +53,8 @@ contract PriceObserver is Ownable, IPriceObserver {
     }
 
     /**
-     * @notice Rotates observations array to the **left** by one element and sets the last element of `xs` to `x`
+     * @notice Rotates observations array to the **left** by one element and
+     *          sets the last element of `xs` to `x`
      * @param x Element to "rotate into" observations array
      *
      */
@@ -62,5 +69,10 @@ contract PriceObserver is Ownable, IPriceObserver {
         /* rotate `x` into `observations` from the right (remember, we're **left**
          * rotating -- with padding!) */
         observations[n - 1] = x;
+    }
+
+    modifier onlyWriter() {
+        require(msg.sender == writer, "PO: Permissioned denied");
+        _;
     }
 }
