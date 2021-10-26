@@ -110,7 +110,7 @@ contract SMAOracle is Ownable, IOracleWrapper {
      *          reason about this at all due to the value's runtime requirement
      *
      */
-    function SMA(int256[24] memory xs, uint256 k) public view returns (int256) {
+    function SMA(int256[24] memory xs, uint256 k) public pure returns (int256) {
         uint256 n = xs.length;
 
         /* bounds check */
