@@ -5,10 +5,19 @@ pragma solidity 0.8.7;
 interface IPoolCommitter {
     /// Type of commit
     enum CommitType {
-        ShortMint,
-        ShortBurn,
-        LongMint,
-        LongBurn
+        ShortMint, // Mint short tokens
+        ShortBurn, // Burn short tokens
+        LongMint, // Mint long tokens
+        LongBurn, // Burn long tokens
+        LongBurnThenMint, // Burn Long tokens, then instantly mint in same upkeep
+        ShortBurnThenMint // Burn Short tokens, then instantly mint in same upkeep
+    }
+
+    struct BalancesAndSupplies {
+        uint256 shortBalance;
+        uint256 longBalance;
+        uint256 longTotalSupplyBefore;
+        uint256 shortTotalSupplyBefore;
     }
 
     // User aggregate balance
@@ -33,11 +42,30 @@ interface IPoolCommitter {
     }
 
     // Commit information
-    struct Commitment {
+    struct TotalCommitment {
         uint256 longMintAmount;
         uint256 longBurnAmount;
         uint256 shortMintAmount;
         uint256 shortBurnAmount;
+        uint256 shortBurnMintAmount;
+        uint256 longBurnMintAmount;
+        uint256 updateIntervalId;
+    }
+
+    // Track how much of a user's commitments are being done from their aggregate balance
+    struct UserCommitment {
+        uint256 longMintAmount;
+        uint256 balanceLongMintAmount;
+        uint256 longBurnAmount;
+        uint256 balanceLongBurnAmount;
+        uint256 shortMintAmount;
+        uint256 balanceShortMintAmount;
+        uint256 shortBurnAmount;
+        uint256 balanceShortBurnAmount;
+        uint256 shortBurnMintAmount;
+        uint256 balanceShortBurnMintAmount;
+        uint256 longBurnMintAmount;
+        uint256 balanceLongBurnMintAmount;
         uint256 updateIntervalId;
     }
 
@@ -63,7 +91,11 @@ interface IPoolCommitter {
 
     function initialize(address _factory) external;
 
-    function commit(CommitType commitType, uint256 amount) external;
+    function commit(
+        CommitType commitType,
+        uint256 amount,
+        bool fromAggregateBalance
+    ) external;
 
     function claim(address user) external;
 

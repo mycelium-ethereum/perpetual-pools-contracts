@@ -3,6 +3,8 @@ pragma solidity 0.8.7;
 
 import "abdk-libraries-solidity/ABDKMathQuad.sol";
 
+import "hardhat/console.sol";
+
 /// @title Library for various useful (mostly) mathematical functions
 library PoolSwapLibrary {
     bytes16 public constant one = 0x3fff0000000000000000000000000000;
@@ -21,6 +23,8 @@ library PoolSwapLibrary {
         uint256 longBurnAmount;
         uint256 shortMintAmount;
         uint256 shortBurnAmount;
+        uint256 longBurnMintAmount;
+        uint256 shortBurnMintAmount;
     }
 
     struct PriceChangeData {
@@ -232,7 +236,7 @@ library PoolSwapLibrary {
      * @notice Gets the number of settlement tokens to be withdrawn based on a pool token burn amount
      * @dev Calculates as `balance * amountIn / (tokenSupply + shadowBalance)
      * @param tokenSupply Total supply of pool tokens
-     * @param amountIn Commitment amount of collateral tokens going into the pool
+     * @param amountIn Commitment amount of pool tokens going into the pool
      * @param balance Balance of the pool (no. of underlying collateral tokens in pool)
      * @param shadowBalance Balance the shadow pool at time of mint
      * @return Number of settlement tokens to be withdrawn on a burn
@@ -295,9 +299,18 @@ library PoolSwapLibrary {
      * @notice Calculate the number of pool tokens to mint, given some settlement token amount and a price
      * @param price The price of a pool token
      * @param amount The amount of settlement tokens being used to mint
+     * @param amountBurnedInstantMint The amount of pool tokens that were burnt from the previous side for an instant mint in this side
      */
-    function getMint(bytes16 price, uint256 amount) public pure returns (uint256) {
+    function getMint(
+        bytes16 price,
+        uint256 amount,
+        uint256 amountBurnedInstantMint
+    ) public pure returns (uint256) {
         require(price != 0, "price == 0");
+        if (amountBurnedInstantMint > 0) {
+            // Calculate amount of settlement tokens generated from the burn.
+            amount += getBurn(price, amountBurnedInstantMint);
+        }
         return ABDKMathQuad.toUInt(ABDKMathQuad.div(ABDKMathQuad.fromUInt(amount), price));
     }
 
@@ -338,14 +351,14 @@ library PoolSwapLibrary {
         }
         uint256 longBurnResult; // The amount of settlement tokens to withdraw based on long token burn
         uint256 shortBurnResult; // The amount of settlement tokens to withdraw based on short token burn
-        if (data.longMintAmount > 0) {
-            _newLongTokens = getMint(data.longPrice, data.longMintAmount);
+        if (data.longMintAmount > 0 || data.shortBurnMintAmount > 0) {
+            _newLongTokens = getMint(data.longPrice, data.longMintAmount, data.shortBurnMintAmount);
         }
         if (data.longBurnAmount > 0) {
             longBurnResult = getBurn(data.longPrice, data.longBurnAmount);
         }
-        if (data.shortMintAmount > 0) {
-            _newShortTokens = getMint(data.shortPrice, data.shortMintAmount);
+        if (data.shortMintAmount > 0 || data.longBurnMintAmount > 0) {
+            _newShortTokens = getMint(data.shortPrice, data.shortMintAmount, data.longBurnMintAmount);
         }
         if (data.shortBurnAmount > 0) {
             shortBurnResult = getBurn(data.shortPrice, data.shortBurnAmount);

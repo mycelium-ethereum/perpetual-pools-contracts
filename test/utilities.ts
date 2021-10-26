@@ -273,10 +273,12 @@ export interface CommitEventArgs {
 export const createCommit = async (
     poolCommitter: PoolCommitter,
     commitType: BigNumberish,
-    amount: BigNumberish
+    amount: BigNumberish,
+    fromAggregateBalance?: boolean
 ): Promise<any> /*Promise<CommitEventArgs>*/ => {
+    const fromAggBal = fromAggregateBalance ? fromAggregateBalance : false
     const receipt = await (
-        await poolCommitter.commit(commitType, amount)
+        await poolCommitter.commit(commitType, amount, fromAggBal)
     ).wait()
     return {
         commitID: getEventArgs(receipt, "CreateCommit")?.commitID,
