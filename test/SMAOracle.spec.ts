@@ -34,6 +34,7 @@ describe("SMAOracle", async () => {
     let nonOwner: SignerWithAddress
     let feeReceiver: SignerWithAddress
     let numPeriods: BigNumberish
+    let updateInterval: BigNumberish
 
     before(async () => {
         /* retrieve signers */
@@ -44,6 +45,7 @@ describe("SMAOracle", async () => {
 
         /* configure deployment parameters */
         numPeriods = 5
+        updateInterval = 5
 
         /* deploy PoolSwapLibrary (PoolFactory needs to be linked to it) */
         const poolSwapLibraryFactory: PoolSwapLibrary__factory =
@@ -110,7 +112,8 @@ describe("SMAOracle", async () => {
             spotOracle.address,
             await chainlinkOracle.decimals(),
             priceObserver.address,
-            numPeriods
+            numPeriods,
+            updateInterval
         )
         await smaOracle.deployed()
 

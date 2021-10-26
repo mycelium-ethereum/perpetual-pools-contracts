@@ -2,6 +2,7 @@
 pragma solidity 0.8.7;
 import "../interfaces/IOracleWrapper.sol";
 import "../interfaces/IPriceObserver.sol";
+import "../implementation/PriceObserver.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "prb-math/contracts/PRBMathSD59x18.sol";
 
@@ -20,6 +21,12 @@ contract SMAOracle is Ownable, IOracleWrapper {
     /// Number of periods to use in calculating the SMA (`k` in the SMA equation)
     uint256 public periods;
 
+    /// Time of last successful price update
+    uint256 lastUpdate = 0;
+
+    /// Duration between price updates
+    uint256 updateInterval = 0;
+
     int256 public scaler;
     uint256 public constant MAX_DECIMALS = 18;
 
@@ -27,7 +34,8 @@ contract SMAOracle is Ownable, IOracleWrapper {
         address _spotOracle,
         uint256 _spotDecimals,
         address _observer,
-        uint256 _periods
+        uint256 _periods,
+        uint256 _updateInterval
     ) {
         require(_spotOracle != address(0) && _observer != address(0), "SMA: Null address forbidden");
         require(_periods > 0 && _periods <= IPriceObserver(_observer).capacity(), "SMA: Out of bounds");
@@ -38,8 +46,7 @@ contract SMAOracle is Ownable, IOracleWrapper {
 
         /* `scaler` is always <= 10^18 and >= 1 so this cast is safe */
         scaler = int256(10**(MAX_DECIMALS - _spotDecimals));
-
-        price = SMA(IPriceObserver(_observer).getAll(), _periods);
+        updateInterval = _updateInterval;
     }
 
     function setOracle(address _spotOracle) internal onlyOwner {
@@ -77,7 +84,7 @@ contract SMAOracle is Ownable, IOracleWrapper {
         int256 latestPrice = spotOracle.getPrice();
 
         /* expire the oldest observation and load the fresh one in */
-        IPriceObserver priceObserver = IPriceObserver(observer);
+        PriceObserver priceObserver = PriceObserver(observer);
         priceObserver.add(latestPrice);
 
         /* update current reported SMA price */
@@ -85,6 +92,7 @@ contract SMAOracle is Ownable, IOracleWrapper {
     }
 
     function poll() external override returns (int256) {
+        require(block.timestamp >= lastUpdate + updateInterval, "SMA: Too early to update");
         return update();
     }
 

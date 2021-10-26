@@ -43,6 +43,10 @@ contract PriceObserver is Ownable, IPriceObserver {
         }
     }
 
+    function getWriter() public view returns (address) {
+        return writer;
+    }
+
     function full() private view returns (bool) {
         return length() == capacity();
     }

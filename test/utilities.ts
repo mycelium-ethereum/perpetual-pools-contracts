@@ -25,6 +25,8 @@ import {
     PoolSwapLibrary,
     PoolSwapLibrary__factory,
     TestChainlinkOracle__factory,
+    PriceObserver__factory,
+    PriceObserver,
     PoolKeeper,
     PoolFactory__factory,
     PoolKeeper__factory,
@@ -151,12 +153,22 @@ export const deployPoolSetupContracts = deployments.createFixture(async () => {
 
     await factory.setPoolCommitterDeployer(poolCommitterDeployer.address)
 
+    /* deploy price observer contract */
+    const priceObserverFactory = (await ethers.getContractFactory(
+        "PriceObserver",
+        signers[0]
+    )) as PriceObserver__factory
+    const priceObserver: PriceObserver = await priceObserverFactory.deploy()
+    await priceObserver.deployed()
+    await priceObserver.setWriter(oracleWrapper.address)
+
     const poolKeeperFactory = (await ethers.getContractFactory("PoolKeeper", {
         signer: signers[0],
         libraries: { PoolSwapLibrary: library.address },
     })) as PoolKeeper__factory
     let poolKeeper = await poolKeeperFactory.deploy(factory.address)
     poolKeeper = await poolKeeper.deployed()
+    await poolKeeper.setPriceObserver(priceObserver.address)
     await factory.setPoolKeeper(poolKeeper.address)
     await factory.setFee(DEFAULT_FEE)
 
@@ -168,6 +180,7 @@ export const deployPoolSetupContracts = deployments.createFixture(async () => {
         settlementEthOracle,
         token,
         library,
+        priceObserver,
     }
 })
 
@@ -203,6 +216,7 @@ export const deployPoolAndTokenContracts = async (
     factory: PoolFactory
     oracleWrapper: ChainlinkOracleWrapper
     settlementEthOracle: ChainlinkOracleWrapper
+    priceObserver: PriceObserver
 }> => {
     const setupContracts = await deployPoolSetupContracts()
 
@@ -248,6 +262,18 @@ export const deployPoolAndTokenContracts = async (
     const oracleWrapper = setupContracts.oracleWrapper
     const settlementEthOracle = setupContracts.settlementEthOracle
 
+    /* deploy price observer contract */
+    const priceObserverFactory = (await ethers.getContractFactory(
+        "PriceObserver",
+        signers[0]
+    )) as PriceObserver__factory
+    const priceObserver: PriceObserver = await priceObserverFactory.deploy()
+    await priceObserver.deployed()
+    await priceObserver.setWriter(oracleWrapper.address)
+
+    /* inform PoolKeeper of our newly-deployed PriceObserver */
+    await poolKeeper.setPriceObserver(priceObserver.address)
+
     return {
         signers,
         //@ts-ignore
@@ -265,6 +291,7 @@ export const deployPoolAndTokenContracts = async (
         factory,
         oracleWrapper,
         settlementEthOracle,
+        priceObserver,
     }
 }
 
