@@ -11,7 +11,7 @@ contract ChainlinkOracleWrapper is IOracleWrapper {
      * @notice The address of the feed oracle
      */
     address public override oracle;
-    address public override immutable owner;
+    address public immutable override owner;
     uint256 private constant MAX_DECIMALS = 18;
     int256 public scaler;
 

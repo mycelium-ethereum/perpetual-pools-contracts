@@ -12,7 +12,7 @@ contract SMAOracle is IOracleWrapper {
     address public override oracle;
 
     // Owner of the oracle
-    address public override immutable owner;
+    address public immutable override owner;
 
     /// Price observer providing the SMA oracle with historical pricing data
     address public observer;
