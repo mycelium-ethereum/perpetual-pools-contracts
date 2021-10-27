@@ -99,7 +99,7 @@ export const getEventArgs = (
     return txReceipt?.events?.find((el: Event) => el.event === eventType)?.args
 }
 
-export const deployPoolSetupContracts = (async () => {
+export const deployPoolSetupContracts = async () => {
     const amountMinted = DEFAULT_MINT_AMOUNT
 
     const signers = await ethers.getSigners()
@@ -196,7 +196,7 @@ export const deployPoolSetupContracts = (async () => {
         library,
         priceObserver,
     }
-})
+}
 
 /**
  * Deploys a new instance of a pool, as well as an ERC20 token to use as a quote token.

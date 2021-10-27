@@ -53,7 +53,6 @@ contract SMAOracle is IOracleWrapper {
         updateInterval = _updateInterval;
     }
 
-
     function getOwner() external view override returns (address) {
         return owner;
     }

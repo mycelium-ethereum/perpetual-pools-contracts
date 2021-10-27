@@ -92,7 +92,10 @@ describe("SMAOracle", async () => {
             "ChainlinkOracleWrapper",
             owner
         )) as ChainlinkOracleWrapper__factory
-        spotOracle = await spotOracleFactory.deploy(chainlinkOracle.address, signers[0].address)
+        spotOracle = await spotOracleFactory.deploy(
+            chainlinkOracle.address,
+            signers[0].address
+        )
         await spotOracle.deployed()
 
         /* deploy price observer contract */

@@ -78,7 +78,7 @@ contract ChainlinkOracleWrapper is IOracleWrapper {
         (int256 _price, ) = _latestRoundData();
         return _price;
     }
-    
+
     /**
      * @notice Returns the owner of the Oraclewrapper.
      */
