@@ -5,6 +5,8 @@ pragma solidity 0.8.7;
 interface IOracleWrapper {
     function oracle() external view returns (address);
 
+    function owner() external view returns (address);
+
     // #### Functions
 
     /**
@@ -30,10 +32,4 @@ interface IOracleWrapper {
      * @dev Spot oracles must implement but it will be a no-op
      */
     function poll() external returns (int256);
-
-    /**
-     * Owner is deployer.
-     * @return Returns owner of oracle wrapper.
-     */
-    function getOwner() external view returns (address);
 }

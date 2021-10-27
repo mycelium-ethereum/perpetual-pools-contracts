@@ -11,7 +11,7 @@ contract ChainlinkOracleWrapper is IOracleWrapper {
      * @notice The address of the feed oracle
      */
     address public override oracle;
-    address public immutable owner;
+    address public override immutable owner;
     uint256 private constant MAX_DECIMALS = 18;
     int256 public scaler;
 
@@ -77,12 +77,5 @@ contract ChainlinkOracleWrapper is IOracleWrapper {
     function poll() external view override returns (int256) {
         (int256 _price, ) = _latestRoundData();
         return _price;
-    }
-
-    /**
-     * @notice Returns the owner of the Oraclewrapper.
-     */
-    function getOwner() external view override returns (address) {
-        return owner;
     }
 }

@@ -12,7 +12,7 @@ contract SMAOracle is IOracleWrapper {
     address public override oracle;
 
     // Owner of the oracle
-    address public immutable owner;
+    address public override immutable owner;
 
     /// Price observer providing the SMA oracle with historical pricing data
     address public observer;
@@ -51,10 +51,6 @@ contract SMAOracle is IOracleWrapper {
         /* `scaler` is always <= 10^18 and >= 1 so this cast is safe */
         scaler = int256(10**(MAX_DECIMALS - _spotDecimals));
         updateInterval = _updateInterval;
-    }
-
-    function getOwner() external view override returns (address) {
-        return owner;
     }
 
     /**
