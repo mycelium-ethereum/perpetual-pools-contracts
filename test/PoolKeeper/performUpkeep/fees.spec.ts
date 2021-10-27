@@ -33,7 +33,7 @@ let token: TestToken
 
 const updateInterval = 10
 const frontRunningInterval = 1
-const fee = ethers.utils.parseEther("0.1")
+const fee = ethers.utils.parseEther("0.5")
 const mintAmount = DEFAULT_MINT_AMOUNT
 
 const setupHook = async () => {
@@ -70,6 +70,26 @@ interface Upkeep {
     roundStart: number
 }
 describe("Leveraged pool fees", () => {
+    it("Should revert if fee above 100%", async () => {
+        const setupContracts = await deployPoolSetupContracts()
+
+        // deploy the pool using the factory, not separately
+        const deployParams = {
+            poolName: POOL_CODE,
+            frontRunningInterval: frontRunningInterval,
+            updateInterval: updateInterval,
+            leverageAmount: 1,
+            quoteToken: setupContracts.token.address,
+            oracleWrapper: setupContracts.oracleWrapper.address,
+            settlementEthOracle: setupContracts.settlementEthOracle.address,
+        }
+
+        await setupContracts.factory.setFee(ethers.utils.parseEther("100"))
+        await expect(
+            setupContracts.factory.deployPool(deployParams)
+        ).to.be.revertedWith("Fee >= 100%")
+    })
+
     describe("Fees on price change", () => {
         let lastTime: BigNumber
 

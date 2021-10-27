@@ -7848,6 +7848,11 @@
   "resolved" "https://registry.npmjs.org/postinstall-postinstall/-/postinstall-postinstall-2.1.0.tgz"
   "version" "2.1.0"
 
+"prb-math@^2.3.0":
+  "integrity" "sha512-WmC5G5snavrPcoqcI6D5Rd+6dY+wwrtJWo2bkfJ7eWFaBIqbTr/4n7QUgc5GDSsH+w2tATg4qfmnFsUoac/QyA=="
+  "resolved" "https://registry.npmjs.org/prb-math/-/prb-math-2.3.0.tgz"
+  "version" "2.3.0"
+
 "precond@0.2":
   "integrity" "sha1-qpWRvKokkj8eD0hJ0kD0fvwQdaw="
   "resolved" "https://registry.npmjs.org/precond/-/precond-0.2.3.tgz"

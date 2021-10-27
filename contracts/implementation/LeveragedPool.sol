@@ -379,7 +379,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
 
     /**
      * @notice Withdraws all available quote asset from the pool
-     * @dev Pool must be paused
+     * @dev Pool must not be paused
      * @dev ERC20 transfer
      */
     function withdrawQuote() external onlyGov {

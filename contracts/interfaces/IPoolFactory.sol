@@ -52,4 +52,6 @@ interface IPoolFactory {
     function setFeeReceiver(address _feeReceiver) external;
 
     function setFee(uint256 _fee) external;
+
+    function setPoolCommitterDeployer(address _poolCommitterDeployer) external;
 }

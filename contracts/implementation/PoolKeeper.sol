@@ -4,6 +4,7 @@ pragma solidity 0.8.7;
 import "../interfaces/IPoolKeeper.sol";
 import "../interfaces/IOracleWrapper.sol";
 import "../interfaces/IPoolFactory.sol";
+import "../implementation/PriceObserver.sol";
 import "../interfaces/ILeveragedPool.sol";
 import "../interfaces/IERC20DecimalsWrapper.sol";
 import "./PoolSwapLibrary.sol";
@@ -30,11 +31,17 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     bytes16 constant fixedPoint = 0x403abc16d674ec800000000000000000; // 1 ether
 
     uint256 public gasPrice = 10 gwei;
+    address public observer = address(0);
 
     // #### Functions
     constructor(address _factory) {
         require(_factory != address(0), "Factory cannot be 0 address");
         factory = IPoolFactory(_factory);
+    }
+
+    function setPriceObserver(address _observer) external onlyOwner {
+        require(_observer != address(0), "Price observer cannot be 0 address");
+        observer = _observer;
     }
 
     /**
@@ -92,7 +99,14 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         if (!checkUpkeepSinglePool(_pool)) {
             return;
         }
+
         ILeveragedPool pool = ILeveragedPool(_pool);
+
+        /* update SMA oracle */
+        PriceObserver priceObserver = PriceObserver(observer);
+        IOracleWrapper priceObserverWriter = IOracleWrapper(priceObserver.getWriter());
+        priceObserverWriter.poll();
+
         (int256 latestPrice, bytes memory data, uint256 savedPreviousUpdatedTimestamp, uint256 updateInterval) = pool
             .getUpkeepInformation();
 
@@ -103,12 +117,16 @@ contract PoolKeeper is IPoolKeeper, Ownable {
 
         // This allows us to still batch multiple calls to executePriceChange, even if some are invalid
         // Without reverting the entire transaction
-        pool.poolUpkeep(lastExecutionPrice, latestPrice);
-        // If poolUpkeep is successful, refund the keeper for their gas costs
-        uint256 gasSpent = startGas - gasleft();
+        try pool.poolUpkeep(lastExecutionPrice, latestPrice) {
+            // If poolUpkeep is successful, refund the keeper for their gas costs
+            uint256 gasSpent = startGas - gasleft();
 
-        payKeeper(_pool, gasPrice, gasSpent, savedPreviousUpdatedTimestamp, updateInterval);
-        emit UpkeepSuccessful(_pool, data, lastExecutionPrice, latestPrice);
+            payKeeper(_pool, gasPrice, gasSpent, savedPreviousUpdatedTimestamp, updateInterval);
+            emit UpkeepSuccessful(_pool, data, lastExecutionPrice, latestPrice);
+        } catch Error(string memory reason) {
+            // If poolUpkeep fails for any other reason, emit event
+            emit PoolUpkeepError(_pool, reason);
+        }
     }
 
     /**
