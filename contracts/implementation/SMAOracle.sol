@@ -12,6 +12,9 @@ contract SMAOracle is Ownable, IOracleWrapper {
     /// Price oracle supplying the spot price of the quote asset
     address public override oracle;
 
+    // Owner of the oracle
+    address public immutable owner;
+
     /// Price observer providing the SMA oracle with historical pricing data
     address public observer;
 
