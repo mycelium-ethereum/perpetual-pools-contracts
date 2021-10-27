@@ -242,6 +242,7 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
 
             await timeout((updateInterval - frontRunningInterval / 2) * 1000)
 
+            // Commit within frontrunning interval
             await createCommit(poolCommitter, LONG_MINT, amountCommitted.div(2))
 
             // Now totalNextIntervalCommit should be populated, but totalMostRecentCommit should remain unchanged

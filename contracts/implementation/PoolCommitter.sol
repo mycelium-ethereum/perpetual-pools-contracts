@@ -261,8 +261,14 @@ contract PoolCommitter is IPoolCommitter, Initializable {
             totalShortBurn
         );
 
-        uint256 newLongBalance = balancesAndSupplies.longBalance + _commits.longMintAmount - longBurnAmount + shortBurnInstantMintAmount;
-        uint256 newShortBalance = balancesAndSupplies.shortBalance + _commits.shortMintAmount - shortBurnAmount + longBurnInstantMintAmount;
+        uint256 newLongBalance = balancesAndSupplies.longBalance +
+            _commits.longMintAmount -
+            longBurnAmount +
+            shortBurnInstantMintAmount;
+        uint256 newShortBalance = balancesAndSupplies.shortBalance +
+            _commits.shortMintAmount -
+            shortBurnAmount +
+            longBurnInstantMintAmount;
 
         updateIntervalId += 1;
 
@@ -329,8 +335,8 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         /* If the update interval of mostRecentCommit has not yet passed, we still
            want to deduct burns from the balance from a user's balance.
            Therefore, this should happen outside of the if block below.*/
-        _balanceLongBurnAmount = mostRecentCommit.balanceLongBurnAmount;
-        _balanceShortBurnAmount = mostRecentCommit.balanceShortBurnAmount;
+        _balanceLongBurnAmount = mostRecentCommit.balanceLongBurnAmount + mostRecentCommit.balanceLongBurnMintAmount;
+        _balanceShortBurnAmount = mostRecentCommit.balanceShortBurnAmount + mostRecentCommit.balanceShortBurnMintAmount;
         if (mostRecentCommit.updateIntervalId != 0 && mostRecentCommit.updateIntervalId < updateIntervalId) {
             (_newLongTokens, _newShortTokens, _newSettlementTokens) = updateBalanceSingleCommitment(mostRecentCommit);
             delete userMostRecentCommit[user];
@@ -338,6 +344,8 @@ contract PoolCommitter is IPoolCommitter, Initializable {
             // Clear them now that they have been accounted for in the balance
             userMostRecentCommit[user].balanceLongBurnAmount = 0;
             userMostRecentCommit[user].balanceShortBurnAmount = 0;
+            userMostRecentCommit[user].balanceLongBurnMintAmount = 0;
+            userMostRecentCommit[user].balanceShortBurnMintAmount = 0;
         }
 
         UserCommitment memory nextIntervalCommit = userNextIntervalCommit[user];
@@ -345,8 +353,12 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         uint256 _newShortTokensSecond;
         uint256 _newSettlementTokensSecond;
 
-        _balanceLongBurnAmount += nextIntervalCommit.balanceLongBurnAmount;
-        _balanceShortBurnAmount += nextIntervalCommit.balanceShortBurnAmount;
+        _balanceLongBurnAmount +=
+            nextIntervalCommit.balanceLongBurnAmount +
+            nextIntervalCommit.balanceLongBurnMintAmount;
+        _balanceShortBurnAmount +=
+            nextIntervalCommit.balanceShortBurnAmount +
+            nextIntervalCommit.balanceShortBurnMintAmount;
         if (nextIntervalCommit.updateIntervalId != 0 && nextIntervalCommit.updateIntervalId < updateIntervalId) {
             (_newLongTokensSecond, _newShortTokensSecond, _newSettlementTokensSecond) = updateBalanceSingleCommitment(
                 nextIntervalCommit
@@ -356,6 +368,8 @@ contract PoolCommitter is IPoolCommitter, Initializable {
             // Clear them now that they have been accounted for in the balance
             userNextIntervalCommit[user].balanceLongBurnAmount = 0;
             userNextIntervalCommit[user].balanceShortBurnAmount = 0;
+            userNextIntervalCommit[user].balanceLongBurnMintAmount = 0;
+            userNextIntervalCommit[user].balanceShortBurnMintAmount = 0;
         }
 
         if (userMostRecentCommit[user].updateIntervalId == 0) {
@@ -376,15 +390,21 @@ contract PoolCommitter is IPoolCommitter, Initializable {
     /**
      * @notice A copy of updateAggregateBalance that returns the aggregate balance without updating it
      */
-    function getAggregateBalance(address user) public view override returns (Balance memory _balance) {
-        Balance memory balance = userAggregateBalance[user];
-
+    function getAggregateBalance(address user) public view override returns (Balance memory) {
         UserCommitment memory mostRecentCommit = userMostRecentCommit[user];
+        Balance memory _balance = userAggregateBalance[user];
 
         uint256 _newLongTokens;
         uint256 _newShortTokens;
         uint256 _newSettlementTokens;
+        uint256 _balanceLongBurnAmount;
+        uint256 _balanceShortBurnAmount;
 
+        /* If the update interval of mostRecentCommit has not yet passed, we still
+           want to deduct burns from the balance from a user's balance.
+           Therefore, this should happen outside of the if block below.*/
+        _balanceLongBurnAmount = mostRecentCommit.balanceLongBurnAmount + mostRecentCommit.balanceLongBurnMintAmount;
+        _balanceShortBurnAmount = mostRecentCommit.balanceShortBurnAmount + mostRecentCommit.balanceShortBurnMintAmount;
         if (mostRecentCommit.updateIntervalId != 0 && mostRecentCommit.updateIntervalId < updateIntervalId) {
             (_newLongTokens, _newShortTokens, _newSettlementTokens) = updateBalanceSingleCommitment(mostRecentCommit);
         }
@@ -394,15 +414,25 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         uint256 _newShortTokensSecond;
         uint256 _newSettlementTokensSecond;
 
+        _balanceLongBurnAmount +=
+            nextIntervalCommit.balanceLongBurnAmount +
+            nextIntervalCommit.balanceLongBurnMintAmount;
+        _balanceShortBurnAmount +=
+            nextIntervalCommit.balanceShortBurnAmount +
+            nextIntervalCommit.balanceShortBurnMintAmount;
         if (nextIntervalCommit.updateIntervalId != 0 && nextIntervalCommit.updateIntervalId < updateIntervalId) {
             (_newLongTokensSecond, _newShortTokensSecond, _newSettlementTokensSecond) = updateBalanceSingleCommitment(
-                mostRecentCommit
+                nextIntervalCommit
             );
         }
 
-        _balance.longTokens = balance.longTokens + _newLongTokens + _newLongTokensSecond;
-        _balance.shortTokens = balance.shortTokens + _newShortTokens + _newShortTokensSecond;
-        _balance.settlementTokens = balance.settlementTokens + _newSettlementTokens + _newSettlementTokensSecond;
+        // Add new tokens minted, and remove the ones that were burnt from this balance
+        _balance.longTokens += _newLongTokens + _newLongTokensSecond;
+        _balance.longTokens -= _balanceLongBurnAmount;
+        _balance.shortTokens += _newShortTokens + _newShortTokensSecond;
+        _balance.shortTokens -= _balanceShortBurnAmount;
+        _balance.settlementTokens += _newSettlementTokens + _newSettlementTokensSecond;
+        return _balance;
     }
 
     function setQuoteAndPool(address _quoteToken, address _leveragedPool) external override onlyFactory {

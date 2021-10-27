@@ -224,7 +224,7 @@ describe("LeveragedPool - commit", () => {
             ).to.be.revertedWith("Insufficient pool tokens")
         })
 
-        it("Should allow for a combination of commits from wallet and aggregate balance", async () => {
+        it("Should allow for a combination of short_burn commits from wallet and aggregate balance", async () => {
             await poolCommitter.claim(signers[0].address)
 
             await poolCommitter.commit(SHORT_MINT, amountCommitted, false)
@@ -234,6 +234,13 @@ describe("LeveragedPool - commit", () => {
             const shortTokenSupplyBefore = await shortToken.totalSupply()
 
             await poolCommitter.commit(SHORT_BURN, amountCommitted, true)
+
+            const userCommit = await poolCommitter.userMostRecentCommit(
+                signers[0].address
+            )
+
+            // balanceShortBurnAmount is updated
+            expect(userCommit.balanceShortBurnAmount).to.equal(amountCommitted)
             await poolCommitter.commit(SHORT_BURN, amountCommitted, false)
 
             const shortTokenSupplyAfter = await shortToken.totalSupply()
@@ -243,13 +250,13 @@ describe("LeveragedPool - commit", () => {
             const totalMostRecentCommit =
                 await poolCommitter.totalMostRecentCommit()
 
+            // Supply decreases
             expect(shortTokenSupplyAfter).to.equal(
                 shortTokenSupplyBefore.sub(amountCommitted).sub(amountCommitted)
-            ) // Supply decreases
-            // Commitment storage updates
-            expect(userMostRecentCommit.balanceShortBurnAmount).to.equal(
-                amountCommitted
             )
+
+            // balanceShortBurnAmount gets cleared, because on the update from the second `commit`, it is used and can then be cleared
+            expect(userMostRecentCommit.balanceShortBurnAmount).to.equal(0)
             expect(userMostRecentCommit.shortBurnAmount).to.equal(
                 amountCommitted.mul(2)
             )
@@ -337,7 +344,7 @@ describe("LeveragedPool - commit", () => {
             ).to.be.revertedWith("Insufficient settlement tokens")
         })
 
-        it("Should allow for a combination of commits from wallet and aggregate balance", async () => {
+        it("Should allow for a combination of short_mint commits from wallet and aggregate balance", async () => {
             const shortTokenSupplyBefore = await shortToken.totalSupply()
 
             await poolCommitter.commit(SHORT_MINT, amountCommitted, true)
@@ -439,7 +446,7 @@ describe("LeveragedPool - commit", () => {
             ).to.be.revertedWith("Insufficient pool tokens")
         })
 
-        it("Should allow for a combination of commits from wallet and aggregate balance", async () => {
+        it("Should allow for a combination of long_burn commits from wallet and aggregate balance", async () => {
             await poolCommitter.claim(signers[0].address)
 
             await poolCommitter.commit(LONG_MINT, amountCommitted, false)
@@ -449,22 +456,29 @@ describe("LeveragedPool - commit", () => {
             const longTokenSupplyBefore = await longToken.totalSupply()
 
             await poolCommitter.commit(LONG_BURN, amountCommitted, true)
+
+            const userCommit = await poolCommitter.userMostRecentCommit(
+                signers[0].address
+            )
+
+            // balanceLongBurnAmount is updated
+            expect(userCommit.balanceLongBurnAmount).to.equal(amountCommitted)
             await poolCommitter.commit(LONG_BURN, amountCommitted, false)
 
             const longTokenSupplyAfter = await longToken.totalSupply()
+
+            // Supply decreases
+            expect(longTokenSupplyAfter).to.equal(
+                longTokenSupplyBefore.sub(amountCommitted).sub(amountCommitted)
+            )
 
             const userMostRecentCommit =
                 await poolCommitter.userMostRecentCommit(signers[0].address)
             const totalMostRecentCommit =
                 await poolCommitter.totalMostRecentCommit()
 
-            expect(longTokenSupplyAfter).to.equal(
-                longTokenSupplyBefore.sub(amountCommitted).sub(amountCommitted)
-            ) // Supply decreases
-            // Commitment storage updates
-            expect(userMostRecentCommit.balanceLongBurnAmount).to.equal(
-                amountCommitted
-            )
+            // balanceLongBurnAmount gets cleared, because on the update from the second `commit`, it is used and can then be cleared
+            expect(userMostRecentCommit.balanceLongBurnAmount).to.equal(0)
             expect(userMostRecentCommit.longBurnAmount).to.equal(
                 amountCommitted.mul(2)
             )
@@ -552,10 +566,17 @@ describe("LeveragedPool - commit", () => {
             ).to.be.revertedWith("Insufficient settlement tokens")
         })
 
-        it("Should allow for a combination of commits from wallet and aggregate balance", async () => {
+        it("Should allow for a combination of long_mint commits from wallet and aggregate balance", async () => {
             const longTokenSupplyBefore = await longToken.totalSupply()
 
             await poolCommitter.commit(LONG_MINT, amountCommitted, true)
+
+            const userCommit = await poolCommitter.userMostRecentCommit(
+                signers[0].address
+            )
+
+            // Commitment storage updates
+            expect(userCommit.balanceLongMintAmount).to.equal(amountCommitted)
             await poolCommitter.commit(LONG_MINT, amountCommitted, false)
 
             const longTokenSupplyAfter = await longToken.totalSupply()
@@ -689,9 +710,232 @@ describe("LeveragedPool - commit", () => {
 
     context(
         "Long Burning then minting in one commit, from aggregate balance",
-        () => {}
+        () => {
+            beforeEach(async () => {
+                const result = await deployPoolAndTokenContracts(
+                    POOL_CODE,
+                    frontRunningInterval,
+                    updateInterval,
+                    leverage,
+                    feeAddress,
+                    fee
+                )
+                signers = result.signers
+                pool = result.pool
+                token = result.token
+                library = result.library
+                shortToken = result.shortToken
+                longToken = result.longToken
+                poolCommitter = result.poolCommitter
+
+                await token.approve(pool.address, amountCommitted.mul(999))
+                await pool.setKeeper(signers[0].address)
+                await poolCommitter.commit(LONG_MINT, amountCommitted, false)
+                await timeout(updateInterval * 1000)
+                await pool.poolUpkeep(1, 1)
+            })
+
+            it("Should appropriately set values", async () => {
+                // Commit using the balance in the contracts, which we just committed.
+                const longTokenSupplyBefore = await longToken.totalSupply()
+                await poolCommitter.commit(
+                    LONG_BURN_THEN_MINT,
+                    amountCommitted,
+                    true
+                )
+                const longTokenSupplyAfter = await longToken.totalSupply()
+
+                const userMostRecentCommit =
+                    await poolCommitter.userMostRecentCommit(signers[0].address)
+                const totalMostRecentCommit =
+                    await poolCommitter.totalMostRecentCommit()
+
+                // Supply decreases
+                expect(longTokenSupplyAfter).to.equal(
+                    longTokenSupplyBefore.sub(amountCommitted)
+                )
+                // Commitment storage updates
+                expect(userMostRecentCommit.balanceLongBurnMintAmount).to.equal(
+                    amountCommitted
+                )
+                expect(userMostRecentCommit.longBurnMintAmount).to.equal(
+                    amountCommitted
+                )
+                expect(totalMostRecentCommit.longBurnAmount).to.equal(0)
+                expect(totalMostRecentCommit.longBurnMintAmount).to.equal(
+                    amountCommitted
+                )
+            })
+
+            context("Invalid commitments", () => {
+                it("Should revert if you are attempting to LONG_BURN_THEN_MINT duplicate times (from wallet)", async () => {
+                    // Commit using the balance in the wallet, which we just committed.
+                    await poolCommitter.commit(
+                        LONG_BURN_THEN_MINT,
+                        amountCommitted,
+                        true
+                    )
+                    await expect(
+                        poolCommitter.commit(
+                            LONG_BURN_THEN_MINT,
+                            amountCommitted,
+                            true
+                        )
+                    ).to.be.revertedWith("Insufficient pool tokens")
+                })
+
+                it("Should revert if you are attempting to LONG_BURN_THEN_MINT duplicate times (from aggregate balance)", async () => {
+                    // Commit using the balance in the contracts, which we just committed.
+                    await poolCommitter.commit(
+                        LONG_BURN_THEN_MINT,
+                        amountCommitted,
+                        true
+                    )
+                    await expect(
+                        poolCommitter.commit(
+                            LONG_BURN_THEN_MINT,
+                            amountCommitted,
+                            true
+                        )
+                    ).to.be.revertedWith("Insufficient pool tokens")
+                })
+
+                it("Should revert if you are attempting to LONG_BURN_THEN_MINT too many tokens (from wallet)", async () => {
+                    // Commit using the balance in the wallet, which we just committed.
+                    await expect(
+                        poolCommitter.commit(
+                            LONG_BURN_THEN_MINT,
+                            amountCommitted.add(1),
+                            true
+                        )
+                    ).to.be.revertedWith("Insufficient pool tokens")
+                })
+
+                it("Should revert if you are attempting to LONG_BURN_THEN_MINT too many tokens (from aggregate balance)", async () => {
+                    // Commit using the balance in the contracts, which we just committed.
+                    await expect(
+                        poolCommitter.commit(
+                            LONG_BURN_THEN_MINT,
+                            amountCommitted.add(1),
+                            true
+                        )
+                    ).to.be.revertedWith("Insufficient pool tokens") // The error here is different from burning from wallet, because it does not burn from user's wallet and thus needs to manually check
+                })
+            })
+
+            context("Valid execution", async () => {
+                it("Allows for Multiple commits (adding up to a valid amount)", async () => {
+                    // Commit using the balance in the contracts, which we just committed.
+                    await poolCommitter.commit(
+                        LONG_BURN_THEN_MINT,
+                        amountCommitted.div(2),
+                        true
+                    )
+                    await poolCommitter.commit(
+                        LONG_BURN_THEN_MINT,
+                        amountCommitted.div(2),
+                        true
+                    )
+                    let longBalance = await pool.longBalance()
+                    let shortBalance = await pool.shortBalance()
+                    expect(longBalance).to.equal(amountCommitted)
+                    expect(shortBalance).to.equal(0)
+
+                    await timeout(updateInterval * 1000)
+
+                    await pool.poolUpkeep(1, 1)
+
+                    // Side balances should have switched
+                    longBalance = await pool.longBalance()
+                    shortBalance = await pool.shortBalance()
+                    expect(longBalance).to.equal(0)
+                    expect(shortBalance).to.equal(amountCommitted)
+
+                    const userBalance = await poolCommitter.getAggregateBalance(
+                        signers[0].address
+                    )
+                    expect(userBalance.longTokens).to.equal(0)
+
+                    expect(userBalance.shortTokens).to.equal(amountCommitted)
+
+                    const shortBalanceBefore = await shortToken.balanceOf(
+                        signers[0].address
+                    )
+
+                    await poolCommitter.claim(signers[0].address)
+
+                    const shortBalanceAfter = await shortToken.balanceOf(
+                        signers[0].address
+                    )
+
+                    expect(shortBalanceAfter.sub(shortBalanceBefore)).to.equal(
+                        amountCommitted
+                    )
+                })
+
+                it("Should Allow for execution and updating of balances with one single commit", async () => {
+                    // Commit using the balance in the contracts, which we just committed.
+                    await poolCommitter.commit(
+                        LONG_BURN_THEN_MINT,
+                        amountCommitted,
+                        true
+                    )
+                    let longBalance = await pool.longBalance()
+                    let shortBalance = await pool.shortBalance()
+                    expect(longBalance).to.equal(amountCommitted)
+                    expect(shortBalance).to.equal(0)
+
+                    expect(
+                        (
+                            await poolCommitter.userMostRecentCommit(
+                                signers[0].address
+                            )
+                        ).balanceLongBurnMintAmount
+                    ).to.equal(amountCommitted)
+                    expect(
+                        (
+                            await poolCommitter.userMostRecentCommit(
+                                signers[0].address
+                            )
+                        ).longBurnMintAmount
+                    ).to.equal(amountCommitted)
+
+                    await timeout(updateInterval * 1000)
+
+                    await pool.poolUpkeep(1, 1)
+
+                    // Side balances should have switched
+                    longBalance = await pool.longBalance()
+                    shortBalance = await pool.shortBalance()
+                    expect(longBalance).to.equal(0)
+                    expect(shortBalance).to.equal(amountCommitted)
+
+                    const userBalance = await poolCommitter.getAggregateBalance(
+                        signers[0].address
+                    )
+                    expect(userBalance.longTokens).to.equal(0)
+
+                    expect(userBalance.shortTokens).to.equal(amountCommitted)
+
+                    const shortBalanceBefore = await shortToken.balanceOf(
+                        signers[0].address
+                    )
+
+                    await poolCommitter.claim(signers[0].address)
+
+                    const shortBalanceAfter = await shortToken.balanceOf(
+                        signers[0].address
+                    )
+
+                    expect(shortBalanceAfter.sub(shortBalanceBefore)).to.equal(
+                        amountCommitted
+                    )
+                })
+            })
+        }
     )
-    context.only("Long Burning then minting in one commit, from wallet", () => {
+
+    context("Long Burning then minting in one commit, from wallet", () => {
         beforeEach(async () => {
             const result = await deployPoolAndTokenContracts(
                 POOL_CODE,
@@ -732,108 +976,174 @@ describe("LeveragedPool - commit", () => {
             const totalMostRecentCommit =
                 await poolCommitter.totalMostRecentCommit()
 
+            // Supply decreases
             expect(longTokenSupplyAfter).to.equal(
                 longTokenSupplyBefore.sub(amountCommitted)
-            ) // Supply decreases
-            // Commitment storage updates
-            expect(userMostRecentCommit.balanceLongBurnMintAmount).to.equal(
-                0
             )
+            // Commitment storage updates
+            expect(userMostRecentCommit.balanceLongBurnMintAmount).to.equal(0)
             expect(userMostRecentCommit.longBurnMintAmount).to.equal(
                 amountCommitted
             )
-            expect(totalMostRecentCommit.longBurnAmount).to.equal(
-                0
-            )
+            expect(totalMostRecentCommit.longBurnAmount).to.equal(0)
             expect(totalMostRecentCommit.longBurnMintAmount).to.equal(
                 amountCommitted
             )
         })
 
-        it("Should revert if you are attempting to LONG_BURN_THEN_MINT duplicate times (from wallet)", async () => {
-            // Commit using the balance in the wallet, which we just committed.
-            await poolCommitter.claim(signers[0].address)
-            await poolCommitter.commit(
-                LONG_BURN_THEN_MINT,
-                amountCommitted,
-                false
-            )
-            await expect(poolCommitter.commit(
-                LONG_BURN_THEN_MINT,
-                amountCommitted,
-                false
-            )).to.be.revertedWith("ERC20: burn amount exceeds balance")
+        context("Invalid commitments", () => {
+            it("Should revert if you are attempting to LONG_BURN_THEN_MINT duplicate times (from wallet)", async () => {
+                // Commit using the balance in the wallet, which we just committed.
+                await poolCommitter.claim(signers[0].address)
+                await poolCommitter.commit(
+                    LONG_BURN_THEN_MINT,
+                    amountCommitted,
+                    false
+                )
+                await expect(
+                    poolCommitter.commit(
+                        LONG_BURN_THEN_MINT,
+                        amountCommitted,
+                        false
+                    )
+                ).to.be.revertedWith("ERC20: burn amount exceeds balance")
+            })
+
+            it("Should revert if you are attempting to LONG_BURN_THEN_MINT duplicate times (from aggregate balance)", async () => {
+                // Commit using the balance in the contracts, which we just committed.
+                await poolCommitter.commit(
+                    LONG_BURN_THEN_MINT,
+                    amountCommitted,
+                    true
+                )
+                await expect(
+                    poolCommitter.commit(
+                        LONG_BURN_THEN_MINT,
+                        amountCommitted,
+                        true
+                    )
+                ).to.be.revertedWith("Insufficient pool tokens")
+            })
+
+            it("Should revert if you are attempting to LONG_BURN_THEN_MINT too many tokens (from wallet)", async () => {
+                // Commit using the balance in the wallet, which we just committed.
+                await poolCommitter.claim(signers[0].address)
+                await expect(
+                    poolCommitter.commit(
+                        LONG_BURN_THEN_MINT,
+                        amountCommitted.add(1),
+                        false
+                    )
+                ).to.be.revertedWith("ERC20: burn amount exceeds balance")
+            })
+
+            it("Should revert if you are attempting to LONG_BURN_THEN_MINT too many tokens (from aggregate balance)", async () => {
+                // Commit using the balance in the contracts, which we just committed.
+                await expect(
+                    poolCommitter.commit(
+                        LONG_BURN_THEN_MINT,
+                        amountCommitted.add(1),
+                        true
+                    )
+                ).to.be.revertedWith("Insufficient pool tokens") // The error here is different from burning from wallet, because it does not burn from user's wallet and thus needs to manually check
+            })
         })
 
-        it("Should revert if you are attempting to LONG_BURN_THEN_MINT duplicate times (from aggregate balance)", async () => {
-            // Commit using the balance in the contracts, which we just committed.
-            await poolCommitter.commit(
-                LONG_BURN_THEN_MINT,
-                amountCommitted,
-                true
-            )
-            await expect(poolCommitter.commit(
-                LONG_BURN_THEN_MINT,
-                amountCommitted,
-                true
-            )).to.be.revertedWith("Insufficient pool tokens")
+        context("Valid execution", async () => {
+            it("Multiple commits (adding up to a valid amount)", async () => {
+                // Commit using the balance in the contracts, which we just committed.
+                await poolCommitter.claim(signers[0].address)
+                await poolCommitter.commit(
+                    LONG_BURN_THEN_MINT,
+                    amountCommitted.div(2),
+                    false
+                )
+                await poolCommitter.commit(
+                    LONG_BURN_THEN_MINT,
+                    amountCommitted.div(2),
+                    false
+                )
+                let longBalance = await pool.longBalance()
+                let shortBalance = await pool.shortBalance()
+                expect(longBalance).to.equal(amountCommitted)
+                expect(shortBalance).to.equal(0)
 
-        })
+                await timeout(updateInterval * 1000)
 
-        it("Should revert if you are attempting to LONG_BURN_THEN_MINT too many tokens (from wallet)", async () => {
-            // Commit using the balance in the wallet, which we just committed.
-            await poolCommitter.claim(signers[0].address)
-            await expect(poolCommitter.commit(
-                LONG_BURN_THEN_MINT,
-                amountCommitted.add(1),
-                false
-            )).to.be.revertedWith("ERC20: burn amount exceeds balance")
-        })
+                await pool.poolUpkeep(1, 1)
 
-        it("Should revert if you are attempting to LONG_BURN_THEN_MINT too many tokens (from aggregate balance)", async () => {
-            // Commit using the balance in the contracts, which we just committed.
-            await expect(poolCommitter.commit(
-                LONG_BURN_THEN_MINT,
-                amountCommitted.add(1),
-                true
-            )).to.be.revertedWith("Insufficient pool tokens") // The error here is different from burning from wallet, because it does not burn from user's wallet and thus needs to manually check
-        })
+                // Side balances should have switched
+                longBalance = await pool.longBalance()
+                shortBalance = await pool.shortBalance()
+                expect(longBalance).to.equal(0)
+                expect(shortBalance).to.equal(amountCommitted)
 
-        it("Should Allow for execution and updating of balances", async () => {
-            // Commit using the balance in the contracts, which we just committed.
-            await poolCommitter.claim(signers[0].address)
-            await poolCommitter.commit(
-                LONG_BURN_THEN_MINT,
-                amountCommitted,
-                false
-            )
-            let longBalance = await pool.longBalance()
-            let shortBalance = await pool.shortBalance()
-            expect(longBalance).to.equal(amountCommitted)
-            expect(shortBalance).to.equal(0)
+                const userBalance = await poolCommitter.getAggregateBalance(
+                    signers[0].address
+                )
+                expect(userBalance.longTokens).to.equal(0)
 
-            await timeout(updateInterval * 1000)
+                expect(userBalance.shortTokens).to.equal(amountCommitted)
 
-            await pool.poolUpkeep(1, 1)
+                const shortBalanceBefore = await shortToken.balanceOf(
+                    signers[0].address
+                )
 
-            // Side balances should have switched
-            longBalance = await pool.longBalance()
-            shortBalance = await pool.shortBalance()
-            expect(longBalance).to.equal(0)
-            expect(shortBalance).to.equal(amountCommitted)
+                await poolCommitter.claim(signers[0].address)
 
-            const userBalance = await poolCommitter.getAggregateBalance(signers[0].address)
-            expect(userBalance.longTokens).to.equal(0)
+                const shortBalanceAfter = await shortToken.balanceOf(
+                    signers[0].address
+                )
 
-            expect(userBalance.shortTokens).to.equal(amountCommitted)
+                expect(shortBalanceAfter.sub(shortBalanceBefore)).to.equal(
+                    amountCommitted
+                )
+            })
 
-            const shortBalanceBefore = await shortToken.balanceOf(signers[0].address)
+            it("Should Allow for execution and updating of balances with one single commit", async () => {
+                // Commit using the balance in the contracts, which we just committed.
+                await poolCommitter.claim(signers[0].address)
+                await poolCommitter.commit(
+                    LONG_BURN_THEN_MINT,
+                    amountCommitted,
+                    false
+                )
+                let longBalance = await pool.longBalance()
+                let shortBalance = await pool.shortBalance()
+                expect(longBalance).to.equal(amountCommitted)
+                expect(shortBalance).to.equal(0)
 
-            await poolCommitter.claim(signers[0].address)
+                await timeout(updateInterval * 1000)
 
-            const shortBalanceAfter = await shortToken.balanceOf(signers[0].address)
+                await pool.poolUpkeep(1, 1)
 
-            expect(shortBalanceAfter.sub(shortBalanceBefore)).to.equal(amountCommitted)
+                // Side balances should have switched
+                longBalance = await pool.longBalance()
+                shortBalance = await pool.shortBalance()
+                expect(longBalance).to.equal(0)
+                expect(shortBalance).to.equal(amountCommitted)
+
+                const userBalance = await poolCommitter.getAggregateBalance(
+                    signers[0].address
+                )
+                expect(userBalance.longTokens).to.equal(0)
+
+                expect(userBalance.shortTokens).to.equal(amountCommitted)
+
+                const shortBalanceBefore = await shortToken.balanceOf(
+                    signers[0].address
+                )
+
+                await poolCommitter.claim(signers[0].address)
+
+                const shortBalanceAfter = await shortToken.balanceOf(
+                    signers[0].address
+                )
+
+                expect(shortBalanceAfter.sub(shortBalanceBefore)).to.equal(
+                    amountCommitted
+                )
+            })
         })
     })
 

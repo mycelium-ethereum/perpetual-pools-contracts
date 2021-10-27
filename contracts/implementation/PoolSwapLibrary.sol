@@ -338,7 +338,7 @@ library PoolSwapLibrary {
      */
     function getUpdatedAggregateBalance(UpdateData calldata data)
         external
-        pure
+        view
         returns (
             uint256 _newLongTokens,
             uint256 _newShortTokens,
