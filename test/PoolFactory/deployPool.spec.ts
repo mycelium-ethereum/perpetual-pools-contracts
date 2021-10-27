@@ -146,7 +146,7 @@ describe("PoolFactory.deployPool", () => {
                 poolName: POOL_CODE_2,
                 frontRunningInterval: 2,
                 updateInterval: 5,
-                leverageAmount: 5,
+                leverageAmount: 3,
                 quoteToken: token.address,
                 oracleWrapper: oracleWrapper.address,
                 settlementEthOracle: settlementEthOracle.address,

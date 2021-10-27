@@ -66,6 +66,7 @@ const setupHook = async () => {
     )
     const poolCommitter2 = contracts2.poolCommitter
     token = contracts1.token
+    const token2 = contracts2.token
     pool = contracts1.pool
     pool2 = contracts2.pool
     signers = await ethers.getSigners()
@@ -73,7 +74,7 @@ const setupHook = async () => {
     derivativeChainlinkOracle = contracts1.chainlinkOracle
     derivativeOracleWrapper = contracts1.oracleWrapper
     await token.approve(pool.address, mintAmount)
-    await token.approve(pool2.address, mintAmount)
+    await token2.approve(pool2.address, mintAmount)
     await createCommit(poolCommitter, [2], mintAmount.div(2))
     await createCommit(poolCommitter2, [2], mintAmount.div(2))
     await timeout(updateInterval * 1000 * 2)

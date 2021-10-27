@@ -37,7 +37,8 @@ contract SMAOracle is IOracleWrapper {
         uint256 _spotDecimals,
         address _observer,
         uint256 _periods,
-        uint256 _updateInterval
+        uint256 _updateInterval,
+        address _owner
     ) {
         require(_spotOracle != address(0) && _observer != address(0), "SMA: Null address forbidden");
         require(_periods > 0 && _periods <= IPriceObserver(_observer).capacity(), "SMA: Out of bounds");
@@ -45,6 +46,7 @@ contract SMAOracle is IOracleWrapper {
         periods = _periods;
         oracle = _spotOracle;
         observer = _observer;
+        owner = _owner;
 
         /* `scaler` is always <= 10^18 and >= 1 so this cast is safe */
         scaler = int256(10**(MAX_DECIMALS - _spotDecimals));
