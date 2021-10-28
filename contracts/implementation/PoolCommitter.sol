@@ -40,53 +40,15 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         governance = IPoolFactory(factory).getOwner();
     }
 
-    /**
-     * @notice Commit to minting/burning long/short tokens after the next price change
-     * @param commitType Type of commit you're doing (Long vs Short, Mint vs Burn)
-     * @param amount Amount of quote tokens you want to commit to minting; OR amount of pool
-     *               tokens you want to burn
-     * @param fromAggregateBalance If minting, burning, or rebalancing into a delta neutral position,
-     *                             will tokens be taken from user's aggregate balance?
-     */
-    function commit(
+    function applyCommitment(
+        ILeveragedPool pool,
         CommitType commitType,
         uint256 amount,
-        bool fromAggregateBalance
-    ) external override updateBalance {
-        require(amount > 0, "Amount must not be zero");
-        ILeveragedPool pool = ILeveragedPool(leveragedPool);
-        uint256 updateInterval = pool.updateInterval();
-        uint256 lastPriceTimestamp = pool.lastPriceTimestamp();
-        uint256 frontRunningInterval = pool.frontRunningInterval();
-
-        TotalCommitment storage totalCommit;
-        UserCommitment storage userCommit;
+        bool fromAggregateBalance,
+        UserCommitment storage userCommit,
+        TotalCommitment storage totalCommit
+    ) private {
         Balance memory balance = userAggregateBalance[msg.sender];
-
-        if (
-            PoolSwapLibrary.isBeforeFrontRunningInterval(
-                block.timestamp,
-                lastPriceTimestamp,
-                updateInterval,
-                frontRunningInterval
-            )
-        ) {
-            totalCommit = totalMostRecentCommit;
-            userCommit = userMostRecentCommit[msg.sender];
-            userCommit.updateIntervalId = updateIntervalId;
-        } else {
-            totalCommit = totalNextIntervalCommit;
-            userCommit = userNextIntervalCommit[msg.sender];
-            userCommit.updateIntervalId = updateIntervalId + 1;
-        }
-
-        if (commitType == CommitType.LongMint || commitType == CommitType.ShortMint) {
-            // minting: pull in the quote token from the committer
-            // Do not need to transfer if minting using aggregate balance tokens, since the leveraged pool already owns these tokens.
-            if (!fromAggregateBalance) {
-                pool.quoteTokenTransferFrom(msg.sender, leveragedPool, amount);
-            }
-        }
 
         if (commitType == CommitType.LongMint) {
             userCommit.longMintAmount += amount;
@@ -155,6 +117,56 @@ contract PoolCommitter is IPoolCommitter, Ownable {
                 pool.burnTokens(false, amount, msg.sender);
             }
         }
+    }
+
+    /**
+     * @notice Commit to minting/burning long/short tokens after the next price change
+     * @param commitType Type of commit you're doing (Long vs Short, Mint vs Burn)
+     * @param amount Amount of quote tokens you want to commit to minting; OR amount of pool
+     *               tokens you want to burn
+     * @param fromAggregateBalance If minting, burning, or rebalancing into a delta neutral position,
+     *                             will tokens be taken from user's aggregate balance?
+     */
+    function commit(
+        CommitType commitType,
+        uint256 amount,
+        bool fromAggregateBalance
+    ) external override updateBalance {
+        require(amount > 0, "Amount must not be zero");
+        ILeveragedPool pool = ILeveragedPool(leveragedPool);
+        uint256 updateInterval = pool.updateInterval();
+        uint256 lastPriceTimestamp = pool.lastPriceTimestamp();
+        uint256 frontRunningInterval = pool.frontRunningInterval();
+
+        TotalCommitment storage totalCommit;
+        UserCommitment storage userCommit;
+
+        if (
+            PoolSwapLibrary.isBeforeFrontRunningInterval(
+                block.timestamp,
+                lastPriceTimestamp,
+                updateInterval,
+                frontRunningInterval
+            )
+        ) {
+            totalCommit = totalMostRecentCommit;
+            userCommit = userMostRecentCommit[msg.sender];
+            userCommit.updateIntervalId = updateIntervalId;
+        } else {
+            totalCommit = totalNextIntervalCommit;
+            userCommit = userNextIntervalCommit[msg.sender];
+            userCommit.updateIntervalId = updateIntervalId + 1;
+        }
+
+        if (commitType == CommitType.LongMint || commitType == CommitType.ShortMint) {
+            // minting: pull in the quote token from the committer
+            // Do not need to transfer if minting using aggregate balance tokens, since the leveraged pool already owns these tokens.
+            if (!fromAggregateBalance) {
+                pool.quoteTokenTransferFrom(msg.sender, leveragedPool, amount);
+            }
+        }
+
+        applyCommitment(pool, commitType, amount, fromAggregateBalance, userCommit, totalCommit);
 
         emit CreateCommit(msg.sender, amount, commitType);
     }
