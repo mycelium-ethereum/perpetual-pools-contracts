@@ -298,21 +298,10 @@ library PoolSwapLibrary {
     /**
      * @notice Calculate the number of pool tokens to mint, given some settlement token amount and a price
      * @param price The price of a pool token
-     * @param oppositePrice The price of the opposite side's pool token
      * @param amount The amount of settlement tokens being used to mint
-     * @param amountBurnedInstantMint The amount of pool tokens that were burnt from the opposite side for an instant mint in this side
      */
-    function getMint(
-        bytes16 price,
-        bytes16 oppositePrice,
-        uint256 amount,
-        uint256 amountBurnedInstantMint
-    ) public pure returns (uint256) {
+    function getMint(bytes16 price, uint256 amount) public pure returns (uint256) {
         require(price != 0, "price == 0");
-        if (amountBurnedInstantMint > 0) {
-            // Calculate amount of settlement tokens generated from the burn.
-            amount += getBurn(oppositePrice, amountBurnedInstantMint);
-        }
         return ABDKMathQuad.toUInt(ABDKMathQuad.div(ABDKMathQuad.fromUInt(amount), price));
     }
 
@@ -323,6 +312,27 @@ library PoolSwapLibrary {
     function getBurn(bytes16 price, uint256 amount) public pure returns (uint256) {
         require(price != 0, "price == 0");
         return ABDKMathQuad.toUInt(ABDKMathQuad.mul(ABDKMathQuad.fromUInt(amount), price));
+    }
+
+    /**
+     * @notice Calculate the number of pool tokens to mint, given some settlement token amount, a price, and a burn amount from other side for instant mint
+     * @param price The price of a pool token
+     * @param amount The amount of settlement tokens being used to mint
+     * @param oppositePrice The price of the opposite side's pool token
+     * @param amountBurnedInstantMint The amount of pool tokens that were burnt from the opposite side for an instant mint in this side
+     */
+    function getMintWithBurns(
+        bytes16 price,
+        bytes16 oppositePrice,
+        uint256 amount,
+        uint256 amountBurnedInstantMint
+    ) public pure returns (uint256) {
+        require(price != 0, "price == 0");
+        if (amountBurnedInstantMint > 0) {
+            // Calculate amount of settlement tokens generated from the burn.
+            amount += getBurn(oppositePrice, amountBurnedInstantMint);
+        }
+        return getMint(price, amount);
     }
 
     /**
@@ -354,13 +364,23 @@ library PoolSwapLibrary {
         uint256 longBurnResult; // The amount of settlement tokens to withdraw based on long token burn
         uint256 shortBurnResult; // The amount of settlement tokens to withdraw based on short token burn
         if (data.longMintAmount > 0 || data.shortBurnMintAmount > 0) {
-            _newLongTokens = getMint(data.longPrice, data.shortPrice, data.longMintAmount, data.shortBurnMintAmount);
+            _newLongTokens = getMintWithBurns(
+                data.longPrice,
+                data.shortPrice,
+                data.longMintAmount,
+                data.shortBurnMintAmount
+            );
         }
         if (data.longBurnAmount > 0) {
             longBurnResult = getBurn(data.longPrice, data.longBurnAmount);
         }
         if (data.shortMintAmount > 0 || data.longBurnMintAmount > 0) {
-            _newShortTokens = getMint(data.shortPrice, data.longPrice, data.shortMintAmount, data.longBurnMintAmount);
+            _newShortTokens = getMintWithBurns(
+                data.shortPrice,
+                data.longPrice,
+                data.shortMintAmount,
+                data.longBurnMintAmount
+            );
         }
         if (data.shortBurnAmount > 0) {
             shortBurnResult = getBurn(data.shortPrice, data.shortBurnAmount);
