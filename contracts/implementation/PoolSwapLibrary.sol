@@ -297,7 +297,7 @@ library PoolSwapLibrary {
      * @notice Calculate the number of pool tokens to mint, given some settlement token amount and a price
      * @param price The price of a pool token
      * @param amount The amount of settlement tokens being used to mint
-     * @param amountBurnedInstantMint The amount of pool tokens that were burnt from the previous side for an instant mint in this side
+     * @param amountBurnedInstantMint The amount of pool tokens that were burnt from the opposite side for an instant mint in this side
      */
     function getMint(
         bytes16 price,
@@ -336,7 +336,7 @@ library PoolSwapLibrary {
      */
     function getUpdatedAggregateBalance(UpdateData calldata data)
         external
-        view
+        pure
         returns (
             uint256 _newLongTokens,
             uint256 _newShortTokens,
