@@ -84,7 +84,6 @@ describe("Leveraged pool fees", () => {
             settlementEthOracle: setupContracts.settlementEthOracle.address,
         }
 
-        //await setupContracts.factory.setFee(ethers.utils.parseEther("100"))
         await expect(
             setupContracts.factory.setFee(ethers.utils.parseEther("100"))
         ).to.be.revertedWith("Fee cannot be >10%")

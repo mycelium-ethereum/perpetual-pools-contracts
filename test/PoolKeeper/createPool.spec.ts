@@ -53,7 +53,6 @@ describe("PoolKeeper - createPool", () => {
 
     it("should Revert if fee > one (in ABDK Math IEEE precision)", async () => {
         const justAboveOne = "0x3fff0000000000000000000000000001"
-        //await factory.setFee(justAboveOne)
         await expect(factory.setFee(justAboveOne)).to.be.revertedWith(
             "Fee cannot be >10%"
         )

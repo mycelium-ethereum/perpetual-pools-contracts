@@ -58,7 +58,7 @@ describe("PoolFactory.deployPool", () => {
     })
 
     context(
-        "When not called by the owner of oraclewrapper and with valid parameters",
+        "When not called by the owner of the oracle wrapper and with valid parameters",
         async () => {
             it("Reverts", async () => {
                 const deploymentParameters = {
