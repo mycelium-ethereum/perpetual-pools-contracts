@@ -134,7 +134,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
                 // Burning from user's wallet
                 pool.burnTokens(false, amount, msg.sender);
             }
-        } else if (commitType == CommitType.LongBurnThenMint) {
+        } else if (commitType == CommitType.LongBurnShortMint) {
             userCommit.longBurnMintAmount += amount;
             totalCommit.longBurnMintAmount += amount;
             if (fromAggregateBalance) {
@@ -144,7 +144,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             } else {
                 pool.burnTokens(true, amount, msg.sender);
             }
-        } else if (commitType == CommitType.ShortBurnThenMint) {
+        } else if (commitType == CommitType.ShortBurnLongMint) {
             userCommit.shortBurnMintAmount += amount;
             totalCommit.shortBurnMintAmount += amount;
             if (fromAggregateBalance) {

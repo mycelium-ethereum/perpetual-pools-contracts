@@ -17,6 +17,7 @@ import {
     LONG_MINT,
     POOL_CODE,
     SHORT_BURN,
+    SHORT_BURN_THEN_MINT,
     SHORT_MINT,
 } from "../constants"
 import {
@@ -823,7 +824,55 @@ describe("LeveragedPool - commit", () => {
                 })
             })
 
-            context("Valid execution", async () => {
+            context("Valid execution", () => {
+                context("Different prices per token", () => {
+                    context(
+                        "Short Price = $0.5 Long Price = $1.5",
+                        async () => {
+                            it("Appropriately burns and mints at the correct rate", async () => {
+                                await poolCommitter.commit(
+                                    SHORT_MINT,
+                                    amountCommitted,
+                                    false
+                                )
+                                await timeout(updateInterval * 1000)
+                                await pool.poolUpkeep(1, 1)
+                                await timeout(updateInterval * 1000)
+                                // Double price
+                                await pool.poolUpkeep(1000, 2000)
+
+                                await poolCommitter.commit(
+                                    LONG_BURN_THEN_MINT,
+                                    amountCommitted,
+                                    true
+                                )
+
+                                const balanceBefore =
+                                    await poolCommitter.getAggregateBalance(
+                                        signers[0].address
+                                    )
+
+                                await timeout(updateInterval * 1000)
+                                await pool.poolUpkeep(2000, 2000)
+
+                                // 2000 Long tokens burnt at $1.5 == $3000
+                                // $3000 then minted to be Short tokens at $0.5 == 6000 pool tokens
+
+                                const balance =
+                                    await poolCommitter.getAggregateBalance(
+                                        signers[0].address
+                                    )
+                                expect(balance.longTokens).to.equal(0)
+                                expect(
+                                    balance.shortTokens.sub(
+                                        balanceBefore.shortTokens
+                                    )
+                                ).to.equal(ethers.utils.parseEther("6000"))
+                            })
+                        }
+                    )
+                })
+
                 it("Allows for Multiple commits (adding up to a valid amount)", async () => {
                     // Commit using the balance in the contracts, which we just committed.
                     await poolCommitter.commit(
@@ -1050,6 +1099,49 @@ describe("LeveragedPool - commit", () => {
         })
 
         context("Valid execution", async () => {
+            context("Different prices per token", () => {
+                context("Short Price = $0.5 Long Price = $1.5", async () => {
+                    it("Appropriately burns and mints at the correct rate", async () => {
+                        await poolCommitter.commit(
+                            SHORT_MINT,
+                            amountCommitted,
+                            false
+                        )
+                        await timeout(updateInterval * 1000)
+                        await pool.poolUpkeep(1, 1)
+                        await timeout(updateInterval * 1000)
+                        // Double price
+                        await pool.poolUpkeep(1000, 2000)
+                        await poolCommitter.claim(signers[0].address)
+
+                        await poolCommitter.commit(
+                            LONG_BURN_THEN_MINT,
+                            amountCommitted,
+                            false
+                        )
+
+                        const balanceBefore =
+                            await poolCommitter.getAggregateBalance(
+                                signers[0].address
+                            )
+
+                        await timeout(updateInterval * 1000)
+                        await pool.poolUpkeep(2000, 2000)
+
+                        // 2000 Long tokens burnt at $1.5 == $3000
+                        // $3000 then minted to be Short tokens at $0.5 == 6000 pool tokens
+
+                        const balance = await poolCommitter.getAggregateBalance(
+                            signers[0].address
+                        )
+                        expect(balance.longTokens).to.equal(0)
+                        expect(
+                            balance.shortTokens.sub(balanceBefore.shortTokens)
+                        ).to.equal(ethers.utils.parseEther("6000"))
+                    })
+                })
+            })
+
             it("Multiple commits (adding up to a valid amount)", async () => {
                 // Commit using the balance in the contracts, which we just committed.
                 await poolCommitter.claim(signers[0].address)
@@ -1141,6 +1233,262 @@ describe("LeveragedPool - commit", () => {
                 )
 
                 expect(shortBalanceAfter.sub(shortBalanceBefore)).to.equal(
+                    amountCommitted
+                )
+            })
+        })
+    })
+
+    context("Short Burning then minting in one commit, from wallet", () => {
+        beforeEach(async () => {
+            const result = await deployPoolAndTokenContracts(
+                POOL_CODE,
+                frontRunningInterval,
+                updateInterval,
+                leverage,
+                feeAddress,
+                fee
+            )
+            signers = result.signers
+            pool = result.pool
+            token = result.token
+            library = result.library
+            shortToken = result.shortToken
+            longToken = result.longToken
+            poolCommitter = result.poolCommitter
+
+            await token.approve(pool.address, amountCommitted.mul(999))
+            await pool.setKeeper(signers[0].address)
+            await poolCommitter.commit(SHORT_MINT, amountCommitted, false)
+            await timeout(updateInterval * 1000)
+            await pool.poolUpkeep(1, 1)
+        })
+
+        it("Should appropriately set values", async () => {
+            // Commit using the balance in the contracts, which we just committed.
+            await poolCommitter.claim(signers[0].address)
+            const shortTokenSupplyBefore = await shortToken.totalSupply()
+            await poolCommitter.commit(
+                SHORT_BURN_THEN_MINT,
+                amountCommitted,
+                false
+            )
+            const shortTokenSupplyAfter = await shortToken.totalSupply()
+
+            const userMostRecentCommit =
+                await poolCommitter.userMostRecentCommit(signers[0].address)
+            const totalMostRecentCommit =
+                await poolCommitter.totalMostRecentCommit()
+
+            // Supply decreases
+            expect(shortTokenSupplyAfter).to.equal(
+                shortTokenSupplyBefore.sub(amountCommitted)
+            )
+            // Commitment storage updates
+            expect(userMostRecentCommit.balanceShortBurnMintAmount).to.equal(0)
+            expect(userMostRecentCommit.shortBurnMintAmount).to.equal(
+                amountCommitted
+            )
+            expect(totalMostRecentCommit.shortBurnAmount).to.equal(0)
+            expect(totalMostRecentCommit.shortBurnMintAmount).to.equal(
+                amountCommitted
+            )
+        })
+
+        context("Invalid commitments", () => {
+            it("Should revert if you are attempting to SHORT_BURN_THEN_MINT duplicate times (from wallet)", async () => {
+                // Commit using the balance in the wallet, which we just committed.
+                await poolCommitter.claim(signers[0].address)
+                await poolCommitter.commit(
+                    SHORT_BURN_THEN_MINT,
+                    amountCommitted,
+                    false
+                )
+                await expect(
+                    poolCommitter.commit(
+                        SHORT_BURN_THEN_MINT,
+                        amountCommitted,
+                        false
+                    )
+                ).to.be.revertedWith("ERC20: burn amount exceeds balance")
+            })
+
+            it("Should revert if you are attempting to SHORT_BURN_THEN_MINT duplicate times (from aggregate balance)", async () => {
+                // Commit using the balance in the contracts, which we just committed.
+                await poolCommitter.commit(
+                    SHORT_BURN_THEN_MINT,
+                    amountCommitted,
+                    true
+                )
+                await expect(
+                    poolCommitter.commit(
+                        SHORT_BURN_THEN_MINT,
+                        amountCommitted,
+                        true
+                    )
+                ).to.be.revertedWith("Insufficient pool tokens")
+            })
+
+            it("Should revert if you are attempting to SHORT_BURN_THEN_MINT too many tokens (from wallet)", async () => {
+                // Commit using the balance in the wallet, which we just committed.
+                await poolCommitter.claim(signers[0].address)
+                await expect(
+                    poolCommitter.commit(
+                        SHORT_BURN_THEN_MINT,
+                        amountCommitted.add(1),
+                        false
+                    )
+                ).to.be.revertedWith("ERC20: burn amount exceeds balance")
+            })
+
+            it("Should revert if you are attempting to SHORT_BURN_THEN_MINT too many tokens (from aggregate balance)", async () => {
+                // Commit using the balance in the contracts, which we just committed.
+                await expect(
+                    poolCommitter.commit(
+                        SHORT_BURN_THEN_MINT,
+                        amountCommitted.add(1),
+                        true
+                    )
+                ).to.be.revertedWith("Insufficient pool tokens") // The error here is different from burning from wallet, because it does not burn from user's wallet and thus needs to manually check
+            })
+        })
+
+        context("Valid execution", async () => {
+            context("Different prices per token", () => {
+                context("Short Price = $0.5 Long Price = $1.5", async () => {
+                    it("Appropriately burns and mints at the correct rate", async () => {
+                        await poolCommitter.commit(
+                            LONG_MINT,
+                            amountCommitted,
+                            false
+                        )
+                        await timeout(updateInterval * 1000)
+                        await pool.poolUpkeep(1, 1)
+                        await timeout(updateInterval * 1000)
+                        // Double price
+                        await pool.poolUpkeep(1000, 2000)
+                        await poolCommitter.claim(signers[0].address)
+
+                        await poolCommitter.commit(
+                            SHORT_BURN_THEN_MINT,
+                            amountCommitted,
+                            false
+                        )
+
+                        const balanceBefore =
+                            await poolCommitter.getAggregateBalance(
+                                signers[0].address
+                            )
+
+                        await timeout(updateInterval * 1000)
+                        await pool.poolUpkeep(2000, 2000)
+
+                        // 2000 Short tokens burnt at $0.5 == $1000
+                        // $1000 then minted to be Long tokens at $1.5 == 666.6 pool tokens
+                        const balance = await poolCommitter.getAggregateBalance(
+                            signers[0].address
+                        )
+                        expect(
+                            balance.longTokens.sub(balanceBefore.longTokens)
+                        ).to.equal(
+                            ethers.utils.parseEther("666.666666666666666666")
+                        )
+                        expect(balance.shortTokens).to.equal(0)
+                    })
+                })
+            })
+
+            it("Multiple commits (adding up to a valid amount)", async () => {
+                // Commit using the balance in the contracts, which we just committed.
+                await poolCommitter.claim(signers[0].address)
+                await poolCommitter.commit(
+                    SHORT_BURN_THEN_MINT,
+                    amountCommitted.div(2),
+                    false
+                )
+                await poolCommitter.commit(
+                    SHORT_BURN_THEN_MINT,
+                    amountCommitted.div(2),
+                    false
+                )
+                let longBalance = await pool.longBalance()
+                let shortBalance = await pool.shortBalance()
+                expect(shortBalance).to.equal(amountCommitted)
+                expect(longBalance).to.equal(0)
+
+                await timeout(updateInterval * 1000)
+
+                await pool.poolUpkeep(1, 1)
+
+                // Side balances should have switched
+                longBalance = await pool.longBalance()
+                shortBalance = await pool.shortBalance()
+                expect(shortBalance).to.equal(0)
+                expect(longBalance).to.equal(amountCommitted)
+
+                const userBalance = await poolCommitter.getAggregateBalance(
+                    signers[0].address
+                )
+                expect(userBalance.shortTokens).to.equal(0)
+
+                expect(userBalance.longTokens).to.equal(amountCommitted)
+
+                const longBalanceBefore = await longToken.balanceOf(
+                    signers[0].address
+                )
+
+                await poolCommitter.claim(signers[0].address)
+
+                const longBalanceAfter = await longToken.balanceOf(
+                    signers[0].address
+                )
+
+                expect(longBalanceAfter.sub(longBalanceBefore)).to.equal(
+                    amountCommitted
+                )
+            })
+
+            it("Should Allow for execution and updating of balances with one single commit", async () => {
+                // Commit using the balance in the contracts, which we just committed.
+                await poolCommitter.claim(signers[0].address)
+                await poolCommitter.commit(
+                    SHORT_BURN_THEN_MINT,
+                    amountCommitted,
+                    false
+                )
+                let longBalance = await pool.longBalance()
+                let shortBalance = await pool.shortBalance()
+                expect(shortBalance).to.equal(amountCommitted)
+                expect(longBalance).to.equal(0)
+
+                await timeout(updateInterval * 1000)
+
+                await pool.poolUpkeep(1, 1)
+
+                // Side balances should have switched
+                longBalance = await pool.longBalance()
+                shortBalance = await pool.shortBalance()
+                expect(shortBalance).to.equal(0)
+                expect(longBalance).to.equal(amountCommitted)
+
+                const userBalance = await poolCommitter.getAggregateBalance(
+                    signers[0].address
+                )
+                expect(userBalance.shortTokens).to.equal(0)
+
+                expect(userBalance.longTokens).to.equal(amountCommitted)
+
+                const longBalanceBefore = await shortToken.balanceOf(
+                    signers[0].address
+                )
+
+                await poolCommitter.claim(signers[0].address)
+
+                const longBalanceAfter = await longToken.balanceOf(
+                    signers[0].address
+                )
+
+                expect(longBalanceAfter.sub(longBalanceBefore)).to.equal(
                     amountCommitted
                 )
             })

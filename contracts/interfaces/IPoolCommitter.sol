@@ -9,8 +9,8 @@ interface IPoolCommitter {
         ShortBurn, // Burn short tokens
         LongMint, // Mint long tokens
         LongBurn, // Burn long tokens
-        LongBurnThenMint, // Burn Long tokens, then instantly mint in same upkeep
-        ShortBurnThenMint // Burn Short tokens, then instantly mint in same upkeep
+        LongBurnShortMint, // Burn Long tokens, then instantly mint in same upkeep
+        ShortBurnLongMint // Burn Short tokens, then instantly mint in same upkeep
     }
 
     struct BalancesAndSupplies {
