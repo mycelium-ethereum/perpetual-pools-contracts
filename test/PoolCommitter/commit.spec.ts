@@ -801,11 +801,11 @@ describe("LeveragedPool - commit", () => {
                 expect(userMostRecentCommit.balanceLongBurnMintAmount).to.equal(
                     amountCommitted
                 )
-                expect(userMostRecentCommit.longBurnMintAmount).to.equal(
+                expect(userMostRecentCommit.longBurnShortMintAmount).to.equal(
                     amountCommitted
                 )
                 expect(totalMostRecentCommit.longBurnAmount).to.equal(0)
-                expect(totalMostRecentCommit.longBurnMintAmount).to.equal(
+                expect(totalMostRecentCommit.longBurnShortMintAmount).to.equal(
                     amountCommitted
                 )
             })
@@ -988,7 +988,7 @@ describe("LeveragedPool - commit", () => {
                             await poolCommitter.userMostRecentCommit(
                                 signers[0].address
                             )
-                        ).longBurnMintAmount
+                        ).longBurnShortMintAmount
                     ).to.equal(amountCommitted)
 
                     await timeout(updateInterval * 1000)
@@ -1073,11 +1073,11 @@ describe("LeveragedPool - commit", () => {
             )
             // Commitment storage updates
             expect(userMostRecentCommit.balanceLongBurnMintAmount).to.equal(0)
-            expect(userMostRecentCommit.longBurnMintAmount).to.equal(
+            expect(userMostRecentCommit.longBurnShortMintAmount).to.equal(
                 amountCommitted
             )
             expect(totalMostRecentCommit.longBurnAmount).to.equal(0)
-            expect(totalMostRecentCommit.longBurnMintAmount).to.equal(
+            expect(totalMostRecentCommit.longBurnShortMintAmount).to.equal(
                 amountCommitted
             )
         })
@@ -1328,11 +1328,11 @@ describe("LeveragedPool - commit", () => {
             )
             // Commitment storage updates
             expect(userMostRecentCommit.balanceShortBurnMintAmount).to.equal(0)
-            expect(userMostRecentCommit.shortBurnMintAmount).to.equal(
+            expect(userMostRecentCommit.shortBurnLongMintAmount).to.equal(
                 amountCommitted
             )
             expect(totalMostRecentCommit.shortBurnAmount).to.equal(0)
-            expect(totalMostRecentCommit.shortBurnMintAmount).to.equal(
+            expect(totalMostRecentCommit.shortBurnLongMintAmount).to.equal(
                 amountCommitted
             )
         })

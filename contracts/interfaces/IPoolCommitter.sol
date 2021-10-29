@@ -47,8 +47,8 @@ interface IPoolCommitter {
         uint256 longBurnAmount;
         uint256 shortMintAmount;
         uint256 shortBurnAmount;
-        uint256 shortBurnMintAmount;
-        uint256 longBurnMintAmount;
+        uint256 shortBurnLongMintAmount;
+        uint256 longBurnShortMintAmount;
         uint256 updateIntervalId;
     }
 
@@ -60,9 +60,9 @@ interface IPoolCommitter {
         uint256 shortMintAmount;
         uint256 shortBurnAmount;
         uint256 balanceShortBurnAmount;
-        uint256 shortBurnMintAmount;
+        uint256 shortBurnLongMintAmount;
         uint256 balanceShortBurnMintAmount;
-        uint256 longBurnMintAmount;
+        uint256 longBurnShortMintAmount;
         uint256 balanceLongBurnMintAmount;
         uint256 updateIntervalId;
     }

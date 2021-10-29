@@ -23,8 +23,8 @@ library PoolSwapLibrary {
         uint256 longBurnAmount;
         uint256 shortMintAmount;
         uint256 shortBurnAmount;
-        uint256 longBurnMintAmount;
-        uint256 shortBurnMintAmount;
+        uint256 longBurnShortMintAmount;
+        uint256 shortBurnLongMintAmount;
     }
 
     struct PriceChangeData {
@@ -363,23 +363,23 @@ library PoolSwapLibrary {
         }
         uint256 longBurnResult; // The amount of settlement tokens to withdraw based on long token burn
         uint256 shortBurnResult; // The amount of settlement tokens to withdraw based on short token burn
-        if (data.longMintAmount > 0 || data.shortBurnMintAmount > 0) {
+        if (data.longMintAmount > 0 || data.shortBurnLongMintAmount > 0) {
             _newLongTokens = getMintWithBurns(
                 data.longPrice,
                 data.shortPrice,
                 data.longMintAmount,
-                data.shortBurnMintAmount
+                data.shortBurnLongMintAmount
             );
         }
         if (data.longBurnAmount > 0) {
             longBurnResult = getBurn(data.longPrice, data.longBurnAmount);
         }
-        if (data.shortMintAmount > 0 || data.longBurnMintAmount > 0) {
+        if (data.shortMintAmount > 0 || data.longBurnShortMintAmount > 0) {
             _newShortTokens = getMintWithBurns(
                 data.shortPrice,
                 data.longPrice,
                 data.shortMintAmount,
-                data.longBurnMintAmount
+                data.longBurnShortMintAmount
             );
         }
         if (data.shortBurnAmount > 0) {
