@@ -320,10 +320,12 @@ describe("LeveragedPool - commit", () => {
                 await poolCommitter.totalMostRecentCommit()
 
             expect(shortTokenSupplyAfter).to.equal(shortTokenSupplyBefore) // Supply stays same
-            // Commitment storage updates
-            expect(userMostRecentCommit.balanceShortMintAmount).to.equal(
-                amountCommitted
-            )
+            // Balance storage updates
+            const settlementTokens = (
+                await poolCommitter.getAggregateBalance(signers[0].address)
+            ).settlementTokens
+            expect(settlementTokens).to.equal(0)
+
             expect(userMostRecentCommit.shortMintAmount).to.equal(
                 amountCommitted
             )
@@ -336,13 +338,13 @@ describe("LeveragedPool - commit", () => {
             await poolCommitter.commit(SHORT_MINT, amountCommitted, true)
             await expect(
                 poolCommitter.commit(SHORT_MINT, amountCommitted, true)
-            ).to.be.revertedWith("Insufficient settlement tokens")
+            ).be.rejected // Can't figure out how to get the "overflow" error message to be used in chai assertins
         })
 
         it("Should not allow commits that are too large", async () => {
             await expect(
                 poolCommitter.commit(SHORT_MINT, amountCommitted.mul(300), true)
-            ).to.be.revertedWith("Insufficient settlement tokens")
+            ).be.rejected // Can't figure out how to get the "overflow" error message to be used in chai assertins
         })
 
         it("Should allow for a combination of short_mint commits from wallet and aggregate balance", async () => {
@@ -359,10 +361,12 @@ describe("LeveragedPool - commit", () => {
                 await poolCommitter.totalMostRecentCommit()
 
             expect(shortTokenSupplyAfter).to.equal(shortTokenSupplyBefore) // Supply decreases
-            // Commitment storage updates
-            expect(userMostRecentCommit.balanceShortMintAmount).to.equal(
-                amountCommitted
-            )
+            // Balance storage updates
+            const settlementTokens = (
+                await poolCommitter.getAggregateBalance(signers[0].address)
+            ).settlementTokens
+            expect(settlementTokens).to.equal(0)
+
             expect(userMostRecentCommit.shortMintAmount).to.equal(
                 amountCommitted.mul(2)
             )
@@ -543,9 +547,10 @@ describe("LeveragedPool - commit", () => {
 
             expect(longTokenSupplyAfter).to.equal(longTokenSupplyBefore) // Supply stays same
             // Commitment storage updates
-            expect(userMostRecentCommit.balanceLongMintAmount).to.equal(
-                amountCommitted
-            )
+            const settlementTokens = (
+                await poolCommitter.getAggregateBalance(signers[0].address)
+            ).settlementTokens
+            expect(settlementTokens).to.equal(0)
             expect(userMostRecentCommit.longMintAmount).to.equal(
                 amountCommitted
             )
@@ -556,15 +561,53 @@ describe("LeveragedPool - commit", () => {
 
         it("Should not allow for too many commitments (that bring amount over a user's balance)", async () => {
             await poolCommitter.commit(LONG_MINT, amountCommitted, true)
-            await expect(
-                poolCommitter.commit(LONG_MINT, amountCommitted, true)
-            ).to.be.revertedWith("Insufficient settlement tokens")
+            await expect(poolCommitter.commit(LONG_MINT, amountCommitted, true))
+                .be.rejected // Can't figure out how to get the "overflow" error message to be used in chai assertins
         })
 
         it("Should not allow commits that are too large", async () => {
             await expect(
                 poolCommitter.commit(LONG_MINT, amountCommitted.mul(300), true)
-            ).to.be.revertedWith("Insufficient settlement tokens")
+            ).be.rejected // Can't figure out how to get the "overflow" error message to be used in chai assertins
+        })
+
+        it("Long mint from aggregate balance reduces settlement token amount in balance", async () => {
+            const longTokenSupplyBefore = await longToken.totalSupply()
+
+            await poolCommitter.commit(LONG_MINT, amountCommitted, true)
+
+            // Balance storage updates
+            const settlementTokens = (
+                await poolCommitter.getAggregateBalance(signers[0].address)
+            ).settlementTokens
+            expect(settlementTokens).to.equal(0)
+            await poolCommitter.commit(LONG_MINT, amountCommitted, false)
+
+            const longTokenSupplyAfter = await longToken.totalSupply()
+
+            const userMostRecentCommit =
+                await poolCommitter.userMostRecentCommit(signers[0].address)
+            const totalMostRecentCommit =
+                await poolCommitter.totalMostRecentCommit()
+
+            expect(longTokenSupplyAfter).to.equal(longTokenSupplyBefore) // Supply decreases
+            expect(userMostRecentCommit.longMintAmount).to.equal(
+                amountCommitted.mul(2)
+            )
+            expect(totalMostRecentCommit.longMintAmount).to.equal(
+                amountCommitted.mul(2)
+            )
+
+            await timeout(updateInterval * 1000)
+            await pool.poolUpkeep(1, 1)
+
+            const balanceBefore = await longToken.balanceOf(signers[0].address)
+            await poolCommitter.claim(signers[0].address)
+
+            const balance = await longToken.balanceOf(signers[0].address)
+
+            // User has committed short mint twice, and burnt twice as well
+            expect(balance.sub(balanceBefore)).to.equal(amountCommitted.mul(2))
         })
 
         it("Should allow for a combination of long_mint commits from wallet and aggregate balance", async () => {
@@ -576,8 +619,11 @@ describe("LeveragedPool - commit", () => {
                 signers[0].address
             )
 
-            // Commitment storage updates
-            expect(userCommit.balanceLongMintAmount).to.equal(amountCommitted)
+            // Balance storage updates
+            const settlementTokens = (
+                await poolCommitter.getAggregateBalance(signers[0].address)
+            ).settlementTokens
+            expect(settlementTokens).to.equal(0)
             await poolCommitter.commit(LONG_MINT, amountCommitted, false)
 
             const longTokenSupplyAfter = await longToken.totalSupply()
@@ -588,10 +634,6 @@ describe("LeveragedPool - commit", () => {
                 await poolCommitter.totalMostRecentCommit()
 
             expect(longTokenSupplyAfter).to.equal(longTokenSupplyBefore) // Supply decreases
-            // Commitment storage updates
-            expect(userMostRecentCommit.balanceLongMintAmount).to.equal(
-                amountCommitted
-            )
             expect(userMostRecentCommit.longMintAmount).to.equal(
                 amountCommitted.mul(2)
             )
@@ -658,10 +700,11 @@ describe("LeveragedPool - commit", () => {
                 await poolCommitter.totalMostRecentCommit()
 
             expect(longTokenSupplyAfter).to.equal(longTokenSupplyBefore) // Supply decreases
-            // Commitment storage updates
-            expect(userMostRecentCommit.balanceLongMintAmount).to.equal(
-                amountCommitted
-            )
+            // Balance storage updates
+            const settlementTokens = (
+                await poolCommitter.getAggregateBalance(signers[0].address)
+            ).settlementTokens
+            expect(settlementTokens).to.equal(0)
             expect(userMostRecentCommit.longMintAmount).to.equal(
                 amountCommitted.mul(2)
             )
@@ -669,7 +712,6 @@ describe("LeveragedPool - commit", () => {
                 amountCommitted.mul(2)
             )
 
-            expect(userMostRecentCommit.balanceShortMintAmount).to.equal(0)
             expect(userMostRecentCommit.shortMintAmount).to.equal(
                 amountCommitted
             )

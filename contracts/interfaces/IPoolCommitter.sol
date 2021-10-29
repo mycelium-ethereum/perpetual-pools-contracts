@@ -55,11 +55,9 @@ interface IPoolCommitter {
     // Track how much of a user's commitments are being done from their aggregate balance
     struct UserCommitment {
         uint256 longMintAmount;
-        uint256 balanceLongMintAmount;
         uint256 longBurnAmount;
         uint256 balanceLongBurnAmount;
         uint256 shortMintAmount;
-        uint256 balanceShortMintAmount;
         uint256 shortBurnAmount;
         uint256 balanceShortBurnAmount;
         uint256 shortBurnMintAmount;

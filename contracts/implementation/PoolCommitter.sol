@@ -53,10 +53,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         if (commitType == CommitType.LongMint) {
             userCommit.longMintAmount += amount;
             totalCommit.longMintAmount += amount;
-            if (fromAggregateBalance) {
-                userCommit.balanceLongMintAmount += amount;
-                require(userCommit.balanceLongMintAmount <= balance.settlementTokens, "Insufficient settlement tokens");
-            }
+            // If we are minting from balance, this would already have thrown in `commit` if we are minting more than entitled too
         } else if (commitType == CommitType.LongBurn) {
             userCommit.longBurnAmount += amount;
             totalCommit.longBurnAmount += amount;
@@ -75,13 +72,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         } else if (commitType == CommitType.ShortMint) {
             userCommit.shortMintAmount += amount;
             totalCommit.shortMintAmount += amount;
-            if (fromAggregateBalance) {
-                userCommit.balanceShortMintAmount += amount;
-                require(
-                    userCommit.balanceShortMintAmount <= balance.settlementTokens,
-                    "Insufficient settlement tokens"
-                );
-            }
+            // If we are minting from balance, this would already have thrown in `commit` if we are minting more than entitled too
         } else if (commitType == CommitType.ShortBurn) {
             userCommit.shortBurnAmount += amount;
             totalCommit.shortBurnAmount += amount;
@@ -163,6 +154,9 @@ contract PoolCommitter is IPoolCommitter, Ownable {
             // Do not need to transfer if minting using aggregate balance tokens, since the leveraged pool already owns these tokens.
             if (!fromAggregateBalance) {
                 pool.quoteTokenTransferFrom(msg.sender, leveragedPool, amount);
+            } else {
+                // Want to take away from their balance's settlement tokens
+                userAggregateBalance[msg.sender].settlementTokens -= amount;
             }
         }
 
