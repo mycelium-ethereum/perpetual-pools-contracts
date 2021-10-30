@@ -247,15 +247,18 @@ library PoolSwapLibrary {
      * @param frontRunningInterval The frontrunning interval of a pool - The amount of time before an update interval that you must commit to get included in that update
      * @param updateInterval The frequency of a pool's updates
      * @param currentUpdateIntervalId The current update interval's ID
+     * @dev Note that the timestamp parameter is required to be >= lastPriceTimestamp
      * @return The update interval ID in which a commit being made at time timestamp should be included
      */
-    function appropriateUpdateInterval(
+    function appropriateUpdateIntervalId(
         uint256 timestamp,
         uint256 lastPriceTimestamp,
         uint256 frontRunningInterval,
         uint256 updateInterval,
         uint256 currentUpdateIntervalId
     ) external pure returns (uint256) {
+        // Since lastPriceTimestamp <= block.timestamp, the below also confirms that timestamp >= block.timestamp
+        require(timestamp >= lastPriceTimestamp, "timestamp in the past");
         if (frontRunningInterval <= updateInterval) {
             // This is the "simple" case where we either want the current update interval or the next one
             if (isBeforeFrontRunningInterval(timestamp, lastPriceTimestamp, updateInterval, frontRunningInterval)) {
@@ -268,8 +271,11 @@ library PoolSwapLibrary {
             // frontRunningInterval > updateInterval
             // This is the generalised case, where it could be any number of update intervals in the future
             uint256 factorDifference = ABDKMathQuad.toUInt(divUInt(frontRunningInterval, updateInterval));
+            uint256 timeOfNextAvailableInterval = lastPriceTimestamp + (updateInterval * (factorDifference + 1));
             // frontRunningInterval is factorDifference times larger than updateInterval
-            return currentUpdateIntervalId + factorDifference;
+            uint256 minimumUpdateIntervalId = currentUpdateIntervalId + factorDifference;
+            // but, if timestamp is still within minimumUpdateInterval's frontRunningInterval we need to go to the next one
+            return timestamp + frontRunningInterval > timeOfNextAvailableInterval ? minimumUpdateIntervalId + 1 : minimumUpdateIntervalId;
         }
     }
 
