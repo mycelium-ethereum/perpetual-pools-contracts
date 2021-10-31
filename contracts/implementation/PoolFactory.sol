@@ -102,9 +102,7 @@ contract PoolFactory is IPoolFactory, Ownable {
             abi.encode(
                 deploymentParameters.leverageAmount,
                 deploymentParameters.quoteToken,
-                deploymentParameters.oracleWrapper,
-                deploymentParameters.updateInterval,
-                deploymentParameters.frontRunningInterval
+                deploymentParameters.oracleWrapper
             )
         );
 
