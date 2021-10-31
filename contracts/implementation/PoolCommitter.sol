@@ -9,8 +9,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "./PoolSwapLibrary.sol";
 
-import "hardhat/console.sol";
-
 /// @title This contract is responsible for handling commitment logic
 contract PoolCommitter is IPoolCommitter, Ownable {
     // #### Globals
@@ -34,7 +32,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
     mapping(address => uint256) public lastUpdatedIntervalId;
     // The most recent update interval in which a user committed
     mapping(address => uint256[]) public unAggregatedCommitments;
-
+    // Used to create a dynamic array that is used to copy the new unAggregatedCommitments array into the mapping after updating balance
     uint256[] private storageArrayPlaceHolder;
 
     address public factory;
