@@ -8,6 +8,7 @@ import {
     PoolKeeper,
     ChainlinkOracleWrapper,
     PoolToken__factory,
+    TestToken__factory,
 } from "../../types"
 import { POOL_CODE, POOL_CODE_2 } from "../constants"
 import {
@@ -17,6 +18,7 @@ import {
 } from "../utilities"
 import { Signer } from "ethers"
 import LeveragedPoolInterface from "../../artifacts/contracts/implementation/LeveragedPool.sol/LeveragedPool.json"
+import { deflateRaw } from "zlib"
 
 const updateInterval = 100
 const frontRunningInterval = 20
@@ -105,7 +107,7 @@ describe("PoolFactory.deployPool", () => {
                 Error
             )
         })
-        it("should allow multiple clones to exist", async () => {
+        it("should not allow multiple clones to exist with the same leverageAmount, quoteToken, oracleWrapper", async () => {
             const deploymentData = {
                 poolName: POOL_CODE_2,
                 frontRunningInterval: 3,
@@ -115,19 +117,13 @@ describe("PoolFactory.deployPool", () => {
                 oracleWrapper: oracleWrapper.address,
                 settlementEthOracle: settlementEthOracle.address,
             }
-            const secondPool = getEventArgs(
-                await (await factory.deployPool(deploymentData)).wait(),
-                "DeployPool"
+            await expect(factory.deployPool(deploymentData)).to.not.reverted
+            deploymentData.updateInterval = 60
+            deploymentData.frontRunningInterval = 30
+            await expect(factory.deployPool(deploymentData)).to.revertedWith(
+                "ERC1167: create2 failed"
             )
-            const pool2 = new ethers.Contract(
-                secondPool?.pool,
-                LeveragedPoolInterface.abi,
-                (await ethers.getSigners())[0]
-            ) as LeveragedPool
-            expect(await pool2.poolName()).to.eq(`5-${POOL_CODE_2}`)
-            expect(await pool.poolName()).to.eq(`${leverage}-${POOL_CODE}`)
         })
-
         it("pool should own tokens", async () => {
             const longToken = await pool.tokens(0)
             const shortToken = await pool.tokens(1)
@@ -196,6 +192,13 @@ describe("PoolFactory.deployPool", () => {
             )
         })
         it("should reject tokens with more than 18 decimals", async () => {
+            const testToken = (await ethers.getContractFactory(
+                "TestToken",
+                signers[0]
+            )) as TestToken__factory
+            const token = await testToken.deploy("TEST TOKEN", "TST1")
+            await token.deployed()
+
             await token.setDecimals(19)
             const deploymentData = {
                 poolName: POOL_CODE_2,
