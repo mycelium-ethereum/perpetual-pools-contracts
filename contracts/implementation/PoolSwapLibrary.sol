@@ -275,7 +275,10 @@ library PoolSwapLibrary {
             // frontRunningInterval is factorDifference times larger than updateInterval
             uint256 minimumUpdateIntervalId = currentUpdateIntervalId + factorDifference;
             // but, if timestamp is still within minimumUpdateInterval's frontRunningInterval we need to go to the next one
-            return timestamp + frontRunningInterval > timeOfNextAvailableInterval ? minimumUpdateIntervalId + 1 : minimumUpdateIntervalId;
+            return
+                timestamp + frontRunningInterval > timeOfNextAvailableInterval
+                    ? minimumUpdateIntervalId + 1
+                    : minimumUpdateIntervalId;
         }
     }
 

@@ -22,6 +22,7 @@ import {
     createCommit,
     CommitEventArgs,
     timeout,
+    getCurrentTotalCommit,
 } from "../../utilities"
 
 chai.use(chaiAsPromised)
@@ -86,13 +87,13 @@ describe("LeveragedPool - executeCommitment: Long Burn", () => {
         })
         it("should reduce the shadow long burn pool balance", async () => {
             expect(
-                (await poolCommitter.totalMostRecentCommit()).longBurnAmount
+                (await getCurrentTotalCommit(poolCommitter)).longBurnAmount
             ).to.equal(amountCommitted)
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(9, 10)
             expect(
                 await (
-                    await poolCommitter.totalMostRecentCommit()
+                    await getCurrentTotalCommit(poolCommitter)
                 ).longBurnAmount
             ).to.eq(0)
         })

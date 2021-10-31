@@ -16,6 +16,7 @@ import {
     createCommit,
     CommitEventArgs,
     timeout,
+    getCurrentTotalCommit,
 } from "../../utilities"
 
 chai.use(chaiAsPromised)
@@ -67,12 +68,12 @@ describe("LeveragedPool - executeCommitment: Short Mint", () => {
         })
         it("should reduce the shadow short mint pool balance", async () => {
             expect(
-                (await poolCommitter.totalMostRecentCommit()).shortMintAmount
+                (await getCurrentTotalCommit(poolCommitter)).shortMintAmount
             ).to.eq(amountCommitted)
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(9, 10)
             expect(
-                (await poolCommitter.totalMostRecentCommit()).shortMintAmount
+                (await getCurrentTotalCommit(poolCommitter)).shortMintAmount
             ).to.eq(0)
         })
         it("should mint short pair tokens", async () => {

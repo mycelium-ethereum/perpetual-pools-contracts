@@ -9,6 +9,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "./PoolSwapLibrary.sol";
 
+import "hardhat/console.sol";
+
 /// @title This contract is responsible for handling commitment logic
 contract PoolCommitter is IPoolCommitter, Ownable {
     // #### Globals
@@ -25,11 +27,15 @@ contract PoolCommitter is IPoolCommitter, Ownable {
     mapping(address => Balance) public userAggregateBalance;
 
     // Update interval ID => TotalCommitment
-    mapping(uint256 => TotalCommitment) totalPoolCommitments;
+    mapping(uint256 => TotalCommitment) public totalPoolCommitments;
     // Address => Update interval ID => UserCommitment
-    mapping(address => mapping(uint256 => UserCommitment)) userCommitments;
+    mapping(address => mapping(uint256 => UserCommitment)) public userCommitments;
     // The last interval ID for which a given user's balance was updated
-    mapping(address => uint256) lastUpdatedIntervalId;
+    mapping(address => uint256) public lastUpdatedIntervalId;
+    // The most recent update interval in which a user committed
+    mapping(address => uint256[]) public unAggregatedCommitments;
+
+    uint256[] private storageArrayPlaceHolder;
 
     address public factory;
     address public governance;
@@ -140,11 +146,22 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         uint256 lastPriceTimestamp = pool.lastPriceTimestamp();
         uint256 frontRunningInterval = pool.frontRunningInterval();
 
-        uint256 appropriateUpdateIntervalId = PoolSwapLibrary.appropriateUpdateIntervalId(block.timestamp, lastPriceTimestamp, frontRunningInterval, updateInterval, updateIntervalId);
+        uint256 appropriateUpdateIntervalId = PoolSwapLibrary.appropriateUpdateIntervalId(
+            block.timestamp,
+            lastPriceTimestamp,
+            frontRunningInterval,
+            updateInterval,
+            updateIntervalId
+        );
         TotalCommitment storage totalCommit = totalPoolCommitments[appropriateUpdateIntervalId];
         UserCommitment storage userCommit = userCommitments[msg.sender][appropriateUpdateIntervalId];
 
         userCommit.updateIntervalId = appropriateUpdateIntervalId;
+
+        uint256 length = unAggregatedCommitments[msg.sender].length;
+        if (length == 0 || unAggregatedCommitments[msg.sender][length - 1] < appropriateUpdateIntervalId) {
+            unAggregatedCommitments[msg.sender].push(appropriateUpdateIntervalId);
+        }
 
         if (commitType == CommitType.LongMint || commitType == CommitType.ShortMint) {
             // minting: pull in the quote token from the committer
@@ -280,8 +297,10 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         updateIntervalId += 1;
 
         uint32 counter = 2;
+        uint256 lastPriceTimestamp = pool.lastPriceTimestamp();
+        uint256 updateInterval = pool.updateInterval();
         while (true) {
-            if (block.timestamp >= pool.lastPriceTimestamp() + pool.updateInterval() * counter) {
+            if (block.timestamp >= lastPriceTimestamp + updateInterval * counter) {
                 // Another update interval has passed, so we have to do the nextIntervalCommit as well
                 executeGivenCommitments(totalPoolCommitments[updateIntervalId]);
                 delete totalPoolCommitments[updateIntervalId];
@@ -326,104 +345,66 @@ contract PoolCommitter is IPoolCommitter, Ownable {
     function updateAggregateBalance(address user) public override {
         Balance storage balance = userAggregateBalance[user];
 
-        uint256 _updateIntervalId = updateIntervalId;
-        uint256 _newLongTokensSum = 0;
-        uint256 _newShortTokensSum = 0;
-        uint256 _newSettlementTokensSum = 0;
-        uint256 _balanceLongBurnAmount = 0;
-        uint256 _balanceShortBurnAmount = 0;
+        BalanceUpdate memory update = BalanceUpdate({
+            _updateIntervalId: updateIntervalId,
+            _newLongTokensSum: 0,
+            _newShortTokensSum: 0,
+            _newSettlementTokensSum: 0,
+            _balanceLongBurnAmount: 0,
+            _balanceShortBurnAmount: 0
+        });
+
         // Iterate from the most recent up until the current update interval
-        for (uint256 i = lastUpdatedIntervalId[user] + 1; i < _updateIntervalId; i++) {
-            UserCommitment memory commitment = userCommitments[user][i];
+
+        uint256[] memory currentIntervalIds = unAggregatedCommitments[user];
+        uint256 unAggregatedLength = currentIntervalIds.length;
+        for (uint256 i = 0; i < unAggregatedLength; i++) {
+            uint256 id = currentIntervalIds[i];
+            if (currentIntervalIds[i] == 0) {
+                continue;
+            }
+            UserCommitment memory commitment = userCommitments[user][id];
+
             /* If the update interval of commitment has not yet passed, we still
             want to deduct burns from the balance from a user's balance.
             Therefore, this should happen outside of the if block below.*/
-            _balanceLongBurnAmount += commitment.balanceLongBurnAmount + commitment.balanceLongBurnMintAmount;
-            _balanceShortBurnAmount += commitment.balanceShortBurnAmount + commitment.balanceShortBurnMintAmount;
-            if (commitment.updateIntervalId != 0) {
-                (uint256 _newLongTokens, uint256 _newShortTokens, uint256 _newSettlementTokens) = updateBalanceSingleCommitment(commitment);
-                _newLongTokensSum += _newLongTokens;
-                _newShortTokensSum += _newShortTokens;
-                _newSettlementTokensSum += _newSettlementTokens;
+            update._balanceLongBurnAmount += commitment.balanceLongBurnAmount + commitment.balanceLongBurnMintAmount;
+            update._balanceShortBurnAmount += commitment.balanceShortBurnAmount + commitment.balanceShortBurnMintAmount;
+            if (commitment.updateIntervalId < updateIntervalId) {
+                (
+                    uint256 _newLongTokens,
+                    uint256 _newShortTokens,
+                    uint256 _newSettlementTokens
+                ) = updateBalanceSingleCommitment(commitment);
+                update._newLongTokensSum += _newLongTokens;
+                update._newShortTokensSum += _newShortTokens;
+                update._newSettlementTokensSum += _newSettlementTokens;
                 delete userCommitments[user][i];
+                delete unAggregatedCommitments[user][i];
             } else {
                 // Clear them now that they have been accounted for in the balance
-                userCommitments[user][i].balanceLongBurnAmount = 0;
-                userCommitments[user][i].balanceShortBurnAmount = 0;
-                userCommitments[user][i].balanceLongBurnMintAmount = 0;
-                userCommitments[user][i].balanceShortBurnMintAmount = 0;
+                userCommitments[user][id].balanceLongBurnAmount = 0;
+                userCommitments[user][id].balanceShortBurnAmount = 0;
+                userCommitments[user][id].balanceLongBurnMintAmount = 0;
+                userCommitments[user][id].balanceShortBurnMintAmount = 0;
+                // This commitment wasn't ready to be completely added to the balance, so copy it over into the new ID array
+                storageArrayPlaceHolder.push(currentIntervalIds[i]);
             }
-            lastUpdatedIntervalId[user] = i;
         }
+
+        delete unAggregatedCommitments[user];
+        unAggregatedCommitments[user] = storageArrayPlaceHolder;
+
+        delete storageArrayPlaceHolder;
 
         // Add new tokens minted, and remove the ones that were burnt from this balance
-        balance.longTokens += _newLongTokensSum;
-        balance.longTokens -= _balanceLongBurnAmount;
-        balance.shortTokens += _newShortTokensSum;
-        balance.shortTokens -= _balanceShortBurnAmount;
-        balance.settlementTokens += _newSettlementTokensSum;
+        balance.longTokens += update._newLongTokensSum;
+        balance.longTokens -= update._balanceLongBurnAmount;
+        balance.shortTokens += update._newShortTokensSum;
+        balance.shortTokens -= update._balanceShortBurnAmount;
+        balance.settlementTokens += update._newSettlementTokensSum;
 
         emit AggregateBalanceUpdated(user);
-
-        /*
-        UserCommitment memory mostRecentCommit = userMostRecentCommit[user];
-
-        uint256 _newLongTokens = 0;
-        uint256 _newShortTokens = 0;
-        uint256 _newSettlementTokens = 0;
-        uint256 _balanceLongBurnAmount = 0;
-        uint256 _balanceShortBurnAmount = 0;
-
-        /* If the update interval of mostRecentCommit has not yet passed, we still
-           want to deduct burns from the balance from a user's balance.
-           Therefore, this should happen outside of the if block below.*/
-           /*
-        _balanceLongBurnAmount = mostRecentCommit.balanceLongBurnAmount + mostRecentCommit.balanceLongBurnMintAmount;
-        _balanceShortBurnAmount = mostRecentCommit.balanceShortBurnAmount + mostRecentCommit.balanceShortBurnMintAmount;
-        if (mostRecentCommit.updateIntervalId != 0 && mostRecentCommit.updateIntervalId < updateIntervalId) {
-            (_newLongTokens, _newShortTokens, _newSettlementTokens) = updateBalanceSingleCommitment(mostRecentCommit);
-            delete userMostRecentCommit[user];
-        } else {
-            // Clear them now that they have been accounted for in the balance
-            userMostRecentCommit[user].balanceLongBurnAmount = 0;
-            userMostRecentCommit[user].balanceShortBurnAmount = 0;
-            userMostRecentCommit[user].balanceLongBurnMintAmount = 0;
-            userMostRecentCommit[user].balanceShortBurnMintAmount = 0;
-        }
-
-        UserCommitment memory nextIntervalCommit = userNextIntervalCommit[user];
-        uint256 _newLongTokensSecond;
-        uint256 _newShortTokensSecond;
-        uint256 _newSettlementTokensSecond;
-
-        _balanceLongBurnAmount +=
-            nextIntervalCommit.balanceLongBurnAmount +
-            nextIntervalCommit.balanceLongBurnMintAmount;
-        _balanceShortBurnAmount +=
-            nextIntervalCommit.balanceShortBurnAmount +
-            nextIntervalCommit.balanceShortBurnMintAmount;
-        if (nextIntervalCommit.updateIntervalId != 0 && nextIntervalCommit.updateIntervalId < updateIntervalId) {
-            (_newLongTokensSecond, _newShortTokensSecond, _newSettlementTokensSecond) = updateBalanceSingleCommitment(
-                nextIntervalCommit
-            );
-            delete userNextIntervalCommit[user];
-        } else {
-            // Clear them now that they have been accounted for in the balance
-            userNextIntervalCommit[user].balanceLongBurnAmount = 0;
-            userNextIntervalCommit[user].balanceShortBurnAmount = 0;
-            userNextIntervalCommit[user].balanceLongBurnMintAmount = 0;
-            userNextIntervalCommit[user].balanceShortBurnMintAmount = 0;
-        }
-
-        // Add new tokens minted, and remove the ones that were burnt from this balance
-        balance.longTokens += _newLongTokens + _newLongTokensSecond;
-        balance.longTokens -= _balanceLongBurnAmount;
-        balance.shortTokens += _newShortTokens + _newShortTokensSecond;
-        balance.shortTokens -= _balanceShortBurnAmount;
-        balance.settlementTokens += _newSettlementTokens + _newSettlementTokensSecond;
-
-        emit AggregateBalanceUpdated(user);
-        */
     }
 
     /**
@@ -432,34 +413,49 @@ contract PoolCommitter is IPoolCommitter, Ownable {
     function getAggregateBalance(address user) public view override returns (Balance memory) {
         Balance memory _balance = userAggregateBalance[user];
 
-        uint256 _updateIntervalId = updateIntervalId;
-        uint256 _newLongTokensSum = 0;
-        uint256 _newShortTokensSum = 0;
-        uint256 _newSettlementTokensSum = 0;
-        uint256 _balanceLongBurnAmount = 0;
-        uint256 _balanceShortBurnAmount = 0;
+        BalanceUpdate memory update = BalanceUpdate({
+            _updateIntervalId: updateIntervalId,
+            _newLongTokensSum: 0,
+            _newShortTokensSum: 0,
+            _newSettlementTokensSum: 0,
+            _balanceLongBurnAmount: 0,
+            _balanceShortBurnAmount: 0
+        });
+
         // Iterate from the most recent up until the current update interval
-        for (uint256 i = lastUpdatedIntervalId[user] + 1; i < _updateIntervalId; i++) {
-            UserCommitment memory commitment = userCommitments[user][i];
+
+        uint256[] memory currentIntervalIds = unAggregatedCommitments[user];
+        uint256 unAggregatedLength = currentIntervalIds.length;
+        for (uint256 i = 0; i < unAggregatedLength; i++) {
+            uint256 id = currentIntervalIds[i];
+            if (currentIntervalIds[i] == 0) {
+                continue;
+            }
+            UserCommitment memory commitment = userCommitments[user][id];
+
             /* If the update interval of commitment has not yet passed, we still
             want to deduct burns from the balance from a user's balance.
             Therefore, this should happen outside of the if block below.*/
-            _balanceLongBurnAmount += commitment.balanceLongBurnAmount + commitment.balanceLongBurnMintAmount;
-            _balanceShortBurnAmount += commitment.balanceShortBurnAmount + commitment.balanceShortBurnMintAmount;
-            if (commitment.updateIntervalId != 0) {
-                (uint256 _newLongTokens, uint256 _newShortTokens, uint256 _newSettlementTokens) = updateBalanceSingleCommitment(commitment);
-                _newLongTokensSum += _newLongTokens;
-                _newShortTokensSum += _newShortTokens;
-                _newSettlementTokensSum += _newSettlementTokens;
+            update._balanceLongBurnAmount += commitment.balanceLongBurnAmount + commitment.balanceLongBurnMintAmount;
+            update._balanceShortBurnAmount += commitment.balanceShortBurnAmount + commitment.balanceShortBurnMintAmount;
+            if (commitment.updateIntervalId < updateIntervalId) {
+                (
+                    uint256 _newLongTokens,
+                    uint256 _newShortTokens,
+                    uint256 _newSettlementTokens
+                ) = updateBalanceSingleCommitment(commitment);
+                update._newLongTokensSum += _newLongTokens;
+                update._newShortTokensSum += _newShortTokens;
+                update._newSettlementTokensSum += _newSettlementTokens;
             }
         }
 
         // Add new tokens minted, and remove the ones that were burnt from this balance
-        _balance.longTokens += _newLongTokensSum;
-        _balance.longTokens -= _balanceLongBurnAmount;
-        _balance.shortTokens += _newShortTokensSum;
-        _balance.shortTokens -= _balanceShortBurnAmount;
-        _balance.settlementTokens += _newSettlementTokensSum;
+        _balance.longTokens += update._newLongTokensSum;
+        _balance.longTokens -= update._balanceLongBurnAmount;
+        _balance.shortTokens += update._newShortTokensSum;
+        _balance.shortTokens -= update._balanceShortBurnAmount;
+        _balance.settlementTokens += update._newSettlementTokensSum;
 
         return _balance;
     }

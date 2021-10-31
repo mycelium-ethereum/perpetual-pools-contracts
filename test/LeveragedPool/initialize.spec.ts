@@ -377,27 +377,7 @@ describe("LeveragedPool - initialize", () => {
                 })
             ).to.rejectedWith(Error)
         })
-        it("should revert if the updateInterval is less than frontRunningInterval", async () => {
-            // the generated variable `updateInterval` is greater than `frontRunningInterval`
-            await expect(
-                leveragedPool.initialize({
-                    _owner: signers[0].address,
-                    _keeper: generateRandomAddress(),
-                    _oracleWrapper: oracleWrapper.address,
-                    _settlementEthOracle: settlementEthOracle.address,
-                    _longToken: long.address,
-                    _shortToken: short.address,
-                    _poolCommitter: poolCommitter.address,
-                    _poolName: POOL_CODE,
-                    _frontRunningInterval: updateInterval,
-                    _updateInterval: frontRunningInterval,
-                    _fee: fee,
-                    _leverageAmount: leverage,
-                    _feeAddress: feeAddress,
-                    _quoteToken: quoteToken,
-                })
-            ).to.rejectedWith("frontRunning >= updateInterval")
-        })
+
         it("should be able to coexist with other clones", async () => {
             const secondPoolReceipt = await (
                 await testFactoryActual.createPool(POOL_CODE_2)

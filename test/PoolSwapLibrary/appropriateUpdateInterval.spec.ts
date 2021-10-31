@@ -90,7 +90,7 @@ describe("PoolSwapLibrary - getBalancesAfterFees", () => {
                     const time = 100
                     const lastPriceTimestamp = 110
                     const frontRunningInterval = 20
-                    const updateInterval = 100 
+                    const updateInterval = 100
                     const currentUpdateIntervalId = 3
 
                     await expect(
@@ -170,31 +170,12 @@ describe("PoolSwapLibrary - getBalancesAfterFees", () => {
     })
 
     context("frontRunningInterval > updateInterval", async () => {
-        context("frontRunningInterval is just above updateInterval", async () => {
-            it("Returns next update interval", async () => {
-                const time = 50
-                const lastPriceTimestamp = 0
-                const frontRunningInterval = 110
-                const updateInterval = 100
-                const currentUpdateIntervalId = 3
-
-                expect(
-                    await library.appropriateUpdateIntervalId(
-                        time,
-                        lastPriceTimestamp,
-                        frontRunningInterval,
-                        updateInterval,
-                        currentUpdateIntervalId
-                    )
-                ).to.equal(currentUpdateIntervalId + 1)
-            })
-        })
-
-        context("frontRunningInterval is just above updateInterval", async () => {
-            context("Timestamp is inside fromrunning interval for the next update interval as well", async () => {
-                it("Returns update interval after next", async () => {
-                    const time = 149
-                    const lastPriceTimestamp = 50
+        context(
+            "frontRunningInterval is just above updateInterval",
+            async () => {
+                it("Returns next update interval", async () => {
+                    const time = 50
+                    const lastPriceTimestamp = 0
                     const frontRunningInterval = 110
                     const updateInterval = 100
                     const currentUpdateIntervalId = 3
@@ -207,92 +188,135 @@ describe("PoolSwapLibrary - getBalancesAfterFees", () => {
                             updateInterval,
                             currentUpdateIntervalId
                         )
-                    ).to.equal(currentUpdateIntervalId + 2)
+                    ).to.equal(currentUpdateIntervalId + 1)
                 })
-            })
-        })
+            }
+        )
+
+        context(
+            "frontRunningInterval is just above updateInterval",
+            async () => {
+                context(
+                    "Timestamp is inside fromrunning interval for the next update interval as well",
+                    async () => {
+                        it("Returns update interval after next", async () => {
+                            const time = 149
+                            const lastPriceTimestamp = 50
+                            const frontRunningInterval = 110
+                            const updateInterval = 100
+                            const currentUpdateIntervalId = 3
+
+                            expect(
+                                await library.appropriateUpdateIntervalId(
+                                    time,
+                                    lastPriceTimestamp,
+                                    frontRunningInterval,
+                                    updateInterval,
+                                    currentUpdateIntervalId
+                                )
+                            ).to.equal(currentUpdateIntervalId + 2)
+                        })
+                    }
+                )
+            }
+        )
 
         context("frontRunningInterval is double updateInterval", async () => {
-            context("Timestamp is inside fromrunning interval for the next update interval as well", async () => {
-                it.only("Returns current update interval + 3", async () => {
-                    const time = 101
-                    const lastPriceTimestamp = 0
-                    const frontRunningInterval = 200
-                    const updateInterval = 100
-                    const currentUpdateIntervalId = 3
+            context(
+                "Timestamp is inside fromrunning interval for the next update interval as well",
+                async () => {
+                    it("Returns current update interval + 3", async () => {
+                        const time = 101
+                        const lastPriceTimestamp = 0
+                        const frontRunningInterval = 200
+                        const updateInterval = 100
+                        const currentUpdateIntervalId = 3
 
-                    expect(
-                        await library.appropriateUpdateIntervalId(
-                            time,
-                            lastPriceTimestamp,
-                            frontRunningInterval,
-                            updateInterval,
-                            currentUpdateIntervalId
-                        )
-                    ).to.equal(currentUpdateIntervalId + 3)
-                })
-            })
+                        expect(
+                            await library.appropriateUpdateIntervalId(
+                                time,
+                                lastPriceTimestamp,
+                                frontRunningInterval,
+                                updateInterval,
+                                currentUpdateIntervalId
+                            )
+                        ).to.equal(currentUpdateIntervalId + 3)
+                    })
+                }
+            )
 
-            context("Timestamp gives enough time to just skip a single update interval", async () => {
-                it.only("Returns current update interval + 2", async () => {
-                    const time = 50
-                    const lastPriceTimestamp = 0
-                    const frontRunningInterval = 200
-                    const updateInterval = 100
-                    const currentUpdateIntervalId = 3
+            context(
+                "Timestamp gives enough time to just skip a single update interval",
+                async () => {
+                    it("Returns current update interval + 2", async () => {
+                        const time = 50
+                        const lastPriceTimestamp = 0
+                        const frontRunningInterval = 200
+                        const updateInterval = 100
+                        const currentUpdateIntervalId = 3
 
-                    expect(
-                        await library.appropriateUpdateIntervalId(
-                            time,
-                            lastPriceTimestamp,
-                            frontRunningInterval,
-                            updateInterval,
-                            currentUpdateIntervalId
-                        )
-                    ).to.equal(currentUpdateIntervalId + 2)
-                })
-            })
+                        expect(
+                            await library.appropriateUpdateIntervalId(
+                                time,
+                                lastPriceTimestamp,
+                                frontRunningInterval,
+                                updateInterval,
+                                currentUpdateIntervalId
+                            )
+                        ).to.equal(currentUpdateIntervalId + 2)
+                    })
+                }
+            )
         })
 
-        context("frontRunningInterval is much larger than updateInterval (6x higher)", async () => {
-            context("Current timestamp is before next update interval", async () => {
-                it.only("Returns current update interval + 6", async () => {
-                    const time = 50
-                    const lastPriceTimestamp = 0
-                    const frontRunningInterval = 600
-                    const updateInterval = 100
-                    const currentUpdateIntervalId = 3
+        context(
+            "frontRunningInterval is much larger than updateInterval (6x higher)",
+            async () => {
+                context(
+                    "Current timestamp is before next update interval",
+                    async () => {
+                        it("Returns current update interval + 6", async () => {
+                            const time = 50
+                            const lastPriceTimestamp = 0
+                            const frontRunningInterval = 600
+                            const updateInterval = 100
+                            const currentUpdateIntervalId = 3
 
-                    expect(
-                        await library.appropriateUpdateIntervalId(
-                            time,
-                            lastPriceTimestamp,
-                            frontRunningInterval,
-                            updateInterval,
-                            currentUpdateIntervalId
-                        )
-                    ).to.equal(currentUpdateIntervalId + 6)
-                })
-            })
-            context("Current timestamp is after next update interval", async () => {
-                it.only("Returns current update interval + 7", async () => {
-                    const time = 101
-                    const lastPriceTimestamp = 0
-                    const frontRunningInterval = 600
-                    const updateInterval = 100
-                    const currentUpdateIntervalId = 3
+                            expect(
+                                await library.appropriateUpdateIntervalId(
+                                    time,
+                                    lastPriceTimestamp,
+                                    frontRunningInterval,
+                                    updateInterval,
+                                    currentUpdateIntervalId
+                                )
+                            ).to.equal(currentUpdateIntervalId + 6)
+                        })
+                    }
+                )
+                context(
+                    "Current timestamp is after next update interval",
+                    async () => {
+                        it("Returns current update interval + 7", async () => {
+                            const time = 101
+                            const lastPriceTimestamp = 0
+                            const frontRunningInterval = 600
+                            const updateInterval = 100
+                            const currentUpdateIntervalId = 3
 
-                    expect(
-                        await library.appropriateUpdateIntervalId(
-                            time,
-                            lastPriceTimestamp,
-                            frontRunningInterval,
-                            updateInterval,
-                            currentUpdateIntervalId
-                        )
-                    ).to.equal(currentUpdateIntervalId + 7)
-                })
-            })
-        })
+                            expect(
+                                await library.appropriateUpdateIntervalId(
+                                    time,
+                                    lastPriceTimestamp,
+                                    frontRunningInterval,
+                                    updateInterval,
+                                    currentUpdateIntervalId
+                                )
+                            ).to.equal(currentUpdateIntervalId + 7)
+                        })
+                    }
+                )
+            }
+        )
     })
 })
