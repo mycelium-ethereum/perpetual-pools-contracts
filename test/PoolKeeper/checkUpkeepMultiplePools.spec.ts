@@ -14,7 +14,6 @@ import {
     PoolFactory__factory,
     PoolKeeper,
     PoolKeeper__factory,
-    PoolCommitterDeployer__factory,
     PoolSwapLibrary__factory,
     TestToken__factory,
     PoolFactory,
@@ -59,10 +58,16 @@ const setupHook = async () => {
         "ChainlinkOracleWrapper",
         signers[0]
     )) as ChainlinkOracleWrapper__factory
-    oracleWrapper = await oracleWrapperFactory.deploy(oracle.address)
+    oracleWrapper = await oracleWrapperFactory.deploy(
+        oracle.address,
+        signers[0].address
+    )
     await oracleWrapper.deployed()
 
-    settlementEthOracle = await oracleWrapperFactory.deploy(oracle.address)
+    settlementEthOracle = await oracleWrapperFactory.deploy(
+        oracle.address,
+        signers[0].address
+    )
     await settlementEthOracle.deployed()
 
     // Deploy pool keeper
@@ -83,20 +88,6 @@ const setupHook = async () => {
     factory = await (
         await PoolFactory.deploy(generateRandomAddress())
     ).deployed()
-
-    const PoolCommiterDeployerFactory = (await ethers.getContractFactory(
-        "PoolCommitterDeployer",
-        {
-            signer: signers[0],
-            libraries: { PoolSwapLibrary: library.address },
-        }
-    )) as PoolCommitterDeployer__factory
-
-    let poolCommiterDeployer = await PoolCommiterDeployerFactory.deploy(
-        factory.address
-    )
-    poolCommiterDeployer = await poolCommiterDeployer.deployed()
-    await factory.setPoolCommitterDeployer(poolCommiterDeployer.address)
 
     poolKeeper = await poolKeeperFactory.deploy(factory.address)
     await poolKeeper.deployed()

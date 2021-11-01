@@ -4,13 +4,13 @@ pragma solidity 0.8.7;
 import "../interfaces/IPoolCommitter.sol";
 import "../interfaces/ILeveragedPool.sol";
 import "../interfaces/IPoolFactory.sol";
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "./PoolSwapLibrary.sol";
 
 /// @title This contract is responsible for handling commitment logic
-contract PoolCommitter is IPoolCommitter, Ownable {
+contract PoolCommitter is IPoolCommitter, Initializable {
     // #### Globals
     uint128 public constant LONG_INDEX = 0;
     uint128 public constant SHORT_INDEX = 1;
@@ -36,13 +36,15 @@ contract PoolCommitter is IPoolCommitter, Ownable {
     uint256[] private storageArrayPlaceHolder;
 
     address public factory;
-    address public governance;
 
     constructor(address _factory) {
         require(_factory != address(0), "Factory address cannot be null");
-        // set the factory on deploy
         factory = _factory;
-        governance = IPoolFactory(factory).getOwner();
+    }
+
+    function initialize(address _factory) external override initializer {
+        require(_factory != address(0), "Factory address cannot be 0 address");
+        factory = _factory;
     }
 
     /**
@@ -461,6 +463,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
     function setQuoteAndPool(address _quoteToken, address _leveragedPool) external override onlyFactory {
         require(_quoteToken != address(0), "Quote token address cannot be 0 address");
         require(_leveragedPool != address(0), "Leveraged pool address cannot be 0 address");
+
         leveragedPool = _leveragedPool;
         IERC20 _token = IERC20(_quoteToken);
         bool approvalSuccess = _token.approve(leveragedPool, _token.totalSupply());
@@ -480,16 +483,6 @@ contract PoolCommitter is IPoolCommitter, Ownable {
 
     modifier onlyPool() {
         require(msg.sender == leveragedPool, "msg.sender not leveragedPool");
-        _;
-    }
-
-    modifier onlySelf() {
-        require(msg.sender == address(this), "msg.sender not self");
-        _;
-    }
-
-    modifier onlyGov() {
-        require(msg.sender == governance, "msg.sender not governance");
         _;
     }
 }

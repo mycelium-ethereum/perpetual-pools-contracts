@@ -3,14 +3,16 @@ pragma solidity 0.8.7;
 import "../interfaces/IOracleWrapper.sol";
 import "../interfaces/IPriceObserver.sol";
 import "../implementation/PriceObserver.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "prb-math/contracts/PRBMathSD59x18.sol";
 
-contract SMAOracle is Ownable, IOracleWrapper {
+contract SMAOracle is IOracleWrapper {
     using PRBMathSD59x18 for int256;
 
     /// Price oracle supplying the spot price of the quote asset
     address public override oracle;
+
+    // Deployer of the oracle
+    address public immutable override deployer;
 
     /// Price observer providing the SMA oracle with historical pricing data
     address public observer;
@@ -35,26 +37,20 @@ contract SMAOracle is Ownable, IOracleWrapper {
         uint256 _spotDecimals,
         address _observer,
         uint256 _periods,
-        uint256 _updateInterval
+        uint256 _updateInterval,
+        address _deployer
     ) {
         require(_spotOracle != address(0) && _observer != address(0), "SMA: Null address forbidden");
         require(_periods > 0 && _periods <= IPriceObserver(_observer).capacity(), "SMA: Out of bounds");
         require(_spotDecimals <= MAX_DECIMALS, "SMA: Decimal precision too high");
         periods = _periods;
-        setOracle(_spotOracle);
-        setObserver(_observer);
+        oracle = _spotOracle;
+        observer = _observer;
+        deployer = _deployer;
 
         /* `scaler` is always <= 10^18 and >= 1 so this cast is safe */
         scaler = int256(10**(MAX_DECIMALS - _spotDecimals));
         updateInterval = _updateInterval;
-    }
-
-    function setOracle(address _spotOracle) internal onlyOwner {
-        oracle = _spotOracle;
-    }
-
-    function setObserver(address _observer) public onlyOwner {
-        observer = _observer;
     }
 
     /**

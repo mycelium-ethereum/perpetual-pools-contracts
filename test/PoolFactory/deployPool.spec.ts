@@ -8,6 +8,7 @@ import {
     PoolKeeper,
     ChainlinkOracleWrapper,
     PoolToken__factory,
+    TestToken__factory,
 } from "../../types"
 import { POOL_CODE, POOL_CODE_2 } from "../constants"
 import {
@@ -17,6 +18,7 @@ import {
 } from "../utilities"
 import { Signer } from "ethers"
 import LeveragedPoolInterface from "../../artifacts/contracts/implementation/LeveragedPool.sol/LeveragedPool.json"
+import { deflateRaw } from "zlib"
 
 const updateInterval = 100
 const frontRunningInterval = 20
@@ -32,6 +34,7 @@ describe("PoolFactory.deployPool", () => {
     let oracleWrapper: ChainlinkOracleWrapper
     let settlementEthOracle: ChainlinkOracleWrapper
     let pool: LeveragedPool
+    let permissionlessPool: LeveragedPool
     let token: TestToken
     let signers: Signer[]
     let nonDAO: Signer
@@ -57,7 +60,7 @@ describe("PoolFactory.deployPool", () => {
     })
 
     context(
-        "When not called by the DAO and with valid parameters",
+        "When not called by the owner of the oracle wrapper and with valid parameters",
         async () => {
             it("Reverts", async () => {
                 const deploymentParameters = {
@@ -73,7 +76,7 @@ describe("PoolFactory.deployPool", () => {
 
                 await expect(
                     factory.connect(nonDAO).deployPool(deploymentParameters)
-                ).to.be.rejectedWith("msg.sender not governance")
+                ).to.be.rejectedWith("Deployer must be oracle wrapper owner")
             })
         }
     )
@@ -97,13 +100,14 @@ describe("PoolFactory.deployPool", () => {
                 _fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
                 _leverageAmount: 5,
                 _feeAddress: generateRandomAddress(),
+                _secondaryFeeAddress: ethers.constants.AddressZero,
                 _quoteToken: token.address,
             }
             await expect(pool.initialize(initialization)).to.be.rejectedWith(
                 Error
             )
         })
-        it("should allow multiple clones to exist", async () => {
+        it("should not allow multiple clones to exist with the same leverageAmount, quoteToken, oracleWrapper", async () => {
             const deploymentData = {
                 poolName: POOL_CODE_2,
                 frontRunningInterval: 3,
@@ -113,19 +117,13 @@ describe("PoolFactory.deployPool", () => {
                 oracleWrapper: oracleWrapper.address,
                 settlementEthOracle: settlementEthOracle.address,
             }
-            const secondPool = getEventArgs(
-                await (await factory.deployPool(deploymentData)).wait(),
-                "DeployPool"
+            await expect(factory.deployPool(deploymentData)).to.not.reverted
+            deploymentData.updateInterval = 60
+            deploymentData.frontRunningInterval = 30
+            await expect(factory.deployPool(deploymentData)).to.revertedWith(
+                "ERC1167: create2 failed"
             )
-            const pool2 = new ethers.Contract(
-                secondPool?.pool,
-                LeveragedPoolInterface.abi,
-                (await ethers.getSigners())[0]
-            ) as LeveragedPool
-            expect(await pool2.poolName()).to.eq(`5-${POOL_CODE_2}`)
-            expect(await pool.poolName()).to.eq(`${leverage}-${POOL_CODE}`)
         })
-
         it("pool should own tokens", async () => {
             const longToken = await pool.tokens(0)
             const shortToken = await pool.tokens(1)
@@ -144,7 +142,7 @@ describe("PoolFactory.deployPool", () => {
                 poolName: POOL_CODE_2,
                 frontRunningInterval: 2,
                 updateInterval: 5,
-                leverageAmount: 5,
+                leverageAmount: 3,
                 quoteToken: token.address,
                 oracleWrapper: oracleWrapper.address,
                 settlementEthOracle: settlementEthOracle.address,
@@ -194,6 +192,13 @@ describe("PoolFactory.deployPool", () => {
             )
         })
         it("should reject tokens with more than 18 decimals", async () => {
+            const testToken = (await ethers.getContractFactory(
+                "TestToken",
+                signers[0]
+            )) as TestToken__factory
+            const token = await testToken.deploy("TEST TOKEN", "TST1")
+            await token.deployed()
+
             await token.setDecimals(19)
             const deploymentData = {
                 poolName: POOL_CODE_2,

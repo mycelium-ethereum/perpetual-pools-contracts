@@ -32,7 +32,6 @@ import {
     PoolKeeper__factory,
     PoolFactory,
     PoolCommitter,
-    PoolCommitterDeployer__factory,
     TestChainlinkOracle,
     ChainlinkOracleWrapper,
 } from "../types"
@@ -100,7 +99,7 @@ export const getEventArgs = (
     return txReceipt?.events?.find((el: Event) => el.event === eventType)?.args
 }
 
-export const deployPoolSetupContracts = deployments.createFixture(async () => {
+export const deployPoolSetupContracts = async () => {
     const amountMinted = DEFAULT_MINT_AMOUNT
 
     const signers = await ethers.getSigners()
@@ -141,12 +140,14 @@ export const deployPoolSetupContracts = deployments.createFixture(async () => {
     )) as ChainlinkOracleWrapper__factory
 
     const oracleWrapper = await oracleWrapperFactory.deploy(
-        chainlinkOracle.address
+        chainlinkOracle.address,
+        signers[0].address
     )
 
     /* keeper oracle */
     const settlementEthOracle = await oracleWrapperFactory.deploy(
-        ethOracle.address
+        ethOracle.address,
+        signers[0].address
     )
 
     // Deploy and initialise pool
@@ -165,21 +166,6 @@ export const deployPoolSetupContracts = deployments.createFixture(async () => {
     const factory = await (
         await PoolFactory.deploy(generateRandomAddress())
     ).deployed()
-
-    const poolCommitterDeployerFactory = (await ethers.getContractFactory(
-        "PoolCommitterDeployer",
-        {
-            signer: signers[0],
-            libraries: { PoolSwapLibrary: library.address },
-        }
-    )) as PoolCommitterDeployer__factory
-
-    let poolCommitterDeployer = await poolCommitterDeployerFactory.deploy(
-        factory.address
-    )
-    poolCommitterDeployer = await poolCommitterDeployer.deployed()
-
-    await factory.setPoolCommitterDeployer(poolCommitterDeployer.address)
 
     /* deploy price observer contract */
     const priceObserverFactory = (await ethers.getContractFactory(
@@ -210,7 +196,7 @@ export const deployPoolSetupContracts = deployments.createFixture(async () => {
         library,
         priceObserver,
     }
-})
+}
 
 /**
  * Deploys a new instance of a pool, as well as an ERC20 token to use as a quote token.

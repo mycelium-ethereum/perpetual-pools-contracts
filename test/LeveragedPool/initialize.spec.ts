@@ -222,6 +222,7 @@ describe("LeveragedPool - initialize", () => {
                     _fee: fee,
                     _leverageAmount: leverage,
                     _feeAddress: feeAddress,
+                    _secondaryFeeAddress: ethers.constants.AddressZero,
                     _quoteToken: quoteToken,
                 })
             ).wait()
@@ -296,6 +297,7 @@ describe("LeveragedPool - initialize", () => {
                 _fee: fee,
                 _leverageAmount: leverage,
                 _feeAddress: feeAddress,
+                _secondaryFeeAddress: ethers.constants.AddressZero,
                 _quoteToken: quoteToken,
             })
             await expect(
@@ -313,6 +315,7 @@ describe("LeveragedPool - initialize", () => {
                     _fee: fee,
                     _leverageAmount: leverage,
                     _feeAddress: feeAddress,
+                    _secondaryFeeAddress: ethers.constants.AddressZero,
                     _quoteToken: quoteToken,
                 })
             ).to.rejectedWith(Error)
@@ -333,6 +336,7 @@ describe("LeveragedPool - initialize", () => {
                     _fee: fee,
                     _leverageAmount: leverage,
                     _feeAddress: feeAddress,
+                    _secondaryFeeAddress: ethers.constants.AddressZero,
                     _quoteToken: ethers.constants.AddressZero,
                 })
             ).to.rejectedWith(Error)
@@ -353,6 +357,7 @@ describe("LeveragedPool - initialize", () => {
                     _fee: fee,
                     _leverageAmount: leverage,
                     _feeAddress: feeAddress,
+                    _secondaryFeeAddress: ethers.constants.AddressZero,
                     _quoteToken: quoteToken,
                 })
             ).to.rejectedWith(Error)
@@ -373,11 +378,11 @@ describe("LeveragedPool - initialize", () => {
                     _fee: fee,
                     _leverageAmount: leverage,
                     _feeAddress: ethers.constants.AddressZero,
+                    _secondaryFeeAddress: ethers.constants.AddressZero,
                     _quoteToken: quoteToken,
                 })
             ).to.rejectedWith(Error)
         })
-
         it("should be able to coexist with other clones", async () => {
             const secondPoolReceipt = await (
                 await testFactoryActual.createPool(POOL_CODE_2)
@@ -403,6 +408,7 @@ describe("LeveragedPool - initialize", () => {
                 _fee: fee,
                 _leverageAmount: leverage,
                 _feeAddress: feeAddress,
+                _secondaryFeeAddress: ethers.constants.AddressZero,
                 _quoteToken: quoteToken,
             })
             await leveragedPool.initialize({
@@ -419,6 +425,7 @@ describe("LeveragedPool - initialize", () => {
                 _fee: fee,
                 _leverageAmount: leverage,
                 _feeAddress: feeAddress,
+                _secondaryFeeAddress: ethers.constants.AddressZero,
                 _quoteToken: quoteToken,
             })
 

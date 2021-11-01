@@ -51,14 +51,6 @@ describe("PoolKeeper - createPool", () => {
         )
     })
 
-    it("should Revert if fee > one (in ABDK Math IEEE precision)", async () => {
-        const justAboveOne = "0x3fff0000000000000000000000000001"
-        await factory.setFee(justAboveOne)
-        await expect(factory.deployPool(deploymentData)).to.be.revertedWith(
-            "Fee >= 100%"
-        )
-    })
-
     it("should create a new pool in the given market", async () => {
         const receipt = await (await factory.deployPool(deploymentData)).wait()
         const event = receipt?.events?.find((el) => el.event === "DeployPool")
@@ -68,9 +60,9 @@ describe("PoolKeeper - createPool", () => {
     })
 
     it("should emit an event containing the details of the new pool", async () => {
-        const receipt = await (await factory.deployPool(deploymentData)).wait()
-        const event = receipt?.events?.find((el) => el.event === "DeployPool")
-        expect(!!event).to.eq(true)
-        expect(!!event?.args?.pool).to.eq(true)
+        expect(await factory.deployPool(deploymentData)).to.emit(
+            factory,
+            "DeployPool"
+        )
     })
 })

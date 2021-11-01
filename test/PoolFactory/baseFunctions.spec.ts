@@ -28,7 +28,7 @@ describe("PoolFactory - Basic functions", () => {
             signer: signers[0],
             libraries: { PoolSwapLibrary: library.address },
         })) as PoolFactory__factory
-        let feeAddress = await generateRandomAddress()
+        const feeAddress = await generateRandomAddress()
         factory = await (await PoolFactory.deploy(feeAddress)).deployed()
     })
 

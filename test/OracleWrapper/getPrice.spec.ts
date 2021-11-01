@@ -32,7 +32,8 @@ describe("OracleWrapper - getPrice", () => {
             signers[0]
         )) as ChainlinkOracleWrapper__factory
         oracleWrapper = await oracleWrapperFactory.deploy(
-            chainlinkOracle.address
+            chainlinkOracle.address,
+            signers[0].address
         )
         await oracleWrapper.deployed()
 
