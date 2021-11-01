@@ -21,6 +21,8 @@ library PoolSwapLibrary {
         uint256 longBurnAmount;
         uint256 shortMintAmount;
         uint256 shortBurnAmount;
+        uint256 longBurnShortMintAmount;
+        uint256 shortBurnLongMintAmount;
     }
 
     struct PriceChangeData {
@@ -232,7 +234,7 @@ library PoolSwapLibrary {
      * @notice Gets the number of settlement tokens to be withdrawn based on a pool token burn amount
      * @dev Calculates as `balance * amountIn / (tokenSupply + shadowBalance)
      * @param tokenSupply Total supply of pool tokens
-     * @param amountIn Commitment amount of collateral tokens going into the pool
+     * @param amountIn Commitment amount of pool tokens going into the pool
      * @param balance Balance of the pool (no. of underlying collateral tokens in pool)
      * @param shadowBalance Balance the shadow pool at time of mint
      * @return Number of settlement tokens to be withdrawn on a burn
@@ -311,6 +313,27 @@ library PoolSwapLibrary {
     }
 
     /**
+     * @notice Calculate the number of pool tokens to mint, given some settlement token amount, a price, and a burn amount from other side for instant mint
+     * @param price The price of a pool token
+     * @param amount The amount of settlement tokens being used to mint
+     * @param oppositePrice The price of the opposite side's pool token
+     * @param amountBurnedInstantMint The amount of pool tokens that were burnt from the opposite side for an instant mint in this side
+     */
+    function getMintWithBurns(
+        bytes16 price,
+        bytes16 oppositePrice,
+        uint256 amount,
+        uint256 amountBurnedInstantMint
+    ) public pure returns (uint256) {
+        require(price != 0, "price == 0");
+        if (amountBurnedInstantMint > 0) {
+            // Calculate amount of settlement tokens generated from the burn.
+            amount += getBurn(oppositePrice, amountBurnedInstantMint);
+        }
+        return getMint(price, amount);
+    }
+
+    /**
      * @notice Converts from a WAD to normal value
      * @return Converted non-WAD value
      */
@@ -338,14 +361,24 @@ library PoolSwapLibrary {
         }
         uint256 longBurnResult; // The amount of settlement tokens to withdraw based on long token burn
         uint256 shortBurnResult; // The amount of settlement tokens to withdraw based on short token burn
-        if (data.longMintAmount > 0) {
-            _newLongTokens = getMint(data.longPrice, data.longMintAmount);
+        if (data.longMintAmount > 0 || data.shortBurnLongMintAmount > 0) {
+            _newLongTokens = getMintWithBurns(
+                data.longPrice,
+                data.shortPrice,
+                data.longMintAmount,
+                data.shortBurnLongMintAmount
+            );
         }
         if (data.longBurnAmount > 0) {
             longBurnResult = getBurn(data.longPrice, data.longBurnAmount);
         }
-        if (data.shortMintAmount > 0) {
-            _newShortTokens = getMint(data.shortPrice, data.shortMintAmount);
+        if (data.shortMintAmount > 0 || data.longBurnShortMintAmount > 0) {
+            _newShortTokens = getMintWithBurns(
+                data.shortPrice,
+                data.longPrice,
+                data.shortMintAmount,
+                data.longBurnShortMintAmount
+            );
         }
         if (data.shortBurnAmount > 0) {
             shortBurnResult = getBurn(data.shortPrice, data.shortBurnAmount);

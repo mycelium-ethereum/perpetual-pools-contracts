@@ -19,6 +19,8 @@ export const SHORT_MINT = 0
 export const SHORT_BURN = 1
 export const LONG_MINT = 2
 export const LONG_BURN = 3
+export const LONG_BURN_THEN_MINT = 4
+export const SHORT_BURN_THEN_MINT = 5
 
 // Calculated by commenting out the keeper reward logic and calling performUpkeepSinglePool
 export const SINGLE_POOL_UPKEEP_GAS_COST = "67678"
