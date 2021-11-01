@@ -45,7 +45,7 @@ describe("PoolSwapLibrary - mulFraction", () => {
                     ethers.utils.parseEther("10")
                 )
             ).toString()
-        ).to.eq("1000000000000000000")
+        ).to.eq(ethers.utils.parseEther("1"))
     })
     it("should return same number if fraction is 1", async () => {
         expect(
@@ -56,6 +56,6 @@ describe("PoolSwapLibrary - mulFraction", () => {
                     ethers.utils.parseEther("1")
                 )
             ).toString()
-        ).to.eq("10000000000000000000")
+        ).to.eq(ethers.utils.parseEther("10"))
     })
 })
