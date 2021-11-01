@@ -17,6 +17,7 @@ import {
     createCommit,
     CommitEventArgs,
     timeout,
+    getCurrentTotalCommit,
 } from "../../utilities"
 
 chai.use(chaiAsPromised)
@@ -136,12 +137,12 @@ describe("poolCommitter - executeCommitment: Basic test cases", () => {
 
         it("should remove the commitment after execution", async () => {
             expect(
-                (await poolCommitter.totalMostRecentCommit()).longMintAmount
+                (await getCurrentTotalCommit(poolCommitter)).longMintAmount
             ).to.eq(amountCommitted)
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(9, 10)
             expect(
-                (await poolCommitter.totalMostRecentCommit()).longMintAmount
+                (await getCurrentTotalCommit(poolCommitter)).longMintAmount
             ).to.eq(0)
         })
 

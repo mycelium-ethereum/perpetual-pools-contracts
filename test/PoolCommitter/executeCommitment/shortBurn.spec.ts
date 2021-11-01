@@ -23,6 +23,7 @@ import {
     createCommit,
     CommitEventArgs,
     timeout,
+    getCurrentTotalCommit,
 } from "../../utilities"
 
 chai.use(chaiAsPromised)
@@ -88,12 +89,12 @@ describe("LeveragedPool - executeCommitment: Short Burn", () => {
         })
         it("should reduce the shadow short burn pool balance", async () => {
             expect(
-                (await poolCommitter.totalMostRecentCommit()).shortBurnAmount
+                (await getCurrentTotalCommit(poolCommitter)).shortBurnAmount
             ).to.eq(amountCommitted)
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(lastPrice, 10)
             expect(
-                (await poolCommitter.totalMostRecentCommit()).shortBurnAmount
+                (await getCurrentTotalCommit(poolCommitter)).shortBurnAmount
             ).to.eq(0)
         })
         it("should transfer quote tokens to the commit owner", async () => {

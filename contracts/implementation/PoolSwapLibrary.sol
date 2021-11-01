@@ -114,6 +114,16 @@ library PoolSwapLibrary {
     }
 
     /**
+     * @notice Divides two unsigned integers
+     * @param a The dividend
+     * @param b The divisor
+     * @return The quotient
+     */
+    function divUInt(uint256 a, uint256 b) private pure returns (bytes16) {
+        return ABDKMathQuad.div(ABDKMathQuad.fromUInt(a), ABDKMathQuad.fromUInt(b));
+    }
+
+    /**
      * @notice Divides two integers
      * @param a The dividend
      * @param b The divisor
@@ -226,8 +236,50 @@ library PoolSwapLibrary {
         uint256 lastPriceTimestamp,
         uint256 updateInterval,
         uint256 frontRunningInterval
-    ) external pure returns (bool) {
+    ) public pure returns (bool) {
         return lastPriceTimestamp + updateInterval - frontRunningInterval > subjectTime;
+    }
+
+    /**
+     * @notice Calculates the update interval ID that a commitment should be placed in.
+     * @param timestamp Current block.timestamp
+     * @param lastPriceTimestamp The timestamp of the last price update
+     * @param frontRunningInterval The frontrunning interval of a pool - The amount of time before an update interval that you must commit to get included in that update
+     * @param updateInterval The frequency of a pool's updates
+     * @param currentUpdateIntervalId The current update interval's ID
+     * @dev Note that the timestamp parameter is required to be >= lastPriceTimestamp
+     * @return The update interval ID in which a commit being made at time timestamp should be included
+     */
+    function appropriateUpdateIntervalId(
+        uint256 timestamp,
+        uint256 lastPriceTimestamp,
+        uint256 frontRunningInterval,
+        uint256 updateInterval,
+        uint256 currentUpdateIntervalId
+    ) external pure returns (uint256) {
+        // Since lastPriceTimestamp <= block.timestamp, the below also confirms that timestamp >= block.timestamp
+        require(timestamp >= lastPriceTimestamp, "timestamp in the past");
+        if (frontRunningInterval <= updateInterval) {
+            // This is the "simple" case where we either want the current update interval or the next one
+            if (isBeforeFrontRunningInterval(timestamp, lastPriceTimestamp, updateInterval, frontRunningInterval)) {
+                // We are before the frontRunning interval
+                return currentUpdateIntervalId;
+            } else {
+                return currentUpdateIntervalId + 1;
+            }
+        } else {
+            // frontRunningInterval > updateInterval
+            // This is the generalised case, where it could be any number of update intervals in the future
+            uint256 factorDifference = ABDKMathQuad.toUInt(divUInt(frontRunningInterval, updateInterval));
+            uint256 timeOfNextAvailableInterval = lastPriceTimestamp + (updateInterval * (factorDifference + 1));
+            // frontRunningInterval is factorDifference times larger than updateInterval
+            uint256 minimumUpdateIntervalId = currentUpdateIntervalId + factorDifference;
+            // but, if timestamp is still within minimumUpdateInterval's frontRunningInterval we need to go to the next one
+            return
+                timestamp + frontRunningInterval > timeOfNextAvailableInterval
+                    ? minimumUpdateIntervalId + 1
+                    : minimumUpdateIntervalId;
+        }
     }
 
     /**

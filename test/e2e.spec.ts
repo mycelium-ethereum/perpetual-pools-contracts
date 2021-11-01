@@ -78,8 +78,10 @@ describe("LeveragedPool - executeAllCommitments", () => {
                 pool.connect(signers[1]).poolUpkeep(9, 10)
             ).to.be.revertedWith("msg.sender not keeper")
             // Doesn't delete commit
+            const updateIntervalId = await poolCommitter.updateIntervalId()
             expect(
-                (await poolCommitter.totalMostRecentCommit()).longMintAmount
+                (await poolCommitter.totalPoolCommitments(updateIntervalId))
+                    .longMintAmount
             ).to.eq(amountCommitted)
             await pool.poolUpkeep(lastPrice, lastPrice)
 

@@ -52,6 +52,15 @@ interface IPoolCommitter {
         uint256 updateIntervalId;
     }
 
+    struct BalanceUpdate {
+        uint256 _updateIntervalId;
+        uint256 _newLongTokensSum;
+        uint256 _newShortTokensSum;
+        uint256 _newSettlementTokensSum;
+        uint256 _balanceLongBurnAmount;
+        uint256 _balanceShortBurnAmount;
+    }
+
     // Track how much of a user's commitments are being done from their aggregate balance
     struct UserCommitment {
         uint256 longMintAmount;

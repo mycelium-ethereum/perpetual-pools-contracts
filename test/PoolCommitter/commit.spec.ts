@@ -25,6 +25,8 @@ import {
     deployPoolAndTokenContracts,
     generateRandomAddress,
     timeout,
+    getCurrentTotalCommit,
+    getCurrentUserCommit,
 } from "../utilities"
 
 import { ContractReceipt } from "ethers"
@@ -74,7 +76,7 @@ describe("LeveragedPool - commit", () => {
         })
         it("should update the total commit amount", async () => {
             expect(
-                (await poolCommitter.totalMostRecentCommit()).shortMintAmount
+                (await getCurrentTotalCommit(poolCommitter)).shortMintAmount
             ).to.equal(amountCommitted)
         })
 
@@ -107,11 +109,11 @@ describe("LeveragedPool - commit", () => {
         })
         it("should update the pending short mint balance for short mint commits", async () => {
             expect(
-                (await poolCommitter.totalMostRecentCommit()).shortMintAmount
+                (await getCurrentTotalCommit(poolCommitter)).shortMintAmount
             ).to.eq(0)
             await poolCommitter.commit([0], amountCommitted, false)
             expect(
-                (await poolCommitter.totalMostRecentCommit()).shortMintAmount
+                (await getCurrentTotalCommit(poolCommitter)).shortMintAmount
             ).to.eq(amountCommitted)
         })
 
@@ -124,22 +126,22 @@ describe("LeveragedPool - commit", () => {
             await poolCommitter.claim(signers[0].address)
 
             expect(
-                (await poolCommitter.totalMostRecentCommit()).shortBurnAmount
+                (await getCurrentTotalCommit(poolCommitter)).shortBurnAmount
             ).to.eq(0)
             await poolCommitter.commit(SHORT_BURN, amountCommitted, false)
             expect(
-                (await poolCommitter.totalMostRecentCommit()).shortBurnAmount
+                (await getCurrentTotalCommit(poolCommitter)).shortBurnAmount
             ).to.eq(amountCommitted)
         })
 
         it("should update the shadow long mint balance for long mint commits", async () => {
             expect(
-                (await poolCommitter.totalMostRecentCommit()).longMintAmount
+                (await getCurrentTotalCommit(poolCommitter)).longMintAmount
             ).to.eq(0)
             await poolCommitter.commit(LONG_MINT, amountCommitted, false)
 
             expect(
-                (await poolCommitter.totalMostRecentCommit()).longMintAmount
+                (await getCurrentTotalCommit(poolCommitter)).longMintAmount
             ).to.eq(amountCommitted)
         })
 
@@ -152,11 +154,11 @@ describe("LeveragedPool - commit", () => {
             await poolCommitter.claim(signers[0].address)
 
             expect(
-                (await poolCommitter.totalMostRecentCommit()).longBurnAmount
+                (await getCurrentTotalCommit(poolCommitter)).longBurnAmount
             ).to.eq(0)
             await poolCommitter.commit(LONG_BURN, amountCommitted, false)
             expect(
-                (await poolCommitter.totalMostRecentCommit()).longBurnAmount
+                (await getCurrentTotalCommit(poolCommitter)).longBurnAmount
             ).to.eq(amountCommitted)
         })
     })
@@ -192,10 +194,13 @@ describe("LeveragedPool - commit", () => {
             await poolCommitter.commit(SHORT_BURN, amountCommitted, true)
             const shortTokenSupplyAfter = await shortToken.totalSupply()
 
-            const userMostRecentCommit =
-                await poolCommitter.userMostRecentCommit(signers[0].address)
-            const totalMostRecentCommit =
-                await poolCommitter.totalMostRecentCommit()
+            const userMostRecentCommit = await getCurrentUserCommit(
+                signers[0].address,
+                poolCommitter
+            )
+            const totalMostRecentCommit = await getCurrentTotalCommit(
+                poolCommitter
+            )
 
             expect(shortTokenSupplyAfter).to.equal(
                 shortTokenSupplyBefore.sub(amountCommitted)
@@ -228,28 +233,36 @@ describe("LeveragedPool - commit", () => {
         it("Should allow for a combination of short_burn commits from wallet and aggregate balance", async () => {
             await poolCommitter.claim(signers[0].address)
 
+            /* SHORT_MINT COMMIT */
             await poolCommitter.commit(SHORT_MINT, amountCommitted, false)
             await timeout(updateInterval * 1000)
+            /* UPKEEP */
             await pool.poolUpkeep(1, 1)
 
             const shortTokenSupplyBefore = await shortToken.totalSupply()
 
+            /* SHORT_BURN COMMIT */
             await poolCommitter.commit(SHORT_BURN, amountCommitted, true)
 
-            const userCommit = await poolCommitter.userMostRecentCommit(
-                signers[0].address
+            const userCommit = await getCurrentUserCommit(
+                signers[0].address,
+                poolCommitter
             )
 
             // balanceShortBurnAmount is updated
             expect(userCommit.balanceShortBurnAmount).to.equal(amountCommitted)
+            /* SHORT_BURN COMMIT */
             await poolCommitter.commit(SHORT_BURN, amountCommitted, false)
 
             const shortTokenSupplyAfter = await shortToken.totalSupply()
 
-            const userMostRecentCommit =
-                await poolCommitter.userMostRecentCommit(signers[0].address)
-            const totalMostRecentCommit =
-                await poolCommitter.totalMostRecentCommit()
+            const userMostRecentCommit = await getCurrentUserCommit(
+                signers[0].address,
+                poolCommitter
+            )
+            const totalMostRecentCommit = await getCurrentTotalCommit(
+                poolCommitter
+            )
 
             // Supply decreases
             expect(shortTokenSupplyAfter).to.equal(
@@ -266,9 +279,11 @@ describe("LeveragedPool - commit", () => {
             )
 
             await timeout(updateInterval * 1000)
+            /* UPKEEP */
             await pool.poolUpkeep(1, 1)
 
             const balanceBefore = await token.balanceOf(signers[0].address)
+            /* CLAIM */
             await poolCommitter.claim(signers[0].address)
 
             const balance = await token.balanceOf(signers[0].address)
@@ -314,10 +329,13 @@ describe("LeveragedPool - commit", () => {
             await poolCommitter.commit(SHORT_MINT, amountCommitted, true)
             const shortTokenSupplyAfter = await shortToken.totalSupply()
 
-            const userMostRecentCommit =
-                await poolCommitter.userMostRecentCommit(signers[0].address)
-            const totalMostRecentCommit =
-                await poolCommitter.totalMostRecentCommit()
+            const userMostRecentCommit = await getCurrentUserCommit(
+                signers[0].address,
+                poolCommitter
+            )
+            const totalMostRecentCommit = await getCurrentTotalCommit(
+                poolCommitter
+            )
 
             expect(shortTokenSupplyAfter).to.equal(shortTokenSupplyBefore) // Supply stays same
             // Balance storage updates
@@ -355,10 +373,13 @@ describe("LeveragedPool - commit", () => {
 
             const shortTokenSupplyAfter = await shortToken.totalSupply()
 
-            const userMostRecentCommit =
-                await poolCommitter.userMostRecentCommit(signers[0].address)
-            const totalMostRecentCommit =
-                await poolCommitter.totalMostRecentCommit()
+            const userMostRecentCommit = await getCurrentUserCommit(
+                signers[0].address,
+                poolCommitter
+            )
+            const totalMostRecentCommit = await getCurrentTotalCommit(
+                poolCommitter
+            )
 
             expect(shortTokenSupplyAfter).to.equal(shortTokenSupplyBefore) // Supply decreases
             // Balance storage updates
@@ -418,10 +439,13 @@ describe("LeveragedPool - commit", () => {
             await poolCommitter.commit(LONG_BURN, amountCommitted, true)
             const longTokenSupplyAfter = await longToken.totalSupply()
 
-            const userMostRecentCommit =
-                await poolCommitter.userMostRecentCommit(signers[0].address)
-            const totalMostRecentCommit =
-                await poolCommitter.totalMostRecentCommit()
+            const userMostRecentCommit = await getCurrentUserCommit(
+                signers[0].address,
+                poolCommitter
+            )
+            const totalMostRecentCommit = await getCurrentTotalCommit(
+                poolCommitter
+            )
 
             expect(longTokenSupplyAfter).to.equal(
                 longTokenSupplyBefore.sub(amountCommitted)
@@ -462,8 +486,9 @@ describe("LeveragedPool - commit", () => {
 
             await poolCommitter.commit(LONG_BURN, amountCommitted, true)
 
-            const userCommit = await poolCommitter.userMostRecentCommit(
-                signers[0].address
+            const userCommit = await getCurrentUserCommit(
+                signers[0].address,
+                poolCommitter
             )
 
             // balanceLongBurnAmount is updated
@@ -477,10 +502,13 @@ describe("LeveragedPool - commit", () => {
                 longTokenSupplyBefore.sub(amountCommitted).sub(amountCommitted)
             )
 
-            const userMostRecentCommit =
-                await poolCommitter.userMostRecentCommit(signers[0].address)
-            const totalMostRecentCommit =
-                await poolCommitter.totalMostRecentCommit()
+            const userMostRecentCommit = await getCurrentUserCommit(
+                signers[0].address,
+                poolCommitter
+            )
+            const totalMostRecentCommit = await getCurrentTotalCommit(
+                poolCommitter
+            )
 
             // balanceLongBurnAmount gets cleared, because on the update from the second `commit`, it is used and can then be cleared
             expect(userMostRecentCommit.balanceLongBurnAmount).to.equal(0)
@@ -540,10 +568,13 @@ describe("LeveragedPool - commit", () => {
             await poolCommitter.commit(LONG_MINT, amountCommitted, true)
             const longTokenSupplyAfter = await longToken.totalSupply()
 
-            const userMostRecentCommit =
-                await poolCommitter.userMostRecentCommit(signers[0].address)
-            const totalMostRecentCommit =
-                await poolCommitter.totalMostRecentCommit()
+            const userMostRecentCommit = await getCurrentUserCommit(
+                signers[0].address,
+                poolCommitter
+            )
+            const totalMostRecentCommit = await getCurrentTotalCommit(
+                poolCommitter
+            )
 
             expect(longTokenSupplyAfter).to.equal(longTokenSupplyBefore) // Supply stays same
             // Commitment storage updates
@@ -585,10 +616,13 @@ describe("LeveragedPool - commit", () => {
 
             const longTokenSupplyAfter = await longToken.totalSupply()
 
-            const userMostRecentCommit =
-                await poolCommitter.userMostRecentCommit(signers[0].address)
-            const totalMostRecentCommit =
-                await poolCommitter.totalMostRecentCommit()
+            const userMostRecentCommit = await getCurrentUserCommit(
+                signers[0].address,
+                poolCommitter
+            )
+            const totalMostRecentCommit = await getCurrentTotalCommit(
+                poolCommitter
+            )
 
             expect(longTokenSupplyAfter).to.equal(longTokenSupplyBefore) // Supply decreases
             expect(userMostRecentCommit.longMintAmount).to.equal(
@@ -615,8 +649,9 @@ describe("LeveragedPool - commit", () => {
 
             await poolCommitter.commit(LONG_MINT, amountCommitted, true)
 
-            const userCommit = await poolCommitter.userMostRecentCommit(
-                signers[0].address
+            const userCommit = await getCurrentUserCommit(
+                signers[0].address,
+                poolCommitter
             )
 
             // Balance storage updates
@@ -628,10 +663,13 @@ describe("LeveragedPool - commit", () => {
 
             const longTokenSupplyAfter = await longToken.totalSupply()
 
-            const userMostRecentCommit =
-                await poolCommitter.userMostRecentCommit(signers[0].address)
-            const totalMostRecentCommit =
-                await poolCommitter.totalMostRecentCommit()
+            const userMostRecentCommit = await getCurrentUserCommit(
+                signers[0].address,
+                poolCommitter
+            )
+            const totalMostRecentCommit = await getCurrentTotalCommit(
+                poolCommitter
+            )
 
             expect(longTokenSupplyAfter).to.equal(longTokenSupplyBefore) // Supply decreases
             expect(userMostRecentCommit.longMintAmount).to.equal(
@@ -694,10 +732,13 @@ describe("LeveragedPool - commit", () => {
 
             const longTokenSupplyAfter = await longToken.totalSupply()
 
-            const userMostRecentCommit =
-                await poolCommitter.userMostRecentCommit(signers[0].address)
-            const totalMostRecentCommit =
-                await poolCommitter.totalMostRecentCommit()
+            const userMostRecentCommit = await getCurrentUserCommit(
+                signers[0].address,
+                poolCommitter
+            )
+            const totalMostRecentCommit = await getCurrentTotalCommit(
+                poolCommitter
+            )
 
             expect(longTokenSupplyAfter).to.equal(longTokenSupplyBefore) // Supply decreases
             // Balance storage updates
@@ -788,10 +829,13 @@ describe("LeveragedPool - commit", () => {
                 )
                 const longTokenSupplyAfter = await longToken.totalSupply()
 
-                const userMostRecentCommit =
-                    await poolCommitter.userMostRecentCommit(signers[0].address)
-                const totalMostRecentCommit =
-                    await poolCommitter.totalMostRecentCommit()
+                const userMostRecentCommit = await getCurrentUserCommit(
+                    signers[0].address,
+                    poolCommitter
+                )
+                const totalMostRecentCommit = await getCurrentTotalCommit(
+                    poolCommitter
+                )
 
                 // Supply decreases
                 expect(longTokenSupplyAfter).to.equal(
@@ -978,15 +1022,17 @@ describe("LeveragedPool - commit", () => {
 
                     expect(
                         (
-                            await poolCommitter.userMostRecentCommit(
-                                signers[0].address
+                            await getCurrentUserCommit(
+                                signers[0].address,
+                                poolCommitter
                             )
                         ).balanceLongBurnMintAmount
                     ).to.equal(amountCommitted)
                     expect(
                         (
-                            await poolCommitter.userMostRecentCommit(
-                                signers[0].address
+                            await getCurrentUserCommit(
+                                signers[0].address,
+                                poolCommitter
                             )
                         ).longBurnShortMintAmount
                     ).to.equal(amountCommitted)
@@ -1062,10 +1108,13 @@ describe("LeveragedPool - commit", () => {
             )
             const longTokenSupplyAfter = await longToken.totalSupply()
 
-            const userMostRecentCommit =
-                await poolCommitter.userMostRecentCommit(signers[0].address)
-            const totalMostRecentCommit =
-                await poolCommitter.totalMostRecentCommit()
+            const userMostRecentCommit = await getCurrentUserCommit(
+                signers[0].address,
+                poolCommitter
+            )
+            const totalMostRecentCommit = await getCurrentTotalCommit(
+                poolCommitter
+            )
 
             // Supply decreases
             expect(longTokenSupplyAfter).to.equal(
@@ -1317,10 +1366,13 @@ describe("LeveragedPool - commit", () => {
             )
             const shortTokenSupplyAfter = await shortToken.totalSupply()
 
-            const userMostRecentCommit =
-                await poolCommitter.userMostRecentCommit(signers[0].address)
-            const totalMostRecentCommit =
-                await poolCommitter.totalMostRecentCommit()
+            const userMostRecentCommit = await getCurrentUserCommit(
+                signers[0].address,
+                poolCommitter
+            )
+            const totalMostRecentCommit = await getCurrentTotalCommit(
+                poolCommitter
+            )
 
             // Supply decreases
             expect(shortTokenSupplyAfter).to.equal(
@@ -1536,6 +1588,336 @@ describe("LeveragedPool - commit", () => {
             })
         })
     })
+
+    context(
+        "Commitments with frontrunning interval 5x larger than update interval",
+        () => {
+            beforeEach(async () => {
+                const result = await deployPoolAndTokenContracts(
+                    POOL_CODE,
+                    updateInterval * 5,
+                    updateInterval,
+                    leverage,
+                    feeAddress,
+                    fee
+                )
+                signers = result.signers
+                pool = result.pool
+                token = result.token
+                library = result.library
+                shortToken = result.shortToken
+                longToken = result.longToken
+                poolCommitter = result.poolCommitter
+
+                await token.approve(pool.address, amountCommitted.mul(999))
+                await pool.setKeeper(signers[0].address)
+            })
+
+            context("Committing", async () => {
+                it("Sets the correct update interval's values", async () => {
+                    const updateIntervalId =
+                        await poolCommitter.updateIntervalId()
+                    await poolCommitter.commit(
+                        SHORT_MINT,
+                        amountCommitted,
+                        false
+                    )
+
+                    const currentCommitment = await getCurrentUserCommit(
+                        signers[0].address,
+                        poolCommitter
+                    )
+                    const totalCommitment = await getCurrentTotalCommit(
+                        poolCommitter
+                    )
+                    expect(currentCommitment.shortMintAmount).to.equal(0)
+                    expect(totalCommitment.shortMintAmount).to.equal(0)
+
+                    const fiveInFutureUser =
+                        await poolCommitter.userCommitments(
+                            signers[0].address,
+                            updateIntervalId.add(5)
+                        )
+                    const fiveInFutureTotal =
+                        await poolCommitter.totalPoolCommitments(
+                            updateIntervalId.add(5)
+                        )
+
+                    expect(fiveInFutureUser.shortMintAmount).to.equal(
+                        amountCommitted
+                    )
+                    expect(fiveInFutureTotal.shortMintAmount).to.equal(
+                        amountCommitted
+                    )
+                })
+            })
+
+            context("Executing", async () => {
+                it("Correctly executes and updates balance", async () => {
+                    const updateIntervalId =
+                        await poolCommitter.updateIntervalId()
+                    await poolCommitter.commit(
+                        SHORT_MINT,
+                        amountCommitted,
+                        false
+                    )
+
+                    const currentCommitment = await getCurrentUserCommit(
+                        signers[0].address,
+                        poolCommitter
+                    )
+                    const totalCommitment = await getCurrentTotalCommit(
+                        poolCommitter
+                    )
+                    expect(currentCommitment.shortMintAmount).to.equal(0)
+                    expect(totalCommitment.shortMintAmount).to.equal(0)
+
+                    const fiveInFutureUser =
+                        await poolCommitter.userCommitments(
+                            signers[0].address,
+                            updateIntervalId.add(5)
+                        )
+                    const fiveInFutureTotal =
+                        await poolCommitter.totalPoolCommitments(
+                            updateIntervalId.add(5)
+                        )
+
+                    expect(fiveInFutureUser.shortMintAmount).to.equal(
+                        amountCommitted
+                    )
+                    expect(fiveInFutureTotal.shortMintAmount).to.equal(
+                        amountCommitted
+                    )
+
+                    await timeout(updateInterval * 6 * 1000)
+                    await pool.poolUpkeep(1, 1)
+
+                    let userBalance = await poolCommitter.getAggregateBalance(
+                        signers[0].address
+                    )
+
+                    expect(userBalance.shortTokens).to.equal(amountCommitted)
+                })
+            })
+
+            context(
+                "Multiple commitments over multiple update intervals",
+                async () => {
+                    it("Correctly executes and updates balance", async () => {
+                        const updateIntervalId =
+                            await poolCommitter.updateIntervalId()
+
+                        // Commit for updateIntervalId + 5
+                        await poolCommitter.commit(
+                            SHORT_MINT,
+                            amountCommitted,
+                            false
+                        )
+
+                        // updateIntervalId
+                        await timeout(updateInterval * 1000)
+                        await pool.poolUpkeep(1, 1)
+
+                        // Commit for updateIntervalId + 6
+                        await poolCommitter.commit(
+                            SHORT_MINT,
+                            amountCommitted,
+                            false
+                        )
+
+                        // updateIntervalId + 1
+                        await timeout(updateInterval * 1000)
+                        await pool.poolUpkeep(1, 1)
+
+                        // Commit for updateIntervalId + 7
+                        await poolCommitter.commit(
+                            LONG_MINT,
+                            amountCommitted,
+                            false
+                        )
+
+                        // updateIntervalId + 2
+                        await timeout(updateInterval * 1000)
+                        await pool.poolUpkeep(1, 1)
+
+                        // Commit for updateIntervalId + 8
+                        await poolCommitter.commit(
+                            LONG_MINT,
+                            amountCommitted,
+                            false
+                        )
+                        // Commit for updateIntervalId + 8
+                        await poolCommitter.commit(
+                            LONG_MINT,
+                            amountCommitted,
+                            false
+                        )
+
+                        // updateIntervalId + 3
+                        await timeout(updateInterval * 1000)
+                        await pool.poolUpkeep(1, 1)
+
+                        // updateIntervalId + 4
+                        await timeout(updateInterval * 1000)
+                        await pool.poolUpkeep(1, 1)
+
+                        // Commit for updateIntervalId + 10
+                        await poolCommitter.commit(
+                            LONG_MINT,
+                            amountCommitted,
+                            false
+                        )
+
+                        // updateIntervalId + 5
+                        await timeout(updateInterval * 1000)
+                        await pool.poolUpkeep(1, 1)
+                        // 5th update interval. Balance should be updated
+                        let userBalance =
+                            await poolCommitter.getAggregateBalance(
+                                signers[0].address
+                            )
+
+                        expect(userBalance.shortTokens).to.equal(
+                            amountCommitted
+                        )
+
+                        // updateIntervalId + 6
+                        await timeout(updateInterval * 1000)
+                        await pool.poolUpkeep(1, 1)
+                        // 6th update interval. Balance should be updated
+                        userBalance = await poolCommitter.getAggregateBalance(
+                            signers[0].address
+                        )
+
+                        expect(userBalance.shortTokens).to.equal(
+                            amountCommitted.mul(2)
+                        )
+
+                        let futureUser = await poolCommitter.userCommitments(
+                            signers[0].address,
+                            updateIntervalId.add(10)
+                        )
+                        let futureTotal =
+                            await poolCommitter.totalPoolCommitments(
+                                updateIntervalId.add(10)
+                            )
+
+                        expect(futureUser.shortMintAmount).to.equal(0)
+                        expect(futureTotal.shortMintAmount).to.equal(0)
+                        expect(futureUser.longMintAmount).to.equal(
+                            amountCommitted
+                        )
+                        expect(futureTotal.longMintAmount).to.equal(
+                            amountCommitted
+                        )
+
+                        await timeout(updateInterval * 10 * 1000)
+                        await pool.poolUpkeep(1, 1)
+
+                        userBalance = await poolCommitter.getAggregateBalance(
+                            signers[0].address
+                        )
+                        expect(userBalance.shortTokens).to.equal(
+                            amountCommitted.mul(2)
+                        )
+                        expect(userBalance.longTokens).to.equal(
+                            amountCommitted.mul(4)
+                        )
+                        expect(userBalance.settlementTokens).to.equal(0)
+                    })
+
+                    context("Big gap between", async () => {
+                        it("Correctly executes and updates balance", async () => {
+                            const updateIntervalId =
+                                await poolCommitter.updateIntervalId()
+
+                            // Commit for updateIntervalId + 5
+                            await poolCommitter.commit(
+                                SHORT_MINT,
+                                amountCommitted,
+                                false
+                            )
+
+                            for (let i = 0; i < 30; i++) {
+                                await timeout(updateInterval * 1000)
+                                await pool.poolUpkeep(1, 1)
+                            }
+
+                            await poolCommitter.commit(
+                                LONG_MINT,
+                                amountCommitted,
+                                false
+                            )
+
+                            let userBalance =
+                                await poolCommitter.getAggregateBalance(
+                                    signers[0].address
+                                )
+
+                            expect(userBalance.shortTokens).to.equal(
+                                amountCommitted
+                            )
+
+                            await timeout((updateInterval + 100) * 6 * 1000)
+                            await pool.poolUpkeep(1, 1)
+
+                            userBalance =
+                                await poolCommitter.getAggregateBalance(
+                                    signers[0].address
+                                )
+
+                            expect(userBalance.shortTokens).to.equal(
+                                amountCommitted
+                            )
+                            expect(userBalance.longTokens).to.equal(
+                                amountCommitted
+                            )
+
+                            await poolCommitter.claim(signers[0].address)
+
+                            expect(
+                                await longToken.balanceOf(signers[0].address)
+                            ).to.equal(amountCommitted)
+                            expect(
+                                await shortToken.balanceOf(signers[0].address)
+                            ).to.equal(amountCommitted)
+
+                            /*
+                    // 5th update interval. Balance should be updated
+                    let userBalance = await poolCommitter.getAggregateBalance(signers[0].address)
+
+                    expect(userBalance.shortTokens).to.equal(amountCommitted)
+
+                    // updateIntervalId + 6
+                    await timeout(updateInterval * 1000)
+                    await pool.poolUpkeep(1, 1)
+                    // 6th update interval. Balance should be updated
+                    userBalance = await poolCommitter.getAggregateBalance(signers[0].address)
+
+                    expect(userBalance.shortTokens).to.equal(amountCommitted.mul(2))
+
+                    let futureUser = await poolCommitter.userCommitments(signers[0].address, updateIntervalId.add(10))
+                    let futureTotal = await poolCommitter.totalPoolCommitments(updateIntervalId.add(10))
+
+                    expect(futureUser.shortMintAmount).to.equal(0);
+                    expect(futureTotal.shortMintAmount).to.equal(0);
+                    expect(futureUser.longMintAmount).to.equal(amountCommitted);
+                    expect(futureTotal.longMintAmount).to.equal(amountCommitted);
+
+                    await timeout(updateInterval * 10 * 1000)
+                    await pool.poolUpkeep(1, 1)
+
+                    userBalance = await poolCommitter.getAggregateBalance(signers[0].address)
+                    expect(userBalance.shortTokens).to.equal(amountCommitted.mul(2))
+                    expect(userBalance.longTokens).to.equal(amountCommitted.mul(4))
+                    expect(userBalance.settlementTokens).to.equal(0)
+                    */
+                        })
+                    })
+                }
+            )
+        }
+    )
 
     context("Token Transfers", () => {
         beforeEach(async () => {

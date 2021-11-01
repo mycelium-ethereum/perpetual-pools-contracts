@@ -50,6 +50,34 @@ export const generateRandomAddress = () => {
     )
 }
 
+export const getNextTotalCommit = async (poolCommitter: PoolCommitter) =>
+    await poolCommitter.totalPoolCommitments(
+        (await poolCommitter.updateIntervalId()).add("1")
+    )
+
+export const getCurrentTotalCommit = async (poolCommitter: PoolCommitter) =>
+    await poolCommitter.totalPoolCommitments(
+        await poolCommitter.updateIntervalId()
+    )
+
+export const getCurrentUserCommit = async (
+    address: string,
+    poolCommitter: PoolCommitter
+) =>
+    await poolCommitter.userCommitments(
+        address,
+        await poolCommitter.updateIntervalId()
+    )
+
+export const getNextUserCommit = async (
+    address: string,
+    poolCommitter: PoolCommitter
+) =>
+    await poolCommitter.userCommitments(
+        address,
+        (await poolCommitter.updateIntervalId()).add(1)
+    )
+
 /**
  * Generates a random integer between min and max, inclusive.
  * @param min The minimum value
