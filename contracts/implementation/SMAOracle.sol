@@ -11,8 +11,8 @@ contract SMAOracle is IOracleWrapper {
     /// Price oracle supplying the spot price of the quote asset
     address public override oracle;
 
-    // Owner of the oracle
-    address public immutable override owner;
+    // Deployer of the oracle
+    address public immutable override deployer;
 
     /// Price observer providing the SMA oracle with historical pricing data
     address public observer;
@@ -38,7 +38,7 @@ contract SMAOracle is IOracleWrapper {
         address _observer,
         uint256 _periods,
         uint256 _updateInterval,
-        address _owner
+        address _deployer
     ) {
         require(_spotOracle != address(0) && _observer != address(0), "SMA: Null address forbidden");
         require(_periods > 0 && _periods <= IPriceObserver(_observer).capacity(), "SMA: Out of bounds");
@@ -46,7 +46,7 @@ contract SMAOracle is IOracleWrapper {
         periods = _periods;
         oracle = _spotOracle;
         observer = _observer;
-        owner = _owner;
+        deployer = _deployer;
 
         /* `scaler` is always <= 10^18 and >= 1 so this cast is safe */
         scaler = int256(10**(MAX_DECIMALS - _spotDecimals));

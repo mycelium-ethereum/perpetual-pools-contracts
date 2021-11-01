@@ -94,7 +94,7 @@ contract PoolFactory is IPoolFactory, Ownable {
         address _poolKeeper = address(poolKeeper);
         require(_poolKeeper != address(0), "PoolKeeper not set");
         require(
-            IOracleWrapper(deploymentParameters.oracleWrapper).owner() == msg.sender,
+            IOracleWrapper(deploymentParameters.oracleWrapper).deployer() == msg.sender,
             "Deployer must be oracle wrapper owner"
         );
 

@@ -5,7 +5,7 @@ pragma solidity 0.8.7;
 interface IOracleWrapper {
     function oracle() external view returns (address);
 
-    function owner() external view returns (address);
+    function deployer() external view returns (address);
 
     // #### Functions
 

@@ -227,11 +227,10 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         if (secondaryFeeAddress == address(0)) {
             IERC20(quoteToken).safeTransfer(feeAddress, totalFeeAmount);
         } else {
-            IERC20(quoteToken).safeTransfer(feeAddress, PoolSwapLibrary.mulFraction(totalFeeAmount, 9, 10));
-            IERC20(quoteToken).safeTransfer(
-                secondaryFeeAddress,
-                PoolSwapLibrary.convertDecimalToUInt(PoolSwapLibrary.divInt(int256(totalFeeAmount), 10))
-            );
+            uint256 daoFee = PoolSwapLibrary.mulFraction(totalFeeAmount, 9, 10);
+            uint256 remainder = totalFeeAmount - daoFee;
+            IERC20(quoteToken).safeTransfer(feeAddress, daoFee);
+            IERC20(quoteToken).safeTransfer(secondaryFeeAddress, remainder);
         }
     }
 
