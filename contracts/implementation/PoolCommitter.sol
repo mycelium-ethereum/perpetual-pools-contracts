@@ -294,7 +294,7 @@ contract PoolCommitter is IPoolCommitter, Ownable {
         delete totalPoolCommitments[updateIntervalId];
         updateIntervalId += 1;
 
-        uint32 counter = two;
+        uint32 counter = 2;
         uint256 lastPriceTimestamp = pool.lastPriceTimestamp();
         uint256 updateInterval = pool.updateInterval();
         while (true) {
