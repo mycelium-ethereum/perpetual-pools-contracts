@@ -247,7 +247,7 @@ describe("PoolFactory.deployPool", () => {
             expect(predictedPoolAddress).to.eq(pool.address)
         })
 
-        it("should not equal of leverage is different", async () => {
+        it("should not equal if leverage is different", async () => {
             let encoder = new ethers.utils.AbiCoder()
             let abiEncoded = encoder.encode(
                 ["uint16", "address", "address"],
