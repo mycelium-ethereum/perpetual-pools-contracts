@@ -74,6 +74,7 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
             0,
             1,
             address(this),
+            address(0),
             address(this)
         );
         // Init bases
@@ -139,6 +140,7 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
             _fee: fee,
             _leverageAmount: deploymentParameters.leverageAmount,
             _feeAddress: feeReceiver,
+            _secondaryFeeAddress: msg.sender,
             _quoteToken: deploymentParameters.quoteToken
         });
 

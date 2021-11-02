@@ -51,6 +51,8 @@ contract PoolFactory is IPoolFactory, Ownable {
 
     // #### Functions
     constructor(address _feeReceiver) {
+        require(_feeReceiver != address(0), "Address cannot be null");
+
         // Deploy base contracts
         pairTokenBase = new PoolToken(DEFAULT_NUM_DECIMALS);
         pairTokenBaseAddress = address(pairTokenBase);
@@ -74,6 +76,7 @@ contract PoolFactory is IPoolFactory, Ownable {
             0,
             1,
             address(this),
+            address(0),
             address(this)
         );
         // Init bases
@@ -84,28 +87,31 @@ contract PoolFactory is IPoolFactory, Ownable {
     }
 
     /**
-     * @notice Deploy a leveraged pool with given parameters
+     * @notice Deploy a leveraged pool and its committer/pool tokens with given parameters
      * @param deploymentParameters Deployment parameters of the market. Some may be reconfigurable
      * @return Address of the created pool
      */
-    function deployPool(PoolDeployment calldata deploymentParameters) external override onlyGov returns (address) {
+    function deployPool(PoolDeployment calldata deploymentParameters) external override returns (address) {
         address _poolKeeper = address(poolKeeper);
         require(_poolKeeper != address(0), "PoolKeeper not set");
+        require(
+            IOracleWrapper(deploymentParameters.oracleWrapper).deployer() == msg.sender,
+            "Deployer must be oracle wrapper owner"
+        );
 
         bytes32 uniquePoolHash = keccak256(
             abi.encode(
                 deploymentParameters.leverageAmount,
                 deploymentParameters.quoteToken,
-                deploymentParameters.oracleWrapper,
-                deploymentParameters.updateInterval,
-                deploymentParameters.frontRunningInterval
+                deploymentParameters.oracleWrapper
             )
         );
 
-        address poolCommitterAddress = clonePoolCommitterBase(
-            uniquePoolHash,
-            deploymentParameters.invariantCheckContract
+        PoolCommitter poolCommitter = PoolCommitter(
+            Clones.cloneDeterministic(poolCommitterBaseAddress, uniquePoolHash)
         );
+        poolCommitter.initialize(address(this), deploymentParameters.invariantCheckContract);
+        address poolCommitterAddress = address(poolCommitter);
 
         require(
             deploymentParameters.leverageAmount >= 1 && deploymentParameters.leverageAmount <= maxLeverage,
@@ -134,9 +140,10 @@ contract PoolFactory is IPoolFactory, Ownable {
             _poolName: string(abi.encodePacked(leverage, "-", deploymentParameters.poolName)),
             _frontRunningInterval: deploymentParameters.frontRunningInterval,
             _updateInterval: deploymentParameters.updateInterval,
-            _fee: fee,
+            _fee: (fee * deploymentParameters.updateInterval) / (365 days),
             _leverageAmount: deploymentParameters.leverageAmount,
             _feeAddress: feeReceiver,
+            _secondaryFeeAddress: msg.sender,
             _quoteToken: deploymentParameters.quoteToken
         });
 
@@ -152,14 +159,6 @@ contract PoolFactory is IPoolFactory, Ownable {
         numPools += 1;
         isValidPool[_pool] = true;
         return _pool;
-    }
-
-    function clonePoolCommitterBase(bytes32 uniquePoolHash, address invariantCheckContract) internal returns (address) {
-        PoolCommitter poolCommitter = PoolCommitter(
-            Clones.cloneDeterministic(poolCommitterBaseAddress, uniquePoolHash)
-        );
-        poolCommitter.initialize(address(this), invariantCheckContract);
-        return address(poolCommitter);
     }
 
     /**
@@ -207,11 +206,12 @@ contract PoolFactory is IPoolFactory, Ownable {
     }
 
     /**
-     * @notice Set the fee amount. This is a percentage multiplied by 10^18.
-     *         e.g. 5% is 0.05 * 10^18
-     * @param _fee The fee amount as a percentage multiplied by 10^18
+     * @notice Set the yearly fee amount. The max yearly fee is 10%
+     * @dev This is a percentage in WAD; multiplied by 10^18 e.g. 5% is 0.05 * 10^18
+     * @param _fee The fee amount as a percentage
      */
     function setFee(uint256 _fee) external override onlyOwner {
+        require(_fee <= 0.1e18, "Fee cannot be >10%");
         fee = _fee;
     }
 

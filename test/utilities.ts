@@ -25,6 +25,8 @@ import {
     PoolSwapLibrary,
     PoolSwapLibrary__factory,
     TestChainlinkOracle__factory,
+    PriceObserver__factory,
+    PriceObserver,
     PoolKeeper,
     PoolFactory__factory,
     PoolKeeper__factory,
@@ -53,6 +55,34 @@ export const generateRandomAddress = () => {
     )
 }
 
+export const getNextTotalCommit = async (poolCommitter: PoolCommitter) =>
+    await poolCommitter.totalPoolCommitments(
+        (await poolCommitter.updateIntervalId()).add("1")
+    )
+
+export const getCurrentTotalCommit = async (poolCommitter: PoolCommitter) =>
+    await poolCommitter.totalPoolCommitments(
+        await poolCommitter.updateIntervalId()
+    )
+
+export const getCurrentUserCommit = async (
+    address: string,
+    poolCommitter: PoolCommitter
+) =>
+    await poolCommitter.userCommitments(
+        address,
+        await poolCommitter.updateIntervalId()
+    )
+
+export const getNextUserCommit = async (
+    address: string,
+    poolCommitter: PoolCommitter
+) =>
+    await poolCommitter.userCommitments(
+        address,
+        (await poolCommitter.updateIntervalId()).add(1)
+    )
+
 /**
  * Generates a random integer between min and max, inclusive.
  * @param min The minimum value
@@ -75,107 +105,114 @@ export const getEventArgs = (
     return txReceipt?.events?.find((el: Event) => el.event === eventType)?.args
 }
 
-export const deployPoolSetupContracts =
-    /*deployments.createFixture(*/ async () => {
-        const amountMinted = DEFAULT_MINT_AMOUNT
+export const deployPoolSetupContracts = async () => {
+    const amountMinted = DEFAULT_MINT_AMOUNT
 
-        const signers = await ethers.getSigners()
-        // Deploy test ERC20 token
-        const testToken = (await ethers.getContractFactory(
-            "TestToken",
-            signers[0]
-        )) as TestToken__factory
-        const token = await testToken.deploy("TEST TOKEN", "TST1")
-        await token.deployed()
-        await token.mint(amountMinted, signers[0].address)
+    const signers = await ethers.getSigners()
+    // Deploy test ERC20 token
+    const testToken = (await ethers.getContractFactory(
+        "TestToken",
+        signers[0]
+    )) as TestToken__factory
+    const token = await testToken.deploy("TEST TOKEN", "TST1")
+    await token.deployed()
+    await token.mint(amountMinted, signers[0].address)
 
-        // Deploy tokens
-        const poolTokenFactory = (await ethers.getContractFactory(
-            "TestToken",
-            signers[0]
-        )) as TestToken__factory
-        const short = await poolTokenFactory.deploy("Short token", "SHORT")
-        await short.deployed()
+    // Deploy tokens
+    const poolTokenFactory = (await ethers.getContractFactory(
+        "TestToken",
+        signers[0]
+    )) as TestToken__factory
+    const short = await poolTokenFactory.deploy("Short token", "SHORT")
+    await short.deployed()
 
-        const long = await poolTokenFactory.deploy("Long", "Long")
-        await long.deployed()
+    const long = await poolTokenFactory.deploy("Long", "Long")
+    await long.deployed()
 
-        const chainlinkOracleFactory = (await ethers.getContractFactory(
-            "TestChainlinkOracle",
-            signers[0]
-        )) as TestChainlinkOracle__factory
-        const chainlinkOracle = await (
-            await chainlinkOracleFactory.deploy()
-        ).deployed()
-        const ethOracle = await (
-            await chainlinkOracleFactory.deploy()
-        ).deployed()
-        await ethOracle.setPrice(3000 * 10 ** 8)
+    const chainlinkOracleFactory = (await ethers.getContractFactory(
+        "TestChainlinkOracle",
+        signers[0]
+    )) as TestChainlinkOracle__factory
+    const chainlinkOracle = await (
+        await chainlinkOracleFactory.deploy()
+    ).deployed()
+    const ethOracle = await (await chainlinkOracleFactory.deploy()).deployed()
+    await ethOracle.setPrice(3000 * 10 ** 8)
 
-        // Deploy tokens
-        const oracleWrapperFactory = (await ethers.getContractFactory(
-            "ChainlinkOracleWrapper",
-            signers[0]
-        )) as ChainlinkOracleWrapper__factory
+    // Deploy tokens
+    const oracleWrapperFactory = (await ethers.getContractFactory(
+        "ChainlinkOracleWrapper",
+        signers[0]
+    )) as ChainlinkOracleWrapper__factory
 
-        const oracleWrapper = await oracleWrapperFactory.deploy(
-            chainlinkOracle.address
-        )
+    const oracleWrapper = await oracleWrapperFactory.deploy(
+        chainlinkOracle.address,
+        signers[0].address
+    )
 
-        /* keeper oracle */
-        const settlementEthOracle = await oracleWrapperFactory.deploy(
-            ethOracle.address
-        )
+    /* keeper oracle */
+    const settlementEthOracle = await oracleWrapperFactory.deploy(
+        ethOracle.address,
+        signers[0].address
+    )
 
-        // Deploy and initialise pool
-        const libraryFactory = (await ethers.getContractFactory(
-            "PoolSwapLibrary",
-            signers[0]
-        )) as PoolSwapLibrary__factory
-        const library = await libraryFactory.deploy()
-        await library.deployed()
+    // Deploy and initialise pool
+    const libraryFactory = (await ethers.getContractFactory(
+        "PoolSwapLibrary",
+        signers[0]
+    )) as PoolSwapLibrary__factory
+    const library = await libraryFactory.deploy()
+    await library.deployed()
 
-        const PoolFactory = (await ethers.getContractFactory("PoolFactory", {
-            signer: signers[0],
-            libraries: { PoolSwapLibrary: library.address },
-        })) as PoolFactory__factory
+    const PoolFactory = (await ethers.getContractFactory("PoolFactory", {
+        signer: signers[0],
+        libraries: { PoolSwapLibrary: library.address },
+    })) as PoolFactory__factory
 
-        const factory = await (
-            await PoolFactory.deploy(generateRandomAddress())
-        ).deployed()
+    const factory = await (
+        await PoolFactory.deploy(generateRandomAddress())
+    ).deployed()
 
-        const invariantCheckFactory = (await ethers.getContractFactory(
-            "InvariantCheck",
-            signers[0]
-        )) as InvariantCheck__factory
+    const invariantCheckFactory = (await ethers.getContractFactory(
+        "InvariantCheck",
+        signers[0]
+    )) as InvariantCheck__factory
 
-        const invariantCheck = await invariantCheckFactory.deploy(
-            factory.address
-        )
+    const invariantCheck = await invariantCheckFactory.deploy(
+        factory.address
+    )
 
-        const poolKeeperFactory = (await ethers.getContractFactory(
-            "PoolKeeper",
-            {
-                signer: signers[0],
-                libraries: { PoolSwapLibrary: library.address },
-            }
-        )) as PoolKeeper__factory
-        let poolKeeper = await poolKeeperFactory.deploy(factory.address)
-        poolKeeper = await poolKeeper.deployed()
-        await factory.setPoolKeeper(poolKeeper.address)
-        await factory.setFee(DEFAULT_FEE)
+    /* deploy price observer contract */
+    const priceObserverFactory = (await ethers.getContractFactory(
+        "PriceObserver",
+        signers[0]
+    )) as PriceObserver__factory
+    const priceObserver: PriceObserver = await priceObserverFactory.deploy()
+    await priceObserver.deployed()
+    await priceObserver.setWriter(oracleWrapper.address)
 
-        return {
-            factory,
-            poolKeeper,
-            chainlinkOracle,
-            oracleWrapper,
-            settlementEthOracle,
-            token,
-            library,
-            invariantCheck,
-        }
-    } // )
+    const poolKeeperFactory = (await ethers.getContractFactory("PoolKeeper", {
+        signer: signers[0],
+        libraries: { PoolSwapLibrary: library.address },
+    })) as PoolKeeper__factory
+    let poolKeeper = await poolKeeperFactory.deploy(factory.address)
+    poolKeeper = await poolKeeper.deployed()
+    await poolKeeper.setPriceObserver(priceObserver.address)
+    await factory.setPoolKeeper(poolKeeper.address)
+    await factory.setFee(DEFAULT_FEE)
+
+    return {
+        factory,
+        poolKeeper,
+        chainlinkOracle,
+        oracleWrapper,
+        settlementEthOracle,
+        token,
+        library,
+        priceObserver,
+        invariantCheck
+    }
+}
 
 /**
  * Deploys a new instance of a pool, as well as an ERC20 token to use as a quote token.
@@ -210,6 +247,7 @@ export const deployPoolAndTokenContracts = async (
     oracleWrapper: ChainlinkOracleWrapper
     settlementEthOracle: ChainlinkOracleWrapper
     invariantCheck: InvariantCheck
+    priceObserver: PriceObserver
 }> => {
     const setupContracts = await deployPoolSetupContracts()
 
@@ -352,12 +390,14 @@ export const deployMockPool = async (
     )) as ChainlinkOracleWrapper__factory
 
     const oracleWrapper = await oracleWrapperFactory.deploy(
-        chainlinkOracle.address
+        chainlinkOracle.address,
+        signers[0].address
     )
 
     /* keeper oracle */
     const settlementEthOracle = await oracleWrapperFactory.deploy(
-        ethOracle.address
+        ethOracle.address,
+        signers[0].address
     )
 
     // Deploy and initialise pool
@@ -429,6 +469,18 @@ export const deployMockPool = async (
     let commiter = await pool.poolCommitter()
     const poolCommitter = await ethers.getContractAt("PoolCommitter", commiter)
 
+    /* deploy price observer contract */
+    const priceObserverFactory = (await ethers.getContractFactory(
+        "PriceObserver",
+        signers[0]
+    )) as PriceObserver__factory
+    const priceObserver: PriceObserver = await priceObserverFactory.deploy()
+    await priceObserver.deployed()
+    await priceObserver.setWriter(oracleWrapper.address)
+
+    /* inform PoolKeeper of our newly-deployed PriceObserver */
+    await poolKeeper.setPriceObserver(priceObserver.address)
+
     return {
         signers,
         //@ts-ignore
@@ -447,6 +499,7 @@ export const deployMockPool = async (
         oracleWrapper,
         settlementEthOracle,
         invariantCheck,
+        priceObserver,
     }
 }
 
@@ -464,10 +517,12 @@ export interface CommitEventArgs {
 export const createCommit = async (
     poolCommitter: PoolCommitter,
     commitType: BigNumberish,
-    amount: BigNumberish
+    amount: BigNumberish,
+    fromAggregateBalance?: boolean
 ): Promise<any> /*Promise<CommitEventArgs>*/ => {
+    const fromAggBal = fromAggregateBalance ? fromAggregateBalance : false
     const receipt = await (
-        await poolCommitter.commit(commitType, amount)
+        await poolCommitter.commit(commitType, amount, fromAggBal)
     ).wait()
     return {
         commitID: getEventArgs(receipt, "CreateCommit")?.commitID,

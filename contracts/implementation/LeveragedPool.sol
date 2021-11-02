@@ -33,6 +33,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
     address public keeper;
     bool public governanceTransferInProgress;
     address public feeAddress;
+    address public secondaryFeeAddress;
     address public override quoteToken;
     address public override poolCommitter;
     address public override oracleWrapper;
@@ -58,11 +59,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
         require(initialization._shortToken != address(0), "Short token cannot be 0 address");
         require(initialization._poolCommitter != address(0), "PoolCommitter cannot be 0 address");
         require(initialization._invariantCheckContract != address(0), "InvariantCheck cannot be 0 address");
-        require(
-            initialization._frontRunningInterval < initialization._updateInterval,
-            "frontRunning >= updateInterval"
-        );
-
+        require(initialization._frontRunningInterval < initialization._updateInterval, "frontRunning >= updateInterval");
         require(initialization._fee < PoolSwapLibrary.WAD_PRECISION, "Fee >= 100%");
 
         // set the owner of the pool. This is governance when deployed from the factory
@@ -78,6 +75,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
         fee = PoolSwapLibrary.convertUIntToDecimal(initialization._fee);
         leverageAmount = PoolSwapLibrary.convertUIntToDecimal(initialization._leverageAmount);
         feeAddress = initialization._feeAddress;
+        secondaryFeeAddress = initialization._secondaryFeeAddress;
         lastPriceTimestamp = block.timestamp;
         poolName = initialization._poolName;
         tokens[LONG_INDEX] = initialization._longToken;
@@ -224,7 +222,23 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
             longBalance = newLongBalance;
             shortBalance = newShortBalance;
             // Pay the fee
+            feeTransfer(totalFeeAmount);
+        }
+    }
+
+    /**
+     * @notice Execute the fee transfer transactions. Transfers fees to primary fee address (DAO) and secondary (pool deployer).
+     *         If the DAO is the fee deployer, secondary fee address should be address(0) and all fees go to DAO.
+     * @param totalFeeAmount total amount of fees paid
+     */
+    function feeTransfer(uint256 totalFeeAmount) internal {
+        if (secondaryFeeAddress == address(0)) {
             IERC20(quoteToken).safeTransfer(feeAddress, totalFeeAmount);
+        } else {
+            uint256 daoFee = PoolSwapLibrary.mulFraction(totalFeeAmount, 9, 10);
+            uint256 remainder = totalFeeAmount - daoFee;
+            IERC20(quoteToken).safeTransfer(feeAddress, daoFee);
+            IERC20(quoteToken).safeTransfer(secondaryFeeAddress, remainder);
         }
     }
 
@@ -300,6 +314,17 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
         address oldFeeAddress = feeAddress;
         feeAddress = account;
         emit FeeAddressUpdated(oldFeeAddress, feeAddress);
+    }
+
+    /**
+     * @notice Updates the secondary fee address of the pool
+     * @param account New address of the fee address/receiver
+     */
+    function updateSecondaryFeeAddress(address account) external override {
+        address _oldSecondaryFeeAddress = secondaryFeeAddress;
+        require(msg.sender == _oldSecondaryFeeAddress);
+        secondaryFeeAddress = account;
+        emit SecondaryFeeAddressUpdated(_oldSecondaryFeeAddress, account);
     }
 
     /**

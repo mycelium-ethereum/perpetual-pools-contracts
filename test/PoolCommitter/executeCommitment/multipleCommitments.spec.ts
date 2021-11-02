@@ -24,7 +24,12 @@ import {
     createCommit,
     CommitEventArgs,
     timeout,
+    getCurrentTotalCommit,
+    getNextTotalCommit,
+    getNextUserCommit,
+    getCurrentUserCommit,
 } from "../../utilities"
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 
 chai.use(chaiAsPromised)
 const { expect } = chai
@@ -44,6 +49,7 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
     let pool: LeveragedPool
     let library: PoolSwapLibrary
     let poolCommitter: PoolCommitter
+    let signers: SignerWithAddress[]
 
     describe("Long mint->Long Burn", () => {
         const commits: CommitEventArgs[] | undefined = []
@@ -61,13 +67,13 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
             token = result.token
             shortToken = result.shortToken
             poolCommitter = result.poolCommitter
+            signers = result.signers
 
             await token.approve(pool.address, amountMinted)
 
             await createCommit(poolCommitter, [2], amountCommitted)
             await shortToken.approve(pool.address, amountMinted)
             await timeout(updateInterval * 1000)
-            const signers = await ethers.getSigners()
             await pool.setKeeper(signers[0].address)
 
             await pool.poolUpkeep(lastPrice, lastPrice + 10)
@@ -89,12 +95,12 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
             // Short mint and burn pools
             expect(
                 await (
-                    await poolCommitter.totalMostRecentCommit()
+                    await getCurrentTotalCommit(poolCommitter)
                 ).longMintAmount
             ).to.eq(amountCommitted)
             expect(
                 await (
-                    await poolCommitter.totalMostRecentCommit()
+                    await getCurrentTotalCommit(poolCommitter)
                 ).longBurnAmount
             ).to.eq(amountCommitted.div(2))
             await timeout(updateInterval * 1000)
@@ -102,12 +108,12 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
 
             expect(
                 await (
-                    await poolCommitter.totalMostRecentCommit()
+                    await getCurrentTotalCommit(poolCommitter)
                 ).longBurnAmount
             ).to.eq(0)
             expect(
                 await (
-                    await poolCommitter.totalMostRecentCommit()
+                    await getCurrentTotalCommit(poolCommitter)
                 ).longMintAmount
             ).to.eq(0)
         })
@@ -163,19 +169,19 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
         it("should reduce the balances of the shadows pools involved", async () => {
             // Short mint and burn pools
             expect(
-                (await poolCommitter.totalMostRecentCommit()).shortMintAmount
+                (await getCurrentTotalCommit(poolCommitter)).shortMintAmount
             ).to.eq(amountCommitted)
             expect(
-                (await poolCommitter.totalMostRecentCommit()).shortBurnAmount
+                (await getCurrentTotalCommit(poolCommitter)).shortBurnAmount
             ).to.eq(amountCommitted.div(2))
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(lastPrice, 10)
 
             expect(
-                (await poolCommitter.totalMostRecentCommit()).shortMintAmount
+                (await getCurrentTotalCommit(poolCommitter)).shortMintAmount
             ).to.eq(0)
             expect(
-                (await poolCommitter.totalMostRecentCommit()).shortBurnAmount
+                (await getCurrentTotalCommit(poolCommitter)).shortBurnAmount
             ).to.eq(0)
         })
         it("should adjust the balances of the live pools involved", async () => {
@@ -215,17 +221,20 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
             // totalMostRecentCommit, userMostRecentCommit should be populated.
             // totalNextIntervalCommit, userNextIntervalCommit should be empty.
 
-            let totalMostRecentCommit =
-                await poolCommitter.totalMostRecentCommit()
-            let userMostRecentCommit = await poolCommitter.userMostRecentCommit(
-                result.signers[0].address
+            let totalMostRecentCommit = await getCurrentTotalCommit(
+                poolCommitter
             )
-            let totalNextIntervalCommit =
-                await poolCommitter.totalNextIntervalCommit()
-            let userNextIntervalCommit =
-                await poolCommitter.userNextIntervalCommit(
-                    result.signers[0].address
-                )
+            let userMostRecentCommit = await getCurrentUserCommit(
+                signers[0].address,
+                poolCommitter
+            )
+            let totalNextIntervalCommit = await getNextTotalCommit(
+                poolCommitter
+            )
+            let userNextIntervalCommit = await getNextUserCommit(
+                signers[0].address,
+                poolCommitter
+            )
 
             expect(totalMostRecentCommit.shortMintAmount).to.equal(
                 amountCommitted
@@ -242,18 +251,20 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
 
             await timeout((updateInterval - frontRunningInterval / 2) * 1000)
 
+            // Commit within frontrunning interval
             await createCommit(poolCommitter, LONG_MINT, amountCommitted.div(2))
 
             // Now totalNextIntervalCommit should be populated, but totalMostRecentCommit should remain unchanged
 
-            totalMostRecentCommit = await poolCommitter.totalMostRecentCommit()
-            userMostRecentCommit = await poolCommitter.userMostRecentCommit(
-                result.signers[0].address
+            totalMostRecentCommit = await getCurrentTotalCommit(poolCommitter)
+            userMostRecentCommit = await getCurrentUserCommit(
+                signers[0].address,
+                poolCommitter
             )
-            totalNextIntervalCommit =
-                await poolCommitter.totalNextIntervalCommit()
-            userNextIntervalCommit = await poolCommitter.userNextIntervalCommit(
-                result.signers[0].address
+            totalNextIntervalCommit = await getNextTotalCommit(poolCommitter)
+            userNextIntervalCommit = await getNextUserCommit(
+                signers[0].address,
+                poolCommitter
             )
 
             expect(totalMostRecentCommit.shortMintAmount).to.equal(
@@ -284,14 +295,15 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
 
             // Now, totalNextIntervalCommit should have been shifted into totalMostRecentCommit and same for userNextIntervalCommit
 
-            totalMostRecentCommit = await poolCommitter.totalMostRecentCommit()
-            userMostRecentCommit = await poolCommitter.userMostRecentCommit(
-                result.signers[0].address
+            totalMostRecentCommit = await getCurrentTotalCommit(poolCommitter)
+            userMostRecentCommit = await getCurrentUserCommit(
+                signers[0].address,
+                poolCommitter
             )
-            totalNextIntervalCommit =
-                await poolCommitter.totalNextIntervalCommit()
-            userNextIntervalCommit = await poolCommitter.userNextIntervalCommit(
-                result.signers[0].address
+            totalNextIntervalCommit = await getNextTotalCommit(poolCommitter)
+            userNextIntervalCommit = await getNextUserCommit(
+                signers[0].address,
+                poolCommitter
             )
             let userBalance = await poolCommitter.getAggregateBalance(
                 result.signers[0].address
@@ -360,17 +372,20 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
             // totalMostRecentCommit, userMostRecentCommit should be populated.
             // totalNextIntervalCommit, userNextIntervalCommit should be empty.
 
-            let totalMostRecentCommit =
-                await poolCommitter.totalMostRecentCommit()
-            let userMostRecentCommit = await poolCommitter.userMostRecentCommit(
-                result.signers[0].address
+            let totalMostRecentCommit = await getCurrentTotalCommit(
+                poolCommitter
             )
-            let totalNextIntervalCommit =
-                await poolCommitter.totalNextIntervalCommit()
-            let userNextIntervalCommit =
-                await poolCommitter.userNextIntervalCommit(
-                    result.signers[0].address
-                )
+            let userMostRecentCommit = await getCurrentUserCommit(
+                signers[0].address,
+                poolCommitter
+            )
+            let totalNextIntervalCommit = await getNextTotalCommit(
+                poolCommitter
+            )
+            let userNextIntervalCommit = await getNextUserCommit(
+                signers[0].address,
+                poolCommitter
+            )
 
             expect(totalMostRecentCommit.shortMintAmount).to.equal(
                 amountCommitted
@@ -391,14 +406,15 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
 
             // Now totalNextIntervalCommit should be populated, but totalMostRecentCommit should remain unchanged
 
-            totalMostRecentCommit = await poolCommitter.totalMostRecentCommit()
-            userMostRecentCommit = await poolCommitter.userMostRecentCommit(
-                result.signers[0].address
+            totalMostRecentCommit = await getCurrentTotalCommit(poolCommitter)
+            userMostRecentCommit = await getCurrentUserCommit(
+                signers[0].address,
+                poolCommitter
             )
-            totalNextIntervalCommit =
-                await poolCommitter.totalNextIntervalCommit()
-            userNextIntervalCommit = await poolCommitter.userNextIntervalCommit(
-                result.signers[0].address
+            totalNextIntervalCommit = await getNextTotalCommit(poolCommitter)
+            userNextIntervalCommit = await getNextUserCommit(
+                signers[0].address,
+                poolCommitter
             )
 
             expect(totalMostRecentCommit.shortMintAmount).to.equal(
@@ -429,14 +445,15 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
 
             // Now, totalNextIntervalCommit should have been shifted into totalMostRecentCommit and same for userNextIntervalCommit
 
-            totalMostRecentCommit = await poolCommitter.totalMostRecentCommit()
-            userMostRecentCommit = await poolCommitter.userMostRecentCommit(
-                result.signers[0].address
+            totalMostRecentCommit = await getCurrentTotalCommit(poolCommitter)
+            userMostRecentCommit = await getCurrentUserCommit(
+                signers[0].address,
+                poolCommitter
             )
-            totalNextIntervalCommit =
-                await poolCommitter.totalNextIntervalCommit()
-            userNextIntervalCommit = await poolCommitter.userNextIntervalCommit(
-                result.signers[0].address
+            totalNextIntervalCommit = await getNextTotalCommit(poolCommitter)
+            userNextIntervalCommit = await getNextUserCommit(
+                signers[0].address,
+                poolCommitter
             )
             let userBalance = await poolCommitter.getAggregateBalance(
                 result.signers[0].address

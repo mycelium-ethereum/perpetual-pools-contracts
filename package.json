@@ -69,6 +69,7 @@
         "abdk-libraries-solidity": "^3.0.0",
         "hardhat": "^2.6.0",
         "hardhat-log-remover": "^2.0.2",
+        "prb-math": "^2.3.0",
         "solidity-coverage": "^0.7.16",
         "ts-command-line-args": "^2.1.0"
     }

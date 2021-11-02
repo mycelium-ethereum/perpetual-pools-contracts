@@ -17,6 +17,7 @@ import {
     createCommit,
     CommitEventArgs,
     timeout,
+    getCurrentTotalCommit,
 } from "../../utilities"
 
 chai.use(chaiAsPromised)
@@ -59,7 +60,7 @@ describe("poolCommitter - executeCommitment: Basic test cases", () => {
             await pool.setKeeper(signers[0].address)
             // Wait until somewhere between `frontRunningInterval <-> updateInterval`
             await timeout((_updateInterval - _frontRunningInterval / 2) * 1000)
-            await committer.commit(SHORT_MINT, amountCommitted)
+            await committer.commit(SHORT_MINT, amountCommitted, false)
 
             const shortTokensSupplyBefore = await shortToken.totalSupply()
             // Now wait for updateInterval to pass
@@ -136,12 +137,12 @@ describe("poolCommitter - executeCommitment: Basic test cases", () => {
 
         it("should remove the commitment after execution", async () => {
             expect(
-                (await poolCommitter.totalMostRecentCommit()).longMintAmount
+                (await getCurrentTotalCommit(poolCommitter)).longMintAmount
             ).to.eq(amountCommitted)
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(9, 10)
             expect(
-                (await poolCommitter.totalMostRecentCommit()).longMintAmount
+                (await getCurrentTotalCommit(poolCommitter)).longMintAmount
             ).to.eq(0)
         })
 
@@ -154,7 +155,6 @@ describe("poolCommitter - executeCommitment: Basic test cases", () => {
                 commit.commitID
             )
         })
-
         it("should not allow anyone to execute a commitment", async () => {
             await timeout(updateInterval * 1000)
             await expect(

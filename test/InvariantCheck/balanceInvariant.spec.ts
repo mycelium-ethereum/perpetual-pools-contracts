@@ -84,6 +84,7 @@ describe("InvariantCheck - balanceInvariant", () => {
                 _fee: fee,
                 _leverageAmount: leverage,
                 _feeAddress: feeAddress,
+                _secondaryFeeAddress: feeAddress,
                 _quoteToken: quoteToken,
                 _invariantCheckContract: invariantCheck.address,
             })
@@ -130,13 +131,11 @@ describe("InvariantCheck - balanceInvariant", () => {
 
         it("Pauses contracts", async () => {
             await pool.drainPool(1)
-            const shortMintAmountBefore = (
-                await poolCommitter.totalMostRecentCommit()
-            ).shortMintAmount
+            let pendingCommits = await poolCommitter.getPendingCommits();
+            let totalMostRecentCommit = pendingCommits[0]
+            const shortMintAmountBefore = totalMostRecentCommit.shortMintAmount
             const balanceBefore = await token.balanceOf(pool.address)
-            const longMintAmountBefore = (
-                await poolCommitter.totalMostRecentCommit()
-            ).longMintAmount
+            const longMintAmountBefore = totalMostRecentCommit.longMintAmount
 
             // Creating a commit reverts, since pools is drained
             await expect(
@@ -146,13 +145,11 @@ describe("InvariantCheck - balanceInvariant", () => {
             // Performing upkeep does not work
             await timeout(updateInterval * 2000)
             await poolKeeper.performUpkeepSinglePool(pool.address)
-            const shortMintAmountAfter = (
-                await poolCommitter.totalMostRecentCommit()
-            ).shortMintAmount
+            pendingCommits = await poolCommitter.getPendingCommits();
+            totalMostRecentCommit = pendingCommits[0]
+            const shortMintAmountAfter = totalMostRecentCommit.shortMintAmount
             const balanceAfter = await token.balanceOf(pool.address)
-            let longMintAmountAfter = (
-                await poolCommitter.totalMostRecentCommit()
-            ).longMintAmount
+            let longMintAmountAfter = totalMostRecentCommit.longMintAmount
             expect(shortMintAmountAfter).to.equal(shortMintAmountBefore)
             expect(longMintAmountAfter).to.equal(longMintAmountBefore)
             expect(balanceAfter).to.equal(balanceBefore)

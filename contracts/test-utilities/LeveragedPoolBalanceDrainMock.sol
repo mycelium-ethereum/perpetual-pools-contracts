@@ -33,6 +33,7 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
     address public keeper;
     bool public governanceTransferInProgress;
     address public feeAddress;
+    address public secondaryFeeAddress;
     address public override quoteToken;
     address public override poolCommitter;
     address public override oracleWrapper;
@@ -300,6 +301,17 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
         address oldFeeAddress = feeAddress;
         feeAddress = account;
         emit FeeAddressUpdated(oldFeeAddress, feeAddress);
+    }
+
+    /**
+     * @notice Updates the secondary fee address of the pool
+     * @param account New address of the fee address/receiver
+     */
+    function updateSecondaryFeeAddress(address account) external override {
+        address _oldSecondaryFeeAddress = secondaryFeeAddress;
+        require(msg.sender == _oldSecondaryFeeAddress);
+        secondaryFeeAddress = account;
+        emit SecondaryFeeAddressUpdated(_oldSecondaryFeeAddress, account);
     }
 
     /**

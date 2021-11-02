@@ -176,6 +176,21 @@ describe("LeveragedPool - initialize", () => {
             )
             await long.deployed()
 
+            const poolCommitterFactory = (await ethers.getContractFactory(
+                "PoolCommitter",
+                {
+                    signer: signers[0],
+                    libraries: { PoolSwapLibrary: library.address },
+                }
+            )) as PoolCommitter__factory
+
+            const poolCommitter = await (
+                await poolCommitterFactory.deploy(
+                    setupContracts.factory.address,
+                    setupContracts.invariantCheck.address
+                )
+            ).deployed()
+
             const testFactory = (await ethers.getContractFactory(
                 "TestPoolFactory",
                 signers[0]
@@ -194,24 +209,6 @@ describe("LeveragedPool - initialize", () => {
                 signers[0]
             ) as LeveragedPool
 
-            const poolCommitterFactory = (await ethers.getContractFactory(
-                "PoolCommitter",
-                {
-                    signer: signers[0],
-                    libraries: { PoolSwapLibrary: library.address },
-                }
-            )) as PoolCommitter__factory
-
-            const poolCommitter = await poolCommitterFactory.deploy(
-                setupContracts.factory.address,
-                setupContracts.invariantCheck.address
-            )
-            await poolCommitter.deployed()
-            poolCommitter.initialize(
-                setupContracts.factory.address,
-                setupContracts.invariantCheck.address
-            )
-
             receipt = await (
                 await leveragedPool.initialize({
                     _owner: signers[0].address,
@@ -227,6 +224,7 @@ describe("LeveragedPool - initialize", () => {
                     _fee: fee,
                     _leverageAmount: leverage,
                     _feeAddress: feeAddress,
+                    _secondaryFeeAddress: ethers.constants.AddressZero,
                     _quoteToken: quoteToken,
                     _invariantCheckContract:
                         setupContracts.invariantCheck.address,
@@ -305,6 +303,7 @@ describe("LeveragedPool - initialize", () => {
                 _fee: fee,
                 _leverageAmount: leverage,
                 _feeAddress: feeAddress,
+                _secondaryFeeAddress: ethers.constants.AddressZero,
                 _quoteToken: quoteToken,
                 _invariantCheckContract: invariantCheck.address,
             })
@@ -323,6 +322,7 @@ describe("LeveragedPool - initialize", () => {
                     _fee: fee,
                     _leverageAmount: leverage,
                     _feeAddress: feeAddress,
+                    _secondaryFeeAddress: ethers.constants.AddressZero,
                     _quoteToken: quoteToken,
                     _invariantCheckContract: invariantCheck.address,
                 })
@@ -344,6 +344,7 @@ describe("LeveragedPool - initialize", () => {
                     _fee: fee,
                     _leverageAmount: leverage,
                     _feeAddress: feeAddress,
+                    _secondaryFeeAddress: ethers.constants.AddressZero,
                     _quoteToken: ethers.constants.AddressZero,
                     _invariantCheckContract: invariantCheck.address,
                 })
@@ -365,6 +366,7 @@ describe("LeveragedPool - initialize", () => {
                     _fee: fee,
                     _leverageAmount: leverage,
                     _feeAddress: feeAddress,
+                    _secondaryFeeAddress: ethers.constants.AddressZero,
                     _quoteToken: quoteToken,
                     _invariantCheckContract: invariantCheck.address,
                 })
@@ -386,32 +388,11 @@ describe("LeveragedPool - initialize", () => {
                     _fee: fee,
                     _leverageAmount: leverage,
                     _feeAddress: ethers.constants.AddressZero,
+                    _secondaryFeeAddress: ethers.constants.AddressZero,
                     _quoteToken: quoteToken,
                     _invariantCheckContract: invariantCheck.address,
                 })
             ).to.rejectedWith(Error)
-        })
-        it("should revert if the updateInterval is less than frontRunningInterval", async () => {
-            // the generated variable `updateInterval` is greater than `frontRunningInterval`
-            await expect(
-                leveragedPool.initialize({
-                    _owner: signers[0].address,
-                    _keeper: generateRandomAddress(),
-                    _oracleWrapper: oracleWrapper.address,
-                    _settlementEthOracle: settlementEthOracle.address,
-                    _longToken: long.address,
-                    _shortToken: short.address,
-                    _poolCommitter: poolCommitter.address,
-                    _poolName: POOL_CODE,
-                    _frontRunningInterval: updateInterval,
-                    _updateInterval: frontRunningInterval,
-                    _fee: fee,
-                    _leverageAmount: leverage,
-                    _feeAddress: feeAddress,
-                    _quoteToken: quoteToken,
-                    _invariantCheckContract: invariantCheck.address,
-                })
-            ).to.rejectedWith("frontRunning >= updateInterval")
         })
         it("should be able to coexist with other clones", async () => {
             const secondPoolReceipt = await (
@@ -438,6 +419,7 @@ describe("LeveragedPool - initialize", () => {
                 _fee: fee,
                 _leverageAmount: leverage,
                 _feeAddress: feeAddress,
+                _secondaryFeeAddress: ethers.constants.AddressZero,
                 _quoteToken: quoteToken,
                 _invariantCheckContract: invariantCheck.address,
             })
@@ -455,6 +437,7 @@ describe("LeveragedPool - initialize", () => {
                 _fee: fee,
                 _leverageAmount: leverage,
                 _feeAddress: feeAddress,
+                _secondaryFeeAddress: ethers.constants.AddressZero,
                 _quoteToken: quoteToken,
                 _invariantCheckContract: invariantCheck.address,
             })

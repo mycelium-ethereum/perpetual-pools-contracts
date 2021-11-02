@@ -5,10 +5,19 @@ pragma solidity 0.8.7;
 interface IPoolCommitter {
     /// Type of commit
     enum CommitType {
-        ShortMint,
-        ShortBurn,
-        LongMint,
-        LongBurn
+        ShortMint, // Mint short tokens
+        ShortBurn, // Burn short tokens
+        LongMint, // Mint long tokens
+        LongBurn, // Burn long tokens
+        LongBurnShortMint, // Burn Long tokens, then instantly mint in same upkeep
+        ShortBurnLongMint // Burn Short tokens, then instantly mint in same upkeep
+    }
+
+    struct BalancesAndSupplies {
+        uint256 shortBalance;
+        uint256 longBalance;
+        uint256 longTotalSupplyBefore;
+        uint256 shortTotalSupplyBefore;
     }
 
     // User aggregate balance
@@ -33,11 +42,37 @@ interface IPoolCommitter {
     }
 
     // Commit information
-    struct Commitment {
+    struct TotalCommitment {
         uint256 longMintAmount;
         uint256 longBurnAmount;
         uint256 shortMintAmount;
         uint256 shortBurnAmount;
+        uint256 shortBurnLongMintAmount;
+        uint256 longBurnShortMintAmount;
+        uint256 updateIntervalId;
+    }
+
+    struct BalanceUpdate {
+        uint256 _updateIntervalId;
+        uint256 _newLongTokensSum;
+        uint256 _newShortTokensSum;
+        uint256 _newSettlementTokensSum;
+        uint256 _balanceLongBurnAmount;
+        uint256 _balanceShortBurnAmount;
+    }
+
+    // Track how much of a user's commitments are being done from their aggregate balance
+    struct UserCommitment {
+        uint256 longMintAmount;
+        uint256 longBurnAmount;
+        uint256 balanceLongBurnAmount;
+        uint256 shortMintAmount;
+        uint256 shortBurnAmount;
+        uint256 balanceShortBurnAmount;
+        uint256 shortBurnLongMintAmount;
+        uint256 balanceShortBurnMintAmount;
+        uint256 longBurnShortMintAmount;
+        uint256 balanceLongBurnMintAmount;
         uint256 updateIntervalId;
     }
 
@@ -61,11 +96,13 @@ interface IPoolCommitter {
 
     // #### Functions
 
-    function getPendingCommits() external view returns (Commitment memory, Commitment memory);
-
     function initialize(address _factory, address _invariantCheckContract) external;
 
-    function commit(CommitType commitType, uint256 amount) external;
+    function commit(
+        CommitType commitType,
+        uint256 amount,
+        bool fromAggregateBalance
+    ) external;
 
     function claim(address user) external;
 
@@ -74,6 +111,8 @@ interface IPoolCommitter {
     function updateAggregateBalance(address user) external;
 
     function getAggregateBalance(address user) external view returns (Balance memory _balance);
+
+    function getPendingCommits() external view returns (TotalCommitment memory, TotalCommitment memory);
 
     function setQuoteAndPool(address quoteToken, address leveragedPool) external;
 }

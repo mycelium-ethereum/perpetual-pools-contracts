@@ -21,6 +21,8 @@ library PoolSwapLibrary {
         uint256 longBurnAmount;
         uint256 shortMintAmount;
         uint256 shortBurnAmount;
+        uint256 longBurnShortMintAmount;
+        uint256 shortBurnLongMintAmount;
     }
 
     struct PriceChangeData {
@@ -112,6 +114,16 @@ library PoolSwapLibrary {
     }
 
     /**
+     * @notice Divides two unsigned integers
+     * @param a The dividend
+     * @param b The divisor
+     * @return The quotient
+     */
+    function divUInt(uint256 a, uint256 b) private pure returns (bytes16) {
+        return ABDKMathQuad.div(ABDKMathQuad.fromUInt(a), ABDKMathQuad.fromUInt(b));
+    }
+
+    /**
      * @notice Divides two integers
      * @param a The dividend
      * @param b The divisor
@@ -119,6 +131,23 @@ library PoolSwapLibrary {
      */
     function divInt(int256 a, int256 b) public pure returns (bytes16) {
         return ABDKMathQuad.div(ABDKMathQuad.fromInt(a), ABDKMathQuad.fromInt(b));
+    }
+
+    /**
+     * @notice Multiply an integer by a fraction
+     * @return The result as an integer
+     */
+    function mulFraction(
+        uint256 number,
+        uint256 numerator,
+        uint256 denominator
+    ) public pure returns (uint256) {
+        if (denominator == 0) {
+            return 0;
+        }
+        bytes16 multiplyResult = ABDKMathQuad.mul(ABDKMathQuad.fromUInt(number), ABDKMathQuad.fromUInt(numerator));
+        bytes16 result = ABDKMathQuad.div(multiplyResult, ABDKMathQuad.fromUInt(denominator));
+        return convertDecimalToUInt(result);
     }
 
     /**
@@ -224,15 +253,57 @@ library PoolSwapLibrary {
         uint256 lastPriceTimestamp,
         uint256 updateInterval,
         uint256 frontRunningInterval
-    ) external pure returns (bool) {
+    ) public pure returns (bool) {
         return lastPriceTimestamp + updateInterval - frontRunningInterval > subjectTime;
+    }
+
+    /**
+     * @notice Calculates the update interval ID that a commitment should be placed in.
+     * @param timestamp Current block.timestamp
+     * @param lastPriceTimestamp The timestamp of the last price update
+     * @param frontRunningInterval The frontrunning interval of a pool - The amount of time before an update interval that you must commit to get included in that update
+     * @param updateInterval The frequency of a pool's updates
+     * @param currentUpdateIntervalId The current update interval's ID
+     * @dev Note that the timestamp parameter is required to be >= lastPriceTimestamp
+     * @return The update interval ID in which a commit being made at time timestamp should be included
+     */
+    function appropriateUpdateIntervalId(
+        uint256 timestamp,
+        uint256 lastPriceTimestamp,
+        uint256 frontRunningInterval,
+        uint256 updateInterval,
+        uint256 currentUpdateIntervalId
+    ) external pure returns (uint256) {
+        // Since lastPriceTimestamp <= block.timestamp, the below also confirms that timestamp >= block.timestamp
+        require(timestamp >= lastPriceTimestamp, "timestamp in the past");
+        if (frontRunningInterval <= updateInterval) {
+            // This is the "simple" case where we either want the current update interval or the next one
+            if (isBeforeFrontRunningInterval(timestamp, lastPriceTimestamp, updateInterval, frontRunningInterval)) {
+                // We are before the frontRunning interval
+                return currentUpdateIntervalId;
+            } else {
+                return currentUpdateIntervalId + 1;
+            }
+        } else {
+            // frontRunningInterval > updateInterval
+            // This is the generalised case, where it could be any number of update intervals in the future
+            uint256 factorDifference = ABDKMathQuad.toUInt(divUInt(frontRunningInterval, updateInterval));
+            uint256 timeOfNextAvailableInterval = lastPriceTimestamp + (updateInterval * (factorDifference + 1));
+            // frontRunningInterval is factorDifference times larger than updateInterval
+            uint256 minimumUpdateIntervalId = currentUpdateIntervalId + factorDifference;
+            // but, if timestamp is still within minimumUpdateInterval's frontRunningInterval we need to go to the next one
+            return
+                timestamp + frontRunningInterval > timeOfNextAvailableInterval
+                    ? minimumUpdateIntervalId + 1
+                    : minimumUpdateIntervalId;
+        }
     }
 
     /**
      * @notice Gets the number of settlement tokens to be withdrawn based on a pool token burn amount
      * @dev Calculates as `balance * amountIn / (tokenSupply + shadowBalance)
      * @param tokenSupply Total supply of pool tokens
-     * @param amountIn Commitment amount of collateral tokens going into the pool
+     * @param amountIn Commitment amount of pool tokens going into the pool
      * @param balance Balance of the pool (no. of underlying collateral tokens in pool)
      * @param shadowBalance Balance the shadow pool at time of mint
      * @return Number of settlement tokens to be withdrawn on a burn
@@ -311,6 +382,27 @@ library PoolSwapLibrary {
     }
 
     /**
+     * @notice Calculate the number of pool tokens to mint, given some settlement token amount, a price, and a burn amount from other side for instant mint
+     * @param price The price of a pool token
+     * @param amount The amount of settlement tokens being used to mint
+     * @param oppositePrice The price of the opposite side's pool token
+     * @param amountBurnedInstantMint The amount of pool tokens that were burnt from the opposite side for an instant mint in this side
+     */
+    function getMintWithBurns(
+        bytes16 price,
+        bytes16 oppositePrice,
+        uint256 amount,
+        uint256 amountBurnedInstantMint
+    ) public pure returns (uint256) {
+        require(price != 0, "price == 0");
+        if (amountBurnedInstantMint > 0) {
+            // Calculate amount of settlement tokens generated from the burn.
+            amount += getBurn(oppositePrice, amountBurnedInstantMint);
+        }
+        return getMint(price, amount);
+    }
+
+    /**
      * @notice Converts from a WAD to normal value
      * @return Converted non-WAD value
      */
@@ -338,14 +430,24 @@ library PoolSwapLibrary {
         }
         uint256 longBurnResult; // The amount of settlement tokens to withdraw based on long token burn
         uint256 shortBurnResult; // The amount of settlement tokens to withdraw based on short token burn
-        if (data.longMintAmount > 0) {
-            _newLongTokens = getMint(data.longPrice, data.longMintAmount);
+        if (data.longMintAmount > 0 || data.shortBurnLongMintAmount > 0) {
+            _newLongTokens = getMintWithBurns(
+                data.longPrice,
+                data.shortPrice,
+                data.longMintAmount,
+                data.shortBurnLongMintAmount
+            );
         }
         if (data.longBurnAmount > 0) {
             longBurnResult = getBurn(data.longPrice, data.longBurnAmount);
         }
-        if (data.shortMintAmount > 0) {
-            _newShortTokens = getMint(data.shortPrice, data.shortMintAmount);
+        if (data.shortMintAmount > 0 || data.longBurnShortMintAmount > 0) {
+            _newShortTokens = getMintWithBurns(
+                data.shortPrice,
+                data.longPrice,
+                data.shortMintAmount,
+                data.longBurnShortMintAmount
+            );
         }
         if (data.shortBurnAmount > 0) {
             shortBurnResult = getBurn(data.shortPrice, data.shortBurnAmount);

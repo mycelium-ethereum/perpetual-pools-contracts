@@ -28,16 +28,16 @@ contract InvariantCheck is IInvariantCheck {
         IPoolCommitter poolCommitter = IPoolCommitter(pool.poolCommitter());
         uint256 poolBalance = IERC20(pool.quoteToken()).balanceOf(poolToCheck);
         (
-            IPoolCommitter.Commitment memory totalMostRecentCommits,
-            IPoolCommitter.Commitment memory totalNextIntervalCommit
+            IPoolCommitter.TotalCommitment memory totalCommitment,
+            IPoolCommitter.TotalCommitment memory nextTotalCommitment
         ) = poolCommitter.getPendingCommits();
         uint256 pendingMints;
         unchecked {
             pendingMints =
-                totalMostRecentCommits.longMintAmount +
-                totalMostRecentCommits.shortMintAmount +
-                totalNextIntervalCommit.longMintAmount +
-                totalNextIntervalCommit.shortMintAmount;
+                totalCommitment.longMintAmount +
+                totalCommitment.shortMintAmount +
+                nextTotalCommitment.longMintAmount +
+                nextTotalCommitment.shortMintAmount;
         }
         uint256 longBalance = pool.longBalance();
         uint256 shortBalance = pool.shortBalance();
