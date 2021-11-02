@@ -500,7 +500,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
      * @dev Prevents all state updates until unpaused
      */
     function unpause() external onlyGov {
-        paused = false; 
+        paused = false;
     }
 
     modifier updateBalance() {

@@ -131,7 +131,7 @@ describe("InvariantCheck - balanceInvariant", () => {
 
         it("Pauses contracts", async () => {
             await pool.drainPool(1)
-            let pendingCommits = await poolCommitter.getPendingCommits();
+            let pendingCommits = await poolCommitter.getPendingCommits()
             let totalMostRecentCommit = pendingCommits[0]
             const shortMintAmountBefore = totalMostRecentCommit.shortMintAmount
             const balanceBefore = await token.balanceOf(pool.address)
@@ -145,7 +145,7 @@ describe("InvariantCheck - balanceInvariant", () => {
             // Performing upkeep does not work
             await timeout(updateInterval * 2000)
             await poolKeeper.performUpkeepSinglePool(pool.address)
-            pendingCommits = await poolCommitter.getPendingCommits();
+            pendingCommits = await poolCommitter.getPendingCommits()
             totalMostRecentCommit = pendingCommits[0]
             const shortMintAmountAfter = totalMostRecentCommit.shortMintAmount
             const balanceAfter = await token.balanceOf(pool.address)

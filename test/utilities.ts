@@ -178,9 +178,7 @@ export const deployPoolSetupContracts = async () => {
         signers[0]
     )) as InvariantCheck__factory
 
-    const invariantCheck = await invariantCheckFactory.deploy(
-        factory.address
-    )
+    const invariantCheck = await invariantCheckFactory.deploy(factory.address)
 
     /* deploy price observer contract */
     const priceObserverFactory = (await ethers.getContractFactory(
@@ -210,7 +208,7 @@ export const deployPoolSetupContracts = async () => {
         token,
         library,
         priceObserver,
-        invariantCheck
+        invariantCheck,
     }
 }
 
