@@ -3,11 +3,8 @@ pragma solidity 0.8.7;
 import "../interfaces/IOracleWrapper.sol";
 import "../interfaces/IPriceObserver.sol";
 import "../implementation/PriceObserver.sol";
-import "prb-math/contracts/PRBMathSD59x18.sol";
 
 contract SMAOracle is IOracleWrapper {
-    using PRBMathSD59x18 for int256;
-
     /// Price oracle supplying the spot price of the quote asset
     address public override oracle;
 
