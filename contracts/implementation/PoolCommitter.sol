@@ -151,7 +151,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         CommitType commitType,
         uint256 amount,
         bool fromAggregateBalance
-    ) external override updateBalance checkInvariantsAndUnpaused {
+    ) external override updateBalance checkInvariantsAfterFunction {
         require(amount > 0, "Amount must not be zero");
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
         uint256 updateInterval = pool.updateInterval();
@@ -194,7 +194,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
     /**
      * @notice Claim user's balance. This can be done either by the user themself or by somebody else on their behalf.
      */
-    function claim(address user) external override updateBalance checkInvariantsAndUnpaused {
+    function claim(address user) external override updateBalance checkInvariantsAfterFunction {
         Balance memory balance = userAggregateBalance[user];
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
         if (balance.settlementTokens > 0) {
@@ -302,7 +302,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         pool.setNewPoolBalances(newLongBalance, newShortBalance);
     }
 
-    function executeCommitments() external override onlyPool checkInvariantsAndUnpausedBeforeOnly {
+    function executeCommitments() external override onlyPool checkInvariantsBeforeFunction {
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
         executeGivenCommitments(totalPoolCommitments[updateIntervalId]);
         delete totalPoolCommitments[updateIntervalId];
@@ -354,7 +354,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
     /**
      * @notice Add the result of a user's most recent commit to their aggregateBalance
      */
-    function updateAggregateBalance(address user) public override checkInvariantsAndUnpaused {
+    function updateAggregateBalance(address user) public override checkInvariantsAfterFunction {
         Balance storage balance = userAggregateBalance[user];
 
         BalanceUpdate memory update = BalanceUpdate({
@@ -521,13 +521,13 @@ contract PoolCommitter is IPoolCommitter, Initializable {
     /**
      * @dev Check invariants before function body only. This is used in functions where the state of the pool is updated after exiting PoolCommitter (i.e. executeCommitments)
      */
-    modifier checkInvariantsAndUnpausedBeforeOnly() {
+    modifier checkInvariantsBeforeFunction() {
         invariantCheck.checkInvariants(leveragedPool);
         require(!paused, "Pool is paused");
         _;
     }
 
-    modifier checkInvariantsAndUnpaused() {
+    modifier checkInvariantsAfterFunction() {
         require(!paused, "Pool is paused");
         _;
         invariantCheck.checkInvariants(leveragedPool);

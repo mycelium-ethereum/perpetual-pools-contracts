@@ -94,7 +94,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
      * @notice Execute a price change
      * @dev This is the entry point to upkeep a market
      */
-    function poolUpkeep(int256 _oldPrice, int256 _newPrice) external override onlyKeeper checkInvariantsAndUnpaused {
+    function poolUpkeep(int256 _oldPrice, int256 _newPrice) external override onlyKeeper checkInvariantsAfterFunction {
         require(intervalPassed(), "Update interval hasn't passed");
         // perform price change and update pool balances
         executePriceChange(_oldPrice, _newPrice);
@@ -113,7 +113,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
         external
         override
         onlyKeeper
-        checkInvariantsAndUnpaused
+        checkInvariantsAfterFunction
         returns (bool)
     {
         uint256 _shortBalance = shortBalance;
@@ -148,7 +148,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
         external
         override
         onlyPoolCommitter
-        checkInvariantsAndUnpausedBeforeOnly
+        checkInvariantsBeforeFunction
     {
         IERC20(quoteToken).safeTransfer(to, amount);
     }
@@ -163,7 +163,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
         bool isLongToken,
         address to,
         uint256 amount
-    ) external override onlyPoolCommitter checkInvariantsAndUnpausedBeforeOnly {
+    ) external override onlyPoolCommitter checkInvariantsBeforeFunction {
         if (isLongToken) {
             IERC20(tokens[LONG_INDEX]).safeTransfer(to, amount);
         } else {
@@ -181,7 +181,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
         address from,
         address to,
         uint256 amount
-    ) external override onlyPoolCommitter checkInvariantsAndUnpausedBeforeOnly {
+    ) external override onlyPoolCommitter checkInvariantsBeforeFunction {
         IERC20(quoteToken).safeTransferFrom(from, to, amount);
     }
 
@@ -192,7 +192,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
      * @param _oldPrice Old price from the oracle
      * @param _newPrice New price from the oracle
      */
-    function executePriceChange(int256 _oldPrice, int256 _newPrice) internal checkInvariantsAndUnpausedBeforeOnly {
+    function executePriceChange(int256 _oldPrice, int256 _newPrice) internal checkInvariantsBeforeFunction {
         // prevent a division by 0 in computing the price change
         // prevent negative pricing
         if (_oldPrice <= 0 || _newPrice <= 0) {
@@ -251,7 +251,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
         external
         override
         onlyPoolCommitter
-        checkInvariantsAndUnpausedBeforeOnly
+        checkInvariantsBeforeFunction
     {
         longBalance = _longBalance;
         shortBalance = _shortBalance;
@@ -268,7 +268,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
         bool isLongToken,
         uint256 amount,
         address minter
-    ) external override onlyPoolCommitter checkInvariantsAndUnpausedBeforeOnly {
+    ) external override onlyPoolCommitter checkInvariantsBeforeFunction {
         if (isLongToken) {
             require(IPoolToken(tokens[LONG_INDEX]).mint(amount, minter), "Mint failed");
         } else {
@@ -287,7 +287,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
         bool isLongToken,
         uint256 amount,
         address burner
-    ) external override onlyPoolCommitter checkInvariantsAndUnpaused {
+    ) external override onlyPoolCommitter checkInvariantsAfterFunction {
         if (isLongToken) {
             require(IPoolToken(tokens[LONG_INDEX]).burn(amount, burner), "Burn failed");
         } else {
@@ -308,7 +308,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
      * @notice Updates the fee address of the pool
      * @param account New address of the fee address/receiver
      */
-    function updateFeeAddress(address account) external override onlyGov checkInvariantsAndUnpaused {
+    function updateFeeAddress(address account) external override onlyGov checkInvariantsAfterFunction {
         require(account != address(0), "Account cannot be 0 address");
         address oldFeeAddress = feeAddress;
         feeAddress = account;
@@ -330,7 +330,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
      * @notice Updates the keeper contract of the pool
      * @param _keeper New address of the keeper contract
      */
-    function setKeeper(address _keeper) external override onlyGov checkInvariantsAndUnpaused {
+    function setKeeper(address _keeper) external override onlyGov checkInvariantsAfterFunction {
         require(_keeper != address(0), "Keeper address cannot be 0 address");
         address oldKeeper = keeper;
         keeper = _keeper;
@@ -347,7 +347,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
      * @dev Sets the governance transfer flag to true
      * @dev See `claimGovernance`
      */
-    function transferGovernance(address _governance) external override onlyGov checkInvariantsAndUnpaused {
+    function transferGovernance(address _governance) external override onlyGov checkInvariantsAfterFunction {
         require(_governance != address(0), "Governance address cannot be 0 address");
         provisionalGovernance = _governance;
         governanceTransferInProgress = true;
@@ -363,7 +363,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
      * @dev After a successful call to this function, the actual governance
      *      address and the provisional governance address MUST be equal.
      */
-    function claimGovernance() external override checkInvariantsAndUnpaused {
+    function claimGovernance() external override checkInvariantsAfterFunction {
         require(governanceTransferInProgress, "No governance change active");
         require(msg.sender == provisionalGovernance, "Not provisional governor");
         address oldGovernance = governance; /* for later event emission */
@@ -442,14 +442,14 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
     /**
      * @dev Check invariants before function body only. This is used in functions where the state of the pool is updated after exiting PoolCommitter (i.e. executeCommitments)
      */
-    modifier checkInvariantsAndUnpausedBeforeOnly() {
+    modifier checkInvariantsBeforeFunction() {
         invariantCheck.checkInvariants(address(this));
         require(!paused, "Pool is paused");
         _;
     }
 
     // #### Modifiers
-    modifier checkInvariantsAndUnpaused() {
+    modifier checkInvariantsAfterFunction() {
         require(!paused, "Pool is paused");
         _;
         invariantCheck.checkInvariants(address(this));
