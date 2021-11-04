@@ -14,9 +14,6 @@ contract SMAOracle is IOracleWrapper {
     /// Price observer providing the SMA oracle with historical pricing data
     address public observer;
 
-    /// Current SMA price
-    int256 public price;
-
     /// Number of periods to use in calculating the SMA (`k` in the SMA equation)
     uint256 public periods;
 
