@@ -34,7 +34,10 @@ contract SMAOracle is IOracleWrapper {
         uint256 _updateInterval,
         address _deployer
     ) {
-        require(_spotOracle != address(0) && _observer != address(0), "SMA: Null address forbidden");
+        require(
+            _spotOracle != address(0) && _observer != address(0) && _deployer != address(0),
+            "SMA: Null address forbidden"
+        );
         require(_periods > 0 && _periods <= IPriceObserver(_observer).capacity(), "SMA: Out of bounds");
         require(_spotDecimals <= MAX_DECIMALS, "SMA: Decimal precision too high");
         periods = _periods;
