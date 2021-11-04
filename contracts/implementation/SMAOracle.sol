@@ -80,7 +80,7 @@ contract SMAOracle is IOracleWrapper {
         int256 latestPrice = spotOracle.getPrice();
 
         /* expire the oldest observation and load the fresh one in */
-        PriceObserver priceObserver = PriceObserver(observer);
+        IPriceObserver priceObserver = IPriceObserver(observer);
         priceObserver.add(latestPrice);
 
         /* update current reported SMA price */
