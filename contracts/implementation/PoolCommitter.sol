@@ -308,6 +308,10 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         pool.setNewPoolBalances(newLongBalance, newShortBalance);
     }
 
+    /**
+     * @notice Executes all commitments currently queued for the associated `LeveragedPool`
+     * @dev Only callable by the associated `LeveragedPool` contract
+     */
     function executeCommitments() external override onlyPool {
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
         executeGivenCommitments(totalPoolCommitments[updateIntervalId]);
@@ -317,6 +321,30 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         uint32 counter = 2;
         uint256 lastPriceTimestamp = pool.lastPriceTimestamp();
         uint256 updateInterval = pool.updateInterval();
+
+        /*
+         * (old)
+         * updateIntervalId
+         * |
+         * |    updateIntervalId
+         * |    |
+         * |    |    counter
+         * |    |    |
+         * |    |    |              (end)
+         * |    |    |              |
+         * V    V    V              V
+         * +----+----+----+~~~~+----+
+         * |    |    |    |....|    |
+         * +----+----+----+~~~~+----+
+         *
+         * Iterate over the sequence of possible update periods from the most
+         * recent (i.e., the value of `updateIntervalId` as at the entry point
+         * of this function) until the end of the queue.
+         *
+         * At each iteration, execute all of the (total) commitments for the
+         * pool for that period and then remove them from the queue.
+         *
+         */
         while (true) {
             if (block.timestamp >= lastPriceTimestamp + updateInterval * counter) {
                 // Another update interval has passed, so we have to do the nextIntervalCommit as well
