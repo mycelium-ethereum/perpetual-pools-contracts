@@ -9,6 +9,8 @@ import {
     ChainlinkOracleWrapper,
     PoolToken__factory,
     TestToken__factory,
+    TestClones,
+    TestClones__factory,
 } from "../../types"
 import { POOL_CODE, POOL_CODE_2 } from "../constants"
 import {
@@ -213,6 +215,53 @@ describe("PoolFactory.deployPool", () => {
             await expect(factory.deployPool(deploymentData)).to.be.revertedWith(
                 "Decimal precision too high"
             )
+        })
+    })
+    context("Clone deterministic checks", async () => {
+        let cloneLibrary: TestClones
+
+        before(async () => {
+            signers = await ethers.getSigners()
+            const cloneLibraryFactory = (await ethers.getContractFactory(
+                "TestClones",
+                signers[0]
+            )) as TestClones__factory
+            cloneLibrary = await cloneLibraryFactory.deploy()
+            await cloneLibrary.deployed()
+        })
+
+        it("should deploy deterministically", async () => {
+            let encoder = new ethers.utils.AbiCoder()
+            let abiEncoded = encoder.encode(
+                ["uint16", "address", "address"],
+                [leverage, token.address, oracleWrapper.address]
+            )
+            let uniqueIdHash = ethers.utils.keccak256(abiEncoded)
+            let predictedPoolAddress =
+                await cloneLibrary.predictDeterministicAddress(
+                    await factory.poolBaseAddress(),
+                    uniqueIdHash,
+                    factory.address
+                )
+
+            expect(predictedPoolAddress).to.eq(pool.address)
+        })
+
+        it("should not equal if leverage is different", async () => {
+            let encoder = new ethers.utils.AbiCoder()
+            let abiEncoded = encoder.encode(
+                ["uint16", "address", "address"],
+                [2, token.address, oracleWrapper.address]
+            )
+            let uniqueIdHash = ethers.utils.keccak256(abiEncoded)
+            let predictedPoolAddress =
+                await cloneLibrary.predictDeterministicAddress(
+                    await factory.poolBaseAddress(),
+                    uniqueIdHash,
+                    factory.address
+                )
+
+            expect(predictedPoolAddress).to.not.eq(pool.address)
         })
     })
 })
