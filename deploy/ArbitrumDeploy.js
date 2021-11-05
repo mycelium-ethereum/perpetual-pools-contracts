@@ -105,17 +105,6 @@ module.exports = async (hre) => {
         args: [multisigAddress],
     })
 
-    // deploy PoolCommitterDeployer
-    // const poolCommitterDeployer = { address: "0xF8FfbE626dB009343ECC69FBCEF0B095007BEF31" }
-    // const poolKeeper = { address: "0xf42bb5605277Ffc81fbDb938580bdA86AB7cbbde" }
-    // const factory = { address: "0xAAc9f23D2d4AB7D1E28cd8C9e37C8e1Cb4BA9D96" }
-    const poolCommitterDeployer = await deploy("PoolCommitterDeployer", {
-        from: deployer,
-        log: true,
-        libraries: { PoolSwapLibrary: library.address },
-        args: [factory.address],
-    })
-
     // deploy PoolKeeper
     const poolKeeper = await deploy("PoolKeeper", {
         from: deployer,
@@ -159,21 +148,7 @@ module.exports = async (hre) => {
         fee
     )
 
-    console.log(
-        "Setting factory committer deployer",
-        poolCommitterDeployer.address
-    )
-    await execute(
-        "PoolFactory",
-        {
-            from: deployer,
-            log: true,
-        },
-        "setPoolCommitterDeployer",
-        poolCommitterDeployer.address
-    )
-
-    const EUR_POOL_CODE = "EUR/USD"
+    const BTC_POOL_CODE = "BTC/USD"
     const ETH_POOL_CODE = "ETH/USD"
 
     const updateInterval = 3600 // 60 mins
@@ -283,10 +258,6 @@ module.exports = async (hre) => {
     await hre.run("verify:verify", {
         address: keeperOracle.address,
         constructorArguments: [MainnetEthUsdOracle.address],
-    })
-    await hre.run("verify:verify", {
-        address: poolCommitterDeployer.address,
-        constructorArguments: [factory.address],
     })
     await hre.run("verify:verify", {
         address: poolKeeper.address,
