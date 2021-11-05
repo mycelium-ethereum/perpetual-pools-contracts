@@ -37,11 +37,23 @@ contract PoolCommitter is IPoolCommitter, Initializable {
 
     address public factory;
 
+    /**
+     * @notice Constructor
+     * @param _factory Address of the associated `PoolFactory` contract
+     * @dev Throws if factory address is null
+     *
+     */
     constructor(address _factory) {
         require(_factory != address(0), "Factory address cannot be null");
         factory = _factory;
     }
 
+    /**
+     * @notice Initialises the contract
+     * @param _factory Address of the associated `PoolFactory` contract
+     * @dev Throws if factory address is null
+     *
+     */
     function initialize(address _factory) external override initializer {
         require(_factory != address(0), "Factory address cannot be 0 address");
         factory = _factory;
@@ -181,6 +193,8 @@ contract PoolCommitter is IPoolCommitter, Initializable {
 
     /**
      * @notice Claim user's balance. This can be done either by the user themself or by somebody else on their behalf.
+     * @param user Address of the user to claim against
+     * @dev Updates aggregate user balances
      */
     function claim(address user) external override updateBalance {
         Balance memory balance = userAggregateBalance[user];
@@ -198,6 +212,10 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         emit Claim(user);
     }
 
+    /**
+     * @notice Executes every commitment specified in the list
+     * @param _commits Array of `TotalCommitment`s
+     */
     function executeGivenCommitments(TotalCommitment memory _commits) internal {
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
 
@@ -340,7 +358,10 @@ contract PoolCommitter is IPoolCommitter, Initializable {
     }
 
     /**
-     * @notice Add the result of a user's most recent commit to their aggregateBalance
+     * @notice Add the result of a user's most recent commit to their aggregated balance
+     * @param user Address of the given user
+     * @dev Updates the `userAggregateBalance` mapping by applying `BalanceUpdate`s derived from iteration over the entirety of unaggregated commitments associated with the given user
+     * @dev Emits an `AggregateBalanceUpdated` event upon successful termination
      */
     function updateAggregateBalance(address user) public override {
         Balance storage balance = userAggregateBalance[user];
@@ -408,7 +429,9 @@ contract PoolCommitter is IPoolCommitter, Initializable {
     }
 
     /**
-     * @notice A copy of updateAggregateBalance that returns the aggregate balance without updating it
+     * @notice A copy of `updateAggregateBalance` that returns the aggregated balance without updating it
+     * @param user Address of the given user
+     * @return Associated `Balance` for the given user after aggregation
      */
     function getAggregateBalance(address user) public view override returns (Balance memory) {
         Balance memory _balance = userAggregateBalance[user];
@@ -460,6 +483,14 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         return _balance;
     }
 
+    /**
+     * @notice Sets the quote token address and the address of the associated `LeveragedPool` contract to the provided values
+     * @param _quoteToken Address of the quote token to use
+     * @param _leveragedPool Address of the pool to use
+     * @dev Only callable by the associated `PoolFactory` contract
+     * @dev Throws if either address are null
+     *
+     */
     function setQuoteAndPool(address _quoteToken, address _leveragedPool) external override onlyFactory {
         require(_quoteToken != address(0), "Quote token address cannot be 0 address");
         require(_leveragedPool != address(0), "Leveraged pool address cannot be 0 address");
@@ -471,16 +502,28 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         tokens = ILeveragedPool(leveragedPool).poolTokens();
     }
 
+    /**
+     * @notice Aggregates user balances **prior** to executing the wrapped code
+     *
+     */
     modifier updateBalance() {
         updateAggregateBalance(msg.sender);
         _;
     }
 
+    /**
+     * @notice Asserts that the caller is the associated `PoolFactory` contract
+     *
+     */
     modifier onlyFactory() {
         require(msg.sender == factory, "Committer: not factory");
         _;
     }
 
+    /**
+     * @notice Asserts that the caller is the associated `LeveragedPool` contract
+     *
+     */
     modifier onlyPool() {
         require(msg.sender == leveragedPool, "msg.sender not leveragedPool");
         _;
