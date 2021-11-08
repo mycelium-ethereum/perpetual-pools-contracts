@@ -146,6 +146,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
      *               tokens you want to burn
      * @param fromAggregateBalance If minting, burning, or rebalancing into a delta neutral position,
      *                             will tokens be taken from user's aggregate balance?
+     * @dev Emits a `CreateCommit` event on success
      */
     function commit(
         CommitType commitType,
@@ -195,6 +196,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
      * @notice Claim user's balance. This can be done either by the user themself or by somebody else on their behalf.
      * @param user Address of the user to claim against
      * @dev Updates aggregate user balances
+     * @dev Emits a `Claim` event on success
      */
     function claim(address user) external override updateBalance {
         Balance memory balance = userAggregateBalance[user];
