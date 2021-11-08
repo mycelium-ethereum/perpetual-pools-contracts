@@ -39,6 +39,11 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         factory = IPoolFactory(_factory);
     }
 
+    /**
+     * @notice Sets the address of the associated `PriceObserver` contract
+     * @param _observer Address of the `PriceObserver` contract
+     * @dev Throws if provided address is null
+     */
     function setPriceObserver(address _observer) external onlyOwner {
         require(_observer != address(0), "Price observer cannot be 0 address");
         observer = _observer;
@@ -47,6 +52,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     /**
      * @notice When a pool is created, this function is called by the factory to initiate price trackings
      * @param _poolAddress The address of the newly-created pools
+     * @dev Only callable by the associated `PoolFactory` contract
      */
     function newPool(address _poolAddress) external override onlyFactory {
         address oracleWrapper = ILeveragedPool(_poolAddress).oracleWrapper();
@@ -57,11 +63,10 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         executionPrice[_poolAddress] = startingPrice;
     }
 
-    // Keeper network
     /**
      * @notice Check if upkeep is required
      * @param _pool The address of the pool to upkeep
-     * @return upkeepNeeded Whether or not upkeep is needed for this single pool
+     * @return Whether or not upkeep is needed for this single pool
      */
     function checkUpkeepSinglePool(address _pool) public view override returns (bool) {
         if (!factory.isValidPool(_pool)) {
@@ -74,8 +79,9 @@ contract PoolKeeper is IPoolKeeper, Ownable {
 
     /**
      * @notice Checks multiple pools if any of them need updating
-     * @param _pools The array of pools to check
-     * @return upkeepNeeded Whether or not at least one pool needs upkeeping
+     * @param _pools Array of pools to check
+     * @return Whether or not at least one pool needs upkeeping
+     * @dev Iterates over the provided array of pool addresses
      */
     function checkUpkeepMultiplePools(address[] calldata _pools) external view override returns (bool) {
         uint256 poolsLength = _pools.length;
@@ -90,7 +96,12 @@ contract PoolKeeper is IPoolKeeper, Ownable {
 
     /**
      * @notice Called by keepers to perform an update on a single pool
-     * @param _pool The pool code to perform the update for
+     * @param _pool Address of the pool to be upkept
+     * @dev Induces an update of the associated `PriceObserver` contract
+     * @dev Tracks gas usage via `gasleft` accounting and uses this to inform
+     *          keeper payment
+     * @dev Catches any failure of the underlying `pool.poolUpkeep` call
+     *
      */
     function performUpkeepSinglePool(address _pool) public override {
         uint256 startGas = gasleft();
@@ -131,7 +142,10 @@ contract PoolKeeper is IPoolKeeper, Ownable {
 
     /**
      * @notice Called by keepers to perform an update on multiple pools
-     * @param pools pool codes to perform the update for
+     * @param pools Addresses of each pool to upkeep
+     * @dev Iterates over the provided array
+     * @dev Essentially wraps calls to `performUpkeepSinglePool`
+     *
      */
     function performUpkeepMultiplePools(address[] calldata pools) external override {
         uint256 poolsLength = pools.length;
@@ -147,6 +161,9 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @param _gasSpent Number of gas units spent
      * @param _savedPreviousUpdatedTimestamp Last timestamp when the pool's price execution happened
      * @param _updateInterval Pool interval of the given pool
+     * @dev Emits a `KeeperPaid` event if the underlying call to `pool.payKeeperFromBalances` succeeds
+     * @dev Emits a `KeeperPaymentError` event otherwise
+     *
      */
     function payKeeper(
         address _pool,
@@ -172,6 +189,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @param _savedPreviousUpdatedTimestamp Last timestamp when the pool's price execution happened
      * @param _poolInterval Pool interval of the given pool
      * @return Number of settlement tokens to give to the keeper for work performed
+     *
      */
     function keeperReward(
         address _pool,
@@ -180,6 +198,28 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         uint256 _savedPreviousUpdatedTimestamp,
         uint256 _poolInterval
     ) public view returns (uint256) {
+        /**
+         * Conceptually, we have
+         *
+         * Reward = Gas + Tip = Gas + (Base + Premium * Blocks)
+         *
+         * Very roughly to scale:
+         *
+         * +---------------------------+------+---+---+~~~~~
+         * | GGGGGGGGGGGGGGGGGGGGGGGGG | BBBB | P | P | ...
+         * +---------------------------+------+---+---+~~~~~
+         *
+         * Under normal circumstances, we don't expect there to be any time
+         * premium at all. The time premium exists in order to *further*
+         * incentivise upkeep in the event of lateness.
+         *
+         * The base tip exists to act as pure profit for a keeper.
+         *
+         * Of course, the gas component acts as compensation for performing
+         * on-chain computation.
+         *
+         */
+
         // keeper gas cost in wei. WAD formatted
         uint256 _keeperGas = keeperGas(_pool, _gasPrice, _gasSpent);
 
@@ -206,6 +246,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @param _gasPrice Price of a single gas unit (in ETH (wei))
      * @param _gasSpent Number of gas units spent
      * @return Keeper's gas compensation
+     *
      */
     function keeperGas(
         address _pool,
@@ -231,6 +272,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @param _savedPreviousUpdatedTimestamp Last timestamp when the pool's price execution happened
      * @param _poolInterval Pool interval of the given pool
      * @return Percent of the `keeperGas` cost to add to payment, as a percent
+     *
      */
     function keeperTip(uint256 _savedPreviousUpdatedTimestamp, uint256 _poolInterval) public view returns (uint256) {
         /* the number of blocks that have elapsed since the given pool's updateInterval passed */
@@ -246,6 +288,12 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         }
     }
 
+    /**
+     * @notice Sets the address of the associated `PoolFactory` contract
+     * @param _factory Address of the `PoolFactory` contract
+     * @dev Only callable by the owner
+     *
+     */
     function setFactory(address _factory) external override onlyOwner {
         factory = IPoolFactory(_factory);
     }
@@ -253,12 +301,17 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     /**
      * @notice Sets the gas price to be used in compensating keepers for successful upkeep
      * @param _price Price (in ETH) per unit gas
-     * @dev Only owner
+     * @dev Only callable by the owner
+     * @dev This function is only necessary due to the L2 deployment of Pools -- in reality, it should be `BASEFEE`
      */
     function setGasPrice(uint256 _price) external onlyOwner {
         gasPrice = _price;
     }
 
+    /**
+     * @notice Ensures that the caller is the associated `PoolFactory` contract
+     *
+     */
     modifier onlyFactory() {
         require(msg.sender == address(factory), "Caller not factory");
         _;
