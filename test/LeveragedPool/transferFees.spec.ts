@@ -123,25 +123,35 @@ describe("LeveragedPool - feeTrasnfer", () => {
             await pool.pause()
         })
         it("Quote token transfer", async () => {
-            expect(pool.quoteTokenTransfer(feeAddress, 123)).to.revertedWith('Pool is paused');
+            expect(pool.quoteTokenTransfer(feeAddress, 123)).to.revertedWith(
+                "Pool is paused"
+            )
         })
         it("Pool token transfer", async () => {
-            expect(pool.poolTokenTransfer(true, feeAddress, 123)).to.revertedWith('Pool is paused');
+            expect(
+                pool.poolTokenTransfer(true, feeAddress, 123)
+            ).to.revertedWith("Pool is paused")
         })
         it("Quote token transfer From", async () => {
-            expect(pool.quoteTokenTransferFrom(feeAddress, pool.address, 123)).to.revertedWith('Pool is paused');
+            expect(
+                pool.quoteTokenTransferFrom(feeAddress, pool.address, 123)
+            ).to.revertedWith("Pool is paused")
         })
         it("Update fee address", async () => {
-            expect(pool.updateFeeAddress(secondFeeAddress)).to.revertedWith('Pool is paused');
+            expect(pool.updateFeeAddress(secondFeeAddress)).to.revertedWith(
+                "Pool is paused"
+            )
         })
         it("Set keeper", async () => {
-            expect(pool.setKeeper(feeAddress)).to.revertedWith('Pool is paused');
+            expect(pool.setKeeper(feeAddress)).to.revertedWith("Pool is paused")
         })
         it("Transfer governnance", async () => {
-            expect(pool.transferGovernance(feeAddress)).to.revertedWith('Pool is paused');
+            expect(pool.transferGovernance(feeAddress)).to.revertedWith(
+                "Pool is paused"
+            )
         })
         it("Claim governnance", async () => {
-            expect(pool.claimGovernance()).to.revertedWith('Pool is paused');
+            expect(pool.claimGovernance()).to.revertedWith("Pool is paused")
         })
     })
 })

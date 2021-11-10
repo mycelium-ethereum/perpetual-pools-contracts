@@ -132,7 +132,9 @@ describe("LeveragedPool - executeAllCommitments", () => {
     it("Paused pools cannot upkeep", async () => {
         await timeout(updateInterval * 1000)
         await pool.pause()
-        expect(pool.poolUpkeep(lastPrice, lastPrice)).to.revertedWith('Pool is paused');
+        expect(pool.poolUpkeep(lastPrice, lastPrice)).to.revertedWith(
+            "Pool is paused"
+        )
     })
     /*
     describe("Short mint->short burn", () => {
