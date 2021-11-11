@@ -319,7 +319,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     }
 
     /**
-     * @notice Indicates whether the price was last updated more than `updateInterval` seconds ago 
+     * @notice Indicates whether the price was last updated more than `updateInterval` seconds ago
      * @return Whether the price was last updated more than `updateInterval` seconds ago
      * @dev Unchecked
      */
