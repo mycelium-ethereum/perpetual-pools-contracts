@@ -42,7 +42,7 @@ contract PriceObserver is Ownable, IPriceObserver {
 
     /**
      * @notice Retrieves the `i`th price observation
-     * @param Period to retrieve the price observation of
+     * @param i Period to retrieve the price observation of
      * @return `i`th price observation
      * @dev Throws if index is out of bounds (i.e., `i >= length()`)
      *
@@ -97,7 +97,7 @@ contract PriceObserver is Ownable, IPriceObserver {
 
     /**
      * @notice Returns the current writer of this contract
-     * @returns Address of the writer for this contract
+     * @return Address of the writer for this contract
      * @dev `writer`
      *
      */
@@ -107,7 +107,7 @@ contract PriceObserver is Ownable, IPriceObserver {
 
     /**
      * @notice Determines whether or not the backing array is full
-     * @returns Flag indicating whether the backing array is full or not
+     * @return Flag indicating whether the backing array is full or not
      * @dev `length() == capacity()`
      *
      */
