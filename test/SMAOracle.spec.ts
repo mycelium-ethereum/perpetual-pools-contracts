@@ -237,6 +237,10 @@ describe("SMAOracle", async () => {
                 await updatePrice(price, chainlinkOracle, smaOracle)
                 /* wait for update interval to elapse */
                 timeout(UPDATE_MILLIS)
+                /* wait for update interval to elapse */
+                await timeout(UPDATE_MILLIS)
+
+                await updatePrice(price, chainlinkOracle, smaOracle)
             }
 
             /* wait for update interval to elapse again (so our assertions
@@ -287,67 +291,67 @@ describe("SMAOracle", async () => {
                 })
             })
         })
-
-        context(
-            "When called with observations array less than capacity",
-            async () => {
-                beforeEach(async () => {
-                    /* size of this array needs to be less than the price observer's
-                     * capacity */
-                    const prices: BigNumberish[] = [
-                        2, 3, 4, 3, 7, 8, 12, 10, 11, 12, 14, 5, 5, 9, 10, 1, 1,
-                        0, 2, 2, 3, 4, 6,
-                    ].map((x) =>
-                        ethers.BigNumber.from(x).mul(
-                            ethers.BigNumber.from(10).pow(8)
-                        )
-                    )
-
-                    /* perform update */
-                    for (const price of prices) {
-                        await timeout(UPDATE_MILLIS)
-                        await updatePrice(price, chainlinkOracle, smaOracle)
-                    }
-                    await timeout(UPDATE_MILLIS)
-
-                    /* set the latest price (arbitrary) */
-                    // chainlinkOracle.setPrice(10)
-                })
-
-                it("Updates the SMA price correctly", async () => {
-                    await smaOracle.poll()
-
-                    expect(await smaOracle.getPrice()).to.be.eq(
-                        ethers.utils.parseEther("4.2")
-                    )
-                })
-
-                it("Updates the most recent price update timestamp correctly", async () => {
-                    let prevTimestamp = await smaOracle.lastUpdate()
-                    await smaOracle.poll()
-                    let currTimestamp = await smaOracle.lastUpdate()
-
-                    expect(currTimestamp).to.be.gt(prevTimestamp)
-                })
-            }
-        )
-
-        context(
-            "When called within an update interval since last price update",
-            async () => {
-                it("Reverts", async () => {
-                    /* perform another price update (our `beforeEach` hook waits so
-                     * our tests succeed; we need to break this condition again for
-                     * this test case) */
-                    let price: BigNumberish = 5 // arbitrary
-                    await updatePrice(price, chainlinkOracle, smaOracle)
-
-                    /* poll the SMA oracle immediately afterwards */
-                    await expect(smaOracle.poll()).to.be.revertedWith(
-                        "SMA: Too early to update"
-                    )
-                })
-            }
-        )
     })
+
+    context(
+        "When called with observations array less than capacity",
+        async () => {
+            beforeEach(async () => {
+                /* size of this array needs to be less than the price observer's
+                 * capacity */
+                const prices: BigNumberish[] = [
+                    2, 3, 4, 3, 7, 8, 12, 10, 11, 12, 14, 5, 5, 9, 10, 1, 1, 0,
+                    2, 2, 3, 4, 6,
+                ].map((x) =>
+                    ethers.BigNumber.from(x).mul(
+                        ethers.BigNumber.from(10).pow(8)
+                    )
+                )
+
+                /* perform update */
+                for (const price of prices) {
+                    await timeout(UPDATE_MILLIS)
+                    await updatePrice(price, chainlinkOracle, smaOracle)
+                }
+                await timeout(UPDATE_MILLIS)
+
+                /* set the latest price (arbitrary) */
+                // chainlinkOracle.setPrice(10)
+            })
+
+            it("Updates the SMA price correctly", async () => {
+                await smaOracle.poll()
+
+                expect(await smaOracle.getPrice()).to.be.eq(
+                    ethers.utils.parseEther("4.2")
+                )
+            })
+
+            it("Updates the most recent price update timestamp correctly", async () => {
+                let prevTimestamp = await smaOracle.lastUpdate()
+                await smaOracle.poll()
+                let currTimestamp = await smaOracle.lastUpdate()
+
+                expect(currTimestamp).to.be.gt(prevTimestamp)
+            })
+        }
+    )
+
+    context(
+        "When called within an update interval since last price update",
+        async () => {
+            it("Reverts", async () => {
+                /* perform another price update (our `beforeEach` hook waits so
+                 * our tests succeed; we need to break this condition again for
+                 * this test case) */
+                let price: BigNumberish = 5 // arbitrary
+                await updatePrice(price, chainlinkOracle, smaOracle)
+
+                /* poll the SMA oracle immediately afterwards */
+                await expect(smaOracle.poll()).to.be.revertedWith(
+                    "SMA: Too early to update"
+                )
+            })
+        }
+    )
 })
