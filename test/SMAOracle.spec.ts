@@ -19,9 +19,12 @@ import {
 } from "../types"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { BigNumber, BigNumberish } from "ethers"
+import { timeout } from "./utilities"
 
 chai.use(chaiAsPromised)
 const { expect } = chai
+
+const UPDATE_MILLIS: number = 5 * 1000
 
 describe("SMAOracle", async () => {
     let smaOracle: SMAOracle
@@ -226,6 +229,8 @@ describe("SMAOracle", async () => {
             /* perform update */
             for (const price of prices) {
                 await updatePrice(price, chainlinkOracle, smaOracle)
+                /* wait for update interval to elapse */
+                timeout(UPDATE_MILLIS)
             }
 
             /* set the latest price (arbitrary) */

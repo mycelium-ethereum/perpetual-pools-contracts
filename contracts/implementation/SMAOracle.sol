@@ -83,6 +83,9 @@ contract SMAOracle is IOracleWrapper {
         IPriceObserver priceObserver = IPriceObserver(observer);
         priceObserver.add(latestPrice);
 
+        /* update time of last price update */
+        lastUpdate = block.timestamp;
+
         /* update current reported SMA price */
         return SMA(priceObserver.getAll(), periods);
     }
