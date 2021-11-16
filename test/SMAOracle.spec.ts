@@ -24,7 +24,7 @@ import { timeout } from "./utilities"
 chai.use(chaiAsPromised)
 const { expect } = chai
 
-const UPDATE_MILLIS: number = 5 * 1000
+const UPDATE_MILLIS: number = 5 * 10000
 
 describe("SMAOracle", async () => {
     let smaOracle: SMAOracle
@@ -228,13 +228,15 @@ describe("SMAOracle", async () => {
 
             /* perform update */
             for (const price of prices) {
-                await updatePrice(price, chainlinkOracle, smaOracle)
                 /* wait for update interval to elapse */
-                timeout(UPDATE_MILLIS)
+                await timeout(UPDATE_MILLIS)
+
+                await updatePrice(price, chainlinkOracle, smaOracle)
             }
 
-            /* set the latest price (arbitrary) */
-            // chainlinkOracle.setPrice(10)
+            /* wait for update interval to elapse again (so our assertions
+             * pass) */
+            await timeout(UPDATE_MILLIS)
         })
 
         context(
@@ -246,6 +248,14 @@ describe("SMAOracle", async () => {
                     expect(await smaOracle.getPrice()).to.be.eq(
                         ethers.utils.parseEther("4.2")
                     )
+                })
+
+                it("Updates the most recent price update timestamp correctly", async () => {
+                    let prevTimestamp = await smaOracle.getLastUpdate()
+                    await smaOracle.poll()
+                    let currTimestamp = await smaOracle.getLastUpdate()
+
+                    expect(currTimestamp).to.be.gt(prevTimestamp)
                 })
             }
         )
