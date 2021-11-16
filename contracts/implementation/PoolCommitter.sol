@@ -288,6 +288,11 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         }
         Balance memory balance = userAggregateBalance[user];
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
+
+        /* update bookkeeping *before* external calls! */
+        delete userAggregateBalance[user];
+        emit Claim(user);
+
         if (balance.settlementTokens > 0) {
             pool.quoteTokenTransfer(user, balance.settlementTokens);
         }
@@ -297,8 +302,6 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         if (balance.shortTokens > 0) {
             pool.poolTokenTransfer(false, user, balance.shortTokens);
         }
-        delete userAggregateBalance[user];
-        emit Claim(user);
     }
 
     /**
