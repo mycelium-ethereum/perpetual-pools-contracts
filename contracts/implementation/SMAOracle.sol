@@ -209,4 +209,14 @@ contract SMAOracle is IOracleWrapper {
         bytes memory _data;
         return (_price, _data);
     }
+
+    /**
+     * @notice Retrieves the timestamp of the most recent price update
+     * @return Timestamp of the most recent price update
+     * @dev `lastUpdate`
+     *
+     */
+    function getLastUpdate() public view returns (uint256) {
+        return lastUpdate;
+    }
 }
