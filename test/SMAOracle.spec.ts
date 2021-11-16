@@ -235,6 +235,8 @@ describe("SMAOracle", async () => {
                 await timeout(UPDATE_MILLIS)
 
                 await updatePrice(price, chainlinkOracle, smaOracle)
+                /* wait for update interval to elapse */
+                timeout(UPDATE_MILLIS)
             }
 
             /* wait for update interval to elapse again (so our assertions
