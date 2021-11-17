@@ -29,8 +29,11 @@ contract PoolFactory is IPoolFactory, Ownable {
 
     // Contract address to receive protocol fees
     address public feeReceiver;
-    // Default fee; Fee value as a decimal multiplied by 10^18. For example, 0.5% is represented as 0.5 * 10^18
+    // Default fee, annualised; Fee value as a decimal multiplied by 10^18. For example, 50% is represented as 0.5 * 10^18
     uint256 public fee;
+    // The fee taken for each mint and burn. Fee value as a decimal multiplied by 10^18. For example, 50% is represented as 0.5 * 10^18
+    uint256 public mintingFee;
+    uint256 public burningFee;
 
     // This is required because we must pass along *some* value for decimal
     // precision to the base pool tokens as we use the Cloneable pattern
@@ -109,7 +112,7 @@ contract PoolFactory is IPoolFactory, Ownable {
         PoolCommitter poolCommitter = PoolCommitter(
             Clones.cloneDeterministic(poolCommitterBaseAddress, uniquePoolHash)
         );
-        poolCommitter.initialize(address(this));
+        poolCommitter.initialize(address(this), mintingFee, burningFee);
         address poolCommitterAddress = address(poolCommitter);
 
         require(
@@ -138,8 +141,8 @@ contract PoolFactory is IPoolFactory, Ownable {
             string(abi.encodePacked(leverage, "-", deploymentParameters.poolName)),
             deploymentParameters.frontRunningInterval,
             deploymentParameters.updateInterval,
-            (fee * deploymentParameters.updateInterval) / (365 days),
             deploymentParameters.leverageAmount,
+            (fee * deploymentParameters.updateInterval) / (365 days),
             feeReceiver,
             msg.sender,
             deploymentParameters.quoteToken
@@ -211,6 +214,19 @@ contract PoolFactory is IPoolFactory, Ownable {
     function setFee(uint256 _fee) external override onlyOwner {
         require(_fee <= 0.1e18, "Fee cannot be >10%");
         fee = _fee;
+    }
+
+    /**
+     * @notice Set the minting and burning fee amount. The max yearly fee is 10%
+     * @dev This is a percentage in WAD; multiplied by 10^18 e.g. 5% is 0.05 * 10^18
+     * @param _mintingFee The fee amount for mints
+     * @param _burningFee The fee amount for burns
+     */
+    function setMintAndBurnFee(uint256 _mintingFee, uint256 _burningFee) external override onlyOwner {
+        require(_mintingFee <= 0.1e18, "Fee cannot be >10%");
+        require(_burningFee <= 0.1e18, "Fee cannot be >10%");
+        mintingFee = _mintingFee;
+        burningFee = _burningFee;
     }
 
     function getOwner() external view override returns (address) {

@@ -96,7 +96,11 @@ interface IPoolCommitter {
 
     // #### Functions
 
-    function initialize(address _factory) external;
+    function initialize(
+        address _factory,
+        uint256 mintingFee,
+        uint256 burningFee
+    ) external;
 
     function commit(
         CommitType commitType,

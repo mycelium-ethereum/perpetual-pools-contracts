@@ -15,8 +15,8 @@ interface ILeveragedPool {
         string _poolName; // The pool identification name
         uint32 _frontRunningInterval; // The minimum number of seconds that must elapse before a commit is forced to wait until the next interval
         uint32 _updateInterval; // The minimum number of seconds that must elapse before a commit can be executed
-        uint256 _fee; // The fund movement fee. This amount is extracted from the deposited asset with every update and sent to the fee address
         uint16 _leverageAmount; // The amount of exposure to price movements for the pool
+        uint256 _fee; // The fund movement fee. This amount is extracted from the deposited asset with every update and sent to the fee address. Given as the decimal * 10 ^ 18. For example, 60% fee is 0.6 * 10 ^ 18
         address _feeAddress; // The address that the fund movement fee is sent to
         address _secondaryFeeAddress; // The address of fee recieved by third party deployers
         address _quoteToken; //  The digital asset that the pool accepts. Must have a decimals() function

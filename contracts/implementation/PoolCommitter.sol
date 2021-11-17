@@ -15,6 +15,10 @@ contract PoolCommitter is IPoolCommitter, Initializable {
     uint128 public constant LONG_INDEX = 0;
     uint128 public constant SHORT_INDEX = 1;
 
+    // The amount that is extracted from each mint and burn, being left in the pool. Given as the decimal * 10 ^ 18. For example, 60% fee is 0.6 * 10 ^ 18
+    bytes16 mintingFee;
+    bytes16 burningFee;
+
     address public leveragedPool;
     uint128 public updateIntervalId = 1;
     // Index 0 is the LONG token, index 1 is the SHORT token.
@@ -42,9 +46,17 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         factory = _factory;
     }
 
-    function initialize(address _factory) external override initializer {
+    function initialize(
+        address _factory,
+        uint256 _mintingFee,
+        uint256 _burningFee
+    ) external override initializer {
         require(_factory != address(0), "Factory address cannot be 0 address");
+        require(_mintingFee < PoolSwapLibrary.WAD_PRECISION, "Minting fee >= 100%");
+        require(_burningFee < PoolSwapLibrary.WAD_PRECISION, "Burning fee >= 100%");
         factory = _factory;
+        mintingFee = PoolSwapLibrary.convertUIntToDecimal(_mintingFee);
+        burningFee = PoolSwapLibrary.convertUIntToDecimal(_burningFee);
     }
 
     /**
@@ -172,6 +184,12 @@ contract PoolCommitter is IPoolCommitter, Initializable {
                 // Want to take away from their balance's settlement tokens
                 userAggregateBalance[msg.sender].settlementTokens -= amount;
             }
+
+            // We want to deduct the amount of settlement tokens that will be recorded under the commit by the minting fee
+            amount =
+                amount -
+                PoolSwapLibrary.convertDecimalToUInt(PoolSwapLibrary.multiplyDecimalByUInt(mintingFee, amount)) /
+                PoolSwapLibrary.WAD_PRECISION;
         }
 
         applyCommitment(pool, commitType, amount, fromAggregateBalance, userCommit, totalCommit);
