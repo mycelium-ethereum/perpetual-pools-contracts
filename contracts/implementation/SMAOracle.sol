@@ -57,11 +57,17 @@ contract SMAOracle is IOracleWrapper {
      * @notice Converts `wad` to a raw integer
      * @param wad wad maths value
      * @return Raw (signed) integer
+     *
      */
     function fromWad(int256 wad) external view override returns (int256) {
         return wad / scaler;
     }
 
+    /**
+     * @notice Retrieves the current SMA price
+     * @dev Recomputes SMA across sample size (`periods`)
+     *
+     */
     function getPrice() external view override returns (int256) {
         /* update current reported SMA price */
         return SMA(IPriceObserver(observer).getAll(), periods);
@@ -87,6 +93,14 @@ contract SMAOracle is IOracleWrapper {
         return SMA(priceObserver.getAll(), periods);
     }
 
+    /**
+     * @notice Updates the SMA oracle by retrieving a new price from the
+     *          associated price observer contract (provided it's not too early)
+     * @return Latest SMA price
+     * @dev Throws if called within an update interval since last being called
+     * @dev Essentially wraps `update()`
+     *
+     */
     function poll() external override returns (int256) {
         require(block.timestamp >= lastUpdate + updateInterval, "SMA: Too early to update");
         return update();
