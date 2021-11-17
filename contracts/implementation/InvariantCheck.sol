@@ -13,7 +13,13 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 contract InvariantCheck is IInvariantCheck {
     IPoolFactory public immutable poolFactory;
 
+    /**
+     * @notice Constructor
+     * @param _factory Address of the associated `PoolFactory` contract
+     * @dev Throws if factory address is null
+     */
     constructor(address _factory) {
+        require(_factory != address(0), "Factory address cannot be null");
         poolFactory = IPoolFactory(_factory);
     }
 
@@ -42,11 +48,17 @@ contract InvariantCheck is IInvariantCheck {
         uint256 longBalance = pool.longBalance();
         uint256 shortBalance = pool.shortBalance();
         if (!balanceInvariant(poolBalance, pendingMints, longBalance, shortBalance)) {
-            pauseAll(IPausable(poolToCheck), IPausable(address(poolCommitter)));
+            pause(IPausable(poolToCheck), IPausable(address(poolCommitter)));
         }
     }
 
-    function pauseAll(IPausable pool, IPausable poolCommitter) internal {
+    /**
+     * @notice Pause both LeveragedPool and PoolCommitter.
+     * @dev Both parameters must implement the IPausable interface.
+     * @param pool The LeveragedPool to be paused.
+     * @param poolCommitter The PoolCommitter to be paused.
+     */
+    function pause(IPausable pool, IPausable poolCommitter) internal {
         pool.pause();
         poolCommitter.pause();
     }
