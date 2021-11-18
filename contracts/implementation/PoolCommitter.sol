@@ -358,6 +358,16 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         }
     }
 
+    /**
+     * @notice Updates the aggregate balance based on the result of application
+     *          of the provided (user) commitment
+     * @param _commit Commitment to apply
+     * @return _newLongTokens Quantity of long pool tokens post-application
+     * @return _newShortTokens Quantity of short pool tokens post-application
+     * @return _newSettlementTokens Quantity of settlement tokens post
+     *                                  application
+     * @dev Wraps two (pure) library functions from `PoolSwapLibrary`
+     */
     function updateBalanceSingleCommitment(UserCommitment memory _commit)
         internal
         view
