@@ -41,7 +41,6 @@ contract PoolCommitter is IPoolCommitter, Initializable {
      * @notice Constructor
      * @param _factory Address of the associated `PoolFactory` contract
      * @dev Throws if factory address is null
-     *
      */
     constructor(address _factory) {
         require(_factory != address(0), "Factory address cannot be null");
@@ -52,7 +51,6 @@ contract PoolCommitter is IPoolCommitter, Initializable {
      * @notice Initialises the contract
      * @param _factory Address of the associated `PoolFactory` contract
      * @dev Throws if factory address is null
-     *
      */
     function initialize(address _factory) external override initializer {
         require(_factory != address(0), "Factory address cannot be 0 address");
@@ -519,7 +517,6 @@ contract PoolCommitter is IPoolCommitter, Initializable {
      * @param _leveragedPool Address of the pool to use
      * @dev Only callable by the associated `PoolFactory` contract
      * @dev Throws if either address are null
-     *
      */
     function setQuoteAndPool(address _quoteToken, address _leveragedPool) external override onlyFactory {
         require(_quoteToken != address(0), "Quote token address cannot be 0 address");
@@ -534,7 +531,6 @@ contract PoolCommitter is IPoolCommitter, Initializable {
 
     /**
      * @notice Aggregates user balances **prior** to executing the wrapped code
-     *
      */
     modifier updateBalance() {
         updateAggregateBalance(msg.sender);
@@ -543,7 +539,6 @@ contract PoolCommitter is IPoolCommitter, Initializable {
 
     /**
      * @notice Asserts that the caller is the associated `PoolFactory` contract
-     *
      */
     modifier onlyFactory() {
         require(msg.sender == factory, "Committer: not factory");
@@ -552,7 +547,6 @@ contract PoolCommitter is IPoolCommitter, Initializable {
 
     /**
      * @notice Asserts that the caller is the associated `LeveragedPool` contract
-     *
      */
     modifier onlyPool() {
         require(msg.sender == leveragedPool, "msg.sender not leveragedPool");

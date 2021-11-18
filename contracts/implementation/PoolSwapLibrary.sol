@@ -45,7 +45,6 @@ library PoolSwapLibrary {
      * @param _numerator The "parts per" side of the equation. If this is zero, the ratio is zero
      * @param _denominator The "per part" side of the equation. If this is zero, the ratio is zero
      * @return the ratio, as an ABDKMathQuad number (IEEE 754 quadruple precision floating point)
-     *
      */
     function getRatio(uint256 _numerator, uint256 _denominator) public pure returns (bytes16) {
         // Catch the divide by zero error.
@@ -198,7 +197,6 @@ library PoolSwapLibrary {
      * @return Resulting long balance
      * @return Resulting short balance
      * @return Total fees (across both long and short sides) resulting from this price change
-     *
      */
     function calculatePriceChange(PriceChangeData calldata priceChange)
         external
@@ -394,7 +392,6 @@ library PoolSwapLibrary {
      * @dev amount * price, where amount is in PoolToken and price is in USD/PoolToken
      * @dev Throws if price is zero
      * @dev `getMint()`
-     *
      */
     function getBurn(bytes16 price, uint256 amount) public pure returns (uint256) {
         require(price != 0, "price == 0");
@@ -409,7 +406,6 @@ library PoolSwapLibrary {
      * @param amountBurnedInstantMint The amount of pool tokens that were burnt from the opposite side for an instant mint in this side
      * @return Quantity of pool tokens to mint
      * @dev Throws if price is zero
-     *
      */
     function getMintWithBurns(
         bytes16 price,
@@ -430,7 +426,6 @@ library PoolSwapLibrary {
      * @param _wadValue wad number
      * @param _decimals Quantity of decimal places to support
      * @return Converted (non-WAD) value
-     *
      */
     function fromWad(uint256 _wadValue, uint256 _decimals) external pure returns (uint256) {
         uint256 scaler = 10**(MAX_DECIMALS - _decimals);
@@ -443,7 +438,6 @@ library PoolSwapLibrary {
      * @return _newLongTokens Quantity of additional long tokens the user would receive
      * @return _newShortTokens Quantity of additional short tokens the user would receive
      * @return _newSettlementTokens Quantity of additional settlement tokens the user would receive
-     *
      */
     function getUpdatedAggregateBalance(UpdateData calldata data)
         external

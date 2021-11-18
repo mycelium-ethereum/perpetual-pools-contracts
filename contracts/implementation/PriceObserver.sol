@@ -23,7 +23,6 @@ contract PriceObserver is Ownable, IPriceObserver {
      *          number of price observations able to be stored by this contract)
      * @return Maximum number of price observations that can be stored
      * @dev `MAX_NUM_ELEMS`
-     *
      */
     function capacity() public pure override returns (uint256) {
         return MAX_NUM_ELEMS;
@@ -34,7 +33,6 @@ contract PriceObserver is Ownable, IPriceObserver {
      * @return Current number of price observations stored
      * @dev Should always be less than or equal to `capacity`
      * @dev `numElems`
-     *
      */
     function length() public view override returns (uint256) {
         return numElems;
@@ -45,7 +43,6 @@ contract PriceObserver is Ownable, IPriceObserver {
      * @param i Period to retrieve the price observation of
      * @return `i`th price observation
      * @dev Throws if index is out of bounds (i.e., `i >= length()`)
-     *
      */
     function get(uint256 i) public view override returns (int256) {
         require(i < length(), "PO: Out of bounds");
@@ -57,7 +54,6 @@ contract PriceObserver is Ownable, IPriceObserver {
      * @return Backing array of all price observations
      * @dev Note that, due to this view simply returning a reference to the
      *      backing array, it's possible for there to be null prices (i.e., 0)
-     *
      */
     function getAll() public view override returns (int256[24] memory) {
         return observations;
@@ -70,7 +66,6 @@ contract PriceObserver is Ownable, IPriceObserver {
      * @dev If the backing array is full (i.e., `length() == capacity()`, then
      *      it is rotated such that the oldest price observation is deleted
      * @dev Only callable by the associated writer for this contract
-     *
      */
     function add(int256 x) public override onlyWriter returns (bool) {
         if (full()) {
@@ -88,7 +83,6 @@ contract PriceObserver is Ownable, IPriceObserver {
      * @param _writer Address of the new writer
      * @dev Only callable by the owner of this contract
      * @dev Throws if `_writer` is the null address
-     *
      */
     function setWriter(address _writer) public onlyOwner {
         require(_writer != address(0), "PO: Null address not allowed");
@@ -99,7 +93,6 @@ contract PriceObserver is Ownable, IPriceObserver {
      * @notice Returns the current writer of this contract
      * @return Address of the writer for this contract
      * @dev `writer`
-     *
      */
     function getWriter() public view returns (address) {
         return writer;
@@ -109,7 +102,6 @@ contract PriceObserver is Ownable, IPriceObserver {
      * @notice Determines whether or not the backing array is full
      * @return Flag indicating whether the backing array is full or not
      * @dev `length() == capacity()`
-     *
      */
     function full() private view returns (bool) {
         return length() == capacity();
@@ -118,7 +110,6 @@ contract PriceObserver is Ownable, IPriceObserver {
     /**
      * @notice Resets the backing array and clears all of its stored prices
      * @dev Only callable by the owner of this contract
-     *
      */
     function clear() public onlyOwner {
         numElems = 0;
@@ -129,7 +120,6 @@ contract PriceObserver is Ownable, IPriceObserver {
      * @notice Rotates observations array to the **left** by one element and
      *          sets the last element of `xs` to `x`
      * @param x Element to "rotate into" observations array
-     *
      */
     function leftRotateWithPad(int256 x) private {
         uint256 n = length();
