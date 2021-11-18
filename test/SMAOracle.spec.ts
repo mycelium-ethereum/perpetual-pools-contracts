@@ -259,5 +259,23 @@ describe("SMAOracle", async () => {
                 })
             }
         )
+
+        context(
+            "When called within an update interval since last price update",
+            async () => {
+                it("Reverts", async () => {
+                    /* perform another price update (our `beforeEach` hook waits so
+                     * our tests succeed; we need to break this condition again for
+                     * this test case) */
+                    let price: BigNumberish = 5 // arbitrary
+                    await updatePrice(price, chainlinkOracle, smaOracle)
+
+                    /* poll the SMA oracle immediately afterwards */
+                    await expect(smaOracle.poll()).to.be.revertedWith(
+                        "SMA: Too early to update"
+                    )
+                })
+            }
+        )
     })
 })
