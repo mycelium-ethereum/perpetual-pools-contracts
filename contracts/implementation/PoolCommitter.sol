@@ -344,6 +344,8 @@ contract PoolCommitter is IPoolCommitter, Initializable {
          * At each iteration, execute all of the (total) commitments for the
          * pool for that period and then remove them from the queue.
          *
+         * In reality, this should never iterate more than once, since more than one update interval
+         * should never be passed without the previous one being upkept.
          */
         while (true) {
             if (block.timestamp >= lastPriceTimestamp + updateInterval * counter) {
