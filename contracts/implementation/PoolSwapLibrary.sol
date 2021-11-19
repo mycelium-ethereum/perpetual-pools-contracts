@@ -23,6 +23,7 @@ library PoolSwapLibrary {
         uint256 shortBurnAmount;
         uint256 longBurnShortMintAmount;
         uint256 shortBurnLongMintAmount;
+        bytes16 burnFee;
     }
 
     struct PriceChangeData {
@@ -417,16 +418,18 @@ library PoolSwapLibrary {
      */
     function getUpdatedAggregateBalance(UpdateData calldata data)
         external
-        pure
+        view
         returns (
             uint256 _newLongTokens,
             uint256 _newShortTokens,
+            uint256 _addedLongBalance,
+            uint256 _addedShortBalance,
             uint256 _newSettlementTokens
         )
     {
         if (data.updateIntervalId == data.currentUpdateIntervalId) {
             // Update interval has not passed: No change
-            return (0, 0, 0);
+            return (0, 0, 0, 0, 0);
         }
         uint256 longBurnResult; // The amount of settlement tokens to withdraw based on long token burn
         uint256 shortBurnResult; // The amount of settlement tokens to withdraw based on short token burn
@@ -438,9 +441,18 @@ library PoolSwapLibrary {
                 data.shortBurnLongMintAmount
             );
         }
+
         if (data.longBurnAmount > 0) {
+            // Calculate the amount of settlement tokens earned from burning long tokens
             longBurnResult = getBurn(data.longPrice, data.longBurnAmount);
+            // Calculate the fee
+            _addedLongBalance =
+                convertDecimalToUInt(multiplyDecimalByUInt(data.burnFee, longBurnResult)) /
+                WAD_PRECISION;
+            // Subtract the fee from settlement token amount
+            longBurnResult -= _addedLongBalance;
         }
+
         if (data.shortMintAmount > 0 || data.longBurnShortMintAmount > 0) {
             _newShortTokens = getMintWithBurns(
                 data.shortPrice,
@@ -449,8 +461,16 @@ library PoolSwapLibrary {
                 data.longBurnShortMintAmount
             );
         }
+
         if (data.shortBurnAmount > 0) {
+            // Calculate the amount of settlement tokens earned from burning short tokens
             shortBurnResult = getBurn(data.shortPrice, data.shortBurnAmount);
+            // Calculate the fee
+            _addedShortBalance =
+                convertDecimalToUInt(multiplyDecimalByUInt(data.burnFee, shortBurnResult)) /
+                WAD_PRECISION;
+            // Subtract the fee from settlement token amount
+            shortBurnResult -= _addedShortBalance;
         }
 
         _newSettlementTokens = shortBurnResult + longBurnResult;

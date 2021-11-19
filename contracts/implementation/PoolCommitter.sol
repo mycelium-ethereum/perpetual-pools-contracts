@@ -26,6 +26,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
     address[2] public tokens;
 
     mapping(uint256 => Prices) public priceHistory; // updateIntervalId => tokenPrice
+    mapping(uint256 => bytes16) public burnFeeHistory; // updateIntervalId => burn fee. We need to store this historically because people can claim at any time after the update interval.
     mapping(address => Balance) public userAggregateBalance;
 
     // Update interval ID => TotalCommitment
@@ -78,10 +79,23 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         TotalCommitment storage totalCommit
     ) private {
         Balance memory balance = userAggregateBalance[msg.sender];
+        uint256 feeAmount;
+
+        if (commitType == CommitType.LongMint || commitType == CommitType.ShortMint) {
+            // We want to deduct the amount of settlement tokens that will be recorded under the commit by the minting fee
+            // and then add it to the correct side of the pool
+            feeAmount =
+                PoolSwapLibrary.convertDecimalToUInt(PoolSwapLibrary.multiplyDecimalByUInt(mintingFee, amount)) /
+                PoolSwapLibrary.WAD_PRECISION;
+            amount = amount - feeAmount;
+        }
 
         if (commitType == CommitType.LongMint) {
+            (uint256 shortBalance, uint256 longBalance) = pool.balances();
             userCommit.longMintAmount += amount;
             totalCommit.longMintAmount += amount;
+            // Add the fee to long side. This has been taken from the commit amount.
+            pool.setNewPoolBalances(longBalance + feeAmount, shortBalance);
             // If we are minting from balance, this would already have thrown in `commit` if we are minting more than entitled too
         } else if (commitType == CommitType.LongBurn) {
             userCommit.longBurnAmount += amount;
@@ -99,8 +113,11 @@ contract PoolCommitter is IPoolCommitter, Initializable {
                 pool.burnTokens(true, amount, msg.sender);
             }
         } else if (commitType == CommitType.ShortMint) {
+            (uint256 shortBalance, uint256 longBalance) = pool.balances();
             userCommit.shortMintAmount += amount;
             totalCommit.shortMintAmount += amount;
+            // Add the fee to short side. This has been taken from the commit amount.
+            pool.setNewPoolBalances(longBalance, shortBalance + feeAmount);
             // If we are minting from balance, this would already have thrown in `commit` if we are minting more than entitled too
         } else if (commitType == CommitType.ShortBurn) {
             userCommit.shortBurnAmount += amount;
@@ -184,16 +201,9 @@ contract PoolCommitter is IPoolCommitter, Initializable {
                 // Want to take away from their balance's settlement tokens
                 userAggregateBalance[msg.sender].settlementTokens -= amount;
             }
-
-            // We want to deduct the amount of settlement tokens that will be recorded under the commit by the minting fee
-            amount =
-                amount -
-                PoolSwapLibrary.convertDecimalToUInt(PoolSwapLibrary.multiplyDecimalByUInt(mintingFee, amount)) /
-                PoolSwapLibrary.WAD_PRECISION;
         }
 
         applyCommitment(pool, commitType, amount, fromAggregateBalance, userCommit, totalCommit);
-
         emit CreateCommit(msg.sender, amount, commitType);
     }
 
@@ -310,16 +320,19 @@ contract PoolCommitter is IPoolCommitter, Initializable {
 
     function executeCommitments() external override onlyPool {
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
+        /*
         executeGivenCommitments(totalPoolCommitments[updateIntervalId]);
         delete totalPoolCommitments[updateIntervalId];
         updateIntervalId += 1;
+        */
 
-        uint32 counter = 2;
+        uint32 counter = 1;
         uint256 lastPriceTimestamp = pool.lastPriceTimestamp();
         uint256 updateInterval = pool.updateInterval();
         while (true) {
             if (block.timestamp >= lastPriceTimestamp + updateInterval * counter) {
                 // Another update interval has passed, so we have to do the nextIntervalCommit as well
+                burnFeeHistory[updateIntervalId] = burningFee;
                 executeGivenCommitments(totalPoolCommitments[updateIntervalId]);
                 delete totalPoolCommitments[updateIntervalId];
                 updateIntervalId += 1;
@@ -336,6 +349,8 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         returns (
             uint256 _newLongTokens,
             uint256 _newShortTokens,
+            uint256 _addedLongBalance,
+            uint256 _addedShortBalance,
             uint256 _newSettlementTokens
         )
     {
@@ -349,12 +364,12 @@ contract PoolCommitter is IPoolCommitter, Initializable {
             shortMintAmount: _commit.shortMintAmount,
             shortBurnAmount: _commit.shortBurnAmount,
             longBurnShortMintAmount: _commit.longBurnShortMintAmount,
-            shortBurnLongMintAmount: _commit.shortBurnLongMintAmount
+            shortBurnLongMintAmount: _commit.shortBurnLongMintAmount,
+            burnFee: burnFeeHistory[_commit.updateIntervalId]
         });
 
-        (_newLongTokens, _newShortTokens, _newSettlementTokens) = PoolSwapLibrary.getUpdatedAggregateBalance(
-            updateData
-        );
+        (_newLongTokens, _newShortTokens, _addedLongBalance, _addedShortBalance, _newSettlementTokens) = PoolSwapLibrary
+            .getUpdatedAggregateBalance(updateData);
     }
 
     /**
@@ -369,7 +384,9 @@ contract PoolCommitter is IPoolCommitter, Initializable {
             _newShortTokensSum: 0,
             _newSettlementTokensSum: 0,
             _balanceLongBurnAmount: 0,
-            _balanceShortBurnAmount: 0
+            _balanceShortBurnAmount: 0,
+            _addedLongTokens: 0,
+            _addedShortTokens: 0
         });
 
         // Iterate from the most recent up until the current update interval
@@ -392,11 +409,15 @@ contract PoolCommitter is IPoolCommitter, Initializable {
                 (
                     uint256 _newLongTokens,
                     uint256 _newShortTokens,
+                    uint256 _addedLongBalance,
+                    uint256 _addedShortBalance,
                     uint256 _newSettlementTokens
                 ) = updateBalanceSingleCommitment(commitment);
                 update._newLongTokensSum += _newLongTokens;
                 update._newShortTokensSum += _newShortTokens;
                 update._newSettlementTokensSum += _newSettlementTokens;
+                update._addedLongTokens += _addedLongBalance;
+                update._addedShortTokens += _addedShortBalance;
                 delete userCommitments[user][i];
                 delete unAggregatedCommitments[user][i];
             } else {
@@ -422,6 +443,10 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         balance.shortTokens -= update._balanceShortBurnAmount;
         balance.settlementTokens += update._newSettlementTokensSum;
 
+        ILeveragedPool pool = ILeveragedPool(leveragedPool);
+        (uint256 shortBalance, uint256 longBalance) = pool.balances();
+        pool.setNewPoolBalances(longBalance + update._addedLongTokens, shortBalance + update._addedShortTokens);
+
         emit AggregateBalanceUpdated(user);
     }
 
@@ -437,7 +462,9 @@ contract PoolCommitter is IPoolCommitter, Initializable {
             _newShortTokensSum: 0,
             _newSettlementTokensSum: 0,
             _balanceLongBurnAmount: 0,
-            _balanceShortBurnAmount: 0
+            _balanceShortBurnAmount: 0,
+            _addedLongTokens: 0,
+            _addedShortTokens: 0
         });
 
         // Iterate from the most recent up until the current update interval
@@ -460,6 +487,8 @@ contract PoolCommitter is IPoolCommitter, Initializable {
                 (
                     uint256 _newLongTokens,
                     uint256 _newShortTokens,
+                    ,
+                    ,
                     uint256 _newSettlementTokens
                 ) = updateBalanceSingleCommitment(commitment);
                 update._newLongTokensSum += _newLongTokens;
