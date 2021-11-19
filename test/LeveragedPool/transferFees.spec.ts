@@ -85,37 +85,39 @@ describe("LeveragedPool - feeTransfer", () => {
         // End state: `amountCommitted` worth of Long and short token minted. Price = lastPrice
     })
 
-    it("Transfers fee to correct address and correct amount", async () => {
-        pool.updateSecondaryFeeAddress(
-            "0x0000000000000000000000000000000000000000"
-        )
-        await timeout(updateInterval * 1000)
-        await pool.poolUpkeep(lastPrice, BigNumber.from("2").mul(lastPrice))
-        let feesPercentPerPeriod = (0.1 * updateInterval) / (365 * 24 * 60 * 60)
-        let feesPaidExpected = feesPercentPerPeriod * 4000
-        let feesPaid = await token.balanceOf(feeAddress)
-        expect(parseFloat(ethers.utils.formatEther(feesPaid))).closeTo(
-            feesPaidExpected,
-            0.00001
-        )
-    })
+    context("Happy Path", async () => {
+        it("Transfers fee to correct address and correct amount", async () => {
+            pool.updateSecondaryFeeAddress(
+                "0x0000000000000000000000000000000000000000"
+            )
+            await timeout(updateInterval * 1000)
+            await pool.poolUpkeep(lastPrice, BigNumber.from("2").mul(lastPrice))
+            let feesPercentPerPeriod =
+                (0.1 * updateInterval) / (365 * 24 * 60 * 60)
+            let feesPaidExpected = feesPercentPerPeriod * 4000
+            let feesPaid = await token.balanceOf(feeAddress)
+            expect(parseFloat(ethers.utils.formatEther(feesPaid))).closeTo(
+                feesPaidExpected,
+                0.00001
+            )
+        })
 
-    it("Transfers fee to secondary address as well", async () => {
-        pool.updateSecondaryFeeAddress(secondFeeAddress)
-        await timeout(updateInterval * 1000)
-        await pool.poolUpkeep(lastPrice, BigNumber.from("2").mul(lastPrice))
-        let feesPercentPerPeriod = (0.1 * updateInterval) / (365 * 24 * 60 * 60)
-        let feesPaidExpected = feesPercentPerPeriod * 4000
-        let feesPaidPrimary = await token.balanceOf(feeAddress)
-        let feesPaidSecondary = await token.balanceOf(secondFeeAddress)
-        expect(parseFloat(ethers.utils.formatEther(feesPaidPrimary))).closeTo(
-            feesPaidExpected * 0.9,
-            0.00001
-        )
-        expect(parseFloat(ethers.utils.formatEther(feesPaidSecondary))).closeTo(
-            feesPaidExpected * 0.1,
-            0.00001
-        )
+        it("Transfers fee to secondary address as well", async () => {
+            pool.updateSecondaryFeeAddress(secondFeeAddress)
+            await timeout(updateInterval * 1000)
+            await pool.poolUpkeep(lastPrice, BigNumber.from("2").mul(lastPrice))
+            let feesPercentPerPeriod =
+                (0.1 * updateInterval) / (365 * 24 * 60 * 60)
+            let feesPaidExpected = feesPercentPerPeriod * 4000
+            let feesPaidPrimary = await token.balanceOf(feeAddress)
+            let feesPaidSecondary = await token.balanceOf(secondFeeAddress)
+            expect(
+                parseFloat(ethers.utils.formatEther(feesPaidPrimary))
+            ).closeTo(feesPaidExpected * 0.9, 0.00001)
+            expect(
+                parseFloat(ethers.utils.formatEther(feesPaidSecondary))
+            ).closeTo(feesPaidExpected * 0.1, 0.00001)
+        })
     })
 
     context("Test Paused Pools cannot transfer tokens", async () => {
