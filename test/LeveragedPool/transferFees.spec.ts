@@ -38,7 +38,7 @@ const frontRunningInterval = 100 // seconds
 const fee = ethers.utils.parseEther("0.1")
 const leverage = 1
 
-describe("LeveragedPool - feeTrasnfer", () => {
+describe("LeveragedPool - feeTransfer", () => {
     let poolCommitter: PoolCommitter
     let token: TestToken
     let shortToken: ERC20
@@ -118,7 +118,7 @@ describe("LeveragedPool - feeTrasnfer", () => {
         )
     })
 
-    describe("Test Paused Pools cannot transfer tokens", async () => {
+    context("Test Paused Pools cannot transfer tokens", async () => {
         beforeEach(async () => {
             await pool.pause()
         })
