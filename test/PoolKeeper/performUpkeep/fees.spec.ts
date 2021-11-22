@@ -86,7 +86,7 @@ describe("Leveraged pool fees", () => {
 
         await expect(
             setupContracts.factory.setFee(ethers.utils.parseEther("100"))
-        ).to.be.revertedWith("Fee cannot be >10%")
+        ).to.be.revertedWith("Fee cannot be > 10%")
     })
 
     describe("Fees on price change", () => {

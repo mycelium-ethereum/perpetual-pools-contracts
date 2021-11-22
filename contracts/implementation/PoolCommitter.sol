@@ -26,7 +26,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
     address[2] public tokens;
 
     mapping(uint256 => Prices) public priceHistory; // updateIntervalId => tokenPrice
-    mapping(uint256 => bytes16) public burnFeeHistory; // updateIntervalId => burn fee. We need to store this historically because people can claim at any time after the update interval.
+    mapping(uint256 => bytes16) public burnFeeHistory; // updateIntervalId => burn fee. We need to store this historically because people can claim at any time after the update interval, but we want them to pay the fee from the update interval in which they committed.
     mapping(address => Balance) public userAggregateBalance;
 
     // Update interval ID => TotalCommitment
@@ -320,11 +320,6 @@ contract PoolCommitter is IPoolCommitter, Initializable {
 
     function executeCommitments() external override onlyPool {
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
-        /*
-        executeGivenCommitments(totalPoolCommitments[updateIntervalId]);
-        delete totalPoolCommitments[updateIntervalId];
-        updateIntervalId += 1;
-        */
 
         uint32 counter = 1;
         uint256 lastPriceTimestamp = pool.lastPriceTimestamp();

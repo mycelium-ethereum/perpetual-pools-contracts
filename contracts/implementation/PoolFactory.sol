@@ -212,7 +212,7 @@ contract PoolFactory is IPoolFactory, Ownable {
      * @param _fee The fee amount as a percentage
      */
     function setFee(uint256 _fee) external override onlyOwner {
-        require(_fee <= 0.1e18, "Fee cannot be >10%");
+        require(_fee <= 0.1e18, "Fee cannot be > 10%");
         fee = _fee;
     }
 
@@ -223,8 +223,8 @@ contract PoolFactory is IPoolFactory, Ownable {
      * @param _burningFee The fee amount for burns
      */
     function setMintAndBurnFee(uint256 _mintingFee, uint256 _burningFee) external override onlyOwner {
-        require(_mintingFee <= 0.1e18, "Fee cannot be >10%");
-        require(_burningFee <= 0.1e18, "Fee cannot be >10%");
+        require(_mintingFee <= 0.1e18, "Fee cannot be > 10%");
+        require(_burningFee <= 0.1e18, "Fee cannot be > 10%");
         mintingFee = _mintingFee;
         burningFee = _burningFee;
     }
