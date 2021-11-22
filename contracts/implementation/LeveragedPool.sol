@@ -96,7 +96,6 @@ contract LeveragedPool is ILeveragedPool, Initializable {
      * @dev This is the entry point to upkeep a market
      * @dev Only callable by the associated `PoolKeeper` contract
      * @dev Only callable if the market is *not* paused
-     *
      */
     function poolUpkeep(int256 _oldPrice, int256 _newPrice) external override onlyKeeper onlyUnpaused {
         require(intervalPassed(), "Update interval hasn't passed");
@@ -114,7 +113,6 @@ contract LeveragedPool is ILeveragedPool, Initializable {
      *         long and short pool, and true if the keeper can successfully be paid out
      * @dev Only callable by the associated `PoolKeeper` contract
      * @dev Only callable when the market is *not* paused
-     *
      */
     function payKeeperFromBalances(address to, uint256 amount)
         external
@@ -152,7 +150,6 @@ contract LeveragedPool is ILeveragedPool, Initializable {
      * @param amount Amount of quote tokens being transferred
      * @dev Only callable by the associated `PoolCommitter` contract
      * @dev Only callable when the market is *not* paused
-     *
      */
     function quoteTokenTransfer(address to, uint256 amount) external override onlyPoolCommitter onlyUnpaused {
         IERC20(quoteToken).safeTransfer(to, amount);
@@ -165,7 +162,6 @@ contract LeveragedPool is ILeveragedPool, Initializable {
      * @param amount Amount of quote tokens being transferred
      * @dev Only callable by the associated `PoolCommitter` contract
      * @dev Only callable when the market is *not* paused
-     *
      */
     function poolTokenTransfer(
         bool isLongToken,
@@ -186,7 +182,6 @@ contract LeveragedPool is ILeveragedPool, Initializable {
      * @param amount Amount of quote tokens being transferred
      * @dev Only callable by the associated `PoolCommitter` contract
      * @dev Only callable when the market is *not* paused
-     *
      */
     function quoteTokenTransferFrom(
         address from,
@@ -205,7 +200,6 @@ contract LeveragedPool is ILeveragedPool, Initializable {
      * @dev Only callable when the market is *not* paused
      * @dev Emits `PoolRebalance` if execution succeeds
      * @dev Emits `PriceChangeError` if execution does not take place
-     *
      */
     function executePriceChange(int256 _oldPrice, int256 _newPrice) internal onlyUnpaused {
         // prevent a division by 0 in computing the price change
@@ -244,7 +238,6 @@ contract LeveragedPool is ILeveragedPool, Initializable {
      * @notice Execute the fee transfer transactions. Transfers fees to primary fee address (DAO) and secondary (pool deployer).
      *         If the DAO is the fee deployer, secondary fee address should be address(0) and all fees go to DAO.
      * @param totalFeeAmount total amount of fees paid
-     *
      */
     function feeTransfer(uint256 totalFeeAmount) internal {
         if (secondaryFeeAddress == address(0)) {
@@ -263,7 +256,6 @@ contract LeveragedPool is ILeveragedPool, Initializable {
      * @param _shortBalance New balance of the short pool
      * @dev Only callable by the associated `PoolCommitter` contract
      * @dev Only callable when the market is *not* paused
-     *
      */
     function setNewPoolBalances(uint256 _longBalance, uint256 _shortBalance)
         external
@@ -282,7 +274,6 @@ contract LeveragedPool is ILeveragedPool, Initializable {
      * @param minter Address of user/minter
      * @dev Only callable by the associated `PoolCommitter` contract
      * @dev Only callable when the market is *not* paused
-     *
      */
     function mintTokens(
         bool isLongToken,
@@ -304,7 +295,6 @@ contract LeveragedPool is ILeveragedPool, Initializable {
      * @param burner Address of user/burner
      * @dev Only callable by the associated `PoolCommitter` contract
      * @dev Only callable when the market is *not* paused
-     *
      */
     function burnTokens(
         bool isLongToken,
@@ -429,10 +419,18 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         return IOracleWrapper(oracleWrapper).getPrice();
     }
 
+    /**
+     * @return Addresses of the pool tokens for this pool (long and short,
+     *          respectively)
+     */
     function poolTokens() external view override returns (address[2] memory) {
         return tokens;
     }
 
+    /**
+     * @return Quantities of pool tokens for this pool (long and short,
+     *          respectively)
+     */
     function balances() external view override returns (uint256, uint256) {
         return (shortBalance, longBalance);
     }
@@ -441,6 +439,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
      * @notice Withdraws all available quote asset from the pool
      * @dev Pool must not be paused
      * @dev ERC20 transfer
+     * @dev Only callable by governance
      */
     function withdrawQuote() external onlyGov {
         require(paused, "Pool is live");

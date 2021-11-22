@@ -240,7 +240,6 @@ contract PoolFactory is IPoolFactory, Ownable {
 
     /**
      * @notice Ensures that the caller is the designated governance address
-     *
      */
     modifier onlyGov() {
         require(msg.sender == owner(), "msg.sender not governance");

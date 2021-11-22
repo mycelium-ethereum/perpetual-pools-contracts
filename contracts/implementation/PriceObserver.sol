@@ -137,7 +137,6 @@ contract PriceObserver is Ownable, IPriceObserver {
     /**
      * @notice Enforces that the caller is the associated writer of this
      *          contract
-     *
      */
     modifier onlyWriter() {
         require(msg.sender == writer, "PO: Permission denied");

@@ -96,7 +96,6 @@ contract SMAOracle is IOracleWrapper {
      * @return Latest SMA price
      * @dev Throws if called within an update interval since last being called
      * @dev Essentially wraps `update()`
-     *
      */
     function poll() external override returns (int256) {
         require(block.timestamp >= lastUpdate + updateInterval, "SMA: Too early to update");

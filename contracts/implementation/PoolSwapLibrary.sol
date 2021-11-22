@@ -377,7 +377,6 @@ library PoolSwapLibrary {
      * @return Quantity of pool tokens to mint
      * @dev Throws if price is zero
      * @dev `getBurn()`
-     *
      */
     function getMint(bytes16 price, uint256 amount) public pure returns (uint256) {
         require(price != 0, "price == 0");
