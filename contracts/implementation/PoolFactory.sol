@@ -87,8 +87,12 @@ contract PoolFactory is IPoolFactory, Ownable {
 
     /**
      * @notice Deploy a leveraged pool and its committer/pool tokens with given parameters
-     * @param deploymentParameters Deployment parameters of the market. Some may be reconfigurable
+     * @param deploymentParameters Deployment parameters of the market. Some may be reconfigurable.
      * @return Address of the created pool
+     * @dev Throws if pool keeper is null
+     * @dev Throws if deployer does not own the oracle wrapper
+     * @dev Throws if leverage amount is invalid
+     * @dev Throws if decimal precision is too high (i.e., greater than `MAX_DECIMALS`)
      */
     function deployPool(PoolDeployment calldata deploymentParameters) external override returns (address) {
         address _poolKeeper = address(poolKeeper);
@@ -188,11 +192,23 @@ contract PoolFactory is IPoolFactory, Ownable {
         return address(pairToken);
     }
 
+    /**
+     * @notice Sets the address of the associated `PoolKeeper` contract
+     * @param _poolKeeper Address of the `PoolKeeper`
+     * @dev Throws if provided address is null
+     * @dev Only callable by the owner
+     */
     function setPoolKeeper(address _poolKeeper) external override onlyOwner {
         require(_poolKeeper != address(0), "address cannot be null");
         poolKeeper = IPoolKeeper(_poolKeeper);
     }
 
+    /**
+     * @notice Sets the maximum leverage
+     * @param newMaxLeverage Maximum leverage permitted for all pools
+     * @dev Throws if provided maximum leverage is non-positive
+     * @dev Only callable by the owner
+     */
     function setMaxLeverage(uint16 newMaxLeverage) external override onlyOwner {
         require(newMaxLeverage > 0, "Maximum leverage must be non-zero");
         maxLeverage = newMaxLeverage;
@@ -213,10 +229,18 @@ contract PoolFactory is IPoolFactory, Ownable {
         fee = _fee;
     }
 
+    /**
+     * @notice Returns the address that owns this contract
+     * @return Address of the owner
+     * @dev Required due to the `IPoolFactory` interface
+     */
     function getOwner() external view override returns (address) {
         return owner();
     }
 
+    /**
+     * @notice Ensures that the caller is the designated governance address
+     */
     modifier onlyGov() {
         require(msg.sender == owner(), "msg.sender not governance");
         _;
