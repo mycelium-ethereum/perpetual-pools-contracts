@@ -38,7 +38,7 @@ const frontRunningInterval = 100 // seconds
 const fee = DEFAULT_FEE
 const leverage = 1
 
-describe("LeveragedPool - executeAllCommitments", () => {
+describe("LeveragedPool - executeAllCommitments", async () => {
     let poolCommitter: PoolCommitter
     let token: TestToken
     let shortToken: ERC20
@@ -130,23 +130,25 @@ describe("LeveragedPool - executeAllCommitments", () => {
         })
     })
 
-    it.only("Paused pools cannot upkeep", async () => {
-        await timeout(updateInterval * 1000)
-        const result = await deployMockPool(
-            POOL_CODE,
-            frontRunningInterval,
-            updateInterval,
-            leverage,
-            feeAddress,
-            fee
-        )
-        await result.token.approve(result.pool.address, 10000)
-        await result.poolCommitter.commit(LONG_MINT, 1000, false)
-        await result.pool.drainPool(10)
-        await result.invariantCheck.checkInvariants(result.pool.address)
-        expect(pool.poolUpkeep(lastPrice, lastPrice)).to.revertedWith(
-            "Pool is paused"
-        )
+    describe("paused pools", async () => {
+        it("Paused pools cannot upkeep", async () => {
+            await timeout(updateInterval * 1000)
+            const result = await deployMockPool(
+                POOL_CODE,
+                frontRunningInterval,
+                updateInterval,
+                leverage,
+                feeAddress,
+                fee
+            )
+            await result.token.approve(result.pool.address, 10000)
+            await result.poolCommitter.commit(LONG_MINT, 1000, false)
+            await result.pool.drainPool(10)
+            await result.invariantCheck.checkInvariants(result.pool.address)
+            expect(pool.poolUpkeep(lastPrice, lastPrice)).to.revertedWith(
+                "Pool is paused"
+            )
+        })
     })
     /*
     describe("Short mint->short burn", () => {
