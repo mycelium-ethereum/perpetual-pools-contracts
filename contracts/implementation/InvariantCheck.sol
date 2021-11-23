@@ -27,6 +27,7 @@ contract InvariantCheck is IInvariantCheck {
      * @notice Checks all invariants, and pauses all contracts if
      *         any invariant does not hold.
      * @dev This should be called before onlyUnpaused, in case contracts are paused then pause check must happen after.
+     * @param poolToCheck The LeveragedPool contract to be checked.
      */
     function checkInvariants(address poolToCheck) external override {
         ILeveragedPool pool = ILeveragedPool(poolToCheck);
@@ -38,13 +39,11 @@ contract InvariantCheck is IInvariantCheck {
             IPoolCommitter.TotalCommitment memory nextTotalCommitment
         ) = poolCommitter.getPendingCommits();
         uint256 pendingMints;
-        unchecked {
-            pendingMints =
-                totalCommitment.longMintAmount +
-                totalCommitment.shortMintAmount +
-                nextTotalCommitment.longMintAmount +
-                nextTotalCommitment.shortMintAmount;
-        }
+        pendingMints =
+            totalCommitment.longMintAmount +
+            totalCommitment.shortMintAmount +
+            nextTotalCommitment.longMintAmount +
+            nextTotalCommitment.shortMintAmount;
         uint256 longBalance = pool.longBalance();
         uint256 shortBalance = pool.shortBalance();
         if (!balanceInvariant(poolBalance, pendingMints, longBalance, shortBalance)) {
@@ -66,6 +65,10 @@ contract InvariantCheck is IInvariantCheck {
     /**
      * @notice Check that the balance of a pool is equal to or greater than the summation of pending mints, long balance and short balance
      * @return true if balance invariant holds. False if not
+     * @param balance The amount of settlement tokens owned by the leveraged pool
+     * @param pendingMints The amount of pending mints in the pool
+     * @param longBalance The balance of the long side of the pool
+     * @param shortBalance The balance of the short side of the pool
      */
     function balanceInvariant(
         uint256 balance,
