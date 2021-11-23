@@ -133,6 +133,7 @@ describe("LeveragedPool - feeTransfer", async () => {
                 fee
             )
             pool = result.pool
+            poolCommitter = result.poolCommitter
             await result.token.approve(result.pool.address, 10000)
             await result.poolCommitter.commit(LONG_MINT, 1000, false)
             await result.pool.drainPool(10)
