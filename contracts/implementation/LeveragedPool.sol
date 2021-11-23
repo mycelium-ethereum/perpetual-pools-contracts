@@ -32,6 +32,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
     bool public governanceTransferInProgress;
     address public feeAddress;
     address public secondaryFeeAddress;
+    uint256 public secondaryFeeSplitPercent; // Split to secondary fee address as a percentage.
     address public override quoteToken;
     address public override poolCommitter;
     address public override oracleWrapper;
@@ -58,8 +59,8 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         require(initialization._longToken != address(0), "Long token cannot be 0 address");
         require(initialization._shortToken != address(0), "Short token cannot be 0 address");
         require(initialization._poolCommitter != address(0), "PoolCommitter cannot be 0 address");
-
         require(initialization._fee < PoolSwapLibrary.WAD_PRECISION, "Fee >= 100%");
+        require(initialization._secondaryFeeSplitPercent <= 100, "percent cannot exceed 100");
 
         // set the owner of the pool. This is governance when deployed from the factory
         governance = initialization._owner;
@@ -75,6 +76,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         leverageAmount = PoolSwapLibrary.convertUIntToDecimal(initialization._leverageAmount);
         feeAddress = initialization._feeAddress;
         secondaryFeeAddress = initialization._secondaryFeeAddress;
+        secondaryFeeSplitPercent = initialization._secondaryFeeSplitPercent;
         lastPriceTimestamp = block.timestamp;
         poolName = initialization._poolName;
         tokens[LONG_INDEX] = initialization._longToken;
@@ -243,10 +245,11 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         if (secondaryFeeAddress == address(0)) {
             IERC20(quoteToken).safeTransfer(feeAddress, totalFeeAmount);
         } else {
-            uint256 daoFee = PoolSwapLibrary.mulFraction(totalFeeAmount, 9, 10);
-            uint256 remainder = totalFeeAmount - daoFee;
-            IERC20(quoteToken).safeTransfer(feeAddress, daoFee);
-            IERC20(quoteToken).safeTransfer(secondaryFeeAddress, remainder);
+            require(secondaryFeeSplitPercent <= 100, "percent cannot exceed 100");
+            uint256 secondaryFee = PoolSwapLibrary.mulFraction(totalFeeAmount, secondaryFeeSplitPercent, 100);
+            uint256 remainder = totalFeeAmount - secondaryFee;
+            IERC20(quoteToken).safeTransfer(secondaryFeeAddress, secondaryFee);
+            IERC20(quoteToken).safeTransfer(feeAddress, remainder);
         }
     }
 

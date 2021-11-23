@@ -104,6 +104,7 @@ describe("PoolFactory.deployPool", () => {
                 _feeAddress: generateRandomAddress(),
                 _secondaryFeeAddress: ethers.constants.AddressZero,
                 _quoteToken: token.address,
+                _secondaryFeeSplitPercent: 10,
             }
             await expect(pool.initialize(initialization)).to.be.rejectedWith(
                 Error

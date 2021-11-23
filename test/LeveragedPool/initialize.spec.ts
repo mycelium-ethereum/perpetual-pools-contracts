@@ -224,6 +224,7 @@ describe("LeveragedPool - initialize", () => {
                     _feeAddress: feeAddress,
                     _secondaryFeeAddress: ethers.constants.AddressZero,
                     _quoteToken: quoteToken,
+                    _secondaryFeeSplitPercent: 10,
                 })
             ).wait()
             const event: Event | undefined = receipt?.events?.find(
@@ -299,6 +300,7 @@ describe("LeveragedPool - initialize", () => {
                 _feeAddress: feeAddress,
                 _secondaryFeeAddress: ethers.constants.AddressZero,
                 _quoteToken: quoteToken,
+                _secondaryFeeSplitPercent: 10,
             })
             await expect(
                 leveragedPool.initialize({
@@ -317,6 +319,7 @@ describe("LeveragedPool - initialize", () => {
                     _feeAddress: feeAddress,
                     _secondaryFeeAddress: ethers.constants.AddressZero,
                     _quoteToken: quoteToken,
+                    _secondaryFeeSplitPercent: 10,
                 })
             ).to.rejectedWith(Error)
         })
@@ -338,6 +341,7 @@ describe("LeveragedPool - initialize", () => {
                     _feeAddress: feeAddress,
                     _secondaryFeeAddress: ethers.constants.AddressZero,
                     _quoteToken: ethers.constants.AddressZero,
+                    _secondaryFeeSplitPercent: 10,
                 })
             ).to.rejectedWith(Error)
         })
@@ -359,6 +363,7 @@ describe("LeveragedPool - initialize", () => {
                     _feeAddress: feeAddress,
                     _secondaryFeeAddress: ethers.constants.AddressZero,
                     _quoteToken: quoteToken,
+                    _secondaryFeeSplitPercent: 10,
                 })
             ).to.rejectedWith(Error)
         })
@@ -380,6 +385,7 @@ describe("LeveragedPool - initialize", () => {
                     _feeAddress: ethers.constants.AddressZero,
                     _secondaryFeeAddress: ethers.constants.AddressZero,
                     _quoteToken: quoteToken,
+                    _secondaryFeeSplitPercent: 10,
                 })
             ).to.rejectedWith(Error)
         })
@@ -410,6 +416,7 @@ describe("LeveragedPool - initialize", () => {
                 _feeAddress: feeAddress,
                 _secondaryFeeAddress: ethers.constants.AddressZero,
                 _quoteToken: quoteToken,
+                _secondaryFeeSplitPercent: 10,
             })
             await leveragedPool.initialize({
                 _owner: signers[0].address,
@@ -427,6 +434,7 @@ describe("LeveragedPool - initialize", () => {
                 _feeAddress: feeAddress,
                 _secondaryFeeAddress: ethers.constants.AddressZero,
                 _quoteToken: quoteToken,
+                _secondaryFeeSplitPercent: 10,
             })
 
             expect(await secondPool.poolName()).to.eq(POOL_CODE_2)
