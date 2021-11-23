@@ -42,11 +42,23 @@ contract PoolCommitter is IPoolCommitter, Initializable {
 
     address public factory;
 
+    /**
+     * @notice Constructor
+     * @param _factory Address of the associated `PoolFactory` contract
+     * @dev Throws if factory address is null
+     */
     constructor(address _factory) {
         require(_factory != address(0), "Factory address cannot be null");
         factory = _factory;
     }
 
+    /**
+     * @notice Initialises the contract
+     * @param _factory Address of the associated `PoolFactory` contract
+     * @param _mintingFee The percentage that is taken from each mint, given as a decimal * 10 ^ 18
+     * @param _burningFee The percentage that is taken from each burn, given as a decimal * 10 ^ 18
+     * @dev Throws if factory address is null
+     */
     function initialize(
         address _factory,
         uint256 _mintingFee,
@@ -163,6 +175,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
      *               tokens you want to burn
      * @param fromAggregateBalance If minting, burning, or rebalancing into a delta neutral position,
      *                             will tokens be taken from user's aggregate balance?
+     * @dev Emits a `CreateCommit` event on success
      */
     function commit(
         CommitType commitType,
@@ -209,6 +222,9 @@ contract PoolCommitter is IPoolCommitter, Initializable {
 
     /**
      * @notice Claim user's balance. This can be done either by the user themself or by somebody else on their behalf.
+     * @param user Address of the user to claim against
+     * @dev Updates aggregate user balances
+     * @dev Emits a `Claim` event on success
      */
     function claim(address user) external override updateBalance {
         Balance memory balance = userAggregateBalance[user];
@@ -226,6 +242,10 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         emit Claim(user);
     }
 
+    /**
+     * @notice Executes every commitment specified in the list
+     * @param _commits Array of `TotalCommitment`s
+     */
     function executeGivenCommitments(TotalCommitment memory _commits) internal {
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
 
@@ -318,12 +338,42 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         pool.setNewPoolBalances(newLongBalance, newShortBalance);
     }
 
+    /**
+     * @notice Executes all commitments currently queued for the associated `LeveragedPool`
+     * @dev Only callable by the associated `LeveragedPool` contract
+     */
     function executeCommitments() external override onlyPool {
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
 
         uint32 counter = 1;
         uint256 lastPriceTimestamp = pool.lastPriceTimestamp();
         uint256 updateInterval = pool.updateInterval();
+
+        /*
+         * (old)
+         * updateIntervalId
+         * |
+         * |    updateIntervalId
+         * |    |
+         * |    |    counter
+         * |    |    |
+         * |    |    |              (end)
+         * |    |    |              |
+         * V    V    V              V
+         * +----+----+----+~~~~+----+
+         * |    |    |    |....|    |
+         * +----+----+----+~~~~+----+
+         *
+         * Iterate over the sequence of possible update periods from the most
+         * recent (i.e., the value of `updateIntervalId` as at the entry point
+         * of this function) until the end of the queue.
+         *
+         * At each iteration, execute all of the (total) commitments for the
+         * pool for that period and then remove them from the queue.
+         *
+         * In reality, this should never iterate more than once, since more than one update interval
+         * should never be passed without the previous one being upkept.
+         */
         while (true) {
             if (block.timestamp >= lastPriceTimestamp + updateInterval * counter) {
                 // Another update interval has passed, so we have to do the nextIntervalCommit as well
@@ -338,6 +388,18 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         }
     }
 
+    /**
+     * @notice Updates the aggregate balance based on the result of application
+     *          of the provided (user) commitment
+     * @param _commit Commitment to apply
+     * @return _newLongTokens Quantity of long pool tokens post-application
+     * @return _newShortTokens Quantity of short pool tokens post-application
+     * @return _longBurnFee Quantity of settlement tokens taken as a fee from long burns
+     * @return _shortBurnFee Quantity of settlement tokens taken as a fee from short burns
+     * @return _newSettlementTokens Quantity of settlement tokens post
+     *                                  application
+     * @dev Wraps two (pure) library functions from `PoolSwapLibrary`
+     */
     function updateBalanceSingleCommitment(UserCommitment memory _commit)
         internal
         view
@@ -368,7 +430,10 @@ contract PoolCommitter is IPoolCommitter, Initializable {
     }
 
     /**
-     * @notice Add the result of a user's most recent commit to their aggregateBalance
+     * @notice Add the result of a user's most recent commit to their aggregated balance
+     * @param user Address of the given user
+     * @dev Updates the `userAggregateBalance` mapping by applying `BalanceUpdate`s derived from iteration over the entirety of unaggregated commitments associated with the given user
+     * @dev Emits an `AggregateBalanceUpdated` event upon successful termination
      */
     function updateAggregateBalance(address user) public override {
         Balance storage balance = userAggregateBalance[user];
@@ -446,7 +511,9 @@ contract PoolCommitter is IPoolCommitter, Initializable {
     }
 
     /**
-     * @notice A copy of updateAggregateBalance that returns the aggregate balance without updating it
+     * @notice A copy of `updateAggregateBalance` that returns the aggregated balance without updating it
+     * @param user Address of the given user
+     * @return Associated `Balance` for the given user after aggregation
      */
     function getAggregateBalance(address user) public view override returns (Balance memory) {
         Balance memory _balance = userAggregateBalance[user];
@@ -502,6 +569,13 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         return _balance;
     }
 
+    /**
+     * @notice Sets the quote token address and the address of the associated `LeveragedPool` contract to the provided values
+     * @param _quoteToken Address of the quote token to use
+     * @param _leveragedPool Address of the pool to use
+     * @dev Only callable by the associated `PoolFactory` contract
+     * @dev Throws if either address are null
+     */
     function setQuoteAndPool(address _quoteToken, address _leveragedPool) external override onlyFactory {
         require(_quoteToken != address(0), "Quote token address cannot be 0 address");
         require(_leveragedPool != address(0), "Leveraged pool address cannot be 0 address");
@@ -513,16 +587,25 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         tokens = ILeveragedPool(leveragedPool).poolTokens();
     }
 
+    /**
+     * @notice Aggregates user balances **prior** to executing the wrapped code
+     */
     modifier updateBalance() {
         updateAggregateBalance(msg.sender);
         _;
     }
 
+    /**
+     * @notice Asserts that the caller is the associated `PoolFactory` contract
+     */
     modifier onlyFactory() {
         require(msg.sender == factory, "Committer: not factory");
         _;
     }
 
+    /**
+     * @notice Asserts that the caller is the associated `LeveragedPool` contract
+     */
     modifier onlyPool() {
         require(msg.sender == leveragedPool, "msg.sender not leveragedPool");
         _;

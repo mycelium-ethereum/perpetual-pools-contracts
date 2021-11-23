@@ -62,6 +62,10 @@ contract SMAOracle is IOracleWrapper {
         return wad / scaler;
     }
 
+    /**
+     * @notice Retrieves the current SMA price
+     * @dev Recomputes SMA across sample size (`periods`)
+     */
     function getPrice() external view override returns (int256) {
         /* update current reported SMA price */
         return SMA(IPriceObserver(observer).getAll(), periods);
@@ -72,7 +76,6 @@ contract SMAOracle is IOracleWrapper {
      * @dev O(n) complexity (with n being `capacity`) due to rotation of
      *      underlying observations array and subsequent recalculation of SMA
      *      price
-     *
      */
     function update() internal returns (int256) {
         /* query the underlying spot price oracle */
@@ -87,6 +90,13 @@ contract SMAOracle is IOracleWrapper {
         return SMA(priceObserver.getAll(), periods);
     }
 
+    /**
+     * @notice Updates the SMA oracle by retrieving a new price from the
+     *          associated price observer contract (provided it's not too early)
+     * @return Latest SMA price
+     * @dev Throws if called within an update interval since last being called
+     * @dev Essentially wraps `update()`
+     */
     function poll() external override returns (int256) {
         require(block.timestamp >= lastUpdate + updateInterval, "SMA: Too early to update");
         return update();
@@ -104,7 +114,6 @@ contract SMAOracle is IOracleWrapper {
      * @dev Note that the signedness of the return type is due to the signedness of the elements of `xs`
      * @dev It's a true tragedy that we have to stipulate a fixed-length array for `xs`, but alas, Solidity's type system cannot
      *          reason about this at all due to the value's runtime requirement
-     *
      */
     function SMA(int256[24] memory xs, uint256 k) public pure returns (int256) {
         uint256 n = xs.length;

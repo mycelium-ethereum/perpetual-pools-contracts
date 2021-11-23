@@ -128,6 +128,14 @@ describe("LeveragedPool - executeAllCommitments", () => {
             expect(shortBalanceAfter).to.equal(shortBalanceBefore.div(2))
         })
     })
+
+    it("Paused pools cannot upkeep", async () => {
+        await timeout(updateInterval * 1000)
+        await pool.pause()
+        expect(pool.poolUpkeep(lastPrice, lastPrice)).to.revertedWith(
+            "Pool is paused"
+        )
+    })
     /*
     describe("Short mint->short burn", () => {
         const commits: CommitEventArgs[] | undefined = []

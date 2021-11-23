@@ -5,13 +5,17 @@ import "abdk-libraries-solidity/ABDKMathQuad.sol";
 
 /// @title Library for various useful (mostly) mathematical functions
 library PoolSwapLibrary {
+    /// ABDKMathQuad-formatted representation of the number one
     bytes16 public constant one = 0x3fff0000000000000000000000000000;
 
-    /* ABDKMathQuad defines this but it's private */
+    /// Maximum number of decimal places supported by this contract
+    /// (ABDKMathQuad defines this but it's private)
     uint256 public constant MAX_DECIMALS = 18;
 
+    /// Maximum precision supportable via wad arithmetic (for this contract)
     uint256 public constant WAD_PRECISION = 10**18;
 
+    /// Information required to update a given user's aggregated balance
     struct UpdateData {
         bytes16 longPrice;
         bytes16 shortPrice;
@@ -26,6 +30,7 @@ library PoolSwapLibrary {
         bytes16 burnFee;
     }
 
+    /// Information required to perform a price change (of the underlying asset)
     struct PriceChangeData {
         int256 oldPrice;
         int256 newPrice;
@@ -190,6 +195,9 @@ library PoolSwapLibrary {
      * @notice Calculates the effect of a price change. This involves calculating how many funds to transfer from the losing pool to the other.
      * @dev This function should be called by the LeveragedPool.
      * @param priceChange The struct containing necessary data to calculate price change
+     * @return Resulting long balance
+     * @return Resulting short balance
+     * @return Total fees (across both long and short sides) resulting from this price change
      */
     function calculatePriceChange(PriceChangeData calldata priceChange)
         external
@@ -364,9 +372,12 @@ library PoolSwapLibrary {
     }
 
     /**
-     * @notice Calculate the number of pool tokens to mint, given some settlement token amount and a price
-     * @param price The price of a pool token
-     * @param amount The amount of settlement tokens being used to mint
+     * @notice Calculates the number of pool tokens to mint, given some settlement token amount and a price
+     * @param price Price of a pool token
+     * @param amount Amount of settlement tokens being used to mint
+     * @return Quantity of pool tokens to mint
+     * @dev Throws if price is zero
+     * @dev `getBurn()`
      */
     function getMint(bytes16 price, uint256 amount) public pure returns (uint256) {
         require(price != 0, "price == 0");
@@ -375,7 +386,12 @@ library PoolSwapLibrary {
 
     /**
      * @notice Calculate the number of settlement tokens to burn, based on a price and an amount of pool tokens
+     * @param price Price of a pool token
+     * @param amount Amount of settlement tokens being used to burn
+     * @return Quantity of pool tokens to burn
      * @dev amount * price, where amount is in PoolToken and price is in USD/PoolToken
+     * @dev Throws if price is zero
+     * @dev `getMint()`
      */
     function getBurn(bytes16 price, uint256 amount) public pure returns (uint256) {
         require(price != 0, "price == 0");
@@ -388,6 +404,8 @@ library PoolSwapLibrary {
      * @param amount The amount of settlement tokens being used to mint
      * @param oppositePrice The price of the opposite side's pool token
      * @param amountBurnedInstantMint The amount of pool tokens that were burnt from the opposite side for an instant mint in this side
+     * @return Quantity of pool tokens to mint
+     * @dev Throws if price is zero
      */
     function getMintWithBurns(
         bytes16 price,
@@ -405,7 +423,9 @@ library PoolSwapLibrary {
 
     /**
      * @notice Converts from a WAD to normal value
-     * @return Converted non-WAD value
+     * @param _wadValue wad number
+     * @param _decimals Quantity of decimal places to support
+     * @return Converted (non-WAD) value
      */
     function fromWad(uint256 _wadValue, uint256 _decimals) external pure returns (uint256) {
         uint256 scaler = 10**(MAX_DECIMALS - _decimals);
@@ -415,6 +435,11 @@ library PoolSwapLibrary {
     /**
      * @notice Calculate the change in a user's balance based on recent commit(s)
      * @param data Information needed for updating the balance including prices and recent commit amounts
+     * @return _newLongTokens Quantity of additional long tokens the user would receive
+     * @return _newShortTokens Quantity of additional short tokens the user would receive
+     * @return _longBurnFee Quantity of settlement tokens taken as a fee from long burns
+     * @return _shortBurnFee Quantity of settlement tokens taken as a fee from short burns
+     * @return _newSettlementTokens Quantity of additional settlement tokens the user would receive
      */
     function getUpdatedAggregateBalance(UpdateData calldata data)
         external
