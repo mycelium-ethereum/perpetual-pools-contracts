@@ -422,8 +422,8 @@ library PoolSwapLibrary {
         returns (
             uint256 _newLongTokens,
             uint256 _newShortTokens,
-            uint256 _addedLongBalance,
-            uint256 _addedShortBalance,
+            uint256 _longBurnFee,
+            uint256 _shortBurnFee,
             uint256 _newSettlementTokens
         )
     {
@@ -446,11 +446,9 @@ library PoolSwapLibrary {
             // Calculate the amount of settlement tokens earned from burning long tokens
             longBurnResult = getBurn(data.longPrice, data.longBurnAmount);
             // Calculate the fee
-            _addedLongBalance =
-                convertDecimalToUInt(multiplyDecimalByUInt(data.burnFee, longBurnResult)) /
-                WAD_PRECISION;
+            _longBurnFee = convertDecimalToUInt(multiplyDecimalByUInt(data.burnFee, longBurnResult)) / WAD_PRECISION;
             // Subtract the fee from settlement token amount
-            longBurnResult -= _addedLongBalance;
+            longBurnResult -= _longBurnFee;
         }
 
         if (data.shortMintAmount > 0 || data.longBurnShortMintAmount > 0) {
@@ -466,11 +464,9 @@ library PoolSwapLibrary {
             // Calculate the amount of settlement tokens earned from burning short tokens
             shortBurnResult = getBurn(data.shortPrice, data.shortBurnAmount);
             // Calculate the fee
-            _addedShortBalance =
-                convertDecimalToUInt(multiplyDecimalByUInt(data.burnFee, shortBurnResult)) /
-                WAD_PRECISION;
+            _shortBurnFee = convertDecimalToUInt(multiplyDecimalByUInt(data.burnFee, shortBurnResult)) / WAD_PRECISION;
             // Subtract the fee from settlement token amount
-            shortBurnResult -= _addedShortBalance;
+            shortBurnResult -= _shortBurnFee;
         }
 
         _newSettlementTokens = shortBurnResult + longBurnResult;

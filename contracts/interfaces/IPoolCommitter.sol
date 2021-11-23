@@ -59,8 +59,8 @@ interface IPoolCommitter {
         uint256 _newSettlementTokensSum;
         uint256 _balanceLongBurnAmount;
         uint256 _balanceShortBurnAmount;
-        uint256 _addedLongTokens;
-        uint256 _addedShortTokens;
+        uint256 _longBurnFee;
+        uint256 _shortBurnFee;
     }
 
     // Track how much of a user's commitments are being done from their aggregate balance

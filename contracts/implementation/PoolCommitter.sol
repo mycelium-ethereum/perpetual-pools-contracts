@@ -344,8 +344,8 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         returns (
             uint256 _newLongTokens,
             uint256 _newShortTokens,
-            uint256 _addedLongBalance,
-            uint256 _addedShortBalance,
+            uint256 _longBurnFee,
+            uint256 _shortBurnFee,
             uint256 _newSettlementTokens
         )
     {
@@ -363,7 +363,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
             burnFee: burnFeeHistory[_commit.updateIntervalId]
         });
 
-        (_newLongTokens, _newShortTokens, _addedLongBalance, _addedShortBalance, _newSettlementTokens) = PoolSwapLibrary
+        (_newLongTokens, _newShortTokens, _longBurnFee, _shortBurnFee, _newSettlementTokens) = PoolSwapLibrary
             .getUpdatedAggregateBalance(updateData);
     }
 
@@ -380,8 +380,8 @@ contract PoolCommitter is IPoolCommitter, Initializable {
             _newSettlementTokensSum: 0,
             _balanceLongBurnAmount: 0,
             _balanceShortBurnAmount: 0,
-            _addedLongTokens: 0,
-            _addedShortTokens: 0
+            _longBurnFee: 0,
+            _shortBurnFee: 0
         });
 
         // Iterate from the most recent up until the current update interval
@@ -404,15 +404,15 @@ contract PoolCommitter is IPoolCommitter, Initializable {
                 (
                     uint256 _newLongTokens,
                     uint256 _newShortTokens,
-                    uint256 _addedLongBalance,
-                    uint256 _addedShortBalance,
+                    uint256 _longBurnFee,
+                    uint256 _shortBurnFee,
                     uint256 _newSettlementTokens
                 ) = updateBalanceSingleCommitment(commitment);
                 update._newLongTokensSum += _newLongTokens;
                 update._newShortTokensSum += _newShortTokens;
                 update._newSettlementTokensSum += _newSettlementTokens;
-                update._addedLongTokens += _addedLongBalance;
-                update._addedShortTokens += _addedShortBalance;
+                update._longBurnFee += _longBurnFee;
+                update._shortBurnFee += _shortBurnFee;
                 delete userCommitments[user][i];
                 delete unAggregatedCommitments[user][i];
             } else {
@@ -440,7 +440,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
 
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
         (uint256 shortBalance, uint256 longBalance) = pool.balances();
-        pool.setNewPoolBalances(longBalance + update._addedLongTokens, shortBalance + update._addedShortTokens);
+        pool.setNewPoolBalances(longBalance + update._longBurnFee, shortBalance + update._shortBurnFee);
 
         emit AggregateBalanceUpdated(user);
     }
@@ -458,8 +458,8 @@ contract PoolCommitter is IPoolCommitter, Initializable {
             _newSettlementTokensSum: 0,
             _balanceLongBurnAmount: 0,
             _balanceShortBurnAmount: 0,
-            _addedLongTokens: 0,
-            _addedShortTokens: 0
+            _longBurnFee: 0,
+            _shortBurnFee: 0
         });
 
         // Iterate from the most recent up until the current update interval
