@@ -15,8 +15,9 @@ contract PoolCommitter is IPoolCommitter, Initializable {
     uint128 public constant LONG_INDEX = 0;
     uint128 public constant SHORT_INDEX = 1;
 
+    address public autoClaim;
     address public leveragedPool;
-    uint128 public updateIntervalId = 1;
+    uint128 public override updateIntervalId = 1;
     // Index 0 is the LONG token, index 1 is the SHORT token.
     // Fetched from the LeveragedPool when leveragedPool is set
     address[2] public tokens;
@@ -460,10 +461,16 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         return _balance;
     }
 
-    function setQuoteAndPool(address _quoteToken, address _leveragedPool) external override onlyFactory {
+    function setQuoteAutoClaimAndPool(
+        address _quoteToken,
+        address _autoClaim,
+        address _leveragedPool
+    ) external override onlyFactory {
         require(_quoteToken != address(0), "Quote token address cannot be 0 address");
+        require(_autoClaim != address(0), "AutoClaim address cannot be 0 address");
         require(_leveragedPool != address(0), "Leveraged pool address cannot be 0 address");
 
+        autoClaim = _autoClaim;
         leveragedPool = _leveragedPool;
         IERC20 _token = IERC20(_quoteToken);
         bool approvalSuccess = _token.approve(leveragedPool, _token.totalSupply());

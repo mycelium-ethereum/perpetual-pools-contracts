@@ -9,6 +9,7 @@ import "./LeveragedPool.sol";
 import "./PoolToken.sol";
 import "./PoolKeeper.sol";
 import "./PoolCommitter.sol";
+import "./AutoClaim.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
@@ -151,7 +152,11 @@ contract PoolFactory is IPoolFactory, Ownable {
         pool.initialize(initialization);
         // approve the quote token on the pool commiter to finalise linking
         // this also stores the pool address in the commiter
-        IPoolCommitter(poolCommitterAddress).setQuoteAndPool(deploymentParameters.quoteToken, _pool);
+        IPoolCommitter(poolCommitterAddress).setQuoteAutoClaimAndPool(
+            deploymentParameters.quoteToken,
+            _pool, // TODO CHANGE THIS TO AutoClaim
+            _pool
+        );
         poolKeeper.newPool(_pool);
         pools[numPools] = _pool;
         numPools += 1;

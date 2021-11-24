@@ -104,6 +104,8 @@ interface IPoolCommitter {
         bool fromAggregateBalance
     ) external;
 
+    function updateIntervalId() external view returns (uint128);
+
     function claim(address user) external;
 
     function executeCommitments() external;
@@ -112,5 +114,9 @@ interface IPoolCommitter {
 
     function getAggregateBalance(address user) external view returns (Balance memory _balance);
 
-    function setQuoteAndPool(address quoteToken, address leveragedPool) external;
+    function setQuoteAutoClaimAndPool(
+        address _quoteToken,
+        address _autoClaim,
+        address _leveragedPool
+    ) external;
 }
