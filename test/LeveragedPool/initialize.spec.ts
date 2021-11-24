@@ -12,6 +12,7 @@ import {
     ChainlinkOracleWrapper,
     PoolCommitter__factory,
     PoolCommitter,
+    AutoClaim__factory,
 } from "../../types"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import {
@@ -185,7 +186,8 @@ describe("LeveragedPool - initialize", () => {
 
             const poolCommitter = await (
                 await poolCommitterFactory.deploy(
-                    setupContracts.factory.address
+                    setupContracts.factory.address,
+                    generateRandomAddress()
                 )
             ).deployed()
 

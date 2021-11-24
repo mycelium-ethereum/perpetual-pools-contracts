@@ -34,6 +34,7 @@ import {
     PoolCommitter,
     TestChainlinkOracle,
     ChainlinkOracleWrapper,
+    AutoClaim__factory,
 } from "../types"
 
 import { abi as ERC20Abi } from "../artifacts/@openzeppelin/contracts/token/ERC20/ERC20.sol/ERC20.json"
@@ -186,6 +187,13 @@ export const deployPoolSetupContracts = async () => {
     await factory.setPoolKeeper(poolKeeper.address)
     await factory.setFee(DEFAULT_FEE)
 
+    const autoClaimFactory = (await ethers.getContractFactory("AutoClaim", {
+        signer: signers[0],
+    })) as AutoClaim__factory
+    let autoClaim = await autoClaimFactory.deploy(factory.address)
+    autoClaim = await autoClaim.deployed()
+    await factory.setAutoClaim(autoClaim.address)
+
     return {
         factory,
         poolKeeper,
@@ -324,12 +332,21 @@ export const createCommit = async (
     poolCommitter: PoolCommitter,
     commitType: BigNumberish,
     amount: BigNumberish,
-    fromAggregateBalance?: boolean
+    fromAggregateBalance?: boolean,
+    payForClaim?: boolean,
+    rewardAmount?: BigNumberish
 ): Promise<any> /*Promise<CommitEventArgs>*/ => {
     const fromAggBal = fromAggregateBalance ? fromAggregateBalance : false
+    const isPayingForClaim = payForClaim ? payForClaim : false
     const receipt = await (
-        await poolCommitter.commit(commitType, amount, fromAggBal)
-    ).wait()
+        await poolCommitter.commit(
+            commitType,
+            amount,
+            fromAggBal,
+            isPayingForClaim
+        )
+    ) // TODO ADD MSG.VALUE
+        .wait()
     return {
         commitID: getEventArgs(receipt, "CreateCommit")?.commitID,
         amount: getEventArgs(receipt, "CreateCommit")?.amount,

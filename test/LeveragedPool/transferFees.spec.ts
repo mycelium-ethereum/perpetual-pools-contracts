@@ -120,7 +120,7 @@ describe("LeveragedPool - feeTransfer", () => {
         })
     })
 
-    context("Test Paused Pools cannot transfer tokens", async () => {
+    context.skip("Test Paused Pools cannot transfer tokens", async () => {
         beforeEach(async () => {
             await pool.pause()
         })
