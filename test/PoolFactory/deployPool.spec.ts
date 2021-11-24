@@ -36,7 +36,6 @@ describe("PoolFactory.deployPool", () => {
     let oracleWrapper: ChainlinkOracleWrapper
     let settlementEthOracle: ChainlinkOracleWrapper
     let pool: LeveragedPool
-    let permissionlessPool: LeveragedPool
     let token: TestToken
     let signers: Signer[]
     let nonDAO: Signer
@@ -263,6 +262,41 @@ describe("PoolFactory.deployPool", () => {
                 )
 
             expect(predictedPoolAddress).to.not.eq(pool.address)
+        })
+    })
+
+    context("When secondary fee split is changed", async () => {
+        beforeEach(async () => {
+            await factory.setSecondaryFeeSplitPercent(20)
+        })
+
+        it("secondary fee split equals 20 on factory", async () => {
+            const feesplit = await factory.secondaryFeeSplitPercent()
+            expect(feesplit.toNumber()).to.eq(20)
+        })
+
+        it("secondary fee split equals 20 on deployed pool", async () => {
+            const deploymentData = {
+                poolName: POOL_CODE_2,
+                frontRunningInterval: 3,
+                updateInterval: 5,
+                leverageAmount: 4,
+                quoteToken: token.address,
+                oracleWrapper: oracleWrapper.address,
+                settlementEthOracle: settlementEthOracle.address,
+            }
+            
+            const poolNumber = (await factory.numPools()).toNumber()
+            await factory.deployPool(deploymentData)
+            const oldPoolAddress = await factory.pools(0)
+            const oldPool = await ethers.getContractAt("LeveragedPool", oldPoolAddress) as LeveragedPool
+            const newPoolAddress = await factory.pools(poolNumber)
+            const newPool = await ethers.getContractAt("LeveragedPool", newPoolAddress) as LeveragedPool
+            
+            const oldFeeSplit = (await oldPool.secondaryFeeSplitPercent()).toNumber()
+            const newFeeSplit = (await newPool.secondaryFeeSplitPercent()).toNumber()
+            expect(oldFeeSplit).to.eq(10)
+            expect(newFeeSplit).to.eq(20)
         })
     })
 })
