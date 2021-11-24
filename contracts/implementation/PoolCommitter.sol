@@ -4,6 +4,7 @@ pragma solidity 0.8.7;
 import "../interfaces/IPoolCommitter.sol";
 import "../interfaces/ILeveragedPool.sol";
 import "../interfaces/IPoolFactory.sol";
+import "../interfaces/IAutoClaim.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -15,7 +16,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
     uint128 public constant LONG_INDEX = 0;
     uint128 public constant SHORT_INDEX = 1;
 
-    address public autoClaim;
+    IAutoClaim public autoClaim;
     address public leveragedPool;
     uint128 public override updateIntervalId = 1;
     // Index 0 is the LONG token, index 1 is the SHORT token.
@@ -38,14 +39,18 @@ contract PoolCommitter is IPoolCommitter, Initializable {
 
     address public factory;
 
-    constructor(address _factory) {
+    constructor(address _factory, address _autoClaim) {
         require(_factory != address(0), "Factory address cannot be null");
+        require(_autoClaim != address(0), "AutoClaim address cannot be null");
         factory = _factory;
+        autoClaim = IAutoClaim(autoClaim);
     }
 
-    function initialize(address _factory) external override initializer {
+    function initialize(address _factory, address _autoClaim) external override initializer {
         require(_factory != address(0), "Factory address cannot be 0 address");
+        require(_autoClaim != address(0), "AutoClaim address cannot be null");
         factory = _factory;
+        autoClaim = IAutoClaim(autoClaim);
     }
 
     /**
@@ -139,13 +144,19 @@ contract PoolCommitter is IPoolCommitter, Initializable {
     function commit(
         CommitType commitType,
         uint256 amount,
-        bool fromAggregateBalance
-    ) external override updateBalance {
+        bool fromAggregateBalance,
+        bool payForClaim
+    ) external payable override updateBalance {
         require(amount > 0, "Amount must not be zero");
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
         uint256 updateInterval = pool.updateInterval();
         uint256 lastPriceTimestamp = pool.lastPriceTimestamp();
         uint256 frontRunningInterval = pool.frontRunningInterval();
+
+        if (payForClaim) {
+            // TODO I am not sure if this actually passes on the msg.value but think it does
+            autoClaim.makePaidClaimRequest(msg.sender);
+        }
 
         uint256 appropriateUpdateIntervalId = PoolSwapLibrary.appropriateUpdateIntervalId(
             block.timestamp,
@@ -461,16 +472,10 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         return _balance;
     }
 
-    function setQuoteAutoClaimAndPool(
-        address _quoteToken,
-        address _autoClaim,
-        address _leveragedPool
-    ) external override onlyFactory {
+    function setQuoteAndPool(address _quoteToken, address _leveragedPool) external override onlyFactory {
         require(_quoteToken != address(0), "Quote token address cannot be 0 address");
-        require(_autoClaim != address(0), "AutoClaim address cannot be 0 address");
         require(_leveragedPool != address(0), "Leveraged pool address cannot be 0 address");
 
-        autoClaim = _autoClaim;
         leveragedPool = _leveragedPool;
         IERC20 _token = IERC20(_quoteToken);
         bool approvalSuccess = _token.approve(leveragedPool, _token.totalSupply());

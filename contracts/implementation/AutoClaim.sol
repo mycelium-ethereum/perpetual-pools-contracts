@@ -1,23 +1,29 @@
 //SPDX-License-Identifier: CC-BY-NC-ND-4.0
 pragma solidity 0.8.7;
 
+import "../interfaces/IPoolFactory.sol";
 import "../interfaces/IPoolCommitter.sol";
 import "../interfaces/IAutoClaim.sol";
 
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+
 /// @title The contract to be used for paying to have a keeper claim your commit automatically
 /// @notice The way this works is when a user commits with `PoolCommitter::commit`, they have the option to set the `bool payForClaim` parameter to `true`.
-///         During this function execution, `AutoClaim::payForClaim` is called, and `msg.value` is taken as the reward to whoever claims for requester (by using `AutoClaim::payedClaim`).
+///         During this function execution, `AutoClaim::payForClaim` is called, and `msg.value` is taken as the reward to whoever claims for requester (by using `AutoClaim::paidClaim`).
 /// @dev A question I had to ask was "What happens if one requests a second claim before one's pending request from a previous update interval one gets executed on?".
 ///      My solution to this was to have the committer instantly claim for themself. They have signified their desire to claim their tokens, after all.
-contract AutoClaim is IAutoClaim {
+contract AutoClaim is IAutoClaim, Initializable {
     mapping(address => ClaimRequest) claimRequests;
-    address internal poolCommitterAddress;
-    IPoolCommitter internal poolCommitter;
+    IPoolFactory internal poolFactory;
 
-    constructor(address _poolCommitterAddress) {
-        require(_poolCommitterAddress != address(0), "PoolCommitter address == 0");
-        poolCommitterAddress = _poolCommitterAddress;
-        poolCommitter = IPoolCommitter(_poolCommitterAddress);
+    constructor(address _poolFactoryAddress) {
+        require(_poolFactoryAddress != address(0), "PoolFactory address == 0");
+        poolFactory = IPoolFactory(_poolFactoryAddress);
+    }
+
+    function initialize(address _poolFactoryAddress) external override initializer {
+        require(_poolFactoryAddress != address(0), "PoolFactory address == 0");
+        poolFactory = IPoolFactory(_poolFactoryAddress);
     }
 
     /**
@@ -27,6 +33,7 @@ contract AutoClaim is IAutoClaim {
      */
     function makePaidClaimRequest(address user) external payable override onlyPoolCommitter {
         ClaimRequest storage request = claimRequests[user];
+        IPoolCommitter poolCommitter = IPoolCommitter(msg.sender);
 
         uint256 requestUpdateIntervalId = request.updateIntervalId;
         // Check if a previous claim request is pending...
@@ -54,8 +61,9 @@ contract AutoClaim is IAutoClaim {
      * @notice Claim on the behalf of a user who has requests to have their commit automatically claimed by a keeper.
      * @param user The user who requested an autoclaim.
      */
-    function payedClaim(address user) external override {
+    function paidClaim(address user) public override {
         ClaimRequest memory request = claimRequests[user];
+        IPoolCommitter poolCommitter = IPoolCommitter(msg.sender);
         uint256 currentUpdateIntervalId = poolCommitter.updateIntervalId();
         // Check if a previous claim request has been made, and if it is claimable.
         if (checkClaim(request, currentUpdateIntervalId)) {
@@ -65,6 +73,16 @@ contract AutoClaim is IAutoClaim {
             delete claimRequests[user];
             // execute the claim
             poolCommitter.claim(user);
+        }
+    }
+
+    /**
+     * @notice Call `paidClaim` for multiple users.
+     * @param users All users to execute claims for.
+     */
+    function multiPaidClaim(address[] calldata users) external override {
+        for (uint256 i = 0; i < users.length; i++) {
+            paidClaim(users[i]);
         }
     }
 
@@ -84,7 +102,7 @@ contract AutoClaim is IAutoClaim {
     }
 
     modifier onlyPoolCommitter() {
-        require(msg.sender == poolCommitterAddress, "msg.sender != poolCommitter");
+        require(poolFactory.isValidPoolCommitter(msg.sender), "msg.sender not valid PoolCommitter");
         _;
     }
 }
