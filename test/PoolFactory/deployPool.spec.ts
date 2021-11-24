@@ -299,4 +299,13 @@ describe("PoolFactory.deployPool", () => {
             expect(newFeeSplit).to.eq(20)
         })
     })
+
+    context("When secondary fee split is changed too high", async () => {
+        it("change fee split to 100 should revert error", async () => {
+            await expect(factory.setSecondaryFeeSplitPercent(100)).to.not.reverted
+        })
+        it("change fee split to > 100 should revert error", async () => {
+            await expect(factory.setSecondaryFeeSplitPercent(200)).to.revertedWith("Secondary fee split cannot exceed 100%")
+        })
+    })
 })
