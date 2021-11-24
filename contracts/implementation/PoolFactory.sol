@@ -218,13 +218,25 @@ contract PoolFactory is IPoolFactory, Ownable {
         maxLeverage = newMaxLeverage;
     }
 
+    /**
+    * @notice Sets the primary fee receiver of deployed Leveraged pools.
+    * @param _feeReceiver address of fee receiver
+    * @dev Only callable by the owner of this contract
+    * @dev This fuction does not change anything for already deployed pools, only pools deployed after the change
+    */
     function setFeeReceiver(address _feeReceiver) external override onlyOwner {
         require(_feeReceiver != address(0), "address cannot be null");
         feeReceiver = _feeReceiver;
     }
 
+    /**
+    * @notice Sets the proportion of fees to be split to the nominated secondary fees recipient
+    * @param newFeePercent Proportion of fees to split
+    * @dev Only callable by the owner of this contract
+    * @dev Throws if `newFeePercent` exceeds 100
+    */
     function setSecondaryFeeSplitPercent(uint256 newFeePercent) external override onlyOwner {
-        require(newFeePercent <= 100, "percent cannot exceed 100");
+        require(newFeePercent <= 100, "Secondary fee split cannot exceed 100%");
         secondaryFeeSplitPercent = newFeePercent;
     }
 

@@ -60,7 +60,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         require(initialization._shortToken != address(0), "Short token cannot be 0 address");
         require(initialization._poolCommitter != address(0), "PoolCommitter cannot be 0 address");
         require(initialization._fee < PoolSwapLibrary.WAD_PRECISION, "Fee >= 100%");
-        require(initialization._secondaryFeeSplitPercent <= 100, "percent cannot exceed 100");
+        require(initialization._secondaryFeeSplitPercent <= 100, "Secondary fee split cannot exceed 100%");
 
         // set the owner of the pool. This is governance when deployed from the factory
         governance = initialization._owner;
@@ -245,7 +245,7 @@ contract LeveragedPool is ILeveragedPool, Initializable {
         if (secondaryFeeAddress == address(0)) {
             IERC20(quoteToken).safeTransfer(feeAddress, totalFeeAmount);
         } else {
-            require(secondaryFeeSplitPercent <= 100, "percent cannot exceed 100");
+            require(secondaryFeeSplitPercent <= 100, "Secondary fee split cannot exceed 100%");
             uint256 secondaryFee = PoolSwapLibrary.mulFraction(totalFeeAmount, secondaryFeeSplitPercent, 100);
             uint256 remainder = totalFeeAmount - secondaryFee;
             IERC20(quoteToken).safeTransfer(secondaryFeeAddress, secondaryFee);
