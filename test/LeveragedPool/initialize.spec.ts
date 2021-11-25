@@ -188,7 +188,8 @@ describe("LeveragedPool - initialize", () => {
             const poolCommitter = await (
                 await poolCommitterFactory.deploy(
                     setupContracts.factory.address,
-                    setupContracts.invariantCheck.address
+                    setupContracts.invariantCheck.address,
+                    setupContracts.autoClaim.address
                 )
             ).deployed()
 

@@ -64,7 +64,7 @@ contract PoolFactory is IPoolFactory, Ownable {
         pairTokenBaseAddress = address(pairTokenBase);
         poolBase = new LeveragedPool();
         poolBaseAddress = address(poolBase);
-        poolCommitterBase = new PoolCommitter(address(this), address(this));
+        poolCommitterBase = new PoolCommitter(address(this), address(this), address(this));
         poolCommitterBaseAddress = address(poolCommitterBase);
 
         ILeveragedPool.Initialization memory baseInitialization = ILeveragedPool.Initialization(
@@ -88,7 +88,6 @@ contract PoolFactory is IPoolFactory, Ownable {
         // Init bases
         poolBase.initialize(baseInitialization);
         pairTokenBase.initialize(address(this), "BASE_TOKEN", "BASE", DEFAULT_NUM_DECIMALS);
-        poolCommitterBase.initialize(address(this), address(this));
         feeReceiver = _feeReceiver;
     }
 
@@ -168,6 +167,7 @@ contract PoolFactory is IPoolFactory, Ownable {
         pools[numPools] = _pool;
         numPools += 1;
         isValidPool[_pool] = true;
+        isValidPoolCommitter[poolCommitterAddress] = true;
         return _pool;
     }
 

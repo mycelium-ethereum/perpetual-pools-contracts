@@ -11,6 +11,7 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "./PoolSwapLibrary.sol";
+import "hardhat/console.sol";
 
 /// @title This contract is responsible for handling commitment logic
 contract PoolCommitter is IPoolCommitter, Initializable {
@@ -19,9 +20,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
     uint128 public constant SHORT_INDEX = 1;
 
     IAutoClaim public autoClaim;
-    address public leveragedPool;
     uint128 public override updateIntervalId = 1;
-    uint128 public updateIntervalId = 1;
     // Index 0 is the LONG token, index 1 is the SHORT token.
     // Fetched from the LeveragedPool when leveragedPool is set
     address[2] public tokens;
@@ -65,7 +64,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         invariantCheckContract = _invariantCheckContract;
         invariantCheck = IInvariantCheck(_invariantCheckContract);
         factory = _factory;
-        autoClaim = IAutoClaim(autoClaim);
+        autoClaim = IAutoClaim(_autoClaim);
     }
 
     /**
@@ -84,7 +83,8 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         require(_invariantCheckContract != address(0), "InvariantCheck address cannot be 0 address");
         require(_autoClaim != address(0), "AutoClaim address cannot be null");
         factory = _factory;
-        governance = IPoolFactory(factory).getOwner();
+        autoClaim = IAutoClaim(_autoClaim);
+        governance = IPoolFactory(_factory).getOwner();
         invariantCheckContract = _invariantCheckContract;
         invariantCheck = IInvariantCheck(_invariantCheckContract);
     }
@@ -183,7 +183,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         uint256 amount,
         bool fromAggregateBalance,
         bool payForClaim
-    ) external override updateBalance checkInvariantsAfterFunction {
+    ) external payable override updateBalance checkInvariantsAfterFunction {
         require(amount > 0, "Amount must not be zero");
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
         uint256 updateInterval = pool.updateInterval();
@@ -192,7 +192,8 @@ contract PoolCommitter is IPoolCommitter, Initializable {
 
         if (payForClaim) {
             // TODO I am not sure if this actually passes on the msg.value but think it does
-            autoClaim.makePaidClaimRequest(msg.sender);
+            console.log(msg.value);
+            autoClaim.makePaidClaimRequest{value: msg.value}(msg.sender);
         }
 
         uint256 appropriateUpdateIntervalId = PoolSwapLibrary.appropriateUpdateIntervalId(
@@ -241,15 +242,10 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         checkInvariantsAfterFunction
         onlyAutoClaimOrCommitter(user)
     {
-        console.log("claim start");
-        console.log(address(autoClaim));
         if (msg.sender == user && autoClaim.checkUserClaim(user, address(this))) {
             // If the committer is claiming for themself and they have a valid pending claim, clear it.
-            console.log("hi");
             autoClaim.withdrawUserClaimRequest(user);
-            console.log("succeeded");
         }
-        console.log("claim continue");
         Balance memory balance = userAggregateBalance[user];
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
         if (balance.settlementTokens > 0) {

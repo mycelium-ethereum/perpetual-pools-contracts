@@ -135,13 +135,13 @@ describe("LeveragedPool - feeTransfer", async () => {
             pool = result.pool
             poolCommitter = result.poolCommitter
             await result.token.approve(result.pool.address, 10000)
-            await result.poolCommitter.commit(LONG_MINT, 1000, false)
+            await result.poolCommitter.commit(LONG_MINT, 1000, false, false)
             await result.pool.drainPool(10)
             await result.invariantCheck.checkInvariants(result.pool.address)
         })
         it("Commit should be paused", async () => {
             await expect(
-                poolCommitter.commit(LONG_BURN, 123, false)
+                poolCommitter.commit(LONG_BURN, 123, false, false)
             ).to.revertedWith("Pool is paused")
         })
         it("Update fee address", async () => {
