@@ -5,20 +5,20 @@ import "../interfaces/IPoolFactory.sol";
 import "../interfaces/ILeveragedPool.sol";
 import "../interfaces/IPoolCommitter.sol";
 import "../interfaces/IERC20DecimalsWrapper.sol";
-import "./LeveragedPool.sol";
-import "./PoolToken.sol";
-import "./PoolKeeper.sol";
-import "./PoolCommitter.sol";
+import "../test-utilities/LeveragedPoolBalanceDrainMock.sol";
+import "../implementation/PoolToken.sol";
+import "../implementation/PoolKeeper.sol";
+import "../implementation/PoolCommitter.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
 /// @title The pool factory contract
-contract PoolFactory is IPoolFactory, Ownable {
+contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
     // #### Globals
     PoolToken public pairTokenBase;
     address public immutable pairTokenBaseAddress;
-    LeveragedPool public poolBase;
+    LeveragedPoolBalanceDrainMock public poolBase;
     address public immutable poolBaseAddress;
     IPoolKeeper public poolKeeper;
     PoolCommitter public poolCommitterBase;
@@ -51,12 +51,10 @@ contract PoolFactory is IPoolFactory, Ownable {
 
     // #### Functions
     constructor(address _feeReceiver) {
-        require(_feeReceiver != address(0), "Address cannot be null");
-
         // Deploy base contracts
         pairTokenBase = new PoolToken(DEFAULT_NUM_DECIMALS);
         pairTokenBaseAddress = address(pairTokenBase);
-        poolBase = new LeveragedPool();
+        poolBase = new LeveragedPoolBalanceDrainMock();
         poolBaseAddress = address(poolBase);
         poolCommitterBase = new PoolCommitter(address(this), address(this));
         poolCommitterBaseAddress = address(poolCommitterBase);
@@ -87,35 +85,28 @@ contract PoolFactory is IPoolFactory, Ownable {
     }
 
     /**
-     * @notice Deploy a leveraged pool and its committer/pool tokens with given parameters
-     * @param deploymentParameters Deployment parameters of the market. Some may be reconfigurable.
+     * @notice Deploy a leveraged pool with given parameters
+     * @param deploymentParameters Deployment parameters of the market. Some may be reconfigurable
      * @return Address of the created pool
-     * @dev Throws if pool keeper is null
-     * @dev Throws if deployer does not own the oracle wrapper
-     * @dev Throws if leverage amount is invalid
-     * @dev Throws if decimal precision is too high (i.e., greater than `MAX_DECIMALS`)
      */
-    function deployPool(PoolDeployment calldata deploymentParameters) external override returns (address) {
+    function deployPool(PoolDeployment calldata deploymentParameters) external override onlyGov returns (address) {
         address _poolKeeper = address(poolKeeper);
         require(_poolKeeper != address(0), "PoolKeeper not set");
-        require(
-            IOracleWrapper(deploymentParameters.oracleWrapper).deployer() == msg.sender,
-            "Deployer must be oracle wrapper owner"
-        );
 
         bytes32 uniquePoolHash = keccak256(
             abi.encode(
                 deploymentParameters.leverageAmount,
                 deploymentParameters.quoteToken,
-                deploymentParameters.oracleWrapper
+                deploymentParameters.oracleWrapper,
+                deploymentParameters.updateInterval,
+                deploymentParameters.frontRunningInterval
             )
         );
 
-        PoolCommitter poolCommitter = PoolCommitter(
-            Clones.cloneDeterministic(poolCommitterBaseAddress, uniquePoolHash)
+        address poolCommitterAddress = clonePoolCommitterBase(
+            uniquePoolHash,
+            deploymentParameters.invariantCheckContract
         );
-        poolCommitter.initialize(address(this), deploymentParameters.invariantCheckContract);
-        address poolCommitterAddress = address(poolCommitter);
 
         require(
             deploymentParameters.leverageAmount >= 1 && deploymentParameters.leverageAmount <= maxLeverage,
@@ -126,7 +117,9 @@ contract PoolFactory is IPoolFactory, Ownable {
             "Decimal precision too high"
         );
 
-        LeveragedPool pool = LeveragedPool(Clones.cloneDeterministic(poolBaseAddress, uniquePoolHash));
+        LeveragedPoolBalanceDrainMock pool = LeveragedPoolBalanceDrainMock(
+            Clones.cloneDeterministic(poolBaseAddress, uniquePoolHash)
+        );
         address _pool = address(pool);
         emit DeployPool(_pool, deploymentParameters.poolName);
 
@@ -144,7 +137,7 @@ contract PoolFactory is IPoolFactory, Ownable {
             _poolName: string(abi.encodePacked(leverage, "-", deploymentParameters.poolName)),
             _frontRunningInterval: deploymentParameters.frontRunningInterval,
             _updateInterval: deploymentParameters.updateInterval,
-            _fee: (fee * deploymentParameters.updateInterval) / (365 days),
+            _fee: fee,
             _leverageAmount: deploymentParameters.leverageAmount,
             _feeAddress: feeReceiver,
             _secondaryFeeAddress: msg.sender,
@@ -163,6 +156,14 @@ contract PoolFactory is IPoolFactory, Ownable {
         numPools += 1;
         isValidPool[_pool] = true;
         return _pool;
+    }
+
+    function clonePoolCommitterBase(bytes32 uniquePoolHash, address invariantCheckContract) internal returns (address) {
+        PoolCommitter poolCommitter = PoolCommitter(
+            Clones.cloneDeterministic(poolCommitterBaseAddress, uniquePoolHash)
+        );
+        poolCommitter.initialize(address(this), invariantCheckContract);
+        return address(poolCommitter);
     }
 
     /**
@@ -194,23 +195,11 @@ contract PoolFactory is IPoolFactory, Ownable {
         return address(pairToken);
     }
 
-    /**
-     * @notice Sets the address of the associated `PoolKeeper` contract
-     * @param _poolKeeper Address of the `PoolKeeper`
-     * @dev Throws if provided address is null
-     * @dev Only callable by the owner
-     */
     function setPoolKeeper(address _poolKeeper) external override onlyOwner {
         require(_poolKeeper != address(0), "address cannot be null");
         poolKeeper = IPoolKeeper(_poolKeeper);
     }
 
-    /**
-     * @notice Sets the maximum leverage
-     * @param newMaxLeverage Maximum leverage permitted for all pools
-     * @dev Throws if provided maximum leverage is non-positive
-     * @dev Only callable by the owner
-     */
     function setMaxLeverage(uint16 newMaxLeverage) external override onlyOwner {
         require(newMaxLeverage > 0, "Maximum leverage must be non-zero");
         maxLeverage = newMaxLeverage;
@@ -222,27 +211,18 @@ contract PoolFactory is IPoolFactory, Ownable {
     }
 
     /**
-     * @notice Set the yearly fee amount. The max yearly fee is 10%
-     * @dev This is a percentage in WAD; multiplied by 10^18 e.g. 5% is 0.05 * 10^18
-     * @param _fee The fee amount as a percentage
+     * @notice Set the fee amount. This is a percentage multiplied by 10^18.
+     *         e.g. 5% is 0.05 * 10^18
+     * @param _fee The fee amount as a percentage multiplied by 10^18
      */
     function setFee(uint256 _fee) external override onlyOwner {
-        require(_fee <= 0.1e18, "Fee cannot be >10%");
         fee = _fee;
     }
 
-    /**
-     * @notice Returns the address that owns this contract
-     * @return Address of the owner
-     * @dev Required due to the `IPoolFactory` interface
-     */
     function getOwner() external view override returns (address) {
         return owner();
     }
 
-    /**
-     * @notice Ensures that the caller is the designated governance address
-     */
     modifier onlyGov() {
         require(msg.sender == owner(), "msg.sender not governance");
         _;

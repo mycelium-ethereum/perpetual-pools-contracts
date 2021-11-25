@@ -23,6 +23,7 @@ import {
     createCommit,
     CommitEventArgs,
     timeout,
+    deployMockPool,
 } from "../utilities"
 import { BigNumber } from "ethers"
 chai.use(chaiAsPromised)
@@ -38,7 +39,7 @@ const frontRunningInterval = 100 // seconds
 const fee = ethers.utils.parseEther("0.1")
 const leverage = 1
 
-describe("LeveragedPool - feeTransfer", () => {
+describe("LeveragedPool - feeTransfer", async () => {
     let poolCommitter: PoolCommitter
     let token: TestToken
     let shortToken: ERC20
@@ -122,7 +123,21 @@ describe("LeveragedPool - feeTransfer", () => {
 
     context("Test Paused Pools cannot transfer tokens", async () => {
         beforeEach(async () => {
-            await pool.pause()
+            await timeout(updateInterval * 1000)
+            const result = await deployMockPool(
+                POOL_CODE,
+                frontRunningInterval,
+                updateInterval,
+                leverage,
+                feeAddress,
+                fee
+            )
+            pool = result.pool
+            poolCommitter = result.poolCommitter
+            await result.token.approve(result.pool.address, 10000)
+            await result.poolCommitter.commit(LONG_MINT, 1000, false)
+            await result.pool.drainPool(10)
+            await result.invariantCheck.checkInvariants(result.pool.address)
         })
         it("Commit should be paused", async () => {
             await expect(
