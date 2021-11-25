@@ -12,6 +12,7 @@ import {
     ChainlinkOracleWrapper,
     PoolCommitter__factory,
     PoolCommitter,
+    InvariantCheck,
 } from "../../types"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import {
@@ -185,7 +186,10 @@ describe("LeveragedPool - initialize", () => {
 
             const poolCommitter = await (
                 await poolCommitterFactory.deploy(
-                    setupContracts.factory.address
+                    setupContracts.factory.address,
+                    setupContracts.invariantCheck.address,
+                    0,
+                    0
                 )
             ).deployed()
 
@@ -224,6 +228,8 @@ describe("LeveragedPool - initialize", () => {
                     _feeAddress: feeAddress,
                     _secondaryFeeAddress: ethers.constants.AddressZero,
                     _quoteToken: quoteToken,
+                    _invariantCheckContract:
+                        setupContracts.invariantCheck.address,
                 })
             ).wait()
             const event: Event | undefined = receipt?.events?.find(
@@ -241,6 +247,7 @@ describe("LeveragedPool - initialize", () => {
         let leveragedPool: LeveragedPool
         let testFactoryActual: TestPoolFactory
         let poolCommitter: PoolCommitter
+        let invariantCheck: InvariantCheck
         let long: Contract
         let short: Contract
         beforeEach(async () => {
@@ -256,6 +263,7 @@ describe("LeveragedPool - initialize", () => {
             settlementEthOracle = setupContracts.settlementEthOracle
             quoteToken = setupContracts.token.address
             poolCommitter = setupContracts.poolCommitter
+            invariantCheck = setupContracts.invariantCheck
             long = setupContracts.longToken
             short = setupContracts.shortToken
 
@@ -299,6 +307,7 @@ describe("LeveragedPool - initialize", () => {
                 _feeAddress: feeAddress,
                 _secondaryFeeAddress: ethers.constants.AddressZero,
                 _quoteToken: quoteToken,
+                _invariantCheckContract: invariantCheck.address,
             })
             await expect(
                 leveragedPool.initialize({
@@ -317,6 +326,7 @@ describe("LeveragedPool - initialize", () => {
                     _feeAddress: feeAddress,
                     _secondaryFeeAddress: ethers.constants.AddressZero,
                     _quoteToken: quoteToken,
+                    _invariantCheckContract: invariantCheck.address,
                 })
             ).to.rejectedWith(Error)
         })
@@ -338,6 +348,7 @@ describe("LeveragedPool - initialize", () => {
                     _feeAddress: feeAddress,
                     _secondaryFeeAddress: ethers.constants.AddressZero,
                     _quoteToken: ethers.constants.AddressZero,
+                    _invariantCheckContract: invariantCheck.address,
                 })
             ).to.rejectedWith(Error)
         })
@@ -359,6 +370,7 @@ describe("LeveragedPool - initialize", () => {
                     _feeAddress: feeAddress,
                     _secondaryFeeAddress: ethers.constants.AddressZero,
                     _quoteToken: quoteToken,
+                    _invariantCheckContract: invariantCheck.address,
                 })
             ).to.rejectedWith(Error)
         })
@@ -380,6 +392,7 @@ describe("LeveragedPool - initialize", () => {
                     _feeAddress: ethers.constants.AddressZero,
                     _secondaryFeeAddress: ethers.constants.AddressZero,
                     _quoteToken: quoteToken,
+                    _invariantCheckContract: invariantCheck.address,
                 })
             ).to.rejectedWith(Error)
         })
@@ -410,6 +423,7 @@ describe("LeveragedPool - initialize", () => {
                 _feeAddress: feeAddress,
                 _secondaryFeeAddress: ethers.constants.AddressZero,
                 _quoteToken: quoteToken,
+                _invariantCheckContract: invariantCheck.address,
             })
             await leveragedPool.initialize({
                 _owner: signers[0].address,
@@ -427,6 +441,7 @@ describe("LeveragedPool - initialize", () => {
                 _feeAddress: feeAddress,
                 _secondaryFeeAddress: ethers.constants.AddressZero,
                 _quoteToken: quoteToken,
+                _invariantCheckContract: invariantCheck.address,
             })
 
             expect(await secondPool.poolName()).to.eq(POOL_CODE_2)

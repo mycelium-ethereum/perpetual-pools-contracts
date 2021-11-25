@@ -5,20 +5,20 @@ import "../interfaces/IPoolFactory.sol";
 import "../interfaces/ILeveragedPool.sol";
 import "../interfaces/IPoolCommitter.sol";
 import "../interfaces/IERC20DecimalsWrapper.sol";
-import "./LeveragedPool.sol";
-import "./PoolToken.sol";
-import "./PoolKeeper.sol";
-import "./PoolCommitter.sol";
+import "../test-utilities/LeveragedPoolBalanceDrainMock.sol";
+import "../implementation/PoolToken.sol";
+import "../implementation/PoolKeeper.sol";
+import "../implementation/PoolCommitter.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
 /// @title The pool factory contract
-contract PoolFactory is IPoolFactory, Ownable {
+contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
     // #### Globals
     PoolToken public pairTokenBase;
     address public immutable pairTokenBaseAddress;
-    LeveragedPool public poolBase;
+    LeveragedPoolBalanceDrainMock public poolBase;
     address public immutable poolBaseAddress;
     IPoolKeeper public poolKeeper;
     PoolCommitter public poolCommitterBase;
@@ -59,7 +59,7 @@ contract PoolFactory is IPoolFactory, Ownable {
         // Deploy base contracts
         pairTokenBase = new PoolToken(DEFAULT_NUM_DECIMALS);
         pairTokenBaseAddress = address(pairTokenBase);
-        poolBase = new LeveragedPool();
+        poolBase = new LeveragedPoolBalanceDrainMock();
         poolBaseAddress = address(poolBase);
         poolCommitterBase = new PoolCommitter(address(this), address(this), 0, 0);
         poolCommitterBaseAddress = address(poolCommitterBase);
@@ -129,7 +129,9 @@ contract PoolFactory is IPoolFactory, Ownable {
             "Decimal precision too high"
         );
 
-        LeveragedPool pool = LeveragedPool(Clones.cloneDeterministic(poolBaseAddress, uniquePoolHash));
+        LeveragedPoolBalanceDrainMock pool = LeveragedPoolBalanceDrainMock(
+            Clones.cloneDeterministic(poolBaseAddress, uniquePoolHash)
+        );
         address _pool = address(pool);
         emit DeployPool(_pool, deploymentParameters.poolName);
 
