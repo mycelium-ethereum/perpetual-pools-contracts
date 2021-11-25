@@ -9,6 +9,7 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "./PoolSwapLibrary.sol";
+import "hardhat/console.sol";
 
 /// @title This contract is responsible for handling commitment logic
 contract PoolCommitter is IPoolCommitter, Initializable {
@@ -50,7 +51,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         require(_factory != address(0), "Factory address cannot be 0 address");
         require(_autoClaim != address(0), "AutoClaim address cannot be null");
         factory = _factory;
-        autoClaim = IAutoClaim(autoClaim);
+        autoClaim = IAutoClaim(_autoClaim);
     }
 
     /**
@@ -195,10 +196,15 @@ contract PoolCommitter is IPoolCommitter, Initializable {
      * @notice Claim user's balance. This can be done either by the user themself or by somebody else on their behalf.
      */
     function claim(address user) external override updateBalance onlyAutoClaimOrCommitter(user) {
+        console.log("claim start");
+        console.log(address(autoClaim));
         if (msg.sender == user && autoClaim.checkUserClaim(user, address(this))) {
             // If the committer is claiming for themself and they have a valid pending claim, clear it.
+            console.log("hi");
             autoClaim.withdrawUserClaimRequest(user);
+            console.log("succeeded");
         }
+        console.log("claim continue");
         Balance memory balance = userAggregateBalance[user];
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
         if (balance.settlementTokens > 0) {

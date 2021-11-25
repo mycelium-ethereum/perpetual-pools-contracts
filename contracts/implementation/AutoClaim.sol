@@ -43,7 +43,7 @@ contract AutoClaim is IAutoClaim, Initializable {
             if (requestUpdateIntervalId < poolCommitter.updateIntervalId()) {
                 // If so, this person may as well claim for themself (if allowed). They have signified their want of claim, after all.
                 // Note that this function is only called by PoolCommitter when a user `commits` and therefore `user` will always equal the original `msg.sender`.
-                // send(msg.sender, request.reward);
+                payable(msg.sender).transfer(claimRequests[user][msg.sender].reward);
                 delete claimRequests[user][msg.sender];
                 poolCommitter.claim(user);
             } else {
@@ -73,7 +73,7 @@ contract AutoClaim is IAutoClaim, Initializable {
         // Check if a previous claim request has been made, and if it is claimable.
         if (checkClaim(request, currentUpdateIntervalId)) {
             // Send the reward to msg.sender.
-            // send(msg.sender, request.reward);
+            payable(msg.sender).transfer(claimRequests[user][poolCommitterAddress].reward);
             // delete the ClaimRequest from storage
             delete claimRequests[user][poolCommitterAddress];
             // execute the claim
@@ -120,7 +120,7 @@ contract AutoClaim is IAutoClaim, Initializable {
      */
     function withdrawClaimRequest(address poolCommitter) external override {
         if (checkUserClaim(msg.sender, poolCommitter)) {
-            // send(claimRequests[msg.sender][poolCommitter].reward, msg.sender);
+            payable(msg.sender).transfer(claimRequests[msg.sender][poolCommitter].reward);
             delete claimRequests[msg.sender][poolCommitter];
         }
     }
@@ -130,7 +130,7 @@ contract AutoClaim is IAutoClaim, Initializable {
      * @param user The user who will have their claim request withdrawn.
      */
     function withdrawUserClaimRequest(address user) public override onlyPoolCommitter {
-        // send(claimRequests[user][poolCommitter].reward, msg.sender);
+        payable(user).transfer(claimRequests[user][msg.sender].reward);
         delete claimRequests[user][msg.sender];
     }
 
