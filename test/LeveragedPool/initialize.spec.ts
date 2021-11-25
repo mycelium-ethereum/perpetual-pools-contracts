@@ -226,12 +226,9 @@ describe("LeveragedPool - initialize", () => {
                     _feeAddress: feeAddress,
                     _secondaryFeeAddress: ethers.constants.AddressZero,
                     _quoteToken: quoteToken,
-<<<<<<< HEAD
                     _secondaryFeeSplitPercent: 10,
-=======
                     _invariantCheckContract:
                         setupContracts.invariantCheck.address,
->>>>>>> pools-v2
                 })
             ).wait()
             const event: Event | undefined = receipt?.events?.find(
@@ -309,11 +306,8 @@ describe("LeveragedPool - initialize", () => {
                 _feeAddress: feeAddress,
                 _secondaryFeeAddress: ethers.constants.AddressZero,
                 _quoteToken: quoteToken,
-<<<<<<< HEAD
                 _secondaryFeeSplitPercent: 10,
-=======
                 _invariantCheckContract: invariantCheck.address,
->>>>>>> pools-v2
             })
             await expect(
                 leveragedPool.initialize({
@@ -332,11 +326,8 @@ describe("LeveragedPool - initialize", () => {
                     _feeAddress: feeAddress,
                     _secondaryFeeAddress: ethers.constants.AddressZero,
                     _quoteToken: quoteToken,
-<<<<<<< HEAD
                     _secondaryFeeSplitPercent: 10,
-=======
                     _invariantCheckContract: invariantCheck.address,
->>>>>>> pools-v2
                 })
             ).to.rejectedWith(Error)
         })
@@ -358,11 +349,8 @@ describe("LeveragedPool - initialize", () => {
                     _feeAddress: feeAddress,
                     _secondaryFeeAddress: ethers.constants.AddressZero,
                     _quoteToken: ethers.constants.AddressZero,
-<<<<<<< HEAD
                     _secondaryFeeSplitPercent: 10,
-=======
                     _invariantCheckContract: invariantCheck.address,
->>>>>>> pools-v2
                 })
             ).to.rejectedWith(Error)
         })
@@ -384,11 +372,8 @@ describe("LeveragedPool - initialize", () => {
                     _feeAddress: feeAddress,
                     _secondaryFeeAddress: ethers.constants.AddressZero,
                     _quoteToken: quoteToken,
-<<<<<<< HEAD
                     _secondaryFeeSplitPercent: 10,
-=======
                     _invariantCheckContract: invariantCheck.address,
->>>>>>> pools-v2
                 })
             ).to.rejectedWith(Error)
         })

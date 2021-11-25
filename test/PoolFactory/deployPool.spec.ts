@@ -300,6 +300,7 @@ describe("PoolFactory.deployPool", () => {
                 quoteToken: token.address,
                 oracleWrapper: oracleWrapper.address,
                 settlementEthOracle: settlementEthOracle.address,
+                invariantCheckContract: invariantCheck.address
             }
 
             const poolNumber = (await factory.numPools()).toNumber()
@@ -334,6 +335,7 @@ describe("PoolFactory.deployPool", () => {
                 quoteToken: token.address,
                 oracleWrapper: oracleWrapper.address,
                 settlementEthOracle: settlementEthOracle.address,
+                invariantCheckContract: invariantCheck.address
             }
 
             const poolNumber = (await factory.numPools()).toNumber()
