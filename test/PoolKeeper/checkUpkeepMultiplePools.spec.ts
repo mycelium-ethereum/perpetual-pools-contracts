@@ -17,6 +17,7 @@ import {
     PoolSwapLibrary__factory,
     TestToken__factory,
     PoolFactory,
+    InvariantCheck__factory,
 } from "../../types"
 
 chai.use(chaiAsPromised)
@@ -106,6 +107,13 @@ const setupHook = async () => {
 
     await factory.connect(signers[0]).setPoolKeeper(poolKeeper.address)
 
+    const invariantCheckFactory = (await ethers.getContractFactory(
+        "InvariantCheck",
+        signers[0]
+    )) as InvariantCheck__factory
+
+    const invariantCheck = await invariantCheckFactory.deploy(factory.address)
+
     // Create pool
     const deploymentData = {
         poolName: POOL_CODE,
@@ -115,6 +123,7 @@ const setupHook = async () => {
         quoteToken: quoteToken,
         oracleWrapper: oracleWrapper.address,
         settlementEthOracle: settlementEthOracle.address,
+        invariantCheckContract: invariantCheck.address,
     }
     await factory.deployPool(deploymentData)
 
@@ -126,6 +135,7 @@ const setupHook = async () => {
         quoteToken: quoteToken,
         oracleWrapper: oracleWrapper.address,
         settlementEthOracle: settlementEthOracle.address,
+        invariantCheckContract: invariantCheck.address,
     }
     await factory.deployPool(deploymentData2)
 }

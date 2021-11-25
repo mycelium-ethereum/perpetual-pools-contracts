@@ -8,6 +8,7 @@ import {
     PoolKeeper,
     ChainlinkOracleWrapper,
     PoolToken__factory,
+    InvariantCheck,
     TestToken__factory,
     TestClones,
     TestClones__factory,
@@ -41,6 +42,7 @@ describe("PoolFactory.deployPool", () => {
     let poolKeeper: PoolKeeper
     let oracleWrapper: ChainlinkOracleWrapper
     let settlementEthOracle: ChainlinkOracleWrapper
+    let invariantCheck: InvariantCheck
     let pool: LeveragedPool
     let token: TestToken
     let signers: Signer[]
@@ -64,6 +66,7 @@ describe("PoolFactory.deployPool", () => {
         settlementEthOracle = contracts.settlementEthOracle
         pool = contracts.pool
         token = contracts.token
+        invariantCheck = contracts.invariantCheck
     })
 
     context(
@@ -79,6 +82,7 @@ describe("PoolFactory.deployPool", () => {
                     quoteToken: token.address,
                     oracleWrapper: oracleWrapper.address,
                     settlementEthOracle: settlementEthOracle.address,
+                    invariantCheckContract: invariantCheck.address,
                 }
 
                 await expect(
@@ -110,6 +114,7 @@ describe("PoolFactory.deployPool", () => {
                 _secondaryFeeAddress: ethers.constants.AddressZero,
                 _quoteToken: token.address,
                 _secondaryFeeSplitPercent: 10,
+                _invariantCheckContract: invariantCheck.address,
             }
             await expect(pool.initialize(initialization)).to.be.rejectedWith(
                 Error
@@ -124,6 +129,7 @@ describe("PoolFactory.deployPool", () => {
                 quoteToken: token.address,
                 oracleWrapper: oracleWrapper.address,
                 settlementEthOracle: settlementEthOracle.address,
+                invariantCheckContract: invariantCheck.address,
             }
             await expect(factory.deployPool(deploymentData)).to.not.reverted
             deploymentData.updateInterval = 60
@@ -154,6 +160,7 @@ describe("PoolFactory.deployPool", () => {
                 quoteToken: token.address,
                 oracleWrapper: oracleWrapper.address,
                 settlementEthOracle: settlementEthOracle.address,
+                invariantCheckContract: invariantCheck.address,
             }
             const secondPool = getEventArgs(
                 await (await factory.deployPool(deploymentData)).wait(),
@@ -178,6 +185,7 @@ describe("PoolFactory.deployPool", () => {
                 quoteToken: token.address,
                 oracleWrapper: oracleWrapper.address,
                 settlementEthOracle: settlementEthOracle.address,
+                invariantCheckContract: invariantCheck.address,
             }
 
             await expect(factory.deployPool(deploymentData)).to.be.revertedWith(
@@ -193,6 +201,7 @@ describe("PoolFactory.deployPool", () => {
                 quoteToken: generateRandomAddress(),
                 oracleWrapper: oracleWrapper.address,
                 settlementEthOracle: settlementEthOracle.address,
+                invariantCheckContract: invariantCheck.address,
             }
 
             await expect(factory.deployPool(deploymentData)).to.be.revertedWith(
@@ -216,6 +225,7 @@ describe("PoolFactory.deployPool", () => {
                 quoteToken: token.address,
                 oracleWrapper: oracleWrapper.address,
                 settlementEthOracle: settlementEthOracle.address,
+                invariantCheckContract: invariantCheck.address,
             }
 
             await expect(factory.deployPool(deploymentData)).to.be.revertedWith(
