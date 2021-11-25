@@ -23,15 +23,15 @@ following questions:
 All tests -- regardless of their type (e.g., unit, integration, etc.) -- must
 reside under the `test` directory.
 
-### One-File-One-Contract ###
+### One-Directory-One-Contract ###
 
 All unit tests should be arranged such that all tests for a given module are in
-the same file. The most obvious choice for what constitutes a "module" is a
+the same directory. The most obvious choice for what constitutes a "module" is a
 smart contract.
 
 For example, if the (fictional) contract `PermissionedDeployer` is being added
-to the codebase, its unit tests should reside in a file called
-`PermissionedDeployer.spec.ts` under the `test` directory.
+to the codebase, its unit tests should reside in the `test/PermissionedDeployer`
+directory.
 
 ## Test Layout ##
 
