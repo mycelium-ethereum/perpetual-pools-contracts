@@ -146,9 +146,9 @@ describe("LeveragedPool - executeAllCommitments", async () => {
             await result.poolCommitter.commit(LONG_MINT, 1000, false)
             await result.pool.drainPool(10)
             await result.invariantCheck.checkInvariants(result.pool.address)
-            await expect(result.pool.poolUpkeep(lastPrice, lastPrice)).to.revertedWith(
-                "Pool is paused"
-            )
+            await expect(
+                result.pool.poolUpkeep(lastPrice, lastPrice)
+            ).to.revertedWith("Pool is paused")
         })
     })
     /*
