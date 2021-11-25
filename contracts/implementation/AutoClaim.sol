@@ -13,7 +13,8 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 /// @dev A question I had to ask was "What happens if one requests a second claim before one's pending request from a previous update interval one gets executed on?".
 ///      My solution to this was to have the committer instantly claim for themself. They have signified their desire to claim their tokens, after all.
 contract AutoClaim is IAutoClaim, Initializable {
-    mapping(address => ClaimRequest) claimRequests;
+    // User => PoolCommitter address => Claim Request
+    mapping(address => mapping(address => ClaimRequest)) claimRequests;
     IPoolFactory internal poolFactory;
 
     constructor(address _poolFactoryAddress) {
@@ -32,10 +33,10 @@ contract AutoClaim is IAutoClaim, Initializable {
      * @param user The user who wants to autoclaim.
      */
     function makePaidClaimRequest(address user) external payable override onlyPoolCommitter {
-        ClaimRequest storage request = claimRequests[user];
+        ClaimRequest storage request = claimRequests[user][msg.sender];
         IPoolCommitter poolCommitter = IPoolCommitter(msg.sender);
 
-        uint256 requestUpdateIntervalId = request.updateIntervalId;
+        uint128 requestUpdateIntervalId = request.updateIntervalId;
         // Check if a previous claim request is pending...
         if (requestUpdateIntervalId > 0) {
             // and if it is claimable (the current update interval is greater than the one where the request was made).
@@ -43,47 +44,104 @@ contract AutoClaim is IAutoClaim, Initializable {
                 // If so, this person may as well claim for themself (if allowed). They have signified their want of claim, after all.
                 // Note that this function is only called by PoolCommitter when a user `commits` and therefore `user` will always equal the original `msg.sender`.
                 // send(msg.sender, request.reward);
-                delete claimRequests[user];
+                delete claimRequests[user][msg.sender];
                 poolCommitter.claim(user);
             } else {
                 // If the claim request is pending but not yet valid (it was made in the current commit), we want to add to the value.
                 // Note that in context, the user *usually* won't need or want to increment `ClaimRequest.reward` more than once because the first call to `payForClaim` should suffice.
                 request.reward += msg.value;
+                emit PaidClaimRequestUpdate(user, msg.sender, msg.value);
             }
         } else {
             // If no previous claim requests are pending, we need to make a new one.
-            request.updateIntervalId = poolCommitter.updateIntervalId();
+            requestUpdateIntervalId = poolCommitter.updateIntervalId();
+            request.updateIntervalId = requestUpdateIntervalId;
             request.reward = msg.value;
+            emit PaidClaimRequestUpdate(user, msg.sender, msg.value);
         }
     }
 
     /**
      * @notice Claim on the behalf of a user who has requests to have their commit automatically claimed by a keeper.
      * @param user The user who requested an autoclaim.
+     * @param poolCommitterAddress The PoolCommitter address within which the user's claim will be executed
      */
-    function paidClaim(address user) public override {
-        ClaimRequest memory request = claimRequests[user];
-        IPoolCommitter poolCommitter = IPoolCommitter(msg.sender);
+    function paidClaim(address user, address poolCommitterAddress) public override {
+        ClaimRequest memory request = claimRequests[user][poolCommitterAddress];
+        IPoolCommitter poolCommitter = IPoolCommitter(poolCommitterAddress);
         uint256 currentUpdateIntervalId = poolCommitter.updateIntervalId();
         // Check if a previous claim request has been made, and if it is claimable.
         if (checkClaim(request, currentUpdateIntervalId)) {
             // Send the reward to msg.sender.
             // send(msg.sender, request.reward);
             // delete the ClaimRequest from storage
-            delete claimRequests[user];
+            delete claimRequests[user][poolCommitterAddress];
             // execute the claim
             poolCommitter.claim(user);
         }
     }
 
     /**
-     * @notice Call `paidClaim` for multiple users.
+     * @notice Call `paidClaim` for multiple users, across multiple PoolCommitters.
      * @param users All users to execute claims for.
+     * @param poolCommitterAddresses The PoolCommitter addresses within which you would like to claim for the respective user.
+     * @dev The nth index in poolCommitterAddresses should be the PoolCommitter where the nth address in user requested an auto claim.
      */
-    function multiPaidClaim(address[] calldata users) external override {
+    function multiPaidClaimMultiplePoolCommitters(address[] calldata users, address[] calldata poolCommitterAddresses)
+        external
+        override
+    {
+        require(users.length == poolCommitterAddresses.length, "Supplied arrays must be same length");
         for (uint256 i = 0; i < users.length; i++) {
-            paidClaim(users[i]);
+            paidClaim(users[i], poolCommitterAddresses[i]);
         }
+    }
+
+    /**
+     * @notice Call `paidClaim` for multiple users, in a single PoolCommitter.
+     * @param users All users to execute claims for.
+     * @param poolCommitterAddress The PoolCommitter address within which you would like to claim for the respective user
+     * @dev The nth index in poolCommitterAddresses should be the PoolCommitter where the nth address in user requested an auto claim
+     */
+    function multiPaidClaimSinglePoolCommitter(address[] calldata users, address poolCommitterAddress)
+        external
+        override
+    {
+        for (uint256 i = 0; i < users.length; i++) {
+            paidClaim(users[i], poolCommitterAddress);
+        }
+    }
+
+    // todo add ufnction for msg.sender to make their own autoclaim request outside of commitment
+
+    /**
+     * @notice If a user's claim request never gets executed (due to not high enough of a reward), or they change their minds, enable them to withdraw their request.
+     * @param poolCommitter The PoolCommitter for which the user's commit claim is to be withdrawn.
+     */
+    function withdrawClaimRequest(address poolCommitter) external override {
+        if (checkUserClaim(msg.sender, poolCommitter)) {
+            // send(claimRequests[msg.sender][poolCommitter].reward, msg.sender);
+            delete claimRequests[msg.sender][poolCommitter];
+        }
+    }
+
+    /**
+     * @notice When the user claims themself through poolCommitter, you want the
+     * @param user The user who will have their claim request withdrawn.
+     */
+    function withdrawUserClaimRequest(address user) public override onlyPoolCommitter {
+        // send(claimRequests[user][poolCommitter].reward, msg.sender);
+        delete claimRequests[user][msg.sender];
+    }
+
+    /**
+     * @notice Check the validity of a user's claim request for a given pool committer.
+     * @return true if the claim request can be executed.
+     * @param user The user whose claim request will be checked.
+     * @param poolCommitter The pool committer in which to look for a user's claim request.
+     */
+    function checkUserClaim(address user, address poolCommitter) public view override returns (bool) {
+        return checkClaim(claimRequests[user][poolCommitter], IPoolCommitter(poolCommitter).updateIntervalId());
     }
 
     /**

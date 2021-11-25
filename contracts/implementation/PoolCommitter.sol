@@ -194,7 +194,11 @@ contract PoolCommitter is IPoolCommitter, Initializable {
     /**
      * @notice Claim user's balance. This can be done either by the user themself or by somebody else on their behalf.
      */
-    function claim(address user) external override updateBalance {
+    function claim(address user) external override updateBalance onlyAutoClaimOrCommitter(user) {
+        if (msg.sender == user && autoClaim.checkUserClaim(user, address(this))) {
+            // If the committer is claiming for themself and they have a valid pending claim, clear it.
+            autoClaim.withdrawUserClaimRequest(user);
+        }
         Balance memory balance = userAggregateBalance[user];
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
         if (balance.settlementTokens > 0) {
@@ -495,6 +499,11 @@ contract PoolCommitter is IPoolCommitter, Initializable {
 
     modifier onlyPool() {
         require(msg.sender == leveragedPool, "msg.sender not leveragedPool");
+        _;
+    }
+
+    modifier onlyAutoClaimOrCommitter(address user) {
+        require(msg.sender == user || msg.sender == address(autoClaim), "msg.sender not committer or AutoClaim");
         _;
     }
 }
