@@ -7,11 +7,6 @@ many ways to describe the quality of a test suite (both quantitative and
 qualitative). In addition to these properties, a high quality test suite still
 necessitates clear and coherent organisation.
 
-Whilst the test suite for Perpetual Pools exhibits excellent coverage metrics
-and captures the intended behaviour of the system rather well, it is currently
-organised very poorly (inconsistent naming, inconsistent file structure,
-inconsistent use of testing directives, etc.).
-
 This document aims to clarify how we conduct testing in the Perpetual Pools
 system and act as a procedural guide for how to write additional tests when
 contributing to the codebase. Specifically, this document aims to address the
