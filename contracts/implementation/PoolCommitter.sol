@@ -58,6 +58,9 @@ contract PoolCommitter is IPoolCommitter, Initializable {
      * @param _mintingFee The percentage that is taken from each mint, given as a decimal * 10 ^ 18
      * @param _burningFee The percentage that is taken from each burn, given as a decimal * 10 ^ 18
      * @dev Throws if factory address is null
+     * @dev Only callable by the associated initialiser address
+     * @dev Throws if minting fee is over 100%
+     * @dev Throws if burning fee is over 100%
      */
     function initialize(
         address _factory,

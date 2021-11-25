@@ -226,6 +226,7 @@ contract PoolFactory is IPoolFactory, Ownable {
      * @notice Set the yearly fee amount. The max yearly fee is 10%
      * @dev This is a percentage in WAD; multiplied by 10^18 e.g. 5% is 0.05 * 10^18
      * @param _fee The fee amount as a percentage
+     * @dev Throws if fee is greater than 10%
      */
     function setFee(uint256 _fee) external override onlyOwner {
         require(_fee <= 0.1e18, "Fee cannot be > 10%");
@@ -237,6 +238,9 @@ contract PoolFactory is IPoolFactory, Ownable {
      * @dev This is a percentage in WAD; multiplied by 10^18 e.g. 5% is 0.05 * 10^18
      * @param _mintingFee The fee amount for mints
      * @param _burningFee The fee amount for burns
+     * @dev Only callable by the owner of this contract
+     * @dev Throws if minting fee is greater than 10%
+     * @dev Throws if burning fee is greater than 10%
      */
     function setMintAndBurnFee(uint256 _mintingFee, uint256 _burningFee) external override onlyOwner {
         require(_mintingFee <= 0.1e18, "Fee cannot be > 10%");
