@@ -23,6 +23,7 @@ import {
     createCommit,
     CommitEventArgs,
     timeout,
+    deployMockPool,
 } from "../utilities"
 import { BigNumber } from "ethers"
 chai.use(chaiAsPromised)
@@ -38,7 +39,7 @@ const frontRunningInterval = 100 // seconds
 const fee = ethers.utils.parseEther("0.1")
 const leverage = 1
 
-describe("LeveragedPool - feeTransfer", () => {
+describe("LeveragedPool - feeTransfer", async () => {
     let poolCommitter: PoolCommitter
     let token: TestToken
     let shortToken: ERC20
@@ -122,38 +123,46 @@ describe("LeveragedPool - feeTransfer", () => {
 
     context.skip("Test Paused Pools cannot transfer tokens", async () => {
         beforeEach(async () => {
-            await pool.pause()
-        })
-        it("Quote token transfer", async () => {
-            expect(pool.quoteTokenTransfer(feeAddress, 123)).to.revertedWith(
-                "Pool is paused"
+            await timeout(updateInterval * 1000)
+            const result = await deployMockPool(
+                POOL_CODE,
+                frontRunningInterval,
+                updateInterval,
+                leverage,
+                feeAddress,
+                fee
             )
+            pool = result.pool
+            poolCommitter = result.poolCommitter
+            await result.token.approve(result.pool.address, 10000)
+            await result.poolCommitter.commit(LONG_MINT, 1000, false)
+            await result.pool.drainPool(10)
+            await result.invariantCheck.checkInvariants(result.pool.address)
         })
-        it("Pool token transfer", async () => {
-            expect(
-                pool.poolTokenTransfer(true, feeAddress, 123)
-            ).to.revertedWith("Pool is paused")
-        })
-        it("Quote token transfer From", async () => {
-            expect(
-                pool.quoteTokenTransferFrom(feeAddress, pool.address, 123)
+        it("Commit should be paused", async () => {
+            await expect(
+                poolCommitter.commit(LONG_BURN, 123, false)
             ).to.revertedWith("Pool is paused")
         })
         it("Update fee address", async () => {
-            expect(pool.updateFeeAddress(secondFeeAddress)).to.revertedWith(
+            await expect(
+                pool.updateFeeAddress(secondFeeAddress)
+            ).to.revertedWith("Pool is paused")
+        })
+        it("Set keeper", async () => {
+            await expect(pool.setKeeper(feeAddress)).to.revertedWith(
                 "Pool is paused"
             )
         })
-        it("Set keeper", async () => {
-            expect(pool.setKeeper(feeAddress)).to.revertedWith("Pool is paused")
-        })
         it("Transfer governnance", async () => {
-            expect(pool.transferGovernance(feeAddress)).to.revertedWith(
+            await expect(pool.transferGovernance(feeAddress)).to.revertedWith(
                 "Pool is paused"
             )
         })
         it("Claim governnance", async () => {
-            expect(pool.claimGovernance()).to.revertedWith("Pool is paused")
+            await expect(pool.claimGovernance()).to.revertedWith(
+                "Pool is paused"
+            )
         })
     })
 })

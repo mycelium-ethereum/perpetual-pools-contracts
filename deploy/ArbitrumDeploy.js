@@ -17,12 +17,20 @@ module.exports = async (hre) => {
     const MainnetBtcUsdOracle = {
         address: "0x6ce185860a4963106506C203335A2910413708e9",
     }
+
+    const KovanEurUsdOracle = {
+        address: "0x0c15Ab9A0DB086e062194c273CC79f41597Bbf13",
+    }
+
+    const KovanEthUsdOracle = {
+        address: "0x9326BFA02ADD2366b30bacB125260Af641031331",
+    }
+
     const multisigAddress = "0x0f79e82aE88E1318B8cfC8b4A205fE2F982B928A"
 
-    const token = { address: "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8" }
+    // const token = { address: "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8" }
 
     /* deploy testToken */
-    /*
     const token = await deploy("TestToken", {
         args: ["Test Tracer USDC", "TUSDC"],
         from: deployer,
@@ -42,14 +50,12 @@ module.exports = async (hre) => {
         accounts[0].address
     )
 
-    */
-
     // deploy ChainlinkOracleWrapper
-    const oracleWrapper = await deploy("BTCChainlinkOracleWrapper", {
+    const oracleWrapper = await deploy("EurUsdOracleWrapper", {
         from: deployer,
         log: true,
         contract: "ChainlinkOracleWrapper",
-        args: [MainnetBtcUsdOracle.address],
+        args: [KovanEurUsdOracle.address],
     })
 
     // const oracleWrapper = { address: "0x57A81f7B72D2703ae7c533F3FB1CdEFa6B8f25F7" }
@@ -60,7 +66,7 @@ module.exports = async (hre) => {
         from: deployer,
         log: true,
         contract: "ChainlinkOracleWrapper",
-        args: [MainnetEthUsdOracle.address],
+        args: [KovanEthUsdOracle.address],
     })
 
     /* Commented out, because we want to wait till multisig governs pools before doing it for the rest of them
@@ -155,7 +161,7 @@ module.exports = async (hre) => {
     // deploy LeveragePool
     // BTC-USD 1x
     const deploymentData1 = {
-        poolName: BTC_POOL_CODE,
+        poolName: EUR_POOL_CODE,
         frontRunningInterval: frontRunningInterval,
         updateInterval: updateInterval,
         leverageAmount: oneLeverage,
@@ -168,7 +174,7 @@ module.exports = async (hre) => {
 
     // BTC-USD 3x
     const deploymentData2 = {
-        poolName: BTC_POOL_CODE,
+        poolName: EUR_POOL_CODE,
         frontRunningInterval: frontRunningInterval,
         updateInterval: updateInterval,
         leverageAmount: threeLeverage,

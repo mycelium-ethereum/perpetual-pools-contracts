@@ -9,7 +9,7 @@ import { deployPoolAndTokenContracts } from "../utilities"
 chai.use(chaiAsPromised)
 const { expect } = chai
 
-describe("LeveragedPool - setters", () => {
+describe("LeveragedPool - setters", async () => {
     let pool: LeveragedPool
     let signers: SignerWithAddress[]
     let keeper: PoolKeeper

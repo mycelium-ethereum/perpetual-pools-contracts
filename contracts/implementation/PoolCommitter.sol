@@ -5,11 +5,12 @@ import "../interfaces/IPoolCommitter.sol";
 import "../interfaces/ILeveragedPool.sol";
 import "../interfaces/IPoolFactory.sol";
 import "../interfaces/IAutoClaim.sol";
+import "../interfaces/IPausable.sol";
+import "../interfaces/IInvariantCheck.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "./PoolSwapLibrary.sol";
-import "hardhat/console.sol";
 
 /// @title This contract is responsible for handling commitment logic
 contract PoolCommitter is IPoolCommitter, Initializable {
@@ -20,6 +21,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
     IAutoClaim public autoClaim;
     address public leveragedPool;
     uint128 public override updateIntervalId = 1;
+    uint128 public updateIntervalId = 1;
     // Index 0 is the LONG token, index 1 is the SHORT token.
     // Fetched from the LeveragedPool when leveragedPool is set
     address[2] public tokens;
@@ -39,19 +41,52 @@ contract PoolCommitter is IPoolCommitter, Initializable {
     uint256[] private storageArrayPlaceHolder;
 
     address public factory;
+    address public governance;
+    address public leveragedPool;
+    address public invariantCheckContract;
+    bool public paused;
+    IInvariantCheck public invariantCheck;
 
-    constructor(address _factory, address _autoClaim) {
+    /**
+     * @notice Constructor
+     * @param _factory Address of the associated `PoolFactory` contract
+     * @param _invariantCheckContract Address of the associated `InvariantCheck` contract
+     * @param _autoClaim Address of the associated `AutoClaim` contract
+     * @dev Throws if factory address is null
+     */
+    constructor(
+        address _factory,
+        address _invariantCheckContract,
+        address _autoClaim
+    ) {
         require(_factory != address(0), "Factory address cannot be null");
         require(_autoClaim != address(0), "AutoClaim address cannot be null");
+        require(_invariantCheckContract != address(0), "InvariantCheck address cannot be null");
+        invariantCheckContract = _invariantCheckContract;
+        invariantCheck = IInvariantCheck(_invariantCheckContract);
         factory = _factory;
         autoClaim = IAutoClaim(autoClaim);
     }
 
-    function initialize(address _factory, address _autoClaim) external override initializer {
+    /**
+     * @notice Initialises the contract
+     * @param _factory Address of the associated `PoolFactory` contract
+     * @param _invariantCheckContract Address of the associated `InvariantCheck` contract
+     * @param _autoClaim Address of the associated `AutoClaim` contract
+     * @dev Throws if factory address is null
+     */
+    function initialize(
+        address _factory,
+        address _invariantCheckContract,
+        address _autoClaim
+    ) external override initializer {
         require(_factory != address(0), "Factory address cannot be 0 address");
+        require(_invariantCheckContract != address(0), "InvariantCheck address cannot be 0 address");
         require(_autoClaim != address(0), "AutoClaim address cannot be null");
         factory = _factory;
-        autoClaim = IAutoClaim(_autoClaim);
+        governance = IPoolFactory(factory).getOwner();
+        invariantCheckContract = _invariantCheckContract;
+        invariantCheck = IInvariantCheck(_invariantCheckContract);
     }
 
     /**
@@ -141,13 +176,14 @@ contract PoolCommitter is IPoolCommitter, Initializable {
      *               tokens you want to burn
      * @param fromAggregateBalance If minting, burning, or rebalancing into a delta neutral position,
      *                             will tokens be taken from user's aggregate balance?
+     * @dev Emits a `CreateCommit` event on success
      */
     function commit(
         CommitType commitType,
         uint256 amount,
         bool fromAggregateBalance,
         bool payForClaim
-    ) external payable override updateBalance {
+    ) external override updateBalance checkInvariantsAfterFunction {
         require(amount > 0, "Amount must not be zero");
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
         uint256 updateInterval = pool.updateInterval();
@@ -194,8 +230,17 @@ contract PoolCommitter is IPoolCommitter, Initializable {
 
     /**
      * @notice Claim user's balance. This can be done either by the user themself or by somebody else on their behalf.
+     * @param user Address of the user to claim against
+     * @dev Updates aggregate user balances
+     * @dev Emits a `Claim` event on success
      */
-    function claim(address user) external override updateBalance onlyAutoClaimOrCommitter(user) {
+    function claim(address user)
+        external
+        override
+        updateBalance
+        checkInvariantsAfterFunction
+        onlyAutoClaimOrCommitter(user)
+    {
         console.log("claim start");
         console.log(address(autoClaim));
         if (msg.sender == user && autoClaim.checkUserClaim(user, address(this))) {
@@ -220,6 +265,10 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         emit Claim(user);
     }
 
+    /**
+     * @notice Executes every commitment specified in the list
+     * @param _commits Array of `TotalCommitment`s
+     */
     function executeGivenCommitments(TotalCommitment memory _commits) internal {
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
 
@@ -312,7 +361,11 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         pool.setNewPoolBalances(newLongBalance, newShortBalance);
     }
 
-    function executeCommitments() external override onlyPool {
+    /**
+     * @notice Executes all commitments currently queued for the associated `LeveragedPool`
+     * @dev Only callable by the associated `LeveragedPool` contract
+     */
+    function executeCommitments() external override onlyPool checkInvariantsBeforeFunction {
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
         executeGivenCommitments(totalPoolCommitments[updateIntervalId]);
         delete totalPoolCommitments[updateIntervalId];
@@ -321,6 +374,32 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         uint32 counter = 2;
         uint256 lastPriceTimestamp = pool.lastPriceTimestamp();
         uint256 updateInterval = pool.updateInterval();
+
+        /*
+         * (old)
+         * updateIntervalId
+         * |
+         * |    updateIntervalId
+         * |    |
+         * |    |    counter
+         * |    |    |
+         * |    |    |              (end)
+         * |    |    |              |
+         * V    V    V              V
+         * +----+----+----+~~~~+----+
+         * |    |    |    |....|    |
+         * +----+----+----+~~~~+----+
+         *
+         * Iterate over the sequence of possible update periods from the most
+         * recent (i.e., the value of `updateIntervalId` as at the entry point
+         * of this function) until the end of the queue.
+         *
+         * At each iteration, execute all of the (total) commitments for the
+         * pool for that period and then remove them from the queue.
+         *
+         * In reality, this should never iterate more than once, since more than one update interval
+         * should never be passed without the previous one being upkept.
+         */
         while (true) {
             if (block.timestamp >= lastPriceTimestamp + updateInterval * counter) {
                 // Another update interval has passed, so we have to do the nextIntervalCommit as well
@@ -334,6 +413,16 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         }
     }
 
+    /**
+     * @notice Updates the aggregate balance based on the result of application
+     *          of the provided (user) commitment
+     * @param _commit Commitment to apply
+     * @return _newLongTokens Quantity of long pool tokens post-application
+     * @return _newShortTokens Quantity of short pool tokens post-application
+     * @return _newSettlementTokens Quantity of settlement tokens post
+     *                                  application
+     * @dev Wraps two (pure) library functions from `PoolSwapLibrary`
+     */
     function updateBalanceSingleCommitment(UserCommitment memory _commit)
         internal
         view
@@ -362,9 +451,12 @@ contract PoolCommitter is IPoolCommitter, Initializable {
     }
 
     /**
-     * @notice Add the result of a user's most recent commit to their aggregateBalance
+     * @notice Add the result of a user's most recent commit to their aggregated balance
+     * @param user Address of the given user
+     * @dev Updates the `userAggregateBalance` mapping by applying `BalanceUpdate`s derived from iteration over the entirety of unaggregated commitments associated with the given user
+     * @dev Emits an `AggregateBalanceUpdated` event upon successful termination
      */
-    function updateAggregateBalance(address user) public override {
+    function updateAggregateBalance(address user) public override checkInvariantsAfterFunction {
         Balance storage balance = userAggregateBalance[user];
 
         BalanceUpdate memory update = BalanceUpdate({
@@ -430,7 +522,9 @@ contract PoolCommitter is IPoolCommitter, Initializable {
     }
 
     /**
-     * @notice A copy of updateAggregateBalance that returns the aggregate balance without updating it
+     * @notice A copy of `updateAggregateBalance` that returns the aggregated balance without updating it
+     * @param user Address of the given user
+     * @return Associated `Balance` for the given user after aggregation
      */
     function getAggregateBalance(address user) public view override returns (Balance memory) {
         Balance memory _balance = userAggregateBalance[user];
@@ -482,7 +576,21 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         return _balance;
     }
 
-    function setQuoteAndPool(address _quoteToken, address _leveragedPool) external override onlyFactory {
+    /**
+     * @return The pending commitments from the two current update intervals, including the one started in the frontrunning interval at the end of the last
+     */
+    function getPendingCommits() external view override returns (TotalCommitment memory, TotalCommitment memory) {
+        return (totalPoolCommitments[updateIntervalId], totalPoolCommitments[updateIntervalId + 1]);
+    }
+
+    /**
+     * @notice Sets the quote token address and the address of the associated `LeveragedPool` contract to the provided values
+     * @param _quoteToken Address of the quote token to use
+     * @param _leveragedPool Address of the pool to use
+     * @dev Only callable by the associated `PoolFactory` contract
+     * @dev Throws if either address are null
+     */
+    function setQuoteAndPool(address _quoteToken, address _leveragedPool) external override onlyFactory onlyUnpaused {
         require(_quoteToken != address(0), "Quote token address cannot be 0 address");
         require(_leveragedPool != address(0), "Leveraged pool address cannot be 0 address");
 
@@ -493,16 +601,72 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         tokens = ILeveragedPool(leveragedPool).poolTokens();
     }
 
+    /**
+     * @notice Pauses the pool
+     * @dev Prevents all state updates until unpaused
+     */
+    function pause() external onlyInvariantCheckContract {
+        paused = true;
+    }
+
+    /**
+     * @notice Unpauses the pool
+     * @dev Prevents all state updates until unpaused
+     */
+    function unpause() external onlyGov {
+        paused = false;
+    }
+
+    /**
+     * @notice Aggregates user balances **prior** to executing the wrapped code
+     */
     modifier updateBalance() {
         updateAggregateBalance(msg.sender);
         _;
     }
 
+    modifier onlyUnpaused() {
+        require(!paused, "Pool is paused");
+        _;
+    }
+
+    modifier onlyGov() {
+        require(msg.sender == governance, "msg.sender not governance");
+        _;
+    }
+
+    /**
+     * @dev Check invariants before function body only. This is used in functions where the state of the pool is updated after exiting PoolCommitter (i.e. executeCommitments)
+     */
+    modifier checkInvariantsBeforeFunction() {
+        invariantCheck.checkInvariants(leveragedPool);
+        require(!paused, "Pool is paused");
+        _;
+    }
+
+    modifier checkInvariantsAfterFunction() {
+        require(!paused, "Pool is paused");
+        _;
+        invariantCheck.checkInvariants(leveragedPool);
+        require(!paused, "Pool is paused");
+    }
+
+    modifier onlyInvariantCheckContract() {
+        require(msg.sender == invariantCheckContract, "msg.sender not invariantCheckContract");
+        _;
+    }
+
+    /**
+     * @notice Asserts that the caller is the associated `PoolFactory` contract
+     */
     modifier onlyFactory() {
         require(msg.sender == factory, "Committer: not factory");
         _;
     }
 
+    /**
+     * @notice Asserts that the caller is the associated `LeveragedPool` contract
+     */
     modifier onlyPool() {
         require(msg.sender == leveragedPool, "msg.sender not leveragedPool");
         _;

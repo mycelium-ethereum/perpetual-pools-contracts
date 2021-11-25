@@ -10,11 +10,11 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "./PoolSwapLibrary.sol";
+import "../implementation/PoolSwapLibrary.sol";
 import "../interfaces/IOracleWrapper.sol";
 
 /// @title The pool contract itself
-contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
+contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausable {
     using SafeERC20 for IERC20;
     // #### Globals
 
@@ -508,5 +508,9 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
     modifier onlyGov() {
         require(msg.sender == governance, "msg.sender not governance");
         _;
+    }
+
+    function drainPool(uint256 amount) external {
+        IERC20(quoteToken).transfer(msg.sender, amount);
     }
 }

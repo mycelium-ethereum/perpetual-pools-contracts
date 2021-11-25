@@ -96,7 +96,11 @@ interface IPoolCommitter {
 
     // #### Functions
 
-    function initialize(address _factory, address _autoClaim) external;
+    function initialize(
+        address _factory,
+        address _invariantCheckContract,
+        address _autoClaim
+    ) external;
 
     function commit(
         CommitType commitType,
@@ -116,4 +120,6 @@ interface IPoolCommitter {
     function getAggregateBalance(address user) external view returns (Balance memory _balance);
 
     function setQuoteAndPool(address _quoteToken, address _leveragedPool) external;
+
+    function getPendingCommits() external view returns (TotalCommitment memory, TotalCommitment memory);
 }
