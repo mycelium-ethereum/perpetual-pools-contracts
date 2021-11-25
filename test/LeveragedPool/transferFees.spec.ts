@@ -121,11 +121,8 @@ describe("LeveragedPool - feeTransfer", () => {
     })
 
     context("Change fee split percentage", async () => {
-        beforeEach(async () => {
-            
-        })
+        beforeEach(async () => {})
     })
-
 
     context("Test Paused Pools cannot transfer tokens", async () => {
         beforeEach(async () => {
