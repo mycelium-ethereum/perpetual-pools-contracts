@@ -101,13 +101,11 @@ For example, the following block tests that the (fictional)
 than zero:
 
 ```typescript
-describe("PermissionedDeployer", async () => {
-    describe("get", async () => {
-        context("When called with an offset less than zero", async () => {
-            it("Reverts", async () => {
-                let negativeOffset: BigNumberish = -1;
-                await expect(permissionedDeployer.get(negativeOffset)).to.be.revertedWith("PD: Offset must be non-negative")
-            })
+describe("get", async () => {
+    context("When called with an offset less than zero", async () => {
+        it("Reverts", async () => {
+            let negativeOffset: BigNumberish = -1;
+            await expect(permissionedDeployer.get(negativeOffset)).to.be.revertedWith("PD: Offset must be non-negative")
         })
     })
 })
