@@ -47,4 +47,6 @@ interface IPoolFactory {
     function setFeeReceiver(address _feeReceiver) external;
 
     function setFee(uint256 _fee) external;
+
+    function setMintAndBurnFee(uint256 _mintingFee, uint256 _burningFee) external;
 }
