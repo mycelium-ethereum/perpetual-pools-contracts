@@ -21,6 +21,7 @@ interface ILeveragedPool {
         address _feeAddress; // The address that the fund movement fee is sent to
         address _secondaryFeeAddress; // The address of fee recieved by third party deployers
         address _quoteToken; //  The digital asset that the pool accepts. Must have a decimals() function
+        uint256 _secondaryFeeSplitPercent; // Percent of fees that go to secondary fee address if it exists
     }
 
     // #### Events

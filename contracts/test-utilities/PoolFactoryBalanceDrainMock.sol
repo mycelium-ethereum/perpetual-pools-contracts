@@ -31,6 +31,7 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
     address public feeReceiver;
     // Default fee, annualised; Fee value as a decimal multiplied by 10^18. For example, 50% is represented as 0.5 * 10^18
     uint256 public fee;
+    uint256 public secondaryFeeSplitPercent = 10;
     // The fee taken for each mint and burn. Fee value as a decimal multiplied by 10^18. For example, 50% is represented as 0.5 * 10^18
     uint256 public mintingFee;
     uint256 public burningFee;
@@ -80,7 +81,8 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
             1,
             address(this),
             address(0),
-            address(this)
+            address(this),
+            10
         );
         // Init bases
         poolBase.initialize(baseInitialization);
@@ -153,7 +155,8 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
             _leverageAmount: deploymentParameters.leverageAmount,
             _feeAddress: feeReceiver,
             _secondaryFeeAddress: msg.sender,
-            _quoteToken: deploymentParameters.quoteToken
+            _quoteToken: deploymentParameters.quoteToken,
+            _secondaryFeeSplitPercent: secondaryFeeSplitPercent
         });
 
         // approve the quote token on the pool committer to finalise linking
@@ -224,6 +227,11 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
     function setFeeReceiver(address _feeReceiver) external override onlyOwner {
         require(_feeReceiver != address(0), "address cannot be null");
         feeReceiver = _feeReceiver;
+    }
+
+    function setSecondaryFeeSplitPercent(uint256 newFeePercent) external override onlyOwner {
+        require(newFeePercent <= 100, "Secondary fee split cannot exceed 100%");
+        secondaryFeeSplitPercent = newFeePercent;
     }
 
     /**

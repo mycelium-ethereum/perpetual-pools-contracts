@@ -48,5 +48,7 @@ interface IPoolFactory {
 
     function setFee(uint256 _fee) external;
 
+    function setSecondaryFeeSplitPercent(uint256 newFeePercent) external;
+
     function setMintAndBurnFee(uint256 _mintingFee, uint256 _burningFee) external;
 }

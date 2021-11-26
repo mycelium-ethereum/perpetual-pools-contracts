@@ -87,6 +87,7 @@ describe("InvariantCheck - balanceInvariant", () => {
                 _secondaryFeeAddress: feeAddress,
                 _quoteToken: quoteToken,
                 _invariantCheckContract: invariantCheck.address,
+                _secondaryFeeSplitPercent: 10,
             })
 
             await result.token.approve(result.pool.address, amountMinted)
