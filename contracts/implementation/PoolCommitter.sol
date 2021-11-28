@@ -11,7 +11,6 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "./PoolSwapLibrary.sol";
-import "hardhat/console.sol";
 
 /// @title This contract is responsible for handling commitment logic
 contract PoolCommitter is IPoolCommitter, Initializable {
@@ -191,8 +190,6 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         uint256 frontRunningInterval = pool.frontRunningInterval();
 
         if (payForClaim) {
-            // TODO I am not sure if this actually passes on the msg.value but think it does
-            console.log(msg.value);
             autoClaim.makePaidClaimRequest{value: msg.value}(msg.sender);
         }
 
@@ -235,13 +232,8 @@ contract PoolCommitter is IPoolCommitter, Initializable {
      * @dev Updates aggregate user balances
      * @dev Emits a `Claim` event on success
      */
-    function claim(address user)
-        external
-        override
-        updateBalance
-        checkInvariantsAfterFunction
-        onlyAutoClaimOrCommitter(user)
-    {
+    function claim(address user) external override checkInvariantsAfterFunction onlyAutoClaimOrCommitter(user) {
+        updateAggregateBalance(user);
         if (msg.sender == user && autoClaim.checkUserClaim(user, address(this))) {
             // If the committer is claiming for themself and they have a valid pending claim, clear it.
             autoClaim.withdrawUserClaimRequest(user);

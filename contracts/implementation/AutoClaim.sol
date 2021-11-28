@@ -7,8 +7,6 @@ import "../interfaces/IAutoClaim.sol";
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
-import "hardhat/console.sol";
-
 /// @title The contract to be used for paying to have a keeper claim your commit automatically
 /// @notice The way this works is when a user commits with `PoolCommitter::commit`, they have the option to set the `bool payForClaim` parameter to `true`.
 ///         During this function execution, `AutoClaim::payForClaim` is called, and `msg.value` is taken as the reward to whoever claims for requester (by using `AutoClaim::paidClaim`).
@@ -35,7 +33,6 @@ contract AutoClaim is IAutoClaim, Initializable {
      * @param user The user who wants to autoclaim.
      */
     function makePaidClaimRequest(address user) external payable override onlyPoolCommitter {
-        console.log(msg.value);
         ClaimRequest storage request = claimRequests[user][msg.sender];
         IPoolCommitter poolCommitter = IPoolCommitter(msg.sender);
 
@@ -46,14 +43,9 @@ contract AutoClaim is IAutoClaim, Initializable {
             if (requestUpdateIntervalId < poolCommitter.updateIntervalId()) {
                 // If so, this person may as well claim for themself (if allowed). They have signified their want of claim, after all.
                 // Note that this function is only called by PoolCommitter when a user `commits` and therefore `user` will always equal the original `msg.sender`.
-                console.log("2");
-
                 payable(user).transfer(claimRequests[user][msg.sender].reward);
-                console.log("3");
                 delete claimRequests[user][msg.sender];
-                console.log("4");
                 poolCommitter.claim(user);
-                console.log("5");
             } else {
                 // If the claim request is pending but not yet valid (it was made in the current commit), we want to add to the value.
                 // Note that in context, the user *usually* won't need or want to increment `ClaimRequest.reward` more than once because the first call to `payForClaim` should suffice.
@@ -65,8 +57,8 @@ contract AutoClaim is IAutoClaim, Initializable {
 
         // If no previous claim requests are pending, we need to make a new one.
         requestUpdateIntervalId = poolCommitter.updateIntervalId();
-        request.updateIntervalId = requestUpdateIntervalId;
-        request.reward = msg.value;
+        claimRequests[user][msg.sender].updateIntervalId = requestUpdateIntervalId;
+        claimRequests[user][msg.sender].reward = msg.value;
         emit PaidClaimRequestUpdate(user, msg.sender, msg.value);
     }
 
@@ -82,11 +74,12 @@ contract AutoClaim is IAutoClaim, Initializable {
         // Check if a previous claim request has been made, and if it is claimable.
         if (checkClaim(request, currentUpdateIntervalId)) {
             // Send the reward to msg.sender.
-            payable(msg.sender).transfer(claimRequests[user][poolCommitterAddress].reward);
+            payable(msg.sender).transfer(request.reward);
             // delete the ClaimRequest from storage
             delete claimRequests[user][poolCommitterAddress];
             // execute the claim
             poolCommitter.claim(user);
+            emit PaidRequestExecution(user, request.reward);
         }
     }
 
