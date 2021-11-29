@@ -71,12 +71,12 @@ module.exports = async (hre) => {
         log: true,
         contract: "SMAOracle",
         args: [
-            RinkebyEthUsdOracle.address,
-            8,
-            priceObserver.address,
-            12,
-            3600,
-            deployer,
+            RinkebyEthUsdOracle.address, //Oracle Address
+            8, //Spot decimals
+            priceObserver.address, //Observer address
+            12, // number of periods
+            3600, // Update interval
+            deployer, // deployer address
         ],
     })
 
