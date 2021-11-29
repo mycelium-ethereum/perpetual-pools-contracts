@@ -135,7 +135,7 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
             Clones.cloneDeterministic(poolBaseAddress, uniquePoolHash)
         );
         address _pool = address(pool);
-        emit DeployPool(_pool, deploymentParameters.poolName);
+        emit DeployPool(_pool, poolCommitterAddress, deploymentParameters.poolName);
 
         string memory leverage = Strings.toString(deploymentParameters.leverageAmount);
 

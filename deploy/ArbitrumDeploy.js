@@ -55,7 +55,7 @@ module.exports = async (hre) => {
         from: deployer,
         log: true,
         contract: "ChainlinkOracleWrapper",
-        args: [KovanEurUsdOracle.address],
+        args: [KovanEurUsdOracle.address, deployer],
     })
 
     // const oracleWrapper = { address: "0x57A81f7B72D2703ae7c533F3FB1CdEFa6B8f25F7" }
@@ -66,7 +66,7 @@ module.exports = async (hre) => {
         from: deployer,
         log: true,
         contract: "ChainlinkOracleWrapper",
-        args: [KovanEthUsdOracle.address],
+        args: [KovanEthUsdOracle.address, deployer],
     })
 
     /* Commented out, because we want to wait till multisig governs pools before doing it for the rest of them
@@ -105,6 +105,13 @@ module.exports = async (hre) => {
         args: [multisigAddress],
     })
 
+    // deploy InvariantCheck
+    const invariantCheck = await deploy("InvariantCheck", {
+        from: deployer,
+        log: true,
+        args: [factory.address],
+    })
+
     // deploy PoolKeeper
     const poolKeeper = await deploy("PoolKeeper", {
         from: deployer,
@@ -137,7 +144,7 @@ module.exports = async (hre) => {
     )
 
     console.log("Setting factory fee")
-    const fee = ethers.utils.parseEther("0.000001142")
+    const fee = ethers.utils.parseEther("0.01")
     await execute(
         "PoolFactory",
         {
@@ -168,8 +175,7 @@ module.exports = async (hre) => {
         quoteToken: token.address,
         oracleWrapper: oracleWrapper.address,
         settlementEthOracle: keeperOracle.address,
-        minimumCommitSize: minimumCommitSize,
-        maximumCommitQueueLength: maximumCommitQueueLength,
+        invariantCheck: invariantCheck.address,
     }
 
     // BTC-USD 3x
@@ -181,8 +187,7 @@ module.exports = async (hre) => {
         quoteToken: token.address,
         oracleWrapper: oracleWrapper.address,
         settlementEthOracle: keeperOracle.address,
-        minimumCommitSize: minimumCommitSize,
-        maximumCommitQueueLength: maximumCommitQueueLength,
+        invariantCheck: invariantCheck.address,
     }
 
     // ETH-USD 1x
@@ -194,8 +199,7 @@ module.exports = async (hre) => {
         quoteToken: token.address,
         oracleWrapper: keeperOracle.address,
         settlementEthOracle: keeperOracle.address,
-        minimumCommitSize: minimumCommitSize,
-        maximumCommitQueueLength: maximumCommitQueueLength,
+        invariantCheck: invariantCheck.address,
     }
 
     // ETH-USD 3x
@@ -207,8 +211,7 @@ module.exports = async (hre) => {
         quoteToken: token.address,
         oracleWrapper: keeperOracle.address,
         settlementEthOracle: keeperOracle.address,
-        minimumCommitSize: minimumCommitSize,
-        maximumCommitQueueLength: maximumCommitQueueLength,
+        invariantCheck: invariantCheck.address,
     }
 
     const deploymentData = [
@@ -234,6 +237,7 @@ module.exports = async (hre) => {
 
         console.log(`Deployed PoolFactory: ${factory.address}`)
         console.log(`Deployed LeveragedPool: ${event.args.pool}`)
+        console.log(`Deployed PoolCommitter: ${event.args.poolCommitter}`)
         console.log(`Deploy PoolKeeper: ${poolKeeper.address}`)
         console.log(`Deployed TestToken: ${token.address}`)
         console.log(`Deployed OracleWrapper: ${oracleWrapper.address}`)
@@ -253,11 +257,11 @@ module.exports = async (hre) => {
 
     await hre.run("verify:verify", {
         address: oracleWrapper.address,
-        constructorArguments: [MainnetBtcUsdOracle.address],
+        constructorArguments: [MainnetBtcUsdOracle.address, deployer],
     })
     await hre.run("verify:verify", {
         address: keeperOracle.address,
-        constructorArguments: [MainnetEthUsdOracle.address],
+        constructorArguments: [MainnetEthUsdOracle.address, deployer],
     })
     await hre.run("verify:verify", {
         address: poolKeeper.address,
