@@ -58,6 +58,39 @@ module.exports = async (hre) => {
         args: [KovanEurUsdOracle.address, deployer],
     })
 
+    // deploy SMA PriceObserver
+    const priceObserver = await deploy("EthUsdPriceObserver", {
+        from: deployer,
+        log: true,
+        contract: "PriceObserver",
+    })
+
+    // deploy SMA Oracle
+    const smaOracleWrapper = await deploy("EthUsdPriceSMAOracle", {
+        from: deployer,
+        log: true,
+        contract: "SMAOracle",
+        args: [
+            RinkebyEthUsdOracle.address,
+            8,
+            priceObserver.address,
+            12,
+            3600,
+            deployer,
+        ],
+    })
+
+    // Set Writer on Price Observer to SMA Oracle
+    await execute(
+        "EthUsdPriceObserver",
+        {
+            from: deployer,
+            log: true,
+        },
+        "setWriter",
+        smaOracleWrapper.address
+    )
+
     // const oracleWrapper = { address: "0x57A81f7B72D2703ae7c533F3FB1CdEFa6B8f25F7" }
     // const keeperOracle = { address: "0x4e8E88BD60027aC138323d86d3F9e6b2E035b435"}
 
