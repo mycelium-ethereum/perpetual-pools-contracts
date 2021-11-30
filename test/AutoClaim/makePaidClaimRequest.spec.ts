@@ -80,52 +80,114 @@ describe("AutoClaim - makePaidClaimRequest", () => {
 
     context("When called from a non-pool committer", async () => {
         it("reverts", async () => {
-            await expect(autoClaim.makePaidClaimRequest(signers[0].address)).to.be.revertedWith("msg.sender not valid PoolCommitter")
+            await expect(
+                autoClaim.makePaidClaimRequest(signers[0].address)
+            ).to.be.revertedWith("msg.sender not valid PoolCommitter")
         })
     })
 
     context("When no pending request already exists", async () => {
         it("adds a new one", async () => {
-            await createCommit(poolCommitter, LONG_MINT, amountCommitted, false, true, reward)
-            const request = await autoClaim.claimRequests(signers[0].address, poolCommitter.address)
+            await createCommit(
+                poolCommitter,
+                LONG_MINT,
+                amountCommitted,
+                false,
+                true,
+                reward
+            )
+            const request = await autoClaim.claimRequests(
+                signers[0].address,
+                poolCommitter.address
+            )
             expect(request.reward).to.equal(reward)
-            expect(request.updateIntervalId).to.equal(await poolCommitter.updateIntervalId())
+            expect(request.updateIntervalId).to.equal(
+                await poolCommitter.updateIntervalId()
+            )
         })
     })
 
-    context("When a pending request already exists, but is not yet ready to be claimed", async () => {
-        it("increments reward", async () => {
-            await createCommit(poolCommitter, LONG_MINT, amountCommitted, false, true, reward)
-            await createCommit(poolCommitter, LONG_MINT, amountCommitted, false, true, reward)
-            const request = await autoClaim.claimRequests(signers[0].address, poolCommitter.address)
-            expect(request.reward).to.equal(reward * 2) // 2x rewards
-            expect(request.updateIntervalId).to.equal(await poolCommitter.updateIntervalId())
-        })
-    })
+    context(
+        "When a pending request already exists, but is not yet ready to be claimed",
+        async () => {
+            it("increments reward", async () => {
+                await createCommit(
+                    poolCommitter,
+                    LONG_MINT,
+                    amountCommitted,
+                    false,
+                    true,
+                    reward
+                )
+                await createCommit(
+                    poolCommitter,
+                    LONG_MINT,
+                    amountCommitted,
+                    false,
+                    true,
+                    reward
+                )
+                const request = await autoClaim.claimRequests(
+                    signers[0].address,
+                    poolCommitter.address
+                )
+                expect(request.reward).to.equal(reward * 2) // 2x rewards
+                expect(request.updateIntervalId).to.equal(
+                    await poolCommitter.updateIntervalId()
+                )
+            })
+        }
+    )
 
-    context("When a pending request already exists, and is ready to be claimed", async () => {
-        it("Resets the pending request and executes previous one", async () => {
-            const secondReward = reward - 50
-            await token.transfer(signers[1].address, amountCommitted.mul(2))
-            await token.connect(signers[1]).approve(pool.address, amountMinted)
-            await poolCommitter.connect(signers[1]).commit(LONG_MINT, amountCommitted, false, true, { value: reward })
-            await timeout(updateInterval * 1000)
-            await poolKeeper.performUpkeepSinglePool(pool.address)
+    context(
+        "When a pending request already exists, and is ready to be claimed",
+        async () => {
+            it("Resets the pending request and executes previous one", async () => {
+                const secondReward = reward - 50
+                await token.transfer(signers[1].address, amountCommitted.mul(2))
+                await token
+                    .connect(signers[1])
+                    .approve(pool.address, amountMinted)
+                await poolCommitter
+                    .connect(signers[1])
+                    .commit(LONG_MINT, amountCommitted, false, true, {
+                        value: reward,
+                    })
+                await timeout(updateInterval * 1000)
+                await poolKeeper.performUpkeepSinglePool(pool.address)
 
-            const balanceBefore = await ethers.provider.getBalance(signers[1].address)
+                const balanceBefore = await ethers.provider.getBalance(
+                    signers[1].address
+                )
 
-            const receipt = await (await poolCommitter.connect(signers[1]).commit(LONG_MINT, amountCommitted, false, true, { value: secondReward })).wait()
-            const gasCost = receipt.gasUsed.mul(receipt.effectiveGasPrice)
+                const receipt = await (
+                    await poolCommitter
+                        .connect(signers[1])
+                        .commit(LONG_MINT, amountCommitted, false, true, {
+                            value: secondReward,
+                        })
+                ).wait()
+                const gasCost = receipt.gasUsed.mul(receipt.effectiveGasPrice)
 
-            const request = await autoClaim.claimRequests(signers[1].address, poolCommitter.address)
+                const request = await autoClaim.claimRequests(
+                    signers[1].address,
+                    poolCommitter.address
+                )
 
-            const balanceAfter = await ethers.provider.getBalance(signers[1].address)
+                const balanceAfter = await ethers.provider.getBalance(
+                    signers[1].address
+                )
 
-            expect(request.reward).to.equal(secondReward)
-            expect(request.updateIntervalId).to.equal(await poolCommitter.updateIntervalId())
+                expect(request.reward).to.equal(secondReward)
+                expect(request.updateIntervalId).to.equal(
+                    await poolCommitter.updateIntervalId()
+                )
 
-            // Got paid reward. Paid reward - 50 plus gas on second commit
-            expect(balanceAfter.sub(balanceBefore).add(gasCost)).to.equal(reward - secondReward)
-        })
-    })
+                // Got paid reward. Paid reward - 50 plus gas on second commit
+                expect(balanceAfter.sub(balanceBefore).add(gasCost)).to.equal(
+                    reward - secondReward
+                )
+            })
+        }
+    )
 })

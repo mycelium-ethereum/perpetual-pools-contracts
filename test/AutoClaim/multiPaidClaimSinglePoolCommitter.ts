@@ -58,8 +58,8 @@ describe("AutoClaim - multiPaidClaimSinglePoolCommitter", () => {
     let signers: SignerWithAddress[]
     let poolKeeper: PoolKeeper
 
-    let poolCommitter2: any;
-    let pool2: any;
+    let poolCommitter2: any
+    let pool2: any
     let shortToken2: any
     let result: any
 
@@ -90,85 +90,157 @@ describe("AutoClaim - multiPaidClaimSinglePoolCommitter", () => {
 
     context("When there is no claim", async () => {
         it("does nothing", async () => {
-            const receipt = await (await autoClaim.paidClaim(signers[0].address, poolCommitter.address)).wait()
+            const receipt = await (
+                await autoClaim.paidClaim(
+                    signers[0].address,
+                    poolCommitter.address
+                )
+            ).wait()
             expect(receipt?.events?.length).to.equal(0)
         })
     })
 
     context("When there are claims, but all are still pending", async () => {
         it("does nothing", async () => {
-            await createCommit(poolCommitter, LONG_MINT, amountCommitted, false, true, reward)
-            await poolCommitter.connect(signers[1]).commit(LONG_MINT, amountCommitted, false, true, { value: reward })
-            await createCommit(poolCommitter, LONG_MINT, amountCommitted, false, true, reward)
+            await createCommit(
+                poolCommitter,
+                LONG_MINT,
+                amountCommitted,
+                false,
+                true,
+                reward
+            )
+            await poolCommitter
+                .connect(signers[1])
+                .commit(LONG_MINT, amountCommitted, false, true, {
+                    value: reward,
+                })
+            await createCommit(
+                poolCommitter,
+                LONG_MINT,
+                amountCommitted,
+                false,
+                true,
+                reward
+            )
 
-            const users = [signers[0].address, signers[1].address, signers[0].address]
+            const users = [
+                signers[0].address,
+                signers[1].address,
+                signers[0].address,
+            ]
 
-            const receipt = await (await autoClaim.multiPaidClaimSinglePoolCommitter(users, poolCommitter.address)).wait()
+            const receipt = await (
+                await autoClaim.multiPaidClaimSinglePoolCommitter(
+                    users,
+                    poolCommitter.address
+                )
+            ).wait()
             expect(receipt?.events?.length).to.equal(0)
         })
     })
 
     context("When there is a valid request to claim", async () => {
-        let balanceBeforeClaim: BigNumberish;
-        let receipt;
+        let balanceBeforeClaim: BigNumberish
+        let receipt
         beforeEach(async () => {
             await token.transfer(signers[1].address, amountCommitted.mul(2))
             await token.connect(signers[1]).approve(pool.address, amountMinted)
 
-            await poolCommitter.connect(signers[1]).commit(LONG_MINT, amountCommitted, false, true, { value: reward })
+            await poolCommitter
+                .connect(signers[1])
+                .commit(LONG_MINT, amountCommitted, false, true, {
+                    value: reward,
+                })
             await timeout(updateInterval * 1000)
             await poolKeeper.performUpkeepSinglePool(pool.address)
 
-            balanceBeforeClaim = await ethers.provider.getBalance(signers[0].address)
+            balanceBeforeClaim = await ethers.provider.getBalance(
+                signers[0].address
+            )
 
             const users = [signers[0].address, signers[1].address]
 
-            receipt = await (await autoClaim.multiPaidClaimSinglePoolCommitter(users, poolCommitter.address)).wait()
+            receipt = await (
+                await autoClaim.multiPaidClaimSinglePoolCommitter(
+                    users,
+                    poolCommitter.address
+                )
+            ).wait()
         })
         it("Sends money", async () => {
-            const balanceAfterClaim = await ethers.provider.getBalance(signers[0].address)
+            const balanceAfterClaim = await ethers.provider.getBalance(
+                signers[0].address
+            )
             expect(balanceBeforeClaim).to.be.lt(balanceAfterClaim)
         })
         it("Deletes request", async () => {
-            const request = await autoClaim.claimRequests(signers[1].address, poolCommitter.address)
+            const request = await autoClaim.claimRequests(
+                signers[1].address,
+                poolCommitter.address
+            )
             expect(request.updateIntervalId).to.equal(0)
             expect(request.reward).to.equal(0)
         })
         it("Claims", async () => {
-            const longTokenBalance = await longToken.balanceOf(signers[1].address)
+            const longTokenBalance = await longToken.balanceOf(
+                signers[1].address
+            )
             expect(longTokenBalance).to.equal(amountCommitted)
         })
     })
 
     context("When there are multiple valid requests to claim", async () => {
-        let balanceBeforeClaim: BigNumberish;
-        let receipt: Receipt;
+        let balanceBeforeClaim: BigNumberish
+        let receipt: Receipt
         beforeEach(async () => {
             await token.transfer(signers[1].address, amountCommitted.mul(2))
             await token.connect(signers[1]).approve(pool.address, amountMinted)
 
-            await poolCommitter.connect(signers[0]).commit(SHORT_MINT, amountCommitted, false, true, { value: reward })
-            await poolCommitter.connect(signers[1]).commit(LONG_MINT, amountCommitted, false, true, { value: reward })
+            await poolCommitter
+                .connect(signers[0])
+                .commit(SHORT_MINT, amountCommitted, false, true, {
+                    value: reward,
+                })
+            await poolCommitter
+                .connect(signers[1])
+                .commit(LONG_MINT, amountCommitted, false, true, {
+                    value: reward,
+                })
             await timeout(updateInterval * 10000)
             await poolKeeper.performUpkeepSinglePool(pool.address)
 
-            balanceBeforeClaim = await ethers.provider.getBalance(signers[0].address)
+            balanceBeforeClaim = await ethers.provider.getBalance(
+                signers[0].address
+            )
 
             const users = [signers[0].address, signers[1].address]
 
-            receipt = await (await autoClaim.multiPaidClaimSinglePoolCommitter(users, poolCommitter.address)).wait()
+            receipt = await (
+                await autoClaim.multiPaidClaimSinglePoolCommitter(
+                    users,
+                    poolCommitter.address
+                )
+            ).wait()
         })
         it("Sends money", async () => {
-            const balanceAfterClaim = await ethers.provider.getBalance(signers[0].address)
+            const balanceAfterClaim = await ethers.provider.getBalance(
+                signers[0].address
+            )
             expect(balanceBeforeClaim).to.be.lt(balanceAfterClaim)
         })
         it("Deletes request", async () => {
-            const request = await autoClaim.claimRequests(signers[1].address, poolCommitter.address)
+            const request = await autoClaim.claimRequests(
+                signers[1].address,
+                poolCommitter.address
+            )
             expect(request.updateIntervalId).to.equal(0)
             expect(request.reward).to.equal(0)
         })
         it("Claims", async () => {
-            const longTokenBalance = await longToken.balanceOf(signers[1].address)
+            const longTokenBalance = await longToken.balanceOf(
+                signers[1].address
+            )
             expect(longTokenBalance).to.equal(amountCommitted)
         })
         it("Claims the right amount of requests", async () => {
@@ -190,51 +262,87 @@ describe("AutoClaim - multiPaidClaimSinglePoolCommitter", () => {
         })
     })
 
-    context("When there are valid requests to claim, from multiple different pool committers", async () => {
-        it("should only claim for requests from the given poolCommitter", async () => {
-            // Deploy second pool
-            // deploy the pool using the factory, not separately
-            const deployParams = {
-                poolName: POOL_CODE_2,
-                frontRunningInterval: frontRunningInterval,
-                updateInterval: updateInterval,
-                leverageAmount: leverage + 1, // Change to make unique
-                quoteToken: token.address,
-                oracleWrapper: result.oracleWrapper.address,
-                settlementEthOracle: result.settlementEthOracle.address,
-                invariantCheckContract: result.invariantCheck.address,
-            }
+    context(
+        "When there are valid requests to claim, from multiple different pool committers",
+        async () => {
+            it("should only claim for requests from the given poolCommitter", async () => {
+                // Deploy second pool
+                // deploy the pool using the factory, not separately
+                const deployParams = {
+                    poolName: POOL_CODE_2,
+                    frontRunningInterval: frontRunningInterval,
+                    updateInterval: updateInterval,
+                    leverageAmount: leverage + 1, // Change to make unique
+                    quoteToken: token.address,
+                    oracleWrapper: result.oracleWrapper.address,
+                    settlementEthOracle: result.settlementEthOracle.address,
+                    invariantCheckContract: result.invariantCheck.address,
+                }
 
-            await result.factory.deployPool(deployParams)
+                await result.factory.deployPool(deployParams)
 
-            const poolAddress = await result.factory.pools(1)
-            pool2 = await ethers.getContractAt("LeveragedPool", poolAddress)
+                const poolAddress = await result.factory.pools(1)
+                pool2 = await ethers.getContractAt("LeveragedPool", poolAddress)
 
-            let commiter = await pool2.poolCommitter()
-            poolCommitter2 = await ethers.getContractAt("PoolCommitter", commiter)
+                let commiter = await pool2.poolCommitter()
+                poolCommitter2 = await ethers.getContractAt(
+                    "PoolCommitter",
+                    commiter
+                )
 
-            let shortTokenAddr = await pool.tokens(1)
-            shortToken2 = await ethers.getContractAt(ERC20Abi, shortTokenAddr)
+                let shortTokenAddr = await pool.tokens(1)
+                shortToken2 = await ethers.getContractAt(
+                    ERC20Abi,
+                    shortTokenAddr
+                )
 
-            await token.approve(pool2.address, amountMinted)
+                await token.approve(pool2.address, amountMinted)
 
-            await token.transfer(signers[1].address, amountCommitted.mul(2))
-            await token.connect(signers[1]).approve(pool.address, amountMinted)
+                await token.transfer(signers[1].address, amountCommitted.mul(2))
+                await token
+                    .connect(signers[1])
+                    .approve(pool.address, amountMinted)
 
-            await poolCommitter.connect(signers[1]).commit(LONG_MINT, amountCommitted, false, true, { value: reward })
-            await poolCommitter2.connect(signers[0]).commit(SHORT_MINT, amountCommitted, false, true, { value: reward })
-            await poolCommitter.commit(SHORT_MINT, amountCommitted, false, true, { value: reward })
-            await timeout(updateInterval * 1000)
-            await poolKeeper.performUpkeepMultiplePools([pool.address, pool2.address])
+                await poolCommitter
+                    .connect(signers[1])
+                    .commit(LONG_MINT, amountCommitted, false, true, {
+                        value: reward,
+                    })
+                await poolCommitter2
+                    .connect(signers[0])
+                    .commit(SHORT_MINT, amountCommitted, false, true, {
+                        value: reward,
+                    })
+                await poolCommitter.commit(
+                    SHORT_MINT,
+                    amountCommitted,
+                    false,
+                    true,
+                    { value: reward }
+                )
+                await timeout(updateInterval * 1000)
+                await poolKeeper.performUpkeepMultiplePools([
+                    pool.address,
+                    pool2.address,
+                ])
 
-            const users = [signers[0].address, signers[1].address]
+                const users = [signers[0].address, signers[1].address]
 
-            await (await autoClaim.multiPaidClaimSinglePoolCommitter(users, poolCommitter.address)).wait()
+                await (
+                    await autoClaim.multiPaidClaimSinglePoolCommitter(
+                        users,
+                        poolCommitter.address
+                    )
+                ).wait()
 
-            const request = await autoClaim.claimRequests(signers[0].address, poolCommitter2.address)
-            expect(request.updateIntervalId).to.equal((await poolCommitter2.updateIntervalId()) - 1)
-        })
-
-    })
-
+                const request = await autoClaim.claimRequests(
+                    signers[0].address,
+                    poolCommitter2.address
+                )
+                expect(request.updateIntervalId).to.equal(
+                    (await poolCommitter2.updateIntervalId()) - 1
+                )
+            })
+        }
+    )
 })

@@ -80,43 +80,72 @@ describe("AutoClaim - paidClaim", () => {
 
     context("When there is no claim", async () => {
         it("does nothing", async () => {
-            const receipt = await (await autoClaim.paidClaim(signers[0].address, poolCommitter.address)).wait()
+            const receipt = await (
+                await autoClaim.paidClaim(
+                    signers[0].address,
+                    poolCommitter.address
+                )
+            ).wait()
             expect(receipt?.events?.length).to.equal(0)
         })
     })
 
     context("When there is a claim but it is still pending", async () => {
         it("does nothing", async () => {
-            await createCommit(poolCommitter, LONG_MINT, amountCommitted, false, true, reward)
-            const receipt = await (await autoClaim.paidClaim(signers[0].address, poolCommitter.address)).wait()
+            await createCommit(
+                poolCommitter,
+                LONG_MINT,
+                amountCommitted,
+                false,
+                true,
+                reward
+            )
+            const receipt = await (
+                await autoClaim.paidClaim(
+                    signers[0].address,
+                    poolCommitter.address
+                )
+            ).wait()
             expect(receipt?.events?.length).to.equal(0)
         })
     })
 
     context("When there is a valid request to claim", async () => {
-        let balanceBeforeClaim: BigNumberish;
+        let balanceBeforeClaim: BigNumberish
         beforeEach(async () => {
             await token.transfer(signers[1].address, amountCommitted.mul(2))
             await token.connect(signers[1]).approve(pool.address, amountMinted)
-            await poolCommitter.connect(signers[1]).commit(LONG_MINT, amountCommitted, false, true, { value: reward })
+            await poolCommitter
+                .connect(signers[1])
+                .commit(LONG_MINT, amountCommitted, false, true, {
+                    value: reward,
+                })
             await timeout(updateInterval * 1000)
             await poolKeeper.performUpkeepSinglePool(pool.address)
-            balanceBeforeClaim = await ethers.provider.getBalance(signers[0].address)
+            balanceBeforeClaim = await ethers.provider.getBalance(
+                signers[0].address
+            )
             await autoClaim.paidClaim(signers[1].address, poolCommitter.address)
         })
         it("Sends money", async () => {
-            const balanceAfterClaim = await ethers.provider.getBalance(signers[0].address)
+            const balanceAfterClaim = await ethers.provider.getBalance(
+                signers[0].address
+            )
             expect(balanceBeforeClaim).to.be.lt(balanceAfterClaim)
         })
         it("Deletes request", async () => {
-            const request = await autoClaim.claimRequests(signers[1].address, poolCommitter.address)
+            const request = await autoClaim.claimRequests(
+                signers[1].address,
+                poolCommitter.address
+            )
             expect(request.updateIntervalId).to.equal(0)
             expect(request.reward).to.equal(0)
         })
         it("Claims", async () => {
-            const longTokenBalance = await longToken.balanceOf(signers[1].address)
+            const longTokenBalance = await longToken.balanceOf(
+                signers[1].address
+            )
             expect(longTokenBalance).to.equal(amountCommitted)
         })
     })
-
 })

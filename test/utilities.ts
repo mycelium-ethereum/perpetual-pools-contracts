@@ -218,7 +218,7 @@ export const deployPoolSetupContracts = async () => {
         library,
         priceObserver,
         invariantCheck,
-        autoClaim
+        autoClaim,
     }
 }
 
@@ -331,7 +331,7 @@ export const deployPoolAndTokenContracts = async (
         oracleWrapper,
         settlementEthOracle,
         invariantCheck,
-        autoClaim
+        autoClaim,
     }
 }
 
@@ -527,7 +527,7 @@ export const deployMockPool = async (
         settlementEthOracle,
         invariantCheck,
         priceObserver,
-        autoClaim
+        autoClaim,
     }
 }
 
@@ -560,13 +560,12 @@ export const createCommit = async (
             isPayingForClaim,
             { value: rewardAmount }
         )
-    )
-        .wait()
+    ).wait()
     return {
         commitID: getEventArgs(receipt, "CreateCommit")?.commitID,
         amount: getEventArgs(receipt, "CreateCommit")?.amount,
         commitType: getEventArgs(receipt, "CreateCommit")?.commitType,
-        receipt: receipt
+        receipt: receipt,
     }
 }
 
