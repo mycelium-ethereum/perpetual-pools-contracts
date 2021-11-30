@@ -10,6 +10,7 @@ interface IAutoClaim {
     );
     event PaidClaimRequestUpdate(address indexed user, address indexed poolCommitter, uint256 indexed newReward);
     event PaidRequestExecution(address user, uint256 reward);
+    event RequestWithdrawn(address user, address poolCommitter);
 
     struct ClaimRequest {
         uint128 updateIntervalId; // The update interval during which a user requested a claim.

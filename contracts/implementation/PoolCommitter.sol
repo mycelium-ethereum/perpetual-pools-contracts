@@ -81,6 +81,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         require(_factory != address(0), "Factory address cannot be 0 address");
         require(_invariantCheckContract != address(0), "InvariantCheck address cannot be 0 address");
         require(_autoClaim != address(0), "AutoClaim address cannot be null");
+        updateIntervalId = 1;
         factory = _factory;
         autoClaim = IAutoClaim(_autoClaim);
         governance = IPoolFactory(_factory).getOwner();
@@ -507,6 +508,24 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         balance.settlementTokens += update._newSettlementTokensSum;
 
         emit AggregateBalanceUpdated(user);
+    }
+
+    /**
+     * @return which update interval ID a commit would be placed into if made now
+     * @dev Calls PoolSwapLibrary::appropriateUpdateIntervalId
+     */
+    function getAppropriateUpdateIntervalId() external view override returns (uint128) {
+        ILeveragedPool pool = ILeveragedPool(leveragedPool);
+        return
+            uint128(
+                PoolSwapLibrary.appropriateUpdateIntervalId(
+                    block.timestamp,
+                    pool.lastPriceTimestamp(),
+                    pool.frontRunningInterval(),
+                    pool.updateInterval(),
+                    updateIntervalId
+                )
+            );
     }
 
     /**

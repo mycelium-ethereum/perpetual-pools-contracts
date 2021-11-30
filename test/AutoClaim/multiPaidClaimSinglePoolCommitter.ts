@@ -47,7 +47,7 @@ const reward = ethers.utils.parseEther("103")
 import { abi as ERC20Abi } from "../../artifacts/@openzeppelin/contracts/token/ERC20/ERC20.sol/ERC20.json"
 import { Receipt } from "hardhat-deploy/dist/types"
 
-describe("AutoClaim - multiPaidClaimMultiplePoolCommitters", () => {
+describe("AutoClaim - multiPaidClaimSinglePoolCommitter", () => {
     let poolCommitter: PoolCommitter
     let token: TestToken
     let shortToken: ERC20
@@ -60,13 +60,11 @@ describe("AutoClaim - multiPaidClaimMultiplePoolCommitters", () => {
 
     let poolCommitter2: any;
     let pool2: any;
-    let token2: TestToken
     let shortToken2: any
-    let longToken2: any
+    let result: any
 
-    const commits: CommitEventArgs[] | undefined = []
     beforeEach(async () => {
-        const result = await deployPoolAndTokenContracts(
+        result = await deployPoolAndTokenContracts(
             POOL_CODE,
             frontRunningInterval,
             updateInterval,
@@ -88,34 +86,6 @@ describe("AutoClaim - multiPaidClaimMultiplePoolCommitters", () => {
         await token.approve(pool.address, amountMinted)
         await token.transfer(signers[1].address, amountCommitted.mul(2))
         await token.connect(signers[1]).approve(pool.address, amountMinted)
-
-        // Deploy second pool
-        // deploy the pool using the factory, not separately
-        const deployParams = {
-            poolName: POOL_CODE_2,
-            frontRunningInterval: frontRunningInterval,
-            updateInterval: updateInterval,
-            leverageAmount: leverage + 1, // Change to make unique
-            quoteToken: token.address,
-            oracleWrapper: result.oracleWrapper.address,
-            settlementEthOracle: result.settlementEthOracle.address,
-            invariantCheckContract: result.invariantCheck.address,
-        }
-
-        await result.factory.deployPool(deployParams)
-
-        const poolAddress = await result.factory.pools(1)
-        pool2 = await ethers.getContractAt("LeveragedPool", poolAddress)
-
-        let commiter = await pool2.poolCommitter()
-        poolCommitter2 = await ethers.getContractAt("PoolCommitter", commiter)
-
-        let longTokenAddr = await pool.tokens(0)
-        let shortTokenAddr = await pool.tokens(1)
-        longToken2 = await ethers.getContractAt(ERC20Abi, longTokenAddr)
-        shortToken2 = await ethers.getContractAt(ERC20Abi, shortTokenAddr)
-
-        await token.approve(pool2.address, amountMinted)
     })
 
     context("When there is no claim", async () => {
@@ -129,12 +99,11 @@ describe("AutoClaim - multiPaidClaimMultiplePoolCommitters", () => {
         it("does nothing", async () => {
             await createCommit(poolCommitter, LONG_MINT, amountCommitted, false, true, reward)
             await poolCommitter.connect(signers[1]).commit(LONG_MINT, amountCommitted, false, true, { value: reward })
-            await createCommit(poolCommitter2, LONG_MINT, amountCommitted, false, true, reward)
+            await createCommit(poolCommitter, LONG_MINT, amountCommitted, false, true, reward)
 
             const users = [signers[0].address, signers[1].address, signers[0].address]
-            const committers = [poolCommitter.address, poolCommitter.address, poolCommitter2.address]
 
-            const receipt = await (await autoClaim.multiPaidClaimMultiplePoolCommitters(users, committers)).wait()
+            const receipt = await (await autoClaim.multiPaidClaimSinglePoolCommitter(users, poolCommitter.address)).wait()
             expect(receipt?.events?.length).to.equal(0)
         })
     })
@@ -148,16 +117,13 @@ describe("AutoClaim - multiPaidClaimMultiplePoolCommitters", () => {
 
             await poolCommitter.connect(signers[1]).commit(LONG_MINT, amountCommitted, false, true, { value: reward })
             await timeout(updateInterval * 1000)
-            await poolKeeper.performUpkeepMultiplePools([pool.address, pool2.address])
-
-            await poolCommitter2.connect(signers[0]).commit(SHORT_MINT, amountCommitted, false, true, { value: reward })
+            await poolKeeper.performUpkeepSinglePool(pool.address)
 
             balanceBeforeClaim = await ethers.provider.getBalance(signers[0].address)
 
             const users = [signers[0].address, signers[1].address]
-            const committers = [poolCommitter2.address, poolCommitter.address]
 
-            receipt = await (await autoClaim.multiPaidClaimMultiplePoolCommitters(users, committers)).wait()
+            receipt = await (await autoClaim.multiPaidClaimSinglePoolCommitter(users, poolCommitter.address)).wait()
         })
         it("Sends money", async () => {
             const balanceAfterClaim = await ethers.provider.getBalance(signers[0].address)
@@ -168,18 +134,9 @@ describe("AutoClaim - multiPaidClaimMultiplePoolCommitters", () => {
             expect(request.updateIntervalId).to.equal(0)
             expect(request.reward).to.equal(0)
         })
-        it("Doesn't delete the request that was made too late", async () => {
-            const request = await autoClaim.claimRequests(signers[0].address, poolCommitter2.address)
-            expect(request.updateIntervalId).to.equal(await poolCommitter2.updateIntervalId())
-            expect(request.reward).to.equal(reward)
-        })
         it("Claims", async () => {
             const longTokenBalance = await longToken.balanceOf(signers[1].address)
             expect(longTokenBalance).to.equal(amountCommitted)
-        })
-        it("Doesn't claim the one that was made too late", async () => {
-            const shortTokenBalance = await shortToken2.balanceOf(signers[1].address)
-            expect(shortTokenBalance).to.equal(0)
         })
     })
 
@@ -190,19 +147,16 @@ describe("AutoClaim - multiPaidClaimMultiplePoolCommitters", () => {
             await token.transfer(signers[1].address, amountCommitted.mul(2))
             await token.connect(signers[1]).approve(pool.address, amountMinted)
 
+            await poolCommitter.connect(signers[0]).commit(SHORT_MINT, amountCommitted, false, true, { value: reward })
             await poolCommitter.connect(signers[1]).commit(LONG_MINT, amountCommitted, false, true, { value: reward })
-            await poolCommitter2.connect(signers[0]).commit(SHORT_MINT, amountCommitted, false, true, { value: reward })
             await timeout(updateInterval * 10000)
-            await poolKeeper.performUpkeepMultiplePools([pool.address, pool2.address])
-
-            await poolCommitter.commit(SHORT_MINT, amountCommitted, false, true, { value: reward })
+            await poolKeeper.performUpkeepSinglePool(pool.address)
 
             balanceBeforeClaim = await ethers.provider.getBalance(signers[0].address)
 
             const users = [signers[0].address, signers[1].address]
-            const committers = [poolCommitter2.address, poolCommitter.address]
 
-            receipt = await (await autoClaim.multiPaidClaimMultiplePoolCommitters(users, committers)).wait()
+            receipt = await (await autoClaim.multiPaidClaimSinglePoolCommitter(users, poolCommitter.address)).wait()
         })
         it("Sends money", async () => {
             const balanceAfterClaim = await ethers.provider.getBalance(signers[0].address)
@@ -234,6 +188,53 @@ describe("AutoClaim - multiPaidClaimMultiplePoolCommitters", () => {
             //because 2 requests were made in time to be executed
             expect(count).to.equal(2)
         })
+    })
+
+    context("When there are valid requests to claim, from multiple different pool committers", async () => {
+        it("should only claim for requests from the given poolCommitter", async () => {
+            // Deploy second pool
+            // deploy the pool using the factory, not separately
+            const deployParams = {
+                poolName: POOL_CODE_2,
+                frontRunningInterval: frontRunningInterval,
+                updateInterval: updateInterval,
+                leverageAmount: leverage + 1, // Change to make unique
+                quoteToken: token.address,
+                oracleWrapper: result.oracleWrapper.address,
+                settlementEthOracle: result.settlementEthOracle.address,
+                invariantCheckContract: result.invariantCheck.address,
+            }
+
+            await result.factory.deployPool(deployParams)
+
+            const poolAddress = await result.factory.pools(1)
+            pool2 = await ethers.getContractAt("LeveragedPool", poolAddress)
+
+            let commiter = await pool2.poolCommitter()
+            poolCommitter2 = await ethers.getContractAt("PoolCommitter", commiter)
+
+            let shortTokenAddr = await pool.tokens(1)
+            shortToken2 = await ethers.getContractAt(ERC20Abi, shortTokenAddr)
+
+            await token.approve(pool2.address, amountMinted)
+
+            await token.transfer(signers[1].address, amountCommitted.mul(2))
+            await token.connect(signers[1]).approve(pool.address, amountMinted)
+
+            await poolCommitter.connect(signers[1]).commit(LONG_MINT, amountCommitted, false, true, { value: reward })
+            await poolCommitter2.connect(signers[0]).commit(SHORT_MINT, amountCommitted, false, true, { value: reward })
+            await poolCommitter.commit(SHORT_MINT, amountCommitted, false, true, { value: reward })
+            await timeout(updateInterval * 1000)
+            await poolKeeper.performUpkeepMultiplePools([pool.address, pool2.address])
+
+            const users = [signers[0].address, signers[1].address]
+
+            await (await autoClaim.multiPaidClaimSinglePoolCommitter(users, poolCommitter.address)).wait()
+
+            const request = await autoClaim.claimRequests(signers[0].address, poolCommitter2.address)
+            expect(request.updateIntervalId).to.equal((await poolCommitter2.updateIntervalId()) - 1)
+        })
+
     })
 
 })

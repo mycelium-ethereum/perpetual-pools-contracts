@@ -56,7 +56,7 @@ contract AutoClaim is IAutoClaim, Initializable {
         }
 
         // If no previous claim requests are pending, we need to make a new one.
-        requestUpdateIntervalId = poolCommitter.updateIntervalId();
+        requestUpdateIntervalId = poolCommitter.getAppropriateUpdateIntervalId();
         claimRequests[user][msg.sender].updateIntervalId = requestUpdateIntervalId;
         claimRequests[user][msg.sender].reward = msg.value;
         emit PaidClaimRequestUpdate(user, msg.sender, msg.value);
@@ -121,9 +121,10 @@ contract AutoClaim is IAutoClaim, Initializable {
      * @param poolCommitter The PoolCommitter for which the user's commit claim is to be withdrawn.
      */
     function withdrawClaimRequest(address poolCommitter) external override {
-        if (checkUserClaim(msg.sender, poolCommitter)) {
+        if (claimRequests[msg.sender][poolCommitter].updateIntervalId > 0) {
             payable(msg.sender).transfer(claimRequests[msg.sender][poolCommitter].reward);
             delete claimRequests[msg.sender][poolCommitter];
+            emit RequestWithdrawn(msg.sender, poolCommitter);
         }
     }
 

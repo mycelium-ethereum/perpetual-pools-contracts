@@ -76,7 +76,6 @@ describe("AutoClaim - paidClaim", () => {
         longToken = result.longToken
 
         await token.approve(pool.address, amountMinted)
-        await createCommit(poolCommitter, LONG_MINT, amountCommitted, false, true, reward)
     })
 
     context("When there is no claim", async () => {
