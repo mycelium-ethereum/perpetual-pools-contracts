@@ -20,7 +20,7 @@ interface IPoolFactory {
      * @param pool Address of the new pool
      * @param ticker Ticker of the neew pool
      */
-    event DeployPool(address indexed pool, string ticker);
+    event DeployPool(address indexed pool, address poolCommitter, string ticker);
 
     /**
      * @notice Creates a notification when the pool keeper changes
