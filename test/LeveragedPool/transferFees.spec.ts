@@ -7,6 +7,7 @@ import {
     ERC20,
     PoolSwapLibrary,
     PoolCommitter,
+    PoolKeeper,
 } from "../../types"
 
 import {
@@ -46,6 +47,7 @@ describe("LeveragedPool - feeTransfer", async () => {
     let longToken: ERC20
     let pool: LeveragedPool
     let library: PoolSwapLibrary
+    let poolKeeper: PoolKeeper
 
     const commits: CommitEventArgs[] | undefined = []
     beforeEach(async () => {
@@ -64,6 +66,7 @@ describe("LeveragedPool - feeTransfer", async () => {
         token = result.token
         shortToken = result.shortToken
         longToken = result.longToken
+        poolKeeper = result.poolKeeper
 
         await token.approve(pool.address, amountMinted)
 

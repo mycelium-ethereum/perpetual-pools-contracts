@@ -189,7 +189,9 @@ describe("LeveragedPool - initialize", () => {
                 await poolCommitterFactory.deploy(
                     setupContracts.factory.address,
                     setupContracts.invariantCheck.address,
-                    setupContracts.autoClaim.address
+                    setupContracts.autoClaim.address,
+                    0,
+                    0
                 )
             ).deployed()
 
@@ -228,6 +230,7 @@ describe("LeveragedPool - initialize", () => {
                     _feeAddress: feeAddress,
                     _secondaryFeeAddress: ethers.constants.AddressZero,
                     _quoteToken: quoteToken,
+                    _secondaryFeeSplitPercent: 10,
                     _invariantCheckContract:
                         setupContracts.invariantCheck.address,
                 })
@@ -307,6 +310,7 @@ describe("LeveragedPool - initialize", () => {
                 _feeAddress: feeAddress,
                 _secondaryFeeAddress: ethers.constants.AddressZero,
                 _quoteToken: quoteToken,
+                _secondaryFeeSplitPercent: 10,
                 _invariantCheckContract: invariantCheck.address,
             })
             await expect(
@@ -326,6 +330,7 @@ describe("LeveragedPool - initialize", () => {
                     _feeAddress: feeAddress,
                     _secondaryFeeAddress: ethers.constants.AddressZero,
                     _quoteToken: quoteToken,
+                    _secondaryFeeSplitPercent: 10,
                     _invariantCheckContract: invariantCheck.address,
                 })
             ).to.rejectedWith(Error)
@@ -348,6 +353,7 @@ describe("LeveragedPool - initialize", () => {
                     _feeAddress: feeAddress,
                     _secondaryFeeAddress: ethers.constants.AddressZero,
                     _quoteToken: ethers.constants.AddressZero,
+                    _secondaryFeeSplitPercent: 10,
                     _invariantCheckContract: invariantCheck.address,
                 })
             ).to.rejectedWith(Error)
@@ -370,6 +376,7 @@ describe("LeveragedPool - initialize", () => {
                     _feeAddress: feeAddress,
                     _secondaryFeeAddress: ethers.constants.AddressZero,
                     _quoteToken: quoteToken,
+                    _secondaryFeeSplitPercent: 10,
                     _invariantCheckContract: invariantCheck.address,
                 })
             ).to.rejectedWith(Error)
@@ -392,6 +399,7 @@ describe("LeveragedPool - initialize", () => {
                     _feeAddress: ethers.constants.AddressZero,
                     _secondaryFeeAddress: ethers.constants.AddressZero,
                     _quoteToken: quoteToken,
+                    _secondaryFeeSplitPercent: 10,
                     _invariantCheckContract: invariantCheck.address,
                 })
             ).to.rejectedWith(Error)
@@ -423,6 +431,7 @@ describe("LeveragedPool - initialize", () => {
                 _feeAddress: feeAddress,
                 _secondaryFeeAddress: ethers.constants.AddressZero,
                 _quoteToken: quoteToken,
+                _secondaryFeeSplitPercent: 10,
                 _invariantCheckContract: invariantCheck.address,
             })
             await leveragedPool.initialize({
@@ -441,6 +450,7 @@ describe("LeveragedPool - initialize", () => {
                 _feeAddress: feeAddress,
                 _secondaryFeeAddress: ethers.constants.AddressZero,
                 _quoteToken: quoteToken,
+                _secondaryFeeSplitPercent: 10,
                 _invariantCheckContract: invariantCheck.address,
             })
 

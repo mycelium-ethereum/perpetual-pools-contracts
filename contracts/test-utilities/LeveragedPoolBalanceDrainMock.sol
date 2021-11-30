@@ -34,6 +34,7 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
     bool public governanceTransferInProgress;
     address public feeAddress;
     address public secondaryFeeAddress;
+    uint256 public secondaryFeeSplitPercent; // Split to secondary fee address as a percentage.
     address public override quoteToken;
     address public override poolCommitter;
     address public override oracleWrapper;

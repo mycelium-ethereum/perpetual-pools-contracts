@@ -28,8 +28,12 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
 
     // Contract address to receive protocol fees
     address public feeReceiver;
-    // Default fee; Fee value as a decimal multiplied by 10^18. For example, 0.5% is represented as 0.5 * 10^18
+    // Default fee, annualised; Fee value as a decimal multiplied by 10^18. For example, 50% is represented as 0.5 * 10^18
     uint256 public fee;
+    uint256 public secondaryFeeSplitPercent = 10;
+    // The fee taken for each mint and burn. Fee value as a decimal multiplied by 10^18. For example, 50% is represented as 0.5 * 10^18
+    uint256 public mintingFee;
+    uint256 public burningFee;
 
     // This is required because we must pass along *some* value for decimal
     // precision to the base pool tokens as we use the Cloneable pattern
@@ -63,7 +67,7 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
         pairTokenBaseAddress = address(pairTokenBase);
         poolBase = new LeveragedPoolBalanceDrainMock();
         poolBaseAddress = address(poolBase);
-        poolCommitterBase = new PoolCommitter(address(this), address(this), address(this));
+        poolCommitterBase = new PoolCommitter(address(this), address(this), address(this), 0, 0);
         poolCommitterBaseAddress = address(poolCommitterBase);
 
         ILeveragedPool.Initialization memory baseInitialization = ILeveragedPool.Initialization(
@@ -82,7 +86,8 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
             1,
             address(this),
             address(0),
-            address(this)
+            address(this),
+            10
         );
         // Init bases
         poolBase.initialize(baseInitialization);
@@ -118,7 +123,13 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
         PoolCommitter poolCommitter = PoolCommitter(
             Clones.cloneDeterministic(poolCommitterBaseAddress, uniquePoolHash)
         );
-        poolCommitter.initialize(address(this), deploymentParameters.invariantCheckContract, autoClaim);
+        poolCommitter.initialize(
+            address(this),
+            deploymentParameters.invariantCheckContract,
+            autoClaim,
+            mintingFee,
+            burningFee
+        );
         address poolCommitterAddress = address(poolCommitter);
 
         require(
@@ -154,7 +165,8 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
             _leverageAmount: deploymentParameters.leverageAmount,
             _feeAddress: feeReceiver,
             _secondaryFeeAddress: msg.sender,
-            _quoteToken: deploymentParameters.quoteToken
+            _quoteToken: deploymentParameters.quoteToken,
+            _secondaryFeeSplitPercent: secondaryFeeSplitPercent
         });
 
         // approve the quote token on the pool committer to finalise linking
@@ -238,13 +250,19 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
         feeReceiver = _feeReceiver;
     }
 
+    function setSecondaryFeeSplitPercent(uint256 newFeePercent) external override onlyOwner {
+        require(newFeePercent <= 100, "Secondary fee split cannot exceed 100%");
+        secondaryFeeSplitPercent = newFeePercent;
+    }
+
     /**
      * @notice Set the yearly fee amount. The max yearly fee is 10%
      * @dev This is a percentage in WAD; multiplied by 10^18 e.g. 5% is 0.05 * 10^18
      * @param _fee The fee amount as a percentage
+     * @dev Throws if fee is greater than 10%
      */
     function setFee(uint256 _fee) external override onlyOwner {
-        require(_fee <= 0.1e18, "Fee cannot be >10%");
+        require(_fee <= 0.1e18, "Fee cannot be > 10%");
         fee = _fee;
     }
 
@@ -259,6 +277,22 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
     }
 
     /**
+     * @notice Set the minting and burning fee amount. The max yearly fee is 10%
+     * @dev This is a percentage in WAD; multiplied by 10^18 e.g. 5% is 0.05 * 10^18
+     * @param _mintingFee The fee amount for mints
+     * @param _burningFee The fee amount for burns
+     * @dev Only callable by the owner of this contract
+     * @dev Throws if minting fee is greater than 10%
+     * @dev Throws if burning fee is greater than 10%
+     */
+    function setMintAndBurnFee(uint256 _mintingFee, uint256 _burningFee) external override onlyOwner {
+        require(_mintingFee <= 0.1e18, "Fee cannot be > 10%");
+        require(_burningFee <= 0.1e18, "Fee cannot be > 10%");
+        mintingFee = _mintingFee;
+        burningFee = _burningFee;
+    }
+
+    /*
      * @notice Returns the address that owns this contract
      * @return Address of the owner
      * @dev Required due to the `IPoolFactory` interface

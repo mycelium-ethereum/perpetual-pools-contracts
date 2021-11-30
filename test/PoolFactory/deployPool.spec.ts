@@ -12,22 +12,28 @@ import {
     TestToken__factory,
     TestClones,
     TestClones__factory,
+    PoolCommitter,
+    PoolToken,
 } from "../../types"
-import { POOL_CODE, POOL_CODE_2 } from "../constants"
+import { POOL_CODE, POOL_CODE_2, LONG_MINT, SHORT_MINT } from "../constants"
 import {
     deployPoolAndTokenContracts,
     generateRandomAddress,
     getEventArgs,
+    createCommit,
+    timeout,
+    getRandomInt,
 } from "../utilities"
-import { Signer } from "ethers"
+import { Signer, BigNumber } from "ethers"
 import LeveragedPoolInterface from "../../artifacts/contracts/implementation/LeveragedPool.sol/LeveragedPool.json"
-import { deflateRaw } from "zlib"
+import { abi as ERC20Abi } from "../../artifacts/@openzeppelin/contracts/token/ERC20/ERC20.sol/ERC20.json"
 
 const updateInterval = 100
 const frontRunningInterval = 20
-const fee = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5]
+const fee = ethers.utils.parseEther("0.1")
 const leverage = 1
 const feeAddress = generateRandomAddress()
+const secondFeeAddress = generateRandomAddress()
 
 chai.use(chaiAsPromised)
 const { expect } = chai
@@ -38,7 +44,6 @@ describe("PoolFactory.deployPool", () => {
     let settlementEthOracle: ChainlinkOracleWrapper
     let invariantCheck: InvariantCheck
     let pool: LeveragedPool
-    let permissionlessPool: LeveragedPool
     let token: TestToken
     let signers: Signer[]
     let nonDAO: Signer
@@ -108,6 +113,7 @@ describe("PoolFactory.deployPool", () => {
                 _feeAddress: generateRandomAddress(),
                 _secondaryFeeAddress: ethers.constants.AddressZero,
                 _quoteToken: token.address,
+                _secondaryFeeSplitPercent: 10,
                 _invariantCheckContract: invariantCheck.address,
             }
             await expect(pool.initialize(initialization)).to.be.rejectedWith(
@@ -272,6 +278,134 @@ describe("PoolFactory.deployPool", () => {
                 )
 
             expect(predictedPoolAddress).to.not.eq(pool.address)
+        })
+    })
+
+    context("When secondary fee split is changed", async () => {
+        beforeEach(async () => {
+            await factory.setSecondaryFeeSplitPercent(20)
+        })
+
+        it("secondary fee split equals 20 on factory", async () => {
+            const feesplit = await factory.secondaryFeeSplitPercent()
+            expect(feesplit.toNumber()).to.eq(20)
+        })
+
+        it("secondary fee split equals 20 on deployed pool", async () => {
+            const deploymentData = {
+                poolName: POOL_CODE_2,
+                frontRunningInterval: 3,
+                updateInterval: 5,
+                leverageAmount: 4,
+                quoteToken: token.address,
+                oracleWrapper: oracleWrapper.address,
+                settlementEthOracle: settlementEthOracle.address,
+                invariantCheckContract: invariantCheck.address,
+            }
+
+            const poolNumber = (await factory.numPools()).toNumber()
+            await factory.deployPool(deploymentData)
+            const oldPoolAddress = await factory.pools(0)
+            const oldPool = (await ethers.getContractAt(
+                "LeveragedPool",
+                oldPoolAddress
+            )) as LeveragedPool
+            const newPoolAddress = await factory.pools(poolNumber)
+            const newPool = (await ethers.getContractAt(
+                "LeveragedPool",
+                newPoolAddress
+            )) as LeveragedPool
+
+            const oldFeeSplit = (
+                await oldPool.secondaryFeeSplitPercent()
+            ).toNumber()
+            const newFeeSplit = (
+                await newPool.secondaryFeeSplitPercent()
+            ).toNumber()
+            expect(oldFeeSplit).to.eq(10)
+            expect(newFeeSplit).to.eq(20)
+        })
+
+        it("pool fee transfers new fee split percentage", async () => {
+            const deploymentData = {
+                poolName: POOL_CODE_2,
+                frontRunningInterval: 3,
+                updateInterval: 5,
+                leverageAmount: 2,
+                quoteToken: token.address,
+                oracleWrapper: oracleWrapper.address,
+                settlementEthOracle: settlementEthOracle.address,
+                invariantCheckContract: invariantCheck.address,
+            }
+
+            const poolNumber = (await factory.numPools()).toNumber()
+            await factory.deployPool(deploymentData)
+            const newPoolAddress = await factory.pools(poolNumber)
+            const newPool = (await ethers.getContractAt(
+                "LeveragedPool",
+                newPoolAddress
+            )) as LeveragedPool
+
+            let commiter = await newPool.poolCommitter()
+            const poolCommitter = (await ethers.getContractAt(
+                "PoolCommitter",
+                commiter
+            )) as PoolCommitter
+
+            // Make commits
+            await token.approve(
+                newPool.address,
+                ethers.utils.parseEther("10000")
+            )
+            await createCommit(
+                poolCommitter,
+                LONG_MINT,
+                ethers.utils.parseEther("2000")
+            )
+            await createCommit(
+                poolCommitter,
+                SHORT_MINT,
+                ethers.utils.parseEther("2000")
+            )
+            const signers = await ethers.getSigners()
+            await newPool.setKeeper(signers[0].address)
+            newPool.updateSecondaryFeeAddress(secondFeeAddress)
+
+            // Execute commits no price change
+            await timeout(updateInterval * 1000)
+            const lastPrice = ethers.utils.parseEther(
+                getRandomInt(99999999, 1).toString()
+            )
+            await newPool.poolUpkeep(lastPrice, lastPrice)
+
+            // Upkeep pool with price change
+            await timeout(updateInterval * 1000)
+            await newPool.poolUpkeep(
+                lastPrice,
+                BigNumber.from("2").mul(lastPrice)
+            )
+
+            let feesPaidPrimary = await token.balanceOf(feeAddress)
+            let feesPaidSecondary = await token.balanceOf(secondFeeAddress)
+            expect(
+                parseFloat(ethers.utils.formatEther(feesPaidPrimary)) /
+                    parseFloat(ethers.utils.formatEther(feesPaidSecondary))
+            ).to.eq(4)
+        })
+    })
+
+    context("When secondary fee split is == 100", async () => {
+        it("Does not revert", async () => {
+            await expect(factory.setSecondaryFeeSplitPercent(100)).to.not
+                .reverted
+        })
+    })
+
+    context("When secondary fee split is > 100", async () => {
+        it("Reverts", async () => {
+            await expect(
+                factory.setSecondaryFeeSplitPercent(200)
+            ).to.revertedWith("Secondary fee split cannot exceed 100%")
         })
     })
 })

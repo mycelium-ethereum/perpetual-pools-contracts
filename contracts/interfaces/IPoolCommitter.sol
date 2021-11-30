@@ -59,6 +59,8 @@ interface IPoolCommitter {
         uint256 _newSettlementTokensSum;
         uint256 _balanceLongBurnAmount;
         uint256 _balanceShortBurnAmount;
+        uint256 _longBurnFee;
+        uint256 _shortBurnFee;
     }
 
     // Track how much of a user's commitments are being done from their aggregate balance
@@ -99,7 +101,9 @@ interface IPoolCommitter {
     function initialize(
         address _factory,
         address _invariantCheckContract,
-        address _autoClaim
+        address _autoClaim,
+        uint256 mintingFee,
+        uint256 burningFee
     ) external;
 
     function commit(
