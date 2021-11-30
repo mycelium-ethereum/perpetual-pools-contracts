@@ -4,7 +4,12 @@ module.exports = async (hre) => {
     const { deployer } = await getNamedAccounts()
     const accounts = await ethers.getSigners()
 
-    // used for both keepers and the eth market
+    const arbitrumRinkEthUsdOracle = {
+        address: "0x5f0423B1a6935dc5596e7A24d98532b67A0AeFd8",
+    }
+    const arbitrumRinkBtcUsdOracle = {
+        address: "0x0c9973e7a27d00e656B9f153348dA46CaD70d03d",
+    }
     const RinkebyEthUsdOracle = {
         address: "0x5f0423B1a6935dc5596e7A24d98532b67A0AeFd8",
     }
@@ -17,11 +22,9 @@ module.exports = async (hre) => {
     const MainnetBtcUsdOracle = {
         address: "0x6ce185860a4963106506C203335A2910413708e9",
     }
-
     const KovanEurUsdOracle = {
         address: "0x0c15Ab9A0DB086e062194c273CC79f41597Bbf13",
     }
-
     const KovanEthUsdOracle = {
         address: "0x9326BFA02ADD2366b30bacB125260Af641031331",
     }
@@ -51,11 +54,11 @@ module.exports = async (hre) => {
     )
 
     // deploy ChainlinkOracleWrapper
-    const oracleWrapper = await deploy("EurUsdOracleWrapper", {
+    const oracleWrapper = await deploy("BtcUsdOracleWrapper", {
         from: deployer,
         log: true,
         contract: "ChainlinkOracleWrapper",
-        args: [KovanEurUsdOracle.address, deployer],
+        args: [arbitrumRinkBtcUsdOracle.address, deployer],
     })
 
     // deploy SMA PriceObserver
@@ -71,7 +74,7 @@ module.exports = async (hre) => {
         log: true,
         contract: "SMAOracle",
         args: [
-            RinkebyEthUsdOracle.address, //Oracle Address
+            arbitrumRinkEthUsdOracle.address, //Oracle Address
             8, //Spot decimals
             priceObserver.address, //Observer address
             12, // number of periods
@@ -99,7 +102,7 @@ module.exports = async (hre) => {
         from: deployer,
         log: true,
         contract: "ChainlinkOracleWrapper",
-        args: [KovanEthUsdOracle.address, deployer],
+        args: [arbitrumRinkEthUsdOracle.address, deployer],
     })
 
     /* Commented out, because we want to wait till multisig governs pools before doing it for the rest of them
@@ -201,7 +204,7 @@ module.exports = async (hre) => {
     // deploy LeveragePool
     // BTC-USD 1x
     const deploymentData1 = {
-        poolName: EUR_POOL_CODE,
+        poolName: BTC_POOL_CODE,
         frontRunningInterval: frontRunningInterval,
         updateInterval: updateInterval,
         leverageAmount: oneLeverage,
@@ -213,7 +216,7 @@ module.exports = async (hre) => {
 
     // BTC-USD 3x
     const deploymentData2 = {
-        poolName: EUR_POOL_CODE,
+        poolName: BTC_POOL_CODE,
         frontRunningInterval: frontRunningInterval,
         updateInterval: updateInterval,
         leverageAmount: threeLeverage,
@@ -247,11 +250,24 @@ module.exports = async (hre) => {
         invariantCheck: invariantCheck.address,
     }
 
+    // ETH-USD 3x SMA
+    const deploymentData5 = {
+        poolName: ETH_POOL_CODE,
+        frontRunningInterval: frontRunningInterval,
+        updateInterval: updateInterval,
+        leverageAmount: threeLeverage,
+        quoteToken: token.address,
+        oracleWrapper: smaOracleWrapper.address,
+        settlementEthOracle: keeperOracle.address,
+        invariantCheck: invariantCheck.address,
+    }
+
     const deploymentData = [
         deploymentData1,
         deploymentData2,
         deploymentData3,
         deploymentData4,
+        deploymentData5,
     ]
 
     // console.log(`Deploy PoolKeeper: ${poolKeeper.address}`)
