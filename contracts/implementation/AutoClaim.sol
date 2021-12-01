@@ -119,6 +119,7 @@ contract AutoClaim is IAutoClaim, Initializable {
     /**
      * @notice If a user's claim request never gets executed (due to not high enough of a reward), or they change their minds, enable them to withdraw their request.
      * @param poolCommitter The PoolCommitter for which the user's commit claim is to be withdrawn.
+     * @dev Emits a `RequestWithdrawn` event on success
      */
     function withdrawClaimRequest(address poolCommitter) external override {
         if (claimRequests[msg.sender][poolCommitter].updateIntervalId > 0) {
@@ -131,6 +132,7 @@ contract AutoClaim is IAutoClaim, Initializable {
     /**
      * @notice When the user claims themself through poolCommitter, you want the
      * @param user The user who will have their claim request withdrawn.
+     * @dev Only callable by the associated `PoolCommitter` contract
      */
     function withdrawUserClaimRequest(address user) public override onlyPoolCommitter {
         payable(user).transfer(claimRequests[user][msg.sender].reward);
