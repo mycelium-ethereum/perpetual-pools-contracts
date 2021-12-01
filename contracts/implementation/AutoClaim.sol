@@ -79,7 +79,7 @@ contract AutoClaim is IAutoClaim, Initializable {
             delete claimRequests[user][poolCommitterAddress];
             // execute the claim
             poolCommitter.claim(user);
-            emit PaidRequestExecution(user, request.reward);
+            emit PaidRequestExecution(user, poolCommitterAddress, request.reward);
         }
     }
 
@@ -113,8 +113,6 @@ contract AutoClaim is IAutoClaim, Initializable {
             paidClaim(users[i], poolCommitterAddress);
         }
     }
-
-    // todo add ufnction for msg.sender to make their own autoclaim request outside of commitment
 
     /**
      * @notice If a user's claim request never gets executed (due to not high enough of a reward), or they change their minds, enable them to withdraw their request.

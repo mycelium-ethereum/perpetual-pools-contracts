@@ -57,7 +57,8 @@ contract PoolCommitter is IPoolCommitter, Initializable {
      * @param _autoClaim Address of the associated `AutoClaim` contract
      * @param _mintingFee The percentage that is taken from each mint, given as a decimal * 10 ^ 18
      * @param _burningFee The percentage that is taken from each burn, given as a decimal * 10 ^ 18
-     * @dev Throws if factory address is null
+     * @dev Throws if factory contract address is null
+     * @dev Throws if autoClaim contract address is null
      * @dev Throws if invariantCheck contract address is null
      * @dev Throws if minting fee is over 100%
      * @dev Throws if burning fee is over 100%
@@ -89,7 +90,8 @@ contract PoolCommitter is IPoolCommitter, Initializable {
      * @param _autoClaim Address of the associated `AutoClaim` contract
      * @param _mintingFee The percentage that is taken from each mint, given as a decimal * 10 ^ 18
      * @param _burningFee The percentage that is taken from each burn, given as a decimal * 10 ^ 18
-     * @dev Throws if factory address is null
+     * @dev Throws if factory contract address is null
+     * @dev Throws if autoClaim contract address is null
      * @dev Throws if invariantCheck contract address is null
      * @dev Throws if autoclaim contract address is null
      * @dev Only callable by the associated initialiser address

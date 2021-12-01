@@ -2,14 +2,41 @@
 pragma solidity 0.8.7;
 
 interface IAutoClaim {
+    /**
+     * @notice Creates a notification when an auto-claim is requested
+     * @param user The user who made a request
+     * @param poolCommitter The PoolCommitter instance in which the commit was made
+     * @param updateIntervalId The update interval ID that the corresponding commitment was allocated for
+     * @param reward The reward for the auto-claim
+     */
     event PaidClaimRequest(
         address indexed user,
         address indexed poolCommitter,
         uint256 indexed updateIntervalId,
         uint256 reward
     );
+
+    /**
+     * @notice Creates a notification when an auto-claim request is updated. i.e. When another commit is added and reward is incremented.
+     * @param user The user whose request got updated
+     * @param poolCommitter The PoolCommitter instance in which the commits were made
+     * @param newReward The new total reward for the auto-claim
+     */
     event PaidClaimRequestUpdate(address indexed user, address indexed poolCommitter, uint256 indexed newReward);
-    event PaidRequestExecution(address user, uint256 reward);
+
+    /**
+     * @notice Creates a notification when an auto-claim request is executed
+     * @param user The user whose request got executed
+     * @param poolCommitter The PoolCommitter instance in which the original commit was made
+     * @param reward The reward for the auto-claim
+     */
+    event PaidRequestExecution(address user, address poolCommitter, uint256 reward);
+
+    /**
+     * @notice Creates a notification when an auto-claim request is withdrawn
+     * @param user The user whose request got withdrawn
+     * @param poolCommitter The PoolCommitter instance in which the original commit was made
+     */
     event RequestWithdrawn(address user, address poolCommitter);
 
     struct ClaimRequest {
