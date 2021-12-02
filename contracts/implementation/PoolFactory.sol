@@ -5,6 +5,7 @@ import "../interfaces/IPoolFactory.sol";
 import "../interfaces/ILeveragedPool.sol";
 import "../interfaces/IPoolCommitter.sol";
 import "../interfaces/IERC20DecimalsWrapper.sol";
+import "../interfaces/IAutoClaim.sol";
 import "./LeveragedPool.sol";
 import "./PoolToken.sol";
 import "./PoolKeeper.sol";
@@ -24,8 +25,7 @@ contract PoolFactory is IPoolFactory, Ownable {
     PoolCommitter public poolCommitterBase;
     address public immutable poolCommitterBaseAddress;
 
-    // Default max leverage of 10
-    uint16 public maxLeverage = 10;
+    address public autoClaim;
 
     // Contract address to receive protocol fees
     address public feeReceiver;
@@ -40,8 +40,9 @@ contract PoolFactory is IPoolFactory, Ownable {
     // This is required because we must pass along *some* value for decimal
     // precision to the base pool tokens as we use the Cloneable pattern
     uint8 constant DEFAULT_NUM_DECIMALS = 18;
-
     uint8 constant MAX_DECIMALS = DEFAULT_NUM_DECIMALS;
+    // Default max leverage of 10
+    uint16 public maxLeverage = 10;
 
     /**
      * @notice Format: Pool counter => pool address
@@ -54,6 +55,11 @@ contract PoolFactory is IPoolFactory, Ownable {
      */
     mapping(address => bool) public override isValidPool;
 
+    /**
+     * @notice Format: PoolCommitter address => validity
+     */
+    mapping(address => bool) public override isValidPoolCommitter;
+
     // #### Functions
     constructor(address _feeReceiver) {
         require(_feeReceiver != address(0), "Address cannot be null");
@@ -63,7 +69,7 @@ contract PoolFactory is IPoolFactory, Ownable {
         pairTokenBaseAddress = address(pairTokenBase);
         poolBase = new LeveragedPool();
         poolBaseAddress = address(poolBase);
-        poolCommitterBase = new PoolCommitter(address(this), address(this), 0, 0);
+        poolCommitterBase = new PoolCommitter(address(this), address(this), address(this), 0, 0);
         poolCommitterBaseAddress = address(poolCommitterBase);
 
         ILeveragedPool.Initialization memory baseInitialization = ILeveragedPool.Initialization(
@@ -87,7 +93,6 @@ contract PoolFactory is IPoolFactory, Ownable {
         );
         // Init bases
         poolBase.initialize(baseInitialization);
-
         pairTokenBase.initialize(address(this), "BASE_TOKEN", "BASE", DEFAULT_NUM_DECIMALS);
         feeReceiver = _feeReceiver;
     }
@@ -120,7 +125,13 @@ contract PoolFactory is IPoolFactory, Ownable {
         PoolCommitter poolCommitter = PoolCommitter(
             Clones.cloneDeterministic(poolCommitterBaseAddress, uniquePoolHash)
         );
-        poolCommitter.initialize(address(this), deploymentParameters.invariantCheckContract, mintingFee, burningFee);
+        poolCommitter.initialize(
+            address(this),
+            deploymentParameters.invariantCheckContract,
+            autoClaim,
+            mintingFee,
+            burningFee
+        );
         address poolCommitterAddress = address(poolCommitter);
 
         require(
@@ -169,6 +180,7 @@ contract PoolFactory is IPoolFactory, Ownable {
         pools[numPools] = _pool;
         numPools += 1;
         isValidPool[_pool] = true;
+        isValidPoolCommitter[poolCommitterAddress] = true;
         return _pool;
     }
 
@@ -210,6 +222,17 @@ contract PoolFactory is IPoolFactory, Ownable {
     function setPoolKeeper(address _poolKeeper) external override onlyOwner {
         require(_poolKeeper != address(0), "address cannot be null");
         poolKeeper = IPoolKeeper(_poolKeeper);
+    }
+
+    /**
+     * @notice Sets the address of the associated `AutoClaim` contract
+     * @param _autoClaim Address of the `AutoClaim`
+     * @dev Throws if provided address is null
+     * @dev Only callable by the owner
+     */
+    function setAutoClaim(address _autoClaim) external override onlyOwner {
+        require(_autoClaim != address(0), "address cannot be null");
+        autoClaim = _autoClaim;
     }
 
     /**

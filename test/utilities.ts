@@ -34,12 +34,14 @@ import {
     PoolCommitter,
     TestChainlinkOracle,
     ChainlinkOracleWrapper,
+    AutoClaim__factory,
     InvariantCheck__factory,
     InvariantCheck,
     PoolFactoryBalanceDrainMock__factory,
     LeveragedPoolBalanceDrainMock,
     PoolFactoryBalanceDrainMock,
     PoolCommitter__factory,
+    AutoClaim,
 } from "../types"
 
 import { abi as ERC20Abi } from "../artifacts/@openzeppelin/contracts/token/ERC20/ERC20.sol/ERC20.json"
@@ -199,6 +201,13 @@ export const deployPoolSetupContracts = async () => {
     await factory.setPoolKeeper(poolKeeper.address)
     await factory.setFee(DEFAULT_FEE)
 
+    const autoClaimFactory = (await ethers.getContractFactory("AutoClaim", {
+        signer: signers[0],
+    })) as AutoClaim__factory
+    let autoClaim = await autoClaimFactory.deploy(factory.address)
+    autoClaim = await autoClaim.deployed()
+    await factory.setAutoClaim(autoClaim.address)
+
     return {
         factory,
         poolKeeper,
@@ -209,6 +218,7 @@ export const deployPoolSetupContracts = async () => {
         library,
         priceObserver,
         invariantCheck,
+        autoClaim,
     }
 }
 
@@ -248,6 +258,7 @@ export const deployPoolAndTokenContracts = async (
     settlementEthOracle: ChainlinkOracleWrapper
     invariantCheck: InvariantCheck
     priceObserver: PriceObserver
+    autoClaim: AutoClaim
 }> => {
     const setupContracts = await deployPoolSetupContracts()
 
@@ -300,6 +311,7 @@ export const deployPoolAndTokenContracts = async (
     const oracleWrapper = setupContracts.oracleWrapper
     const settlementEthOracle = setupContracts.settlementEthOracle
     const invariantCheck = setupContracts.invariantCheck
+    const autoClaim = setupContracts.autoClaim
 
     return {
         signers,
@@ -319,6 +331,7 @@ export const deployPoolAndTokenContracts = async (
         oracleWrapper,
         settlementEthOracle,
         invariantCheck,
+        autoClaim,
     }
 }
 
@@ -355,6 +368,7 @@ export const deployMockPool = async (
     oracleWrapper: ChainlinkOracleWrapper
     settlementEthOracle: ChainlinkOracleWrapper
     invariantCheck: InvariantCheck
+    autoClaim: AutoClaim
 }> => {
     const amountMinted = DEFAULT_MINT_AMOUNT
 
@@ -425,6 +439,13 @@ export const deployMockPool = async (
     const factory = await (
         await PoolFactory.deploy(generateRandomAddress())
     ).deployed()
+
+    const autoClaimFactory = (await ethers.getContractFactory("AutoClaim", {
+        signer: signers[0],
+    })) as AutoClaim__factory
+    let autoClaim = await autoClaimFactory.deploy(factory.address)
+    autoClaim = await autoClaim.deployed()
+    await factory.setAutoClaim(autoClaim.address)
 
     const invariantCheckFactory = (await ethers.getContractFactory(
         "InvariantCheck",
@@ -506,6 +527,7 @@ export const deployMockPool = async (
         settlementEthOracle,
         invariantCheck,
         priceObserver,
+        autoClaim,
     }
 }
 
@@ -524,16 +546,26 @@ export const createCommit = async (
     poolCommitter: PoolCommitter,
     commitType: BigNumberish,
     amount: BigNumberish,
-    fromAggregateBalance?: boolean
+    fromAggregateBalance?: boolean,
+    payForClaim?: boolean,
+    rewardAmount?: BigNumberish
 ): Promise<any> /*Promise<CommitEventArgs>*/ => {
     const fromAggBal = fromAggregateBalance ? fromAggregateBalance : false
+    const isPayingForClaim = payForClaim ? payForClaim : false
     const receipt = await (
-        await poolCommitter.commit(commitType, amount, fromAggBal)
+        await poolCommitter.commit(
+            commitType,
+            amount,
+            fromAggBal,
+            isPayingForClaim,
+            { value: rewardAmount }
+        )
     ).wait()
     return {
         commitID: getEventArgs(receipt, "CreateCommit")?.commitID,
         amount: getEventArgs(receipt, "CreateCommit")?.amount,
         commitType: getEventArgs(receipt, "CreateCommit")?.commitType,
+        receipt: receipt,
     }
 }
 

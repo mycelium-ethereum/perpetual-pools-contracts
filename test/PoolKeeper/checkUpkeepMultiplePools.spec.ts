@@ -17,6 +17,7 @@ import {
     PoolSwapLibrary__factory,
     TestToken__factory,
     PoolFactory,
+    AutoClaim__factory,
     InvariantCheck__factory,
 } from "../../types"
 
@@ -89,6 +90,13 @@ const setupHook = async () => {
     factory = await (
         await PoolFactory.deploy(generateRandomAddress())
     ).deployed()
+
+    const autoClaimFactory = (await ethers.getContractFactory("AutoClaim", {
+        signer: signers[0],
+    })) as AutoClaim__factory
+    let autoClaim = await autoClaimFactory.deploy(factory.address)
+    autoClaim = await autoClaim.deployed()
+    await factory.setAutoClaim(autoClaim.address)
 
     poolKeeper = await poolKeeperFactory.deploy(factory.address)
     await poolKeeper.deployed()

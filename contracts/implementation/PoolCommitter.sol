@@ -4,6 +4,7 @@ pragma solidity 0.8.7;
 import "../interfaces/IPoolCommitter.sol";
 import "../interfaces/ILeveragedPool.sol";
 import "../interfaces/IPoolFactory.sol";
+import "../interfaces/IAutoClaim.sol";
 import "../interfaces/IPausable.sol";
 import "../interfaces/IInvariantCheck.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
@@ -17,11 +18,12 @@ contract PoolCommitter is IPoolCommitter, Initializable {
     uint128 public constant LONG_INDEX = 0;
     uint128 public constant SHORT_INDEX = 1;
 
+    IAutoClaim public autoClaim;
+    uint128 public override updateIntervalId = 1;
     // The amount that is extracted from each mint and burn, being left in the pool. Given as the decimal * 10 ^ 18. For example, 60% fee is 0.6 * 10 ^ 18
     bytes16 mintingFee;
     bytes16 burningFee;
 
-    uint128 public updateIntervalId = 1;
     // Index 0 is the LONG token, index 1 is the SHORT token.
     // Fetched from the LeveragedPool when leveragedPool is set
     address[2] public tokens;
@@ -52,9 +54,11 @@ contract PoolCommitter is IPoolCommitter, Initializable {
      * @notice Constructor
      * @param _factory Address of the associated `PoolFactory` contract
      * @param _invariantCheckContract Address of the associated `InvariantCheck` contract
+     * @param _autoClaim Address of the associated `AutoClaim` contract
      * @param _mintingFee The percentage that is taken from each mint, given as a decimal * 10 ^ 18
      * @param _burningFee The percentage that is taken from each burn, given as a decimal * 10 ^ 18
-     * @dev Throws if factory address is null
+     * @dev Throws if factory contract address is null
+     * @dev Throws if autoClaim contract address is null
      * @dev Throws if invariantCheck contract address is null
      * @dev Throws if minting fee is over 100%
      * @dev Throws if burning fee is over 100%
@@ -62,14 +66,17 @@ contract PoolCommitter is IPoolCommitter, Initializable {
     constructor(
         address _factory,
         address _invariantCheckContract,
+        address _autoClaim,
         uint256 _mintingFee,
         uint256 _burningFee
     ) {
-        require(_factory != address(0), "Factory address cannot be 0 address");
-        require(_invariantCheckContract != address(0), "InvariantCheck address cannot be 0 address");
+        require(_factory != address(0), "Factory address cannot be null");
+        require(_autoClaim != address(0), "AutoClaim address cannot be null");
+        require(_invariantCheckContract != address(0), "InvariantCheck address cannot be null");
         require(_mintingFee < PoolSwapLibrary.WAD_PRECISION, "Minting fee >= 100%");
         require(_burningFee < PoolSwapLibrary.WAD_PRECISION, "Burning fee >= 100%");
         factory = _factory;
+        autoClaim = IAutoClaim(_autoClaim);
         mintingFee = PoolSwapLibrary.convertUIntToDecimal(_mintingFee);
         burningFee = PoolSwapLibrary.convertUIntToDecimal(_burningFee);
         invariantCheckContract = _invariantCheckContract;
@@ -80,10 +87,13 @@ contract PoolCommitter is IPoolCommitter, Initializable {
      * @notice Initialises the contract
      * @param _factory Address of the associated `PoolFactory` contract
      * @param _invariantCheckContract Address of the associated `InvariantCheck` contract
+     * @param _autoClaim Address of the associated `AutoClaim` contract
      * @param _mintingFee The percentage that is taken from each mint, given as a decimal * 10 ^ 18
      * @param _burningFee The percentage that is taken from each burn, given as a decimal * 10 ^ 18
-     * @dev Throws if factory address is null
+     * @dev Throws if factory contract address is null
+     * @dev Throws if autoClaim contract address is null
      * @dev Throws if invariantCheck contract address is null
+     * @dev Throws if autoclaim contract address is null
      * @dev Only callable by the associated initialiser address
      * @dev Throws if minting fee is over 100%
      * @dev Throws if burning fee is over 100%
@@ -91,16 +101,21 @@ contract PoolCommitter is IPoolCommitter, Initializable {
     function initialize(
         address _factory,
         address _invariantCheckContract,
+        address _autoClaim,
         uint256 _mintingFee,
         uint256 _burningFee
     ) external override initializer {
         require(_factory != address(0), "Factory address cannot be 0 address");
         require(_invariantCheckContract != address(0), "InvariantCheck address cannot be 0 address");
+        require(_autoClaim != address(0), "AutoClaim address cannot be null");
         require(_mintingFee < PoolSwapLibrary.WAD_PRECISION, "Minting fee >= 100%");
         require(_burningFee < PoolSwapLibrary.WAD_PRECISION, "Burning fee >= 100%");
+        updateIntervalId = 1;
         factory = _factory;
         mintingFee = PoolSwapLibrary.convertUIntToDecimal(_mintingFee);
         burningFee = PoolSwapLibrary.convertUIntToDecimal(_burningFee);
+        autoClaim = IAutoClaim(_autoClaim);
+        governance = IPoolFactory(_factory).getOwner();
         invariantCheckContract = _invariantCheckContract;
         invariantCheck = IInvariantCheck(_invariantCheckContract);
         governance = IPoolFactory(factory).getOwner();
@@ -214,13 +229,18 @@ contract PoolCommitter is IPoolCommitter, Initializable {
     function commit(
         CommitType commitType,
         uint256 amount,
-        bool fromAggregateBalance
-    ) external override updateBalance checkInvariantsAfterFunction {
+        bool fromAggregateBalance,
+        bool payForClaim
+    ) external payable override updateBalance checkInvariantsAfterFunction {
         require(amount > 0, "Amount must not be zero");
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
         uint256 updateInterval = pool.updateInterval();
         uint256 lastPriceTimestamp = pool.lastPriceTimestamp();
         uint256 frontRunningInterval = pool.frontRunningInterval();
+
+        if (payForClaim) {
+            autoClaim.makePaidClaimRequest{value: msg.value}(msg.sender);
+        }
 
         uint256 appropriateUpdateIntervalId = PoolSwapLibrary.appropriateUpdateIntervalId(
             block.timestamp,
@@ -260,7 +280,12 @@ contract PoolCommitter is IPoolCommitter, Initializable {
      * @dev Updates aggregate user balances
      * @dev Emits a `Claim` event on success
      */
-    function claim(address user) external override updateBalance checkInvariantsAfterFunction {
+    function claim(address user) external override checkInvariantsAfterFunction onlyAutoClaimOrCommitter(user) {
+        updateAggregateBalance(user);
+        if (msg.sender == user && autoClaim.checkUserClaim(user, address(this))) {
+            // If the committer is claiming for themself and they have a valid pending claim, clear it.
+            autoClaim.withdrawUserClaimRequest(user);
+        }
         Balance memory balance = userAggregateBalance[user];
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
         if (balance.settlementTokens > 0) {
@@ -545,6 +570,24 @@ contract PoolCommitter is IPoolCommitter, Initializable {
     }
 
     /**
+     * @return which update interval ID a commit would be placed into if made now
+     * @dev Calls PoolSwapLibrary::appropriateUpdateIntervalId
+     */
+    function getAppropriateUpdateIntervalId() external view override returns (uint128) {
+        ILeveragedPool pool = ILeveragedPool(leveragedPool);
+        return
+            uint128(
+                PoolSwapLibrary.appropriateUpdateIntervalId(
+                    block.timestamp,
+                    pool.lastPriceTimestamp(),
+                    pool.frontRunningInterval(),
+                    pool.updateInterval(),
+                    updateIntervalId
+                )
+            );
+    }
+
+    /**
      * @notice A copy of `updateAggregateBalance` that returns the aggregated balance without updating it
      * @param user Address of the given user
      * @return Associated `Balance` for the given user after aggregation
@@ -696,6 +739,11 @@ contract PoolCommitter is IPoolCommitter, Initializable {
      */
     modifier onlyPool() {
         require(msg.sender == leveragedPool, "msg.sender not leveragedPool");
+        _;
+    }
+
+    modifier onlyAutoClaimOrCommitter(address user) {
+        require(msg.sender == user || msg.sender == address(autoClaim), "msg.sender not committer or AutoClaim");
         _;
     }
 }

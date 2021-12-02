@@ -114,6 +114,7 @@ describe("LeveragedPool - executeAllCommitments", () => {
             await poolKeeper.performUpkeepSinglePool(pool.address)
 
             // Claim, then balance should go to account
+
             await poolCommitter.claim(signers[0].address)
             expect(await longToken.balanceOf(signers[0].address)).to.equal(
                 amountCommitted.mul(2)

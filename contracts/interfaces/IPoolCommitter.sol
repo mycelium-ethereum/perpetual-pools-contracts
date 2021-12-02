@@ -101,6 +101,7 @@ interface IPoolCommitter {
     function initialize(
         address _factory,
         address _invariantCheckContract,
+        address _autoClaim,
         uint256 mintingFee,
         uint256 burningFee
     ) external;
@@ -108,8 +109,11 @@ interface IPoolCommitter {
     function commit(
         CommitType commitType,
         uint256 amount,
-        bool fromAggregateBalance
-    ) external;
+        bool fromAggregateBalance,
+        bool payForClaim
+    ) external payable;
+
+    function updateIntervalId() external view returns (uint128);
 
     function claim(address user) external;
 
@@ -119,7 +123,9 @@ interface IPoolCommitter {
 
     function getAggregateBalance(address user) external view returns (Balance memory _balance);
 
-    function getPendingCommits() external view returns (TotalCommitment memory, TotalCommitment memory);
+    function getAppropriateUpdateIntervalId() external view returns (uint128);
 
-    function setQuoteAndPool(address quoteToken, address leveragedPool) external;
+    function setQuoteAndPool(address _quoteToken, address _leveragedPool) external;
+
+    function getPendingCommits() external view returns (TotalCommitment memory, TotalCommitment memory);
 }
