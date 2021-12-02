@@ -1,4 +1,6 @@
 import { ethers } from "hardhat"
+import { BigNumberish } from "ethers"
+
 export const MARKET = "AUD/USD"
 export const ORACLE = "0x77F9710E7d0A19669A13c055F62cd80d313dF022"
 export const ORACLE_2 = "0x5c0Ab2d9b5a7ed9f470386e82BB36A3613cDd4b5"
@@ -27,3 +29,4 @@ export const SINGLE_POOL_UPKEEP_GAS_COST = "67678"
 
 export const DEFAULT_MAX_LEVERAGE = 10
 export const DEFAULT_MIN_LEVERAGE = 1
+export const GAS_OVERHEAD: BigNumberish = 80195

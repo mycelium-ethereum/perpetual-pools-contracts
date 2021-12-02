@@ -8,7 +8,7 @@ import {
     timeout,
 } from "../../utilities"
 
-import { DEFAULT_MINT_AMOUNT, POOL_CODE } from "../../constants"
+import { DEFAULT_MINT_AMOUNT, POOL_CODE, GAS_OVERHEAD } from "../../constants"
 import {
     PoolKeeper,
     ChainlinkOracleWrapper,
@@ -109,18 +109,18 @@ describe("Leveraged pool fees", () => {
             await timeout(updateInterval * 1000 + 1000)
             // We are OK with small amounts of dust being left in the contract because
             // over-collateralised pools are OK
-            const approxKeeperFee = mintAmount.div(2)
+            const approxKeeperFee = mintAmount.div(2).add(GAS_OVERHEAD)
 
             let balanceBefore = await token.balanceOf(signers[0].address)
             await poolKeeper.performUpkeepSinglePool(pool.address)
             let balanceAfter = await token.balanceOf(signers[0].address)
             let feesTaken = balanceAfter.sub(balanceBefore)
 
-            const epsilon = ethers.utils
-                .parseEther("0.000001")
-                .add(approxKeeperFee)
-            const upperBound = approxKeeperFee.div(2).add(epsilon)
-            const lowerBound = approxKeeperFee.div(2).sub(epsilon)
+            const epsilon = approxKeeperFee.mul(
+                ethers.utils.parseEther("0.0000000000000001")
+            )
+            const upperBound = approxKeeperFee.add(epsilon)
+            const lowerBound = approxKeeperFee.sub(epsilon)
             //@ts-ignore
             expect(feesTaken).to.be.within(lowerBound, upperBound)
         })

@@ -197,13 +197,12 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
                 .mul(settlementPerEth)
                 .mul(2) // Mul by 2 because there are two pools
                 .div(tenToTheEighteen.div(tenToTheTen))
-            // EstimatedKeeperReward +/- 25% since it is quite hard to estimate
-            const lowerBound: any = estimatedKeeperReward.sub(
-                estimatedKeeperReward.div(4)
+
+            const epsilon = estimatedKeeperReward.mul(
+                ethers.utils.parseEther("0.0000000000000001")
             )
-            const upperBound: any = estimatedKeeperReward.add(
-                estimatedKeeperReward.div(4)
-            )
+            const lowerBound: any = estimatedKeeperReward.sub(epsilon)
+            const upperBound: any = estimatedKeeperReward.add(epsilon)
             expect(balanceAfter).to.be.gt(balanceBefore)
             expect(poolTokenBalanceAfter).to.be.lt(poolTokenBalanceBefore)
         })

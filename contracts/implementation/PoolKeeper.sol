@@ -21,6 +21,10 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     uint256 public constant MAX_DECIMALS = 18;
     uint256 public constant MAX_TIP = 100; /* maximum keeper tip */
 
+    /// Captures fixed gas overhead for performing upkeep that's unreachable
+    /// by `gasleft()` due to our approach to error handling in that code
+    uint256 public constant FIXED_GAS_OVERHEAD = 80195;
+
     // #### Global variables
     /**
      * @notice Format: Pool address => last executionPrice
@@ -242,6 +246,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @param _gasPrice Price of a single gas unit (in ETH (wei))
      * @param _gasSpent Number of gas units spent
      * @return Keeper's gas compensation
+     * @dev Adds a constant to `_gasSpent` when calculating actual gas usage
      */
     function keeperGas(
         address _pool,
@@ -253,9 +258,12 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         if (settlementTokenPrice <= 0) {
             return 0;
         } else {
+            /* gas spent plus our fixed gas overhead */
+            uint256 gasUsed = _gasSpent + FIXED_GAS_OVERHEAD;
+
             /* safe due to explicit bounds check above */
             /* (wei * Settlement / ETH) / fixed point (10^18) = amount in settlement */
-            bytes16 _weiSpent = ABDKMathQuad.fromUInt(_gasPrice * _gasSpent);
+            bytes16 _weiSpent = ABDKMathQuad.fromUInt(_gasPrice * gasUsed);
             bytes16 _settlementTokenPrice = ABDKMathQuad.fromUInt(uint256(settlementTokenPrice));
             return
                 ABDKMathQuad.toUInt(ABDKMathQuad.div(ABDKMathQuad.mul(_weiSpent, _settlementTokenPrice), fixedPoint));
