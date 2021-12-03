@@ -34,6 +34,14 @@ Regardless, an abridged list is provided for convenience:
 
 Any issues in the [public repository](https://github.com/tracer-protocol/perpetual-pools-contracts) that were opened **prior to the start of CARE** are considered known and thus out-of-scope.
 
+## Security Assumptions ##
+
+Any given pool will be upkept (that is to say `PoolCommitter::performUpkeepSinglePool` or `PoolCommitter::performUpkeepMultiplePools` is called with the LeveragedPool's address as a parameter) within a reasonable time after an update interval finishes (~15 minutes maximum).
+
+## Update Interval ##
+
+The update interval (`LeveragedPool::updateInterval`) is typically 1 hour (3600 seconds).
+
 ## Contributing ##
 
 ### Install ###
