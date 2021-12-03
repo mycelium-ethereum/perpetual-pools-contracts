@@ -1,54 +1,93 @@
-# Tracer Perpetual Pools
-Project base generated with the Typescript Solidity Dev Starter Kit. See [Blog Post](https://medium.com/@rahulsethuram/the-new-solidity-dev-stack-buidler-ethers-waffle-typescript-tutorial-f07917de48ae) for more details
+# Tracer Perpetual Pools #
 
-## C4 Audit Known Issues
-In `PoolCommitter::commit`, `shadowPools[_commitType]` is passed in as a parameter to this function, but that's already been incremented yet the tokens haven't yet been burnt.
+Tracer Perpetual Pools V2 is the second major release of Tracer's Perpetual Pools product.
 
-## Documentation
-[Perpetual Pools - Documentation](https://tracerdao.notion.site/Perpetual-Pools-Documentation-ee935f325a9a448d9ed44e333dff0e74)
+Tracer Perpetual Pools is a system that provides leveraged, tokenised exposure to arbitrary assets via a simple and elegant model where collateral is locked within the system in exchange for *pool tokens* (via *minting*) and pool tokens are returned to the protocol in exchange for (some of) the underlying collateral tokens (via *burning*).
 
-## Contract Addresses
+For additional information on the higher-level economics of how Pools works, please consult the [whitepaper]().
 
-These are the current contracts that are being used on Arbitrum One.
+## Prior Audit Work ##
 
-| Contract | Pool | Address |
-| -------- | -------- | ------- |
-| `OracleWrapper` for the BTC/USD oracle | N/A | [0xE973E6400B44fd20fc4752c03D112274A1374bA0](https://arbiscan.io/address/0xE973E6400B44fd20fc4752c03D112274A1374bA0) |
-| `OracleWrapper` for the ETH/USD oracle | N/A | [0xeceaea7e0408606714b2559ac9b1d3d51a327afe](https://arbiscan.io/address/0xeceaea7e0408606714b2559ac9b1d3d51a327afe) |
-| `PoolFactory` | N/A | [0x98C58c1cEb01E198F8356763d5CbA8EB7b11e4E2](https://arbiscan.io/address/0x98C58c1cEb01E198F8356763d5CbA8EB7b11e4E2) |
-| `PoolKeeper` | N/A | [0x759E817F0C40B11C775d1071d466B5ff5c6ce28e](https://arbiscan.io/address/0x759E817F0C40B11C775d1071d466B5ff5c6ce28e) |
-| `LeveragedPool` | 3p BTC/USD | [0x70988060e1FD9bbD795CA097A09eA1539896Ff5D](https://arbiscan.io/address/0x70988060e1FD9bbD795CA097A09eA1539896Ff5D) |
-| `PoolCommitter` | 3p BTC/USD | [0xFDE5D7B7596AF6aC5df7C56d76E14518A9F578dF](https://arbiscan.io/address/0xFDE5D7B7596AF6aC5df7C56d76E14518A9F578dF) |
-| `LeveragedPool` | 1p BTC/USD | [0x146808f54DB24Be2902CA9f595AD8f27f56B2E76](https://arbiscan.io/address/0x146808f54DB24Be2902CA9f595AD8f27f56B2E76) |
-| `PoolCommitter` | 1p BTC/USD | [0x539Bf88D729B65F8eC25896cFc7a5f44bbf1816b](https://arbiscan.io/address/0x539Bf88D729B65F8eC25896cFc7a5f44bbf1816b) |
-| `LeveragedPool` | 3p ETH/USD | [0x54114e9e1eEf979070091186D7102805819e916B](https://arbiscan.io/address/0x54114e9e1eEf979070091186D7102805819e916B) |
-| `PoolCommitter` | 3p ETH/USD | [0x759E817F0C40B11C775d1071d466B5ff5c6ce28e](https://arbiscan.io/address/0x759E817F0C40B11C775d1071d466B5ff5c6ce28e) |
-| `LeveragedPool` | 1p ETH/USD | [0x3A52aD74006D927e3471746D4EAC73c9366974Ee](https://arbiscan.io/address/0x3A52aD74006D927e3471746D4EAC73c9366974Ee) |
-| `PoolCommitter` | 1p ETH/USD | [0x047Cd47925C2390ce26dDeB302b8b165d246d450](https://arbiscan.io/address/0x047Cd47925C2390ce26dDeB302b8b165d246d450) |
+### Sigma Prime ###
 
-## Frontend Notes
-### Calculating ABDKMathQuad values
-The `PoolSwapLibrary` contains several methods for generating, converting, and using the raw ratio values. These can be used in the frontend to estimate the result of a transaction. It is vital when estimating the result of a transaction that the shadow pool amount for the commit type's opposite is included in the token total supply.
+[Sigma Prime](https://sigmaprime.io) have performed an audit of the previous version of the codebase — i.e., Perpetual Pools v1. Both the audit report and the team's response to the audit's findings are available [here](https://tracer.finance/radar/sigma-prime-audit-response).
 
-## Environment variables
-The environment variables used in this project are documented in the `example.env` file at the root of the project. To configure, create a copy of `example.env`, rename to `.env`, and replace the placeholders with the correct values. 
+### Code Arena ###
 
-## Using this Project
+A crowdsourced audit was also undertaken via [Code 423n4](https://code4rena.com). The results are available [here](https://github.com/code-423n4/2021-10-tracer-findings).
 
-Install the dependencies with `yarn`. 
-Build everything with `yarn compile`. 
-Run the tests with `yarn test`.
+## Changes Since V1 ##
 
-## Available Functionality
+The most accurate version of this list is the set of all PRs merged in since 16 September 2021 until today (inclusive): https://github.com/tracer-protocol/perpetual-pools-contracts/pulls?q=is%3Apr+is%3Aclosed+merged%3A2021-09-16..2021-11-01
 
-### Build Contracts and Generate Typechain Typeings
-You'll need to run this before running tests if typescript throws an error about not finding the typechain artifacts.
+Regardless, an abridged list is provided for convenience:
 
-`yarn refresh`
+ - SMA pricing is now available via SMAOracle.sol(https://github.com/tracer-protocol/perpetual-pools-contracts/pull/172)
+ - The frontrunning interval is now able to be (and likely will be) much longer than the update interval (https://github.com/tracer-protocol/perpetual-pools-contracts/pull/190)
+ - Commitments now occur in aggregate (https://github.com/tracer-protocol/perpetual-pools-contracts/pull/176)
+ - Deployments of new instances of the Perpetual Pools system are now deterministic (https://github.com/tracer-protocol/perpetual-pools-contracts/pull/181)
+ - Deployments are now permissionless (https://github.com/tracer-protocol/perpetual-pools-contracts/pull/186)
+ - There is now an automatic claiming facility for users to have the results of their commitments occurring on their behalf (https://github.com/tracer-protocol/perpetual-pools-contracts/pull/256)
+ - Minting and burning (both forms of commitments) now incur independent fees (https://github.com/tracer-protocol/perpetual-pools-contracts/pull/211)
 
-### Run Slither for static analysis report
-If you have `slither` installed and on your PATH, you can run `npm run slither` to get a report on the current codebase.
+## Known Issues ##
 
+Any issues in the [public repository](https://github.com/tracer-protocol/perpetual-pools-contracts) that were opened **prior to the start of CARE** are considered known and thus out-of-scope.
+
+## Contributing ##
+
+### Install ###
+
+```
+$ git clone git@github.com:tracer-protocol/perpetual-pools-contracts.git
+$ cd perpetual-pools-contracts
+perpetual-pools-contracts$ yarn install
+```
+
+### Compile ###
+
+```
+$ yarn run compile
+```
+
+### Test ###
+
+```
+$ yarn run test
+```
+
+### Lint ###
+
+```
+$ yarn run lint # to check
+$ yarn run lint:fix # to fix
+```
+
+### Miscellaneous ###
+
+#### Slither ####
+
+Requires [Slither](https://github.com/crytic/slither/) to both be installed and on current `PATH`.
+
+```
+$ yarn run slither
+```
+
+#### UML Diagrams ####
+
+Via [`sol2uml`](https://github.com/naddison36/sol2uml):
+
+```
+$ yarn run uml
+```
+
+#### Coverage ####
+
+Note that this can take a while and also both gas usage and contract code size metrics will be incorrect (this is due to added overhead due to instrumentation).
+
+```
+$ yarn run coverage
+```
  
 ### Deploy to Ethereum
 
