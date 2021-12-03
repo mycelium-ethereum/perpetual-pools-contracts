@@ -32,7 +32,7 @@ Regardless, an abridged list is provided for convenience:
 
 ## Known Issues ##
 
- - In `PoolCommitter::commit`, `shadowPools[_commitType]` is passed in as a parameter to this function, but that's already been incremented yet the tokens haven't yet been burnt.
+Any issues in the [public repository](https://github.com/tracer-protocol/perpetual-pools-contracts) that were opened **prior to the start of CARE** are considered known and thus out-of-scope.
 
 ## Contributing ##
 
