@@ -1,0 +1,539 @@
+{
+    "address": "0x19bc6254692E39eF5B4B1Faf4D762b93a60d6668",
+    "abi": [
+        {
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "_poolFactoryAddress",
+                    "type": "address"
+                }
+            ],
+            "stateMutability": "nonpayable",
+            "type": "constructor"
+        },
+        {
+            "anonymous": false,
+            "inputs": [
+                {
+                    "indexed": true,
+                    "internalType": "address",
+                    "name": "user",
+                    "type": "address"
+                },
+                {
+                    "indexed": true,
+                    "internalType": "address",
+                    "name": "poolCommitter",
+                    "type": "address"
+                },
+                {
+                    "indexed": true,
+                    "internalType": "uint256",
+                    "name": "updateIntervalId",
+                    "type": "uint256"
+                },
+                {
+                    "indexed": false,
+                    "internalType": "uint256",
+                    "name": "reward",
+                    "type": "uint256"
+                }
+            ],
+            "name": "PaidClaimRequest",
+            "type": "event"
+        },
+        {
+            "anonymous": false,
+            "inputs": [
+                {
+                    "indexed": true,
+                    "internalType": "address",
+                    "name": "user",
+                    "type": "address"
+                },
+                {
+                    "indexed": true,
+                    "internalType": "address",
+                    "name": "poolCommitter",
+                    "type": "address"
+                },
+                {
+                    "indexed": true,
+                    "internalType": "uint256",
+                    "name": "newReward",
+                    "type": "uint256"
+                }
+            ],
+            "name": "PaidClaimRequestUpdate",
+            "type": "event"
+        },
+        {
+            "anonymous": false,
+            "inputs": [
+                {
+                    "indexed": false,
+                    "internalType": "address",
+                    "name": "user",
+                    "type": "address"
+                },
+                {
+                    "indexed": false,
+                    "internalType": "address",
+                    "name": "poolCommitter",
+                    "type": "address"
+                },
+                {
+                    "indexed": false,
+                    "internalType": "uint256",
+                    "name": "reward",
+                    "type": "uint256"
+                }
+            ],
+            "name": "PaidRequestExecution",
+            "type": "event"
+        },
+        {
+            "anonymous": false,
+            "inputs": [
+                {
+                    "indexed": false,
+                    "internalType": "address",
+                    "name": "user",
+                    "type": "address"
+                },
+                {
+                    "indexed": false,
+                    "internalType": "address",
+                    "name": "poolCommitter",
+                    "type": "address"
+                }
+            ],
+            "name": "RequestWithdrawn",
+            "type": "event"
+        },
+        {
+            "inputs": [
+                {
+                    "components": [
+                        {
+                            "internalType": "uint128",
+                            "name": "updateIntervalId",
+                            "type": "uint128"
+                        },
+                        {
+                            "internalType": "uint256",
+                            "name": "reward",
+                            "type": "uint256"
+                        }
+                    ],
+                    "internalType": "struct IAutoClaim.ClaimRequest",
+                    "name": "request",
+                    "type": "tuple"
+                },
+                {
+                    "internalType": "uint256",
+                    "name": "currentUpdateIntervalId",
+                    "type": "uint256"
+                }
+            ],
+            "name": "checkClaim",
+            "outputs": [
+                {
+                    "internalType": "bool",
+                    "name": "",
+                    "type": "bool"
+                }
+            ],
+            "stateMutability": "pure",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "user",
+                    "type": "address"
+                },
+                {
+                    "internalType": "address",
+                    "name": "poolCommitter",
+                    "type": "address"
+                }
+            ],
+            "name": "checkUserClaim",
+            "outputs": [
+                {
+                    "internalType": "bool",
+                    "name": "",
+                    "type": "bool"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "",
+                    "type": "address"
+                },
+                {
+                    "internalType": "address",
+                    "name": "",
+                    "type": "address"
+                }
+            ],
+            "name": "claimRequests",
+            "outputs": [
+                {
+                    "internalType": "uint128",
+                    "name": "updateIntervalId",
+                    "type": "uint128"
+                },
+                {
+                    "internalType": "uint256",
+                    "name": "reward",
+                    "type": "uint256"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "_poolFactoryAddress",
+                    "type": "address"
+                }
+            ],
+            "name": "initialize",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "user",
+                    "type": "address"
+                }
+            ],
+            "name": "makePaidClaimRequest",
+            "outputs": [],
+            "stateMutability": "payable",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "address[]",
+                    "name": "users",
+                    "type": "address[]"
+                },
+                {
+                    "internalType": "address[]",
+                    "name": "poolCommitterAddresses",
+                    "type": "address[]"
+                }
+            ],
+            "name": "multiPaidClaimMultiplePoolCommitters",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "address[]",
+                    "name": "users",
+                    "type": "address[]"
+                },
+                {
+                    "internalType": "address",
+                    "name": "poolCommitterAddress",
+                    "type": "address"
+                }
+            ],
+            "name": "multiPaidClaimSinglePoolCommitter",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "user",
+                    "type": "address"
+                },
+                {
+                    "internalType": "address",
+                    "name": "poolCommitterAddress",
+                    "type": "address"
+                }
+            ],
+            "name": "paidClaim",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "poolCommitter",
+                    "type": "address"
+                }
+            ],
+            "name": "withdrawClaimRequest",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "user",
+                    "type": "address"
+                }
+            ],
+            "name": "withdrawUserClaimRequest",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        }
+    ],
+    "transactionHash": "0x83308f36aed71e3c8d98dcc96530b16fff678fa18e0b86e89649994ddd0f46c0",
+    "receipt": {
+        "to": null,
+        "from": "0xfb59B91646cd0890F3E5343384FEb746989B66C7",
+        "contractAddress": "0x19bc6254692E39eF5B4B1Faf4D762b93a60d6668",
+        "transactionIndex": 0,
+        "gasUsed": "8618972",
+        "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "blockHash": "0xcd538cee4a50d448fa10ce21caf93c3b7467f5ff50a0067ae4f440de28d08ad0",
+        "transactionHash": "0x83308f36aed71e3c8d98dcc96530b16fff678fa18e0b86e89649994ddd0f46c0",
+        "logs": [],
+        "blockNumber": 7327066,
+        "cumulativeGasUsed": "286992",
+        "status": 1,
+        "byzantium": true
+    },
+    "args": ["0x3c08BE365e91272db6CaD4F204B1C7ccBd7640DA"],
+    "solcInputHash": "2618b71259c48e264b944568d24817df",
+    "metadata": "{\"compiler\":{\"version\":\"0.8.7+commit.e28d00a7\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_poolFactoryAddress\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"user\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"poolCommitter\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"updateIntervalId\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"reward\",\"type\":\"uint256\"}],\"name\":\"PaidClaimRequest\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"user\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"poolCommitter\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"newReward\",\"type\":\"uint256\"}],\"name\":\"PaidClaimRequestUpdate\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"user\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"poolCommitter\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"reward\",\"type\":\"uint256\"}],\"name\":\"PaidRequestExecution\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"user\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"poolCommitter\",\"type\":\"address\"}],\"name\":\"RequestWithdrawn\",\"type\":\"event\"},{\"inputs\":[{\"components\":[{\"internalType\":\"uint128\",\"name\":\"updateIntervalId\",\"type\":\"uint128\"},{\"internalType\":\"uint256\",\"name\":\"reward\",\"type\":\"uint256\"}],\"internalType\":\"struct IAutoClaim.ClaimRequest\",\"name\":\"request\",\"type\":\"tuple\"},{\"internalType\":\"uint256\",\"name\":\"currentUpdateIntervalId\",\"type\":\"uint256\"}],\"name\":\"checkClaim\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"user\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"poolCommitter\",\"type\":\"address\"}],\"name\":\"checkUserClaim\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"claimRequests\",\"outputs\":[{\"internalType\":\"uint128\",\"name\":\"updateIntervalId\",\"type\":\"uint128\"},{\"internalType\":\"uint256\",\"name\":\"reward\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_poolFactoryAddress\",\"type\":\"address\"}],\"name\":\"initialize\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"user\",\"type\":\"address\"}],\"name\":\"makePaidClaimRequest\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address[]\",\"name\":\"users\",\"type\":\"address[]\"},{\"internalType\":\"address[]\",\"name\":\"poolCommitterAddresses\",\"type\":\"address[]\"}],\"name\":\"multiPaidClaimMultiplePoolCommitters\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address[]\",\"name\":\"users\",\"type\":\"address[]\"},{\"internalType\":\"address\",\"name\":\"poolCommitterAddress\",\"type\":\"address\"}],\"name\":\"multiPaidClaimSinglePoolCommitter\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"user\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"poolCommitterAddress\",\"type\":\"address\"}],\"name\":\"paidClaim\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"poolCommitter\",\"type\":\"address\"}],\"name\":\"withdrawClaimRequest\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"user\",\"type\":\"address\"}],\"name\":\"withdrawUserClaimRequest\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"details\":\"A question I had to ask was \\\"What happens if one requests a second claim before one's pending request from a previous update interval one gets executed on?\\\".      My solution to this was to have the committer instantly claim for themself. They have signified their desire to claim their tokens, after all.\",\"kind\":\"dev\",\"methods\":{\"checkClaim((uint128,uint256),uint256)\":{\"details\":\"A claim request can be executed only if one exists and is from an update interval that has passed.\",\"params\":{\"currentUpdateIntervalId\":\"The current update interval. Used to compare to the update interval of the ClaimRequest.\",\"request\":\"The ClaimRequest object to be checked.\"},\"returns\":{\"_0\":\"true if the given claim request can be executed.\"}},\"checkUserClaim(address,address)\":{\"params\":{\"poolCommitter\":\"The pool committer in which to look for a user's claim request.\",\"user\":\"The user whose claim request will be checked.\"},\"returns\":{\"_0\":\"true if the claim request can be executed.\"}},\"makePaidClaimRequest(address)\":{\"details\":\"Only callable by this contract's associated PoolCommitter instance. This prevents griefing. Consider a permissionless function, where a user can claim that somebody else wants to auto claim when they do not.\",\"params\":{\"user\":\"The user who wants to autoclaim.\"}},\"multiPaidClaimMultiplePoolCommitters(address[],address[])\":{\"details\":\"The nth index in poolCommitterAddresses should be the PoolCommitter where the nth address in user requested an auto claim.\",\"params\":{\"poolCommitterAddresses\":\"The PoolCommitter addresses within which you would like to claim for the respective user.\",\"users\":\"All users to execute claims for.\"}},\"multiPaidClaimSinglePoolCommitter(address[],address)\":{\"details\":\"The nth index in poolCommitterAddresses should be the PoolCommitter where the nth address in user requested an auto claim\",\"params\":{\"poolCommitterAddress\":\"The PoolCommitter address within which you would like to claim for the respective user\",\"users\":\"All users to execute claims for.\"}},\"paidClaim(address,address)\":{\"params\":{\"poolCommitterAddress\":\"The PoolCommitter address within which the user's claim will be executed\",\"user\":\"The user who requested an autoclaim.\"}},\"withdrawClaimRequest(address)\":{\"details\":\"Emits a `RequestWithdrawn` event on success\",\"params\":{\"poolCommitter\":\"The PoolCommitter for which the user's commit claim is to be withdrawn.\"}},\"withdrawUserClaimRequest(address)\":{\"details\":\"Only callable by the associated `PoolCommitter` contract\",\"params\":{\"user\":\"The user who will have their claim request withdrawn.\"}}},\"title\":\"The contract to be used for paying to have a keeper claim your commit automatically\",\"version\":1},\"userdoc\":{\"events\":{\"PaidClaimRequest(address,address,uint256,uint256)\":{\"notice\":\"Creates a notification when an auto-claim is requested\"},\"PaidClaimRequestUpdate(address,address,uint256)\":{\"notice\":\"Creates a notification when an auto-claim request is updated. i.e. When another commit is added and reward is incremented.\"},\"PaidRequestExecution(address,address,uint256)\":{\"notice\":\"Creates a notification when an auto-claim request is executed\"},\"RequestWithdrawn(address,address)\":{\"notice\":\"Creates a notification when an auto-claim request is withdrawn\"}},\"kind\":\"user\",\"methods\":{\"checkUserClaim(address,address)\":{\"notice\":\"Check the validity of a user's claim request for a given pool committer.\"},\"makePaidClaimRequest(address)\":{\"notice\":\"Pay for your commit to be claimed. This means that a willing participant can claim on `user`'s behalf when the current update interval ends.\"},\"multiPaidClaimMultiplePoolCommitters(address[],address[])\":{\"notice\":\"Call `paidClaim` for multiple users, across multiple PoolCommitters.\"},\"multiPaidClaimSinglePoolCommitter(address[],address)\":{\"notice\":\"Call `paidClaim` for multiple users, in a single PoolCommitter.\"},\"paidClaim(address,address)\":{\"notice\":\"Claim on the behalf of a user who has requests to have their commit automatically claimed by a keeper.\"},\"withdrawClaimRequest(address)\":{\"notice\":\"If a user's claim request never gets executed (due to not high enough of a reward), or they change their minds, enable them to withdraw their request.\"},\"withdrawUserClaimRequest(address)\":{\"notice\":\"When the user claims themself through poolCommitter, you want the\"}},\"notice\":\"The way this works is when a user commits with `PoolCommitter::commit`, they have the option to set the `bool payForClaim` parameter to `true`.         During this function execution, `AutoClaim::payForClaim` is called, and `msg.value` is taken as the reward to whoever claims for requester (by using `AutoClaim::paidClaim`).\",\"version\":1}},\"settings\":{\"compilationTarget\":{\"contracts/implementation/AutoClaim.sol\":\"AutoClaim\"},\"evmVersion\":\"london\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[]},\"sources\":{\"@openzeppelin/contracts/proxy/utils/Initializable.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n\\npragma solidity ^0.8.0;\\n\\n/**\\n * @dev This is a base contract to aid in writing upgradeable contracts, or any kind of contract that will be deployed\\n * behind a proxy. Since a proxied contract can't have a constructor, it's common to move constructor logic to an\\n * external initializer function, usually called `initialize`. It then becomes necessary to protect this initializer\\n * function so it can only be called once. The {initializer} modifier provided by this contract will have this effect.\\n *\\n * TIP: To avoid leaving the proxy in an uninitialized state, the initializer function should be called as early as\\n * possible by providing the encoded function call as the `_data` argument to {ERC1967Proxy-constructor}.\\n *\\n * CAUTION: When used with inheritance, manual care must be taken to not invoke a parent initializer twice, or to ensure\\n * that all initializers are idempotent. This is not verified automatically as constructors are by Solidity.\\n */\\nabstract contract Initializable {\\n    /**\\n     * @dev Indicates that the contract has been initialized.\\n     */\\n    bool private _initialized;\\n\\n    /**\\n     * @dev Indicates that the contract is in the process of being initialized.\\n     */\\n    bool private _initializing;\\n\\n    /**\\n     * @dev Modifier to protect an initializer function from being invoked twice.\\n     */\\n    modifier initializer() {\\n        require(_initializing || !_initialized, \\\"Initializable: contract is already initialized\\\");\\n\\n        bool isTopLevelCall = !_initializing;\\n        if (isTopLevelCall) {\\n            _initializing = true;\\n            _initialized = true;\\n        }\\n\\n        _;\\n\\n        if (isTopLevelCall) {\\n            _initializing = false;\\n        }\\n    }\\n}\\n\",\"keccak256\":\"0x8b2abd85d0ece7e866e100e9d47ca9cbec93c87cf71a8d267b2b93eb81f7d5e9\",\"license\":\"MIT\"},\"contracts/implementation/AutoClaim.sol\":{\"content\":\"//SPDX-License-Identifier: CC-BY-NC-ND-4.0\\npragma solidity 0.8.7;\\n\\nimport \\\"../interfaces/IPoolFactory.sol\\\";\\nimport \\\"../interfaces/IPoolCommitter.sol\\\";\\nimport \\\"../interfaces/IAutoClaim.sol\\\";\\n\\nimport \\\"@openzeppelin/contracts/proxy/utils/Initializable.sol\\\";\\n\\n/// @title The contract to be used for paying to have a keeper claim your commit automatically\\n/// @notice The way this works is when a user commits with `PoolCommitter::commit`, they have the option to set the `bool payForClaim` parameter to `true`.\\n///         During this function execution, `AutoClaim::payForClaim` is called, and `msg.value` is taken as the reward to whoever claims for requester (by using `AutoClaim::paidClaim`).\\n/// @dev A question I had to ask was \\\"What happens if one requests a second claim before one's pending request from a previous update interval one gets executed on?\\\".\\n///      My solution to this was to have the committer instantly claim for themself. They have signified their desire to claim their tokens, after all.\\ncontract AutoClaim is IAutoClaim, Initializable {\\n    // User => PoolCommitter address => Claim Request\\n    mapping(address => mapping(address => ClaimRequest)) public claimRequests;\\n    IPoolFactory internal poolFactory;\\n\\n    constructor(address _poolFactoryAddress) {\\n        require(_poolFactoryAddress != address(0), \\\"PoolFactory address == 0\\\");\\n        poolFactory = IPoolFactory(_poolFactoryAddress);\\n    }\\n\\n    function initialize(address _poolFactoryAddress) external override initializer {\\n        require(_poolFactoryAddress != address(0), \\\"PoolFactory address == 0\\\");\\n        poolFactory = IPoolFactory(_poolFactoryAddress);\\n    }\\n\\n    /**\\n     * @notice Pay for your commit to be claimed. This means that a willing participant can claim on `user`'s behalf when the current update interval ends.\\n     * @dev Only callable by this contract's associated PoolCommitter instance. This prevents griefing. Consider a permissionless function, where a user can claim that somebody else wants to auto claim when they do not.\\n     * @param user The user who wants to autoclaim.\\n     */\\n    function makePaidClaimRequest(address user) external payable override onlyPoolCommitter {\\n        ClaimRequest storage request = claimRequests[user][msg.sender];\\n        IPoolCommitter poolCommitter = IPoolCommitter(msg.sender);\\n\\n        uint128 requestUpdateIntervalId = request.updateIntervalId;\\n        // Check if a previous claim request is pending...\\n        if (requestUpdateIntervalId > 0) {\\n            // and if it is claimable (the current update interval is greater than the one where the request was made).\\n            if (requestUpdateIntervalId < poolCommitter.updateIntervalId()) {\\n                // If so, this person may as well claim for themself (if allowed). They have signified their want of claim, after all.\\n                // Note that this function is only called by PoolCommitter when a user `commits` and therefore `user` will always equal the original `msg.sender`.\\n                payable(user).transfer(claimRequests[user][msg.sender].reward);\\n                delete claimRequests[user][msg.sender];\\n                poolCommitter.claim(user);\\n            } else {\\n                // If the claim request is pending but not yet valid (it was made in the current commit), we want to add to the value.\\n                // Note that in context, the user *usually* won't need or want to increment `ClaimRequest.reward` more than once because the first call to `payForClaim` should suffice.\\n                request.reward += msg.value;\\n                emit PaidClaimRequestUpdate(user, msg.sender, msg.value);\\n                return;\\n            }\\n        }\\n\\n        // If no previous claim requests are pending, we need to make a new one.\\n        requestUpdateIntervalId = poolCommitter.getAppropriateUpdateIntervalId();\\n        claimRequests[user][msg.sender].updateIntervalId = requestUpdateIntervalId;\\n        claimRequests[user][msg.sender].reward = msg.value;\\n        emit PaidClaimRequestUpdate(user, msg.sender, msg.value);\\n    }\\n\\n    /**\\n     * @notice Claim on the behalf of a user who has requests to have their commit automatically claimed by a keeper.\\n     * @param user The user who requested an autoclaim.\\n     * @param poolCommitterAddress The PoolCommitter address within which the user's claim will be executed\\n     */\\n    function paidClaim(address user, address poolCommitterAddress) public override {\\n        ClaimRequest memory request = claimRequests[user][poolCommitterAddress];\\n        IPoolCommitter poolCommitter = IPoolCommitter(poolCommitterAddress);\\n        uint256 currentUpdateIntervalId = poolCommitter.updateIntervalId();\\n        // Check if a previous claim request has been made, and if it is claimable.\\n        if (checkClaim(request, currentUpdateIntervalId)) {\\n            // Send the reward to msg.sender.\\n            payable(msg.sender).transfer(request.reward);\\n            // delete the ClaimRequest from storage\\n            delete claimRequests[user][poolCommitterAddress];\\n            // execute the claim\\n            poolCommitter.claim(user);\\n            emit PaidRequestExecution(user, poolCommitterAddress, request.reward);\\n        }\\n    }\\n\\n    /**\\n     * @notice Call `paidClaim` for multiple users, across multiple PoolCommitters.\\n     * @param users All users to execute claims for.\\n     * @param poolCommitterAddresses The PoolCommitter addresses within which you would like to claim for the respective user.\\n     * @dev The nth index in poolCommitterAddresses should be the PoolCommitter where the nth address in user requested an auto claim.\\n     */\\n    function multiPaidClaimMultiplePoolCommitters(address[] calldata users, address[] calldata poolCommitterAddresses)\\n        external\\n        override\\n    {\\n        require(users.length == poolCommitterAddresses.length, \\\"Supplied arrays must be same length\\\");\\n        for (uint256 i = 0; i < users.length; i++) {\\n            paidClaim(users[i], poolCommitterAddresses[i]);\\n        }\\n    }\\n\\n    /**\\n     * @notice Call `paidClaim` for multiple users, in a single PoolCommitter.\\n     * @param users All users to execute claims for.\\n     * @param poolCommitterAddress The PoolCommitter address within which you would like to claim for the respective user\\n     * @dev The nth index in poolCommitterAddresses should be the PoolCommitter where the nth address in user requested an auto claim\\n     */\\n    function multiPaidClaimSinglePoolCommitter(address[] calldata users, address poolCommitterAddress)\\n        external\\n        override\\n    {\\n        for (uint256 i = 0; i < users.length; i++) {\\n            paidClaim(users[i], poolCommitterAddress);\\n        }\\n    }\\n\\n    /**\\n     * @notice If a user's claim request never gets executed (due to not high enough of a reward), or they change their minds, enable them to withdraw their request.\\n     * @param poolCommitter The PoolCommitter for which the user's commit claim is to be withdrawn.\\n     * @dev Emits a `RequestWithdrawn` event on success\\n     */\\n    function withdrawClaimRequest(address poolCommitter) external override {\\n        if (claimRequests[msg.sender][poolCommitter].updateIntervalId > 0) {\\n            payable(msg.sender).transfer(claimRequests[msg.sender][poolCommitter].reward);\\n            delete claimRequests[msg.sender][poolCommitter];\\n            emit RequestWithdrawn(msg.sender, poolCommitter);\\n        }\\n    }\\n\\n    /**\\n     * @notice When the user claims themself through poolCommitter, you want the\\n     * @param user The user who will have their claim request withdrawn.\\n     * @dev Only callable by the associated `PoolCommitter` contract\\n     */\\n    function withdrawUserClaimRequest(address user) public override onlyPoolCommitter {\\n        payable(user).transfer(claimRequests[user][msg.sender].reward);\\n        delete claimRequests[user][msg.sender];\\n    }\\n\\n    /**\\n     * @notice Check the validity of a user's claim request for a given pool committer.\\n     * @return true if the claim request can be executed.\\n     * @param user The user whose claim request will be checked.\\n     * @param poolCommitter The pool committer in which to look for a user's claim request.\\n     */\\n    function checkUserClaim(address user, address poolCommitter) public view override returns (bool) {\\n        return checkClaim(claimRequests[user][poolCommitter], IPoolCommitter(poolCommitter).updateIntervalId());\\n    }\\n\\n    /**\\n     * @return true if the given claim request can be executed.\\n     * @dev A claim request can be executed only if one exists and is from an update interval that has passed.\\n     * @param request The ClaimRequest object to be checked.\\n     * @param currentUpdateIntervalId The current update interval. Used to compare to the update interval of the ClaimRequest.\\n     */\\n    function checkClaim(ClaimRequest memory request, uint256 currentUpdateIntervalId)\\n        public\\n        pure\\n        override\\n        returns (bool)\\n    {\\n        return request.updateIntervalId > 0 && request.updateIntervalId < currentUpdateIntervalId;\\n    }\\n\\n    modifier onlyPoolCommitter() {\\n        require(poolFactory.isValidPoolCommitter(msg.sender), \\\"msg.sender not valid PoolCommitter\\\");\\n        _;\\n    }\\n}\\n\",\"keccak256\":\"0x2539c6dad7f14790a27d4efec4c7b64307ec742ea946a94f5d7c806d90bf5390\",\"license\":\"CC-BY-NC-ND-4.0\"},\"contracts/interfaces/IAutoClaim.sol\":{\"content\":\"//SPDX-License-Identifier: CC-BY-NC-ND-4.0\\npragma solidity 0.8.7;\\n\\ninterface IAutoClaim {\\n    /**\\n     * @notice Creates a notification when an auto-claim is requested\\n     * @param user The user who made a request\\n     * @param poolCommitter The PoolCommitter instance in which the commit was made\\n     * @param updateIntervalId The update interval ID that the corresponding commitment was allocated for\\n     * @param reward The reward for the auto-claim\\n     */\\n    event PaidClaimRequest(\\n        address indexed user,\\n        address indexed poolCommitter,\\n        uint256 indexed updateIntervalId,\\n        uint256 reward\\n    );\\n\\n    /**\\n     * @notice Creates a notification when an auto-claim request is updated. i.e. When another commit is added and reward is incremented.\\n     * @param user The user whose request got updated\\n     * @param poolCommitter The PoolCommitter instance in which the commits were made\\n     * @param newReward The new total reward for the auto-claim\\n     */\\n    event PaidClaimRequestUpdate(address indexed user, address indexed poolCommitter, uint256 indexed newReward);\\n\\n    /**\\n     * @notice Creates a notification when an auto-claim request is executed\\n     * @param user The user whose request got executed\\n     * @param poolCommitter The PoolCommitter instance in which the original commit was made\\n     * @param reward The reward for the auto-claim\\n     */\\n    event PaidRequestExecution(address user, address poolCommitter, uint256 reward);\\n\\n    /**\\n     * @notice Creates a notification when an auto-claim request is withdrawn\\n     * @param user The user whose request got withdrawn\\n     * @param poolCommitter The PoolCommitter instance in which the original commit was made\\n     */\\n    event RequestWithdrawn(address user, address poolCommitter);\\n\\n    struct ClaimRequest {\\n        uint128 updateIntervalId; // The update interval during which a user requested a claim.\\n        uint256 reward; // The amount of ETH in wei that was given by the user to pay for upkeep\\n    }\\n\\n    function initialize(address _poolFactoryAddress) external;\\n\\n    /**\\n     * @notice Pay for your commit to be claimed. This means that a willing participant can claim on `user`'s behalf when the current update interval ends.\\n     * @dev Only callable by this contract's associated PoolCommitter instance. This prevents griefing. Consider a permissionless function, where a user can claim that somebody else wants to auto claim when they do not.\\n     * @param user The user who wants to autoclaim.\\n     */\\n    function makePaidClaimRequest(address user) external payable;\\n\\n    /**\\n     * @notice Claim on the behalf of a user who has requests to have their commit automatically claimed by a keeper.\\n     * @param user The user who requested an autoclaim.\\n     * @param poolCommitterAddress The PoolCommitter address within which the user's claim will be executed\\n     */\\n    function paidClaim(address user, address poolCommitterAddress) external;\\n\\n    /**\\n     * @notice Call `paidClaim` for multiple users, across multiple PoolCommitters\\n     * @param users All users to execute claims for.\\n     * @param poolCommitterAddresses The PoolCommitter addresses within which you would like to claim for the respective user\\n     * @dev The nth index in poolCommitterAddresses should be the PoolCommitter where the nth address in user requested an auto claim\\n     */\\n    function multiPaidClaimMultiplePoolCommitters(address[] calldata users, address[] calldata poolCommitterAddresses)\\n        external;\\n\\n    /**\\n     * @notice Call `paidClaim` for multiple users, in a single PoolCommitter.\\n     * @dev The nth index in poolCommitterAddresses should be the PoolCommitter where the nth address in user requested an auto claim\\n     * @param users All users to execute claims for.\\n     * @param poolCommitterAddress The PoolCommitter address within which you would like to claim for the respective user\\n     */\\n    function multiPaidClaimSinglePoolCommitter(address[] calldata users, address poolCommitterAddress) external;\\n\\n    /**\\n     * @notice If a user's claim request never gets executed (due to not high enough of a reward), or they change their minds, enable them to withdraw their request.\\n     * @param poolCommitter The PoolCommitter for which the user's commit claim is to be withdrawn.\\n     */\\n    function withdrawClaimRequest(address poolCommitter) external;\\n\\n    /**\\n     * @notice When the user claims themself through poolCommitter, you want the\\n     * @param user The user who will have their claim request withdrawn.\\n     */\\n    function withdrawUserClaimRequest(address user) external;\\n\\n    /**\\n     * @notice Check the validity of a user's claim request for a given pool committer.\\n     * @return true if the claim request can be executed.\\n     * @param user The user whose claim request will be checked.\\n     * @param poolCommitter The pool committer in which to look for a user's claim request.\\n     */\\n    function checkUserClaim(address user, address poolCommitter) external view returns (bool);\\n\\n    /**\\n     * @return true if the given claim request can be executed.\\n     * @dev A claim request can be executed only if one exists and is from an update interval that has passed.\\n     * @param request The ClaimRequest object to be checked.\\n     * @param currentUpdateIntervalId The current update interval. Used to compare to the update interval of the ClaimRequest.\\n     */\\n    function checkClaim(ClaimRequest memory request, uint256 currentUpdateIntervalId) external pure returns (bool);\\n}\\n\",\"keccak256\":\"0x9b3c4d4a55d947f08ba10fdfec5c58f4514d76d623cb060bd3b38391ba797153\",\"license\":\"CC-BY-NC-ND-4.0\"},\"contracts/interfaces/IPoolCommitter.sol\":{\"content\":\"//SPDX-License-Identifier: CC-BY-NC-ND-4.0\\npragma solidity 0.8.7;\\n\\n/// @title The interface for the contract that handles pool commitments\\ninterface IPoolCommitter {\\n    /// Type of commit\\n    enum CommitType {\\n        ShortMint, // Mint short tokens\\n        ShortBurn, // Burn short tokens\\n        LongMint, // Mint long tokens\\n        LongBurn, // Burn long tokens\\n        LongBurnShortMint, // Burn Long tokens, then instantly mint in same upkeep\\n        ShortBurnLongMint // Burn Short tokens, then instantly mint in same upkeep\\n    }\\n\\n    struct BalancesAndSupplies {\\n        uint256 shortBalance;\\n        uint256 longBalance;\\n        uint256 longTotalSupplyBefore;\\n        uint256 shortTotalSupplyBefore;\\n    }\\n\\n    // User aggregate balance\\n    struct Balance {\\n        uint256 longTokens;\\n        uint256 shortTokens;\\n        uint256 settlementTokens;\\n    }\\n\\n    // Token Prices\\n    struct Prices {\\n        bytes16 longPrice;\\n        bytes16 shortPrice;\\n    }\\n\\n    // Commit information\\n    struct Commit {\\n        uint256 amount;\\n        CommitType commitType;\\n        uint40 created;\\n        address owner;\\n    }\\n\\n    // Commit information\\n    struct TotalCommitment {\\n        uint256 longMintAmount;\\n        uint256 longBurnAmount;\\n        uint256 shortMintAmount;\\n        uint256 shortBurnAmount;\\n        uint256 shortBurnLongMintAmount;\\n        uint256 longBurnShortMintAmount;\\n        uint256 updateIntervalId;\\n    }\\n\\n    struct BalanceUpdate {\\n        uint256 _updateIntervalId;\\n        uint256 _newLongTokensSum;\\n        uint256 _newShortTokensSum;\\n        uint256 _newSettlementTokensSum;\\n        uint256 _balanceLongBurnAmount;\\n        uint256 _balanceShortBurnAmount;\\n        uint256 _longBurnFee;\\n        uint256 _shortBurnFee;\\n    }\\n\\n    // Track how much of a user's commitments are being done from their aggregate balance\\n    struct UserCommitment {\\n        uint256 longMintAmount;\\n        uint256 longBurnAmount;\\n        uint256 balanceLongBurnAmount;\\n        uint256 shortMintAmount;\\n        uint256 shortBurnAmount;\\n        uint256 balanceShortBurnAmount;\\n        uint256 shortBurnLongMintAmount;\\n        uint256 balanceShortBurnMintAmount;\\n        uint256 longBurnShortMintAmount;\\n        uint256 balanceLongBurnMintAmount;\\n        uint256 updateIntervalId;\\n    }\\n\\n    /**\\n     * @notice Creates a notification when a commit is created\\n     * @param user The user making the commitment\\n     * @param amount Amount of the commit\\n     * @param commitType Type of the commit (Short v Long, Mint v Burn)\\n     */\\n    event CreateCommit(address indexed user, uint256 indexed amount, CommitType indexed commitType);\\n\\n    /**\\n     * @notice Creates a notification when a user's aggregate balance is updated\\n     */\\n    event AggregateBalanceUpdated(address indexed user);\\n\\n    /**\\n     * @notice Creates a notification when a claim is made, depositing pool tokens in user's wallet\\n     */\\n    event Claim(address indexed user);\\n\\n    // #### Functions\\n\\n    function initialize(\\n        address _factory,\\n        address _invariantCheckContract,\\n        address _autoClaim,\\n        uint256 mintingFee,\\n        uint256 burningFee\\n    ) external;\\n\\n    function commit(\\n        CommitType commitType,\\n        uint256 amount,\\n        bool fromAggregateBalance,\\n        bool payForClaim\\n    ) external payable;\\n\\n    function updateIntervalId() external view returns (uint128);\\n\\n    function claim(address user) external;\\n\\n    function executeCommitments() external;\\n\\n    function updateAggregateBalance(address user) external;\\n\\n    function getAggregateBalance(address user) external view returns (Balance memory _balance);\\n\\n    function getAppropriateUpdateIntervalId() external view returns (uint128);\\n\\n    function setQuoteAndPool(address _quoteToken, address _leveragedPool) external;\\n\\n    function getPendingCommits() external view returns (TotalCommitment memory, TotalCommitment memory);\\n}\\n\",\"keccak256\":\"0xbc4508288abfe1c87261c621a88348ef44c0dd996487bbf061488071b40c7498\",\"license\":\"CC-BY-NC-ND-4.0\"},\"contracts/interfaces/IPoolFactory.sol\":{\"content\":\"//SPDX-License-Identifier: CC-BY-NC-ND-4.0\\npragma solidity 0.8.7;\\n\\n/// @title The contract factory for the keeper and pool contracts. Utilizes minimal clones to keep gas costs low\\ninterface IPoolFactory {\\n    struct PoolDeployment {\\n        string poolName; // The name to identify a pool by\\n        uint32 frontRunningInterval; // The minimum number of seconds that must elapse before a commit can be executed. Must be smaller than or equal to the update interval to prevent deadlock\\n        uint32 updateInterval; // The minimum number of seconds that must elapse before a price change\\n        uint16 leverageAmount; // The amount of exposure to price movements for the pool\\n        address quoteToken; // The digital asset that the pool accepts\\n        address oracleWrapper; // The IOracleWrapper implementation for fetching price feed data\\n        address settlementEthOracle; // The oracle to fetch the price of Ether in terms of the settlement token\\n        address invariantCheckContract; // The IInvariantCheck contract that performs invariant checking\\n    }\\n\\n    // #### Events\\n    /**\\n     * @notice Creates a notification when a pool is deployed\\n     * @param pool Address of the new pool\\n     * @param ticker Ticker of the neew pool\\n     */\\n    event DeployPool(address indexed pool, address poolCommitter, string ticker);\\n\\n    /**\\n     * @notice Creates a notification when the pool keeper changes\\n     * @param _poolKeeper Address of the new pool keeper\\n     */\\n    event PoolKeeperChanged(address _poolKeeper);\\n\\n    // #### Getters for Globals\\n    function pools(uint256 id) external view returns (address);\\n\\n    function numPools() external view returns (uint256);\\n\\n    function isValidPool(address _pool) external view returns (bool);\\n\\n    function isValidPoolCommitter(address _poolCommitter) external view returns (bool);\\n\\n    // #### Functions\\n    function deployPool(PoolDeployment calldata deploymentParameters) external returns (address);\\n\\n    function getOwner() external returns (address);\\n\\n    function setPoolKeeper(address _poolKeeper) external;\\n\\n    function setAutoClaim(address _autoClaim) external;\\n\\n    function setMaxLeverage(uint16 newMaxLeverage) external;\\n\\n    function setFeeReceiver(address _feeReceiver) external;\\n\\n    function setFee(uint256 _fee) external;\\n\\n    function setSecondaryFeeSplitPercent(uint256 newFeePercent) external;\\n\\n    function setMintAndBurnFee(uint256 _mintingFee, uint256 _burningFee) external;\\n}\\n\",\"keccak256\":\"0x7392b76d26a5dcb623ed0c0e8ab10f0b2550470aff63554d131c5280fe242f8f\",\"license\":\"CC-BY-NC-ND-4.0\"}},\"version\":1}",
+    "bytecode": "0x608060405234801561001057600080fd5b506040516110ca3803806110ca83398101604081905261002f916100ae565b6001600160a01b0381166100895760405162461bcd60e51b815260206004820152601860248201527f506f6f6c466163746f72792061646472657373203d3d20300000000000000000604482015260640160405180910390fd5b600280546001600160a01b0319166001600160a01b03929092169190911790556100de565b6000602082840312156100c057600080fd5b81516001600160a01b03811681146100d757600080fd5b9392505050565b610fdd806100ed6000396000f3fe6080604052600436106100915760003560e01c80638d68dd61116100595780638d68dd611461014d5780639b42f47e146101b4578063c4d66de8146101c7578063c76ac728146101e7578063f009fc081461020757600080fd5b806307119aeb14610096578063351ea38a146100b85780634c830642146100ed57806384de06e41461010d578063883e9e481461012d575b600080fd5b3480156100a257600080fd5b506100b66100b1366004610d29565b610227565b005b3480156100c457600080fd5b506100d86100d3366004610e59565b61034a565b60405190151581526020015b60405180910390f35b3480156100f957600080fd5b506100b6610108366004610d29565b610376565b34801561011957600080fd5b506100b6610128366004610d77565b610468565b34801561013957600080fd5b506100d8610148366004610d44565b6104bb565b34801561015957600080fd5b50610195610168366004610d44565b6001602081815260009384526040808520909152918352912080549101546001600160801b039091169082565b604080516001600160801b0390931683526020830191909152016100e4565b6100b66101c2366004610d29565b61057b565b3480156101d357600080fd5b506100b66101e2366004610d29565b6108f1565b3480156101f357600080fd5b506100b6610202366004610d44565b610a16565b34801561021357600080fd5b506100b6610222366004610dcb565b610bf8565b6002546040516359e86a9960e01b81523360048201526001600160a01b03909116906359e86a999060240160206040518083038186803b15801561026a57600080fd5b505afa15801561027e573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906102a29190610e37565b6102c75760405162461bcd60e51b81526004016102be90610ef1565b60405180910390fd5b6001600160a01b038116600081815260016020818152604080842033855290915280832090910154905181156108fc0292818181858888f19350505050158015610315573d6000803e3d6000fd5b506001600160a01b03166000908152600160208181526040808420338552909152822080546001600160801b03191681550155565b81516000906001600160801b03161580159061036f575082516001600160801b031682115b9392505050565b3360009081526001602090815260408083206001600160a01b03851684529091529020546001600160801b031615610465573360008181526001602081815260408084206001600160a01b038716855290915280832090910154905181156108fc0292818181858888f193505050501580156103f6573d6000803e3d6000fd5b503360008181526001602081815260408084206001600160a01b03871680865290835281852080546001600160801b03191681559093019390935582519384528301527fbeb52c9358dfd474b9e79cc7bb7c88a2079664f938ff899c7a54bbaa5e54b08a910160405180910390a15b50565b60005b828110156104b5576104a384848381811061048857610488610f7c565b905060200201602081019061049d9190610d29565b83610a16565b806104ad81610f4b565b91505061046b565b50505050565b6001600160a01b0380831660009081526001602081815260408084209486168085529482528084208151808301835281546001600160801b03168152930154838301528051634e81899760e11b81529051939461036f949092639d03132e9260048082019391829003018186803b15801561053557600080fd5b505afa158015610549573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061056d9190610ed4565b6001600160801b031661034a565b6002546040516359e86a9960e01b81523360048201526001600160a01b03909116906359e86a999060240160206040518083038186803b1580156105be57600080fd5b505afa1580156105d2573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906105f69190610e37565b6106125760405162461bcd60e51b81526004016102be90610ef1565b6001600160a01b038116600090815260016020908152604080832033808552925290912080549091906001600160801b0316801561080b57816001600160a01b0316639d03132e6040518163ffffffff1660e01b815260040160206040518083038186803b15801561068357600080fd5b505afa158015610697573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906106bb9190610ed4565b6001600160801b0316816001600160801b031610156107b4576001600160a01b038416600081815260016020818152604080842033855290915280832090910154905181156108fc0292818181858888f19350505050158015610722573d6000803e3d6000fd5b506001600160a01b03848116600081815260016020818152604080842033855290915280832080546001600160801b03191681559091019190915551630f41a04d60e11b8152600481019190915290831690631e83409a90602401600060405180830381600087803b15801561079757600080fd5b505af11580156107ab573d6000803e3d6000fd5b5050505061080b565b348360010160008282546107c89190610f33565b9091555050604051349033906001600160a01b038716907f1b0cd6fbb8d6f8911969df04996d8d67f926c059c09a2df27305bb1b36b5917c90600090a450505050565b816001600160a01b031663d4c4e2836040518163ffffffff1660e01b815260040160206040518083038186803b15801561084457600080fd5b505afa158015610858573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061087c9190610ed4565b6001600160a01b038516600081815260016020818152604080842033808652925280842080546001600160801b0319166001600160801b0388161781553493018390555194955090939092917f1b0cd6fbb8d6f8911969df04996d8d67f926c059c09a2df27305bb1b36b5917c91a450505050565b600054610100900460ff168061090a575060005460ff16155b61096d5760405162461bcd60e51b815260206004820152602e60248201527f496e697469616c697a61626c653a20636f6e747261637420697320616c72656160448201526d191e481a5b9a5d1a585b1a5e995960921b60648201526084016102be565b600054610100900460ff1615801561098f576000805461ffff19166101011790555b6001600160a01b0382166109e55760405162461bcd60e51b815260206004820152601860248201527f506f6f6c466163746f72792061646472657373203d3d2030000000000000000060448201526064016102be565b600280546001600160a01b0319166001600160a01b0384161790558015610a12576000805461ff00191690555b5050565b6001600160a01b0380831660009081526001602081815260408084209486168085529482528084208151808301835281546001600160801b03168152930154838301528051634e81899760e11b8152905192948694939092639d03132e9260048082019391829003018186803b158015610a8f57600080fd5b505afa158015610aa3573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610ac79190610ed4565b6001600160801b03169050610adc838261034a565b15610bf1576020830151604051339180156108fc02916000818181858888f19350505050158015610b11573d6000803e3d6000fd5b506001600160a01b0385811660008181526001602081815260408084208a8716855290915280832080546001600160801b03191681559091019190915551630f41a04d60e11b8152600481019190915290831690631e83409a90602401600060405180830381600087803b158015610b8857600080fd5b505af1158015610b9c573d6000803e3d6000fd5b505050602080850151604080516001600160a01b03808b1682528916938101939093528201527ffc1ef6f920271c53bdf1b6aa6a98b1cd7baa573c736975d7eb1f85b2f0c3d7f3915060600160405180910390a15b5050505050565b828114610c535760405162461bcd60e51b815260206004820152602360248201527f537570706c69656420617272617973206d7573742062652073616d65206c656e6044820152620cee8d60eb1b60648201526084016102be565b60005b83811015610bf157610caf858583818110610c7357610c73610f7c565b9050602002016020810190610c889190610d29565b848484818110610c9a57610c9a610f7c565b90506020020160208101906102029190610d29565b80610cb981610f4b565b915050610c56565b80356001600160a01b0381168114610cd857600080fd5b919050565b60008083601f840112610cef57600080fd5b50813567ffffffffffffffff811115610d0757600080fd5b6020830191508360208260051b8501011115610d2257600080fd5b9250929050565b600060208284031215610d3b57600080fd5b61036f82610cc1565b60008060408385031215610d5757600080fd5b610d6083610cc1565b9150610d6e60208401610cc1565b90509250929050565b600080600060408486031215610d8c57600080fd5b833567ffffffffffffffff811115610da357600080fd5b610daf86828701610cdd565b9094509250610dc2905060208501610cc1565b90509250925092565b60008060008060408587031215610de157600080fd5b843567ffffffffffffffff80821115610df957600080fd5b610e0588838901610cdd565b90965094506020870135915080821115610e1e57600080fd5b50610e2b87828801610cdd565b95989497509550505050565b600060208284031215610e4957600080fd5b8151801515811461036f57600080fd5b6000808284036060811215610e6d57600080fd5b6040811215610e7b57600080fd5b506040516040810181811067ffffffffffffffff82111715610ead57634e487b7160e01b600052604160045260246000fd5b6040528335610ebb81610f92565b8152602084810135908201529460409093013593505050565b600060208284031215610ee657600080fd5b815161036f81610f92565b60208082526022908201527f6d73672e73656e646572206e6f742076616c696420506f6f6c436f6d6d69747460408201526132b960f11b606082015260800190565b60008219821115610f4657610f46610f66565b500190565b6000600019821415610f5f57610f5f610f66565b5060010190565b634e487b7160e01b600052601160045260246000fd5b634e487b7160e01b600052603260045260246000fd5b6001600160801b038116811461046557600080fdfea2646970667358221220aa71f38d53418489248369635edc1866a09fe38f95714733c9069c1938f835fe64736f6c63430008070033",
+    "deployedBytecode": "0x6080604052600436106100915760003560e01c80638d68dd61116100595780638d68dd611461014d5780639b42f47e146101b4578063c4d66de8146101c7578063c76ac728146101e7578063f009fc081461020757600080fd5b806307119aeb14610096578063351ea38a146100b85780634c830642146100ed57806384de06e41461010d578063883e9e481461012d575b600080fd5b3480156100a257600080fd5b506100b66100b1366004610d29565b610227565b005b3480156100c457600080fd5b506100d86100d3366004610e59565b61034a565b60405190151581526020015b60405180910390f35b3480156100f957600080fd5b506100b6610108366004610d29565b610376565b34801561011957600080fd5b506100b6610128366004610d77565b610468565b34801561013957600080fd5b506100d8610148366004610d44565b6104bb565b34801561015957600080fd5b50610195610168366004610d44565b6001602081815260009384526040808520909152918352912080549101546001600160801b039091169082565b604080516001600160801b0390931683526020830191909152016100e4565b6100b66101c2366004610d29565b61057b565b3480156101d357600080fd5b506100b66101e2366004610d29565b6108f1565b3480156101f357600080fd5b506100b6610202366004610d44565b610a16565b34801561021357600080fd5b506100b6610222366004610dcb565b610bf8565b6002546040516359e86a9960e01b81523360048201526001600160a01b03909116906359e86a999060240160206040518083038186803b15801561026a57600080fd5b505afa15801561027e573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906102a29190610e37565b6102c75760405162461bcd60e51b81526004016102be90610ef1565b60405180910390fd5b6001600160a01b038116600081815260016020818152604080842033855290915280832090910154905181156108fc0292818181858888f19350505050158015610315573d6000803e3d6000fd5b506001600160a01b03166000908152600160208181526040808420338552909152822080546001600160801b03191681550155565b81516000906001600160801b03161580159061036f575082516001600160801b031682115b9392505050565b3360009081526001602090815260408083206001600160a01b03851684529091529020546001600160801b031615610465573360008181526001602081815260408084206001600160a01b038716855290915280832090910154905181156108fc0292818181858888f193505050501580156103f6573d6000803e3d6000fd5b503360008181526001602081815260408084206001600160a01b03871680865290835281852080546001600160801b03191681559093019390935582519384528301527fbeb52c9358dfd474b9e79cc7bb7c88a2079664f938ff899c7a54bbaa5e54b08a910160405180910390a15b50565b60005b828110156104b5576104a384848381811061048857610488610f7c565b905060200201602081019061049d9190610d29565b83610a16565b806104ad81610f4b565b91505061046b565b50505050565b6001600160a01b0380831660009081526001602081815260408084209486168085529482528084208151808301835281546001600160801b03168152930154838301528051634e81899760e11b81529051939461036f949092639d03132e9260048082019391829003018186803b15801561053557600080fd5b505afa158015610549573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061056d9190610ed4565b6001600160801b031661034a565b6002546040516359e86a9960e01b81523360048201526001600160a01b03909116906359e86a999060240160206040518083038186803b1580156105be57600080fd5b505afa1580156105d2573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906105f69190610e37565b6106125760405162461bcd60e51b81526004016102be90610ef1565b6001600160a01b038116600090815260016020908152604080832033808552925290912080549091906001600160801b0316801561080b57816001600160a01b0316639d03132e6040518163ffffffff1660e01b815260040160206040518083038186803b15801561068357600080fd5b505afa158015610697573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906106bb9190610ed4565b6001600160801b0316816001600160801b031610156107b4576001600160a01b038416600081815260016020818152604080842033855290915280832090910154905181156108fc0292818181858888f19350505050158015610722573d6000803e3d6000fd5b506001600160a01b03848116600081815260016020818152604080842033855290915280832080546001600160801b03191681559091019190915551630f41a04d60e11b8152600481019190915290831690631e83409a90602401600060405180830381600087803b15801561079757600080fd5b505af11580156107ab573d6000803e3d6000fd5b5050505061080b565b348360010160008282546107c89190610f33565b9091555050604051349033906001600160a01b038716907f1b0cd6fbb8d6f8911969df04996d8d67f926c059c09a2df27305bb1b36b5917c90600090a450505050565b816001600160a01b031663d4c4e2836040518163ffffffff1660e01b815260040160206040518083038186803b15801561084457600080fd5b505afa158015610858573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061087c9190610ed4565b6001600160a01b038516600081815260016020818152604080842033808652925280842080546001600160801b0319166001600160801b0388161781553493018390555194955090939092917f1b0cd6fbb8d6f8911969df04996d8d67f926c059c09a2df27305bb1b36b5917c91a450505050565b600054610100900460ff168061090a575060005460ff16155b61096d5760405162461bcd60e51b815260206004820152602e60248201527f496e697469616c697a61626c653a20636f6e747261637420697320616c72656160448201526d191e481a5b9a5d1a585b1a5e995960921b60648201526084016102be565b600054610100900460ff1615801561098f576000805461ffff19166101011790555b6001600160a01b0382166109e55760405162461bcd60e51b815260206004820152601860248201527f506f6f6c466163746f72792061646472657373203d3d2030000000000000000060448201526064016102be565b600280546001600160a01b0319166001600160a01b0384161790558015610a12576000805461ff00191690555b5050565b6001600160a01b0380831660009081526001602081815260408084209486168085529482528084208151808301835281546001600160801b03168152930154838301528051634e81899760e11b8152905192948694939092639d03132e9260048082019391829003018186803b158015610a8f57600080fd5b505afa158015610aa3573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610ac79190610ed4565b6001600160801b03169050610adc838261034a565b15610bf1576020830151604051339180156108fc02916000818181858888f19350505050158015610b11573d6000803e3d6000fd5b506001600160a01b0385811660008181526001602081815260408084208a8716855290915280832080546001600160801b03191681559091019190915551630f41a04d60e11b8152600481019190915290831690631e83409a90602401600060405180830381600087803b158015610b8857600080fd5b505af1158015610b9c573d6000803e3d6000fd5b505050602080850151604080516001600160a01b03808b1682528916938101939093528201527ffc1ef6f920271c53bdf1b6aa6a98b1cd7baa573c736975d7eb1f85b2f0c3d7f3915060600160405180910390a15b5050505050565b828114610c535760405162461bcd60e51b815260206004820152602360248201527f537570706c69656420617272617973206d7573742062652073616d65206c656e6044820152620cee8d60eb1b60648201526084016102be565b60005b83811015610bf157610caf858583818110610c7357610c73610f7c565b9050602002016020810190610c889190610d29565b848484818110610c9a57610c9a610f7c565b90506020020160208101906102029190610d29565b80610cb981610f4b565b915050610c56565b80356001600160a01b0381168114610cd857600080fd5b919050565b60008083601f840112610cef57600080fd5b50813567ffffffffffffffff811115610d0757600080fd5b6020830191508360208260051b8501011115610d2257600080fd5b9250929050565b600060208284031215610d3b57600080fd5b61036f82610cc1565b60008060408385031215610d5757600080fd5b610d6083610cc1565b9150610d6e60208401610cc1565b90509250929050565b600080600060408486031215610d8c57600080fd5b833567ffffffffffffffff811115610da357600080fd5b610daf86828701610cdd565b9094509250610dc2905060208501610cc1565b90509250925092565b60008060008060408587031215610de157600080fd5b843567ffffffffffffffff80821115610df957600080fd5b610e0588838901610cdd565b90965094506020870135915080821115610e1e57600080fd5b50610e2b87828801610cdd565b95989497509550505050565b600060208284031215610e4957600080fd5b8151801515811461036f57600080fd5b6000808284036060811215610e6d57600080fd5b6040811215610e7b57600080fd5b506040516040810181811067ffffffffffffffff82111715610ead57634e487b7160e01b600052604160045260246000fd5b6040528335610ebb81610f92565b8152602084810135908201529460409093013593505050565b600060208284031215610ee657600080fd5b815161036f81610f92565b60208082526022908201527f6d73672e73656e646572206e6f742076616c696420506f6f6c436f6d6d69747460408201526132b960f11b606082015260800190565b60008219821115610f4657610f46610f66565b500190565b6000600019821415610f5f57610f5f610f66565b5060010190565b634e487b7160e01b600052601160045260246000fd5b634e487b7160e01b600052603260045260246000fd5b6001600160801b038116811461046557600080fdfea2646970667358221220aa71f38d53418489248369635edc1866a09fe38f95714733c9069c1938f835fe64736f6c63430008070033",
+    "devdoc": {
+        "details": "A question I had to ask was \"What happens if one requests a second claim before one's pending request from a previous update interval one gets executed on?\".      My solution to this was to have the committer instantly claim for themself. They have signified their desire to claim their tokens, after all.",
+        "kind": "dev",
+        "methods": {
+            "checkClaim((uint128,uint256),uint256)": {
+                "details": "A claim request can be executed only if one exists and is from an update interval that has passed.",
+                "params": {
+                    "currentUpdateIntervalId": "The current update interval. Used to compare to the update interval of the ClaimRequest.",
+                    "request": "The ClaimRequest object to be checked."
+                },
+                "returns": {
+                    "_0": "true if the given claim request can be executed."
+                }
+            },
+            "checkUserClaim(address,address)": {
+                "params": {
+                    "poolCommitter": "The pool committer in which to look for a user's claim request.",
+                    "user": "The user whose claim request will be checked."
+                },
+                "returns": {
+                    "_0": "true if the claim request can be executed."
+                }
+            },
+            "makePaidClaimRequest(address)": {
+                "details": "Only callable by this contract's associated PoolCommitter instance. This prevents griefing. Consider a permissionless function, where a user can claim that somebody else wants to auto claim when they do not.",
+                "params": {
+                    "user": "The user who wants to autoclaim."
+                }
+            },
+            "multiPaidClaimMultiplePoolCommitters(address[],address[])": {
+                "details": "The nth index in poolCommitterAddresses should be the PoolCommitter where the nth address in user requested an auto claim.",
+                "params": {
+                    "poolCommitterAddresses": "The PoolCommitter addresses within which you would like to claim for the respective user.",
+                    "users": "All users to execute claims for."
+                }
+            },
+            "multiPaidClaimSinglePoolCommitter(address[],address)": {
+                "details": "The nth index in poolCommitterAddresses should be the PoolCommitter where the nth address in user requested an auto claim",
+                "params": {
+                    "poolCommitterAddress": "The PoolCommitter address within which you would like to claim for the respective user",
+                    "users": "All users to execute claims for."
+                }
+            },
+            "paidClaim(address,address)": {
+                "params": {
+                    "poolCommitterAddress": "The PoolCommitter address within which the user's claim will be executed",
+                    "user": "The user who requested an autoclaim."
+                }
+            },
+            "withdrawClaimRequest(address)": {
+                "details": "Emits a `RequestWithdrawn` event on success",
+                "params": {
+                    "poolCommitter": "The PoolCommitter for which the user's commit claim is to be withdrawn."
+                }
+            },
+            "withdrawUserClaimRequest(address)": {
+                "details": "Only callable by the associated `PoolCommitter` contract",
+                "params": {
+                    "user": "The user who will have their claim request withdrawn."
+                }
+            }
+        },
+        "title": "The contract to be used for paying to have a keeper claim your commit automatically",
+        "version": 1
+    },
+    "userdoc": {
+        "events": {
+            "PaidClaimRequest(address,address,uint256,uint256)": {
+                "notice": "Creates a notification when an auto-claim is requested"
+            },
+            "PaidClaimRequestUpdate(address,address,uint256)": {
+                "notice": "Creates a notification when an auto-claim request is updated. i.e. When another commit is added and reward is incremented."
+            },
+            "PaidRequestExecution(address,address,uint256)": {
+                "notice": "Creates a notification when an auto-claim request is executed"
+            },
+            "RequestWithdrawn(address,address)": {
+                "notice": "Creates a notification when an auto-claim request is withdrawn"
+            }
+        },
+        "kind": "user",
+        "methods": {
+            "checkUserClaim(address,address)": {
+                "notice": "Check the validity of a user's claim request for a given pool committer."
+            },
+            "makePaidClaimRequest(address)": {
+                "notice": "Pay for your commit to be claimed. This means that a willing participant can claim on `user`'s behalf when the current update interval ends."
+            },
+            "multiPaidClaimMultiplePoolCommitters(address[],address[])": {
+                "notice": "Call `paidClaim` for multiple users, across multiple PoolCommitters."
+            },
+            "multiPaidClaimSinglePoolCommitter(address[],address)": {
+                "notice": "Call `paidClaim` for multiple users, in a single PoolCommitter."
+            },
+            "paidClaim(address,address)": {
+                "notice": "Claim on the behalf of a user who has requests to have their commit automatically claimed by a keeper."
+            },
+            "withdrawClaimRequest(address)": {
+                "notice": "If a user's claim request never gets executed (due to not high enough of a reward), or they change their minds, enable them to withdraw their request."
+            },
+            "withdrawUserClaimRequest(address)": {
+                "notice": "When the user claims themself through poolCommitter, you want the"
+            }
+        },
+        "notice": "The way this works is when a user commits with `PoolCommitter::commit`, they have the option to set the `bool payForClaim` parameter to `true`.         During this function execution, `AutoClaim::payForClaim` is called, and `msg.value` is taken as the reward to whoever claims for requester (by using `AutoClaim::paidClaim`).",
+        "version": 1
+    },
+    "storageLayout": {
+        "storage": [
+            {
+                "astId": 292,
+                "contract": "contracts/implementation/AutoClaim.sol:AutoClaim",
+                "label": "_initialized",
+                "offset": 0,
+                "slot": "0",
+                "type": "t_bool"
+            },
+            {
+                "astId": 295,
+                "contract": "contracts/implementation/AutoClaim.sol:AutoClaim",
+                "label": "_initializing",
+                "offset": 1,
+                "slot": "0",
+                "type": "t_bool"
+            },
+            {
+                "astId": 6936,
+                "contract": "contracts/implementation/AutoClaim.sol:AutoClaim",
+                "label": "claimRequests",
+                "offset": 0,
+                "slot": "1",
+                "type": "t_mapping(t_address,t_mapping(t_address,t_struct(ClaimRequest)14192_storage))"
+            },
+            {
+                "astId": 6939,
+                "contract": "contracts/implementation/AutoClaim.sol:AutoClaim",
+                "label": "poolFactory",
+                "offset": 0,
+                "slot": "2",
+                "type": "t_contract(IPoolFactory)14937"
+            }
+        ],
+        "types": {
+            "t_address": {
+                "encoding": "inplace",
+                "label": "address",
+                "numberOfBytes": "20"
+            },
+            "t_bool": {
+                "encoding": "inplace",
+                "label": "bool",
+                "numberOfBytes": "1"
+            },
+            "t_contract(IPoolFactory)14937": {
+                "encoding": "inplace",
+                "label": "contract IPoolFactory",
+                "numberOfBytes": "20"
+            },
+            "t_mapping(t_address,t_mapping(t_address,t_struct(ClaimRequest)14192_storage))": {
+                "encoding": "mapping",
+                "key": "t_address",
+                "label": "mapping(address => mapping(address => struct IAutoClaim.ClaimRequest))",
+                "numberOfBytes": "32",
+                "value": "t_mapping(t_address,t_struct(ClaimRequest)14192_storage)"
+            },
+            "t_mapping(t_address,t_struct(ClaimRequest)14192_storage)": {
+                "encoding": "mapping",
+                "key": "t_address",
+                "label": "mapping(address => struct IAutoClaim.ClaimRequest)",
+                "numberOfBytes": "32",
+                "value": "t_struct(ClaimRequest)14192_storage"
+            },
+            "t_struct(ClaimRequest)14192_storage": {
+                "encoding": "inplace",
+                "label": "struct IAutoClaim.ClaimRequest",
+                "members": [
+                    {
+                        "astId": 14189,
+                        "contract": "contracts/implementation/AutoClaim.sol:AutoClaim",
+                        "label": "updateIntervalId",
+                        "offset": 0,
+                        "slot": "0",
+                        "type": "t_uint128"
+                    },
+                    {
+                        "astId": 14191,
+                        "contract": "contracts/implementation/AutoClaim.sol:AutoClaim",
+                        "label": "reward",
+                        "offset": 0,
+                        "slot": "1",
+                        "type": "t_uint256"
+                    }
+                ],
+                "numberOfBytes": "64"
+            },
+            "t_uint128": {
+                "encoding": "inplace",
+                "label": "uint128",
+                "numberOfBytes": "16"
+            },
+            "t_uint256": {
+                "encoding": "inplace",
+                "label": "uint256",
+                "numberOfBytes": "32"
+            }
+        }
+    }
+}
