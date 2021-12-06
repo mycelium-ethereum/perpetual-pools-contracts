@@ -166,6 +166,10 @@ contract AutoClaim is IAutoClaim, Initializable {
         revert();
     }
 
+    function fallback() public payable {
+        revert();
+    }
+
     modifier onlyPoolCommitter() {
         require(poolFactory.isValidPoolCommitter(msg.sender), "msg.sender not valid PoolCommitter");
         _;
