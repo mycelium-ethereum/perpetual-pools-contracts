@@ -162,6 +162,10 @@ contract AutoClaim is IAutoClaim, Initializable {
         return request.updateIntervalId > 0 && request.updateIntervalId < currentUpdateIntervalId;
     }
 
+    function receive() public payable {
+        revert();
+    }
+
     modifier onlyPoolCommitter() {
         require(poolFactory.isValidPoolCommitter(msg.sender), "msg.sender not valid PoolCommitter");
         _;
