@@ -98,7 +98,7 @@ describe("AutoClaim - Ether Transfers", async () => {
     })
 
     context("When Ether is transferred with calldata", async () => {
-        it.only("Reverts", async () => {
+        it("Reverts", async () => {
             const transferTo: any =
                 autoClaim.address /* TODO: should be `Address`, not `any` */
             const transferValue: BigNumber =
