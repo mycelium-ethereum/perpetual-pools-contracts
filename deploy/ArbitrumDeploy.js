@@ -116,16 +116,6 @@ module.exports = async (hre) => {
         "poll"
     )
 
-    // const price = await execute(
-    //     "EthUsdPriceSMAOracle",
-    //     {
-    //         from: deployer,
-    //         log: true,
-    //     },
-    //     "getPrice"
-    // )
-    // console.log(price)
-
     /* Commented out, because we want to wait till multisig governs pools before doing it for the rest of them
     await execute(
         "BTCChainlinkOracleWrapper",
@@ -220,7 +210,6 @@ module.exports = async (hre) => {
 
     console.log("Setting factory fee")
     const fee = ethers.utils.parseEther("0.01")
-    console.log(fee)
     await execute(
         "PoolFactory",
         {
