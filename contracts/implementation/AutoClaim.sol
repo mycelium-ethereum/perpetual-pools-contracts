@@ -162,11 +162,11 @@ contract AutoClaim is IAutoClaim, Initializable {
         return request.updateIntervalId > 0 && request.updateIntervalId < currentUpdateIntervalId;
     }
 
-    function receive() public payable {
+    receive() external payable {
         revert();
     }
 
-    function fallback() public payable {
+    fallback() external payable {
         revert();
     }
 
