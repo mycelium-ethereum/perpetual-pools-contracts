@@ -82,7 +82,7 @@ describe("AutoClaim - Ether Transfers", async () => {
     })
 
     context("When Ether is transferred without calldata", async () => {
-        it.only("Reverts", async () => {
+        it("Reverts", async () => {
             const transferTo: any =
                 autoClaim.address /* TODO: should be `Address`, not `any` */
             const transferValue: BigNumber =
@@ -91,6 +91,24 @@ describe("AutoClaim - Ether Transfers", async () => {
                 to: transferTo,
                 from: someUser.address,
                 value: transferValue,
+            }
+
+            await expect(someUser.sendTransaction(transferTx)).to.be.reverted
+        })
+    })
+
+    context("When Ether is transferred with calldata", async () => {
+        it.only("Reverts", async () => {
+            const transferTo: any =
+                autoClaim.address /* TODO: should be `Address`, not `any` */
+            const transferValue: BigNumber =
+                ethers.utils.parseEther("1") /* arbitrary */
+            const transferData: any = "0xcafebeef"
+            const transferTx: TransactionRequest = {
+                to: transferTo,
+                from: someUser.address,
+                value: transferValue,
+                data: transferData,
             }
 
             await expect(someUser.sendTransaction(transferTx)).to.be.reverted
