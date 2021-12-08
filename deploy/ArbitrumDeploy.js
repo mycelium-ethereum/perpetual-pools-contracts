@@ -271,6 +271,7 @@ module.exports = async (hre) => {
         invariantCheckContract: invariantCheck.address,
     }
 
+    // Eth-USD 3x SMA Oracle
     const deploymentData5 = {
         poolName: ETH_POOL_CODE,
         frontRunningInterval: frontRunningInterval,
