@@ -222,9 +222,6 @@ module.exports = async (hre) => {
     const frontRunningInterval = 300 // 5 mins
     const oneLeverage = 1
     const threeLeverage = 3
-    // USDC precision is 6 decimals
-    const minimumCommitSize = 1000 * 10 ** 6
-    const maximumCommitQueueLength = 100
     // deploy LeveragePool
     // BTC-USD 1x
     const deploymentData1 = {
