@@ -31,8 +31,6 @@ module.exports = async (hre) => {
 
     const multisigAddress = "0x0f79e82aE88E1318B8cfC8b4A205fE2F982B928A"
 
-    // const token = { address: "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8" }
-
     /* deploy testToken */
     const token = await deploy("TestToken", {
         args: ["Test Tracer USDC", "TUSDC"],
@@ -60,9 +58,6 @@ module.exports = async (hre) => {
         contract: "ChainlinkOracleWrapper",
         args: [arbitrumRinkBtcUsdOracle.address, deployer],
     })
-
-    // const oracleWrapper = { address: "0x57A81f7B72D2703ae7c533F3FB1CdEFa6B8f25F7" }
-    // const keeperOracle = { address: "0x4e8E88BD60027aC138323d86d3F9e6b2E035b435"}
 
     // deploy ChainlinkOracleWrapper for keeper
     const keeperOracle = await deploy("ETHChainlinkOracleWrapper", {
