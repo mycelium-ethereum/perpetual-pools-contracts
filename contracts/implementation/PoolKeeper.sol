@@ -31,22 +31,11 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     bytes16 constant fixedPoint = 0x403abc16d674ec800000000000000000; // 1 ether
 
     uint256 public gasPrice = 10 gwei;
-    address public observer = address(0);
 
     // #### Functions
     constructor(address _factory) {
         require(_factory != address(0), "Factory cannot be 0 address");
         factory = IPoolFactory(_factory);
-    }
-
-    /**
-     * @notice Sets the address of the associated `PriceObserver` contract
-     * @param _observer Address of the `PriceObserver` contract
-     * @dev Throws if provided address is null
-     */
-    function setPriceObserver(address _observer) external onlyOwner {
-        require(_observer != address(0), "Price observer cannot be 0 address");
-        observer = _observer;
     }
 
     /**
@@ -112,10 +101,9 @@ contract PoolKeeper is IPoolKeeper, Ownable {
 
         ILeveragedPool pool = ILeveragedPool(_pool);
 
-        /* update SMA oracle */
-        PriceObserver priceObserver = PriceObserver(observer);
-        IOracleWrapper priceObserverWriter = IOracleWrapper(priceObserver.getWriter());
-        priceObserverWriter.poll();
+        /* update SMA oracle, does nothing for spot oracles */
+        IOracleWrapper poolOracleWrapper = IOracleWrapper(pool.oracleWrapper());
+        poolOracleWrapper.poll();
 
         (int256 latestPrice, bytes memory data, uint256 savedPreviousUpdatedTimestamp, uint256 updateInterval) = pool
             .getUpkeepInformation();
