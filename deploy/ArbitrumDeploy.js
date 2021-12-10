@@ -31,8 +31,6 @@ module.exports = async (hre) => {
 
     const multisigAddress = "0x0f79e82aE88E1318B8cfC8b4A205fE2F982B928A"
 
-    // const token = { address: "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8" }
-
     /* deploy testToken */
     const token = await deploy("TestToken", {
         args: ["Test Tracer USDC", "TUSDC"],
@@ -61,6 +59,14 @@ module.exports = async (hre) => {
         args: [arbitrumRinkBtcUsdOracle.address, deployer],
     })
 
+    // deploy ChainlinkOracleWrapper for keeper
+    const keeperOracle = await deploy("ETHChainlinkOracleWrapper", {
+        from: deployer,
+        log: true,
+        contract: "ChainlinkOracleWrapper",
+        args: [arbitrumRinkEthUsdOracle.address, deployer],
+    })
+
     // deploy SMA PriceObserver
     const priceObserver = await deploy("EthUsdPriceObserver", {
         from: deployer,
@@ -69,15 +75,16 @@ module.exports = async (hre) => {
     })
 
     // deploy SMA Oracle
+    // Note: if SMA oracle is not 24 periods you can't deploy oracle and pool in one go. Will need to wait until SMA oracle has enough periods before deploying pool.
     const smaOracleWrapper = await deploy("EthUsdPriceSMAOracle", {
         from: deployer,
         log: true,
         contract: "SMAOracle",
         args: [
-            arbitrumRinkEthUsdOracle.address, //Oracle Address
+            keeperOracle.address, //Oracle Address
             8, //Spot decimals
             priceObserver.address, //Observer address
-            12, // number of periods
+            24, // number of periods
             3600, // Update interval
             deployer, // deployer address
         ],
@@ -94,16 +101,15 @@ module.exports = async (hre) => {
         smaOracleWrapper.address
     )
 
-    // const oracleWrapper = { address: "0x57A81f7B72D2703ae7c533F3FB1CdEFa6B8f25F7" }
-    // const keeperOracle = { address: "0x4e8E88BD60027aC138323d86d3F9e6b2E035b435"}
-
-    // deploy ChainlinkOracleWrapper for keeper
-    const keeperOracle = await deploy("ETHChainlinkOracleWrapper", {
-        from: deployer,
-        log: true,
-        contract: "ChainlinkOracleWrapper",
-        args: [arbitrumRinkEthUsdOracle.address, deployer],
-    })
+    // Poll so there is an initial price
+    await execute(
+        "EthUsdPriceSMAOracle",
+        {
+            from: deployer,
+            log: true,
+        },
+        "poll"
+    )
 
     /* Commented out, because we want to wait till multisig governs pools before doing it for the rest of them
     await execute(
@@ -148,6 +154,13 @@ module.exports = async (hre) => {
         args: [factory.address],
     })
 
+    // deploy Autoclaim
+    const autoClaim = await deploy("AutoClaim", {
+        from: deployer,
+        log: true,
+        args: [factory.address],
+    })
+
     // deploy PoolKeeper
     const poolKeeper = await deploy("PoolKeeper", {
         from: deployer,
@@ -179,6 +192,17 @@ module.exports = async (hre) => {
         poolKeeper.address
     )
 
+    // Set Autoclaim
+    await execute(
+        "PoolFactory",
+        {
+            from: deployer,
+            log: true,
+        },
+        "setAutoClaim",
+        autoClaim.address
+    )
+
     console.log("Setting factory fee")
     const fee = ethers.utils.parseEther("0.01")
     await execute(
@@ -198,9 +222,6 @@ module.exports = async (hre) => {
     const frontRunningInterval = 300 // 5 mins
     const oneLeverage = 1
     const threeLeverage = 3
-    // USDC precision is 6 decimals
-    const minimumCommitSize = 1000 * 10 ** 6
-    const maximumCommitQueueLength = 100
     // deploy LeveragePool
     // BTC-USD 1x
     const deploymentData1 = {
@@ -211,7 +232,7 @@ module.exports = async (hre) => {
         quoteToken: token.address,
         oracleWrapper: oracleWrapper.address,
         settlementEthOracle: keeperOracle.address,
-        invariantCheck: invariantCheck.address,
+        invariantCheckContract: invariantCheck.address,
     }
 
     // BTC-USD 3x
@@ -223,7 +244,7 @@ module.exports = async (hre) => {
         quoteToken: token.address,
         oracleWrapper: oracleWrapper.address,
         settlementEthOracle: keeperOracle.address,
-        invariantCheck: invariantCheck.address,
+        invariantCheckContract: invariantCheck.address,
     }
 
     // ETH-USD 1x
@@ -235,7 +256,7 @@ module.exports = async (hre) => {
         quoteToken: token.address,
         oracleWrapper: keeperOracle.address,
         settlementEthOracle: keeperOracle.address,
-        invariantCheck: invariantCheck.address,
+        invariantCheckContract: invariantCheck.address,
     }
 
     // ETH-USD 3x
@@ -247,10 +268,10 @@ module.exports = async (hre) => {
         quoteToken: token.address,
         oracleWrapper: keeperOracle.address,
         settlementEthOracle: keeperOracle.address,
-        invariantCheck: invariantCheck.address,
+        invariantCheckContract: invariantCheck.address,
     }
 
-    // ETH-USD 3x SMA
+    // Eth-USD 3x SMA Oracle
     const deploymentData5 = {
         poolName: ETH_POOL_CODE,
         frontRunningInterval: frontRunningInterval,
@@ -259,7 +280,7 @@ module.exports = async (hre) => {
         quoteToken: token.address,
         oracleWrapper: smaOracleWrapper.address,
         settlementEthOracle: keeperOracle.address,
-        invariantCheck: invariantCheck.address,
+        invariantCheckContract: invariantCheck.address,
     }
 
     const deploymentData = [
@@ -281,7 +302,6 @@ module.exports = async (hre) => {
             "deployPool",
             deploymentData[i]
         )
-
         const event = receipt.events.find((el) => el.event === "DeployPool")
 
         console.log(`Deployed PoolFactory: ${factory.address}`)
@@ -304,18 +324,19 @@ module.exports = async (hre) => {
     )
     */
 
-    await hre.run("verify:verify", {
-        address: oracleWrapper.address,
-        constructorArguments: [MainnetBtcUsdOracle.address, deployer],
-    })
-    await hre.run("verify:verify", {
-        address: keeperOracle.address,
-        constructorArguments: [MainnetEthUsdOracle.address, deployer],
-    })
-    await hre.run("verify:verify", {
-        address: poolKeeper.address,
-        constructorArguments: [factory.address],
-    })
+    // Commented out because if fails if already verified. Need to only do it once or modify to not failed if already verified
+    // await hre.run("verify:verify", {
+    //     address: oracleWrapper.address,
+    //     constructorArguments: [arbitrumRinkBtcUsdOracle.address, deployer],
+    // })
+    // await hre.run("verify:verify", {
+    //     address: keeperOracle.address,
+    //     constructorArguments: [arbitrumRinkEthUsdOracle.address, deployer],
+    // })
+    // await hre.run("verify:verify", {
+    //     address: poolKeeper.address,
+    //     constructorArguments: [factory.address],
+    // })
 }
 
 module.exports.tags = ["ArbDeploy"]
