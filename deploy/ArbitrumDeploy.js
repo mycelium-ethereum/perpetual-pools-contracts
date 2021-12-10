@@ -10,7 +10,6 @@ module.exports = async (hre) => {
     const arbitrumRinkBtcUsdOracle = {
         address: "0x0c9973e7a27d00e656B9f153348dA46CaD70d03d",
     }
-    // used for both keepers and the eth market
     const RinkebyEthUsdOracle = {
         address: "0x5f0423B1a6935dc5596e7A24d98532b67A0AeFd8",
     }
@@ -23,6 +22,13 @@ module.exports = async (hre) => {
     const MainnetBtcUsdOracle = {
         address: "0x6ce185860a4963106506C203335A2910413708e9",
     }
+    const KovanEurUsdOracle = {
+        address: "0x0c15Ab9A0DB086e062194c273CC79f41597Bbf13",
+    }
+    const KovanEthUsdOracle = {
+        address: "0x9326BFA02ADD2366b30bacB125260Af641031331",
+    }
+
     const multisigAddress = "0x0f79e82aE88E1318B8cfC8b4A205fE2F982B928A"
 
     // const token = { address: "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8" }
@@ -48,12 +54,45 @@ module.exports = async (hre) => {
     )
 
     // deploy ChainlinkOracleWrapper
-    const oracleWrapper = await deploy("BTCChainlinkOracleWrapper", {
+    const oracleWrapper = await deploy("BtcUsdOracleWrapper", {
         from: deployer,
         log: true,
         contract: "ChainlinkOracleWrapper",
-        args: [arbitrumRinkBtcUsdOracle.address],
+        args: [arbitrumRinkBtcUsdOracle.address, deployer],
     })
+
+    // deploy SMA PriceObserver
+    const priceObserver = await deploy("EthUsdPriceObserver", {
+        from: deployer,
+        log: true,
+        contract: "PriceObserver",
+    })
+
+    // deploy SMA Oracle
+    const smaOracleWrapper = await deploy("EthUsdPriceSMAOracle", {
+        from: deployer,
+        log: true,
+        contract: "SMAOracle",
+        args: [
+            arbitrumRinkEthUsdOracle.address, //Oracle Address
+            8, //Spot decimals
+            priceObserver.address, //Observer address
+            12, // number of periods
+            3600, // Update interval
+            deployer, // deployer address
+        ],
+    })
+
+    // Set Writer on Price Observer to SMA Oracle
+    await execute(
+        "EthUsdPriceObserver",
+        {
+            from: deployer,
+            log: true,
+        },
+        "setWriter",
+        smaOracleWrapper.address
+    )
 
     // const oracleWrapper = { address: "0x57A81f7B72D2703ae7c533F3FB1CdEFa6B8f25F7" }
     // const keeperOracle = { address: "0x4e8E88BD60027aC138323d86d3F9e6b2E035b435"}
@@ -63,7 +102,7 @@ module.exports = async (hre) => {
         from: deployer,
         log: true,
         contract: "ChainlinkOracleWrapper",
-        args: [arbitrumRinkEthUsdOracle.address],
+        args: [arbitrumRinkEthUsdOracle.address, deployer],
     })
 
     /* Commented out, because we want to wait till multisig governs pools before doing it for the rest of them
@@ -102,14 +141,10 @@ module.exports = async (hre) => {
         args: [multisigAddress],
     })
 
-    // deploy PoolCommitterDeployer
-    // const poolCommitterDeployer = { address: "0xF8FfbE626dB009343ECC69FBCEF0B095007BEF31" }
-    // const poolKeeper = { address: "0xf42bb5605277Ffc81fbDb938580bdA86AB7cbbde" }
-    // const factory = { address: "0xAAc9f23D2d4AB7D1E28cd8C9e37C8e1Cb4BA9D96" }
-    const poolCommitterDeployer = await deploy("PoolCommitterDeployer", {
+    // deploy InvariantCheck
+    const invariantCheck = await deploy("InvariantCheck", {
         from: deployer,
         log: true,
-        libraries: { PoolSwapLibrary: library.address },
         args: [factory.address],
     })
 
@@ -145,7 +180,7 @@ module.exports = async (hre) => {
     )
 
     console.log("Setting factory fee")
-    const fee = ethers.utils.parseEther("0.000001142")
+    const fee = ethers.utils.parseEther("0.01")
     await execute(
         "PoolFactory",
         {
@@ -154,20 +189,6 @@ module.exports = async (hre) => {
         },
         "setFee",
         fee
-    )
-
-    console.log(
-        "Setting factory committer deployer",
-        poolCommitterDeployer.address
-    )
-    await execute(
-        "PoolFactory",
-        {
-            from: deployer,
-            log: true,
-        },
-        "setPoolCommitterDeployer",
-        poolCommitterDeployer.address
     )
 
     const BTC_POOL_CODE = "BTC/USD"
@@ -190,8 +211,7 @@ module.exports = async (hre) => {
         quoteToken: token.address,
         oracleWrapper: oracleWrapper.address,
         settlementEthOracle: keeperOracle.address,
-        minimumCommitSize: minimumCommitSize,
-        maximumCommitQueueLength: maximumCommitQueueLength,
+        invariantCheck: invariantCheck.address,
     }
 
     // BTC-USD 3x
@@ -203,8 +223,7 @@ module.exports = async (hre) => {
         quoteToken: token.address,
         oracleWrapper: oracleWrapper.address,
         settlementEthOracle: keeperOracle.address,
-        minimumCommitSize: minimumCommitSize,
-        maximumCommitQueueLength: maximumCommitQueueLength,
+        invariantCheck: invariantCheck.address,
     }
 
     // ETH-USD 1x
@@ -216,8 +235,7 @@ module.exports = async (hre) => {
         quoteToken: token.address,
         oracleWrapper: keeperOracle.address,
         settlementEthOracle: keeperOracle.address,
-        minimumCommitSize: minimumCommitSize,
-        maximumCommitQueueLength: maximumCommitQueueLength,
+        invariantCheck: invariantCheck.address,
     }
 
     // ETH-USD 3x
@@ -229,8 +247,19 @@ module.exports = async (hre) => {
         quoteToken: token.address,
         oracleWrapper: keeperOracle.address,
         settlementEthOracle: keeperOracle.address,
-        minimumCommitSize: minimumCommitSize,
-        maximumCommitQueueLength: maximumCommitQueueLength,
+        invariantCheck: invariantCheck.address,
+    }
+
+    // ETH-USD 3x SMA
+    const deploymentData5 = {
+        poolName: ETH_POOL_CODE,
+        frontRunningInterval: frontRunningInterval,
+        updateInterval: updateInterval,
+        leverageAmount: threeLeverage,
+        quoteToken: token.address,
+        oracleWrapper: smaOracleWrapper.address,
+        settlementEthOracle: keeperOracle.address,
+        invariantCheck: invariantCheck.address,
     }
 
     const deploymentData = [
@@ -238,6 +267,7 @@ module.exports = async (hre) => {
         deploymentData2,
         deploymentData3,
         deploymentData4,
+        deploymentData5,
     ]
 
     // console.log(`Deploy PoolKeeper: ${poolKeeper.address}`)
@@ -256,6 +286,7 @@ module.exports = async (hre) => {
 
         console.log(`Deployed PoolFactory: ${factory.address}`)
         console.log(`Deployed LeveragedPool: ${event.args.pool}`)
+        console.log(`Deployed PoolCommitter: ${event.args.poolCommitter}`)
         console.log(`Deploy PoolKeeper: ${poolKeeper.address}`)
         console.log(`Deployed TestToken: ${token.address}`)
         console.log(`Deployed OracleWrapper: ${oracleWrapper.address}`)
@@ -275,15 +306,11 @@ module.exports = async (hre) => {
 
     await hre.run("verify:verify", {
         address: oracleWrapper.address,
-        constructorArguments: [arbitrumRinkBtcUsdOracle.address],
+        constructorArguments: [MainnetBtcUsdOracle.address, deployer],
     })
     await hre.run("verify:verify", {
         address: keeperOracle.address,
-        constructorArguments: [arbitrumRinkEthUsdOracle.address],
-    })
-    await hre.run("verify:verify", {
-        address: poolCommitterDeployer.address,
-        constructorArguments: [factory.address],
+        constructorArguments: [MainnetEthUsdOracle.address, deployer],
     })
     await hre.run("verify:verify", {
         address: poolKeeper.address,
