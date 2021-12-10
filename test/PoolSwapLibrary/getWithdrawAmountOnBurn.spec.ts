@@ -80,7 +80,7 @@ describe("PoolSwapLibrary - getWithdrawAmountOnBurn", () => {
         })
     })
     context("amountIn == 0", async () => {
-        it("should revert", async () => {
+        it("should return 0", async () => {
             const tokenSupply = ethers.utils.parseEther("1000")
             const amountIn = ethers.utils.parseEther("0")
             const balance = ethers.utils.parseEther("5000")
@@ -88,14 +88,14 @@ describe("PoolSwapLibrary - getWithdrawAmountOnBurn", () => {
 
             // Doesn't give correct error message, because when you call library directly,
             // and it reverts, it seems to always giv "library was called directly" error message
-            await expect(
-                library.getWithdrawAmountOnBurn(
-                    tokenSupply,
-                    amountIn,
-                    balance,
-                    shadowBalance
-                )
-            ).to.be.reverted
+            const amount = await library.getWithdrawAmountOnBurn(
+                tokenSupply,
+                amountIn,
+                balance,
+                shadowBalance
+            )
+
+            expect(amount).to.equal("0")
         })
     })
 })
