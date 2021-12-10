@@ -11,9 +11,7 @@ import {
 
 import {
     DEFAULT_FEE,
-    DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
     DEFAULT_MINT_AMOUNT,
-    DEFAULT_MIN_COMMIT_SIZE,
     POOL_CODE,
     POOL_CODE_2,
     SINGLE_POOL_UPKEEP_GAS_COST,
@@ -54,8 +52,6 @@ const setupHook = async () => {
         frontRunningInterval,
         updateInterval,
         1,
-        DEFAULT_MIN_COMMIT_SIZE,
-        DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
         feeAddress,
         fee
     )
@@ -65,13 +61,12 @@ const setupHook = async () => {
         frontRunningInterval,
         updateInterval,
         2,
-        DEFAULT_MIN_COMMIT_SIZE,
-        DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
         feeAddress,
         fee
     )
     const poolCommitter2 = contracts2.poolCommitter
     token = contracts1.token
+    const token2 = contracts2.token
     pool = contracts1.pool
     pool2 = contracts2.pool
     signers = await ethers.getSigners()
@@ -79,7 +74,7 @@ const setupHook = async () => {
     derivativeChainlinkOracle = contracts1.chainlinkOracle
     derivativeOracleWrapper = contracts1.oracleWrapper
     await token.approve(pool.address, mintAmount)
-    await token.approve(pool2.address, mintAmount)
+    await token2.approve(pool2.address, mintAmount)
     await createCommit(poolCommitter, [2], mintAmount.div(2))
     await createCommit(poolCommitter2, [2], mintAmount.div(2))
     await timeout(updateInterval * 1000 * 2)

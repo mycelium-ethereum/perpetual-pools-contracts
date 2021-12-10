@@ -3,14 +3,16 @@ pragma solidity 0.8.7;
 
 import "../interfaces/IPoolFactory.sol";
 import "../interfaces/ILeveragedPool.sol";
-import "../interfaces/IPoolCommitterDeployer.sol";
 import "../interfaces/IPoolCommitter.sol";
 import "../interfaces/IERC20DecimalsWrapper.sol";
+import "../interfaces/IAutoClaim.sol";
 import "./LeveragedPool.sol";
 import "./PoolToken.sol";
 import "./PoolKeeper.sol";
+import "./PoolCommitter.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 
 /// @title The pool factory contract
 contract PoolFactory is IPoolFactory, Ownable {
@@ -20,18 +22,27 @@ contract PoolFactory is IPoolFactory, Ownable {
     LeveragedPool public poolBase;
     address public immutable poolBaseAddress;
     IPoolKeeper public poolKeeper;
-    IPoolCommitterDeployer public poolCommitterDeployer;
+    PoolCommitter public poolCommitterBase;
+    address public immutable poolCommitterBaseAddress;
 
-    // Default max leverage of 10
-    uint16 public maxLeverage = 10;
+    address public autoClaim;
+
     // Contract address to receive protocol fees
     address public feeReceiver;
-    // Default fee; Fee value as a decimal multiplied by 10^18. For example, 0.5% is represented as 0.5 * 10^18
+    // Default fee, annualised; Fee value as a decimal multiplied by 10^18. For example, 50% is represented as 0.5 * 10^18
     uint256 public fee;
+    // Percent of fees that go to secondary fee address if applicable.
+    uint256 public secondaryFeeSplitPercent = 10;
+    // The fee taken for each mint and burn. Fee value as a decimal multiplied by 10^18. For example, 50% is represented as 0.5 * 10^18
+    uint256 public mintingFee;
+    uint256 public burningFee;
 
     // This is required because we must pass along *some* value for decimal
     // precision to the base pool tokens as we use the Cloneable pattern
     uint8 constant DEFAULT_NUM_DECIMALS = 18;
+    uint8 constant MAX_DECIMALS = DEFAULT_NUM_DECIMALS;
+    // Default max leverage of 10
+    uint16 public maxLeverage = 10;
 
     /**
      * @notice Format: Pool counter => pool address
@@ -44,15 +55,25 @@ contract PoolFactory is IPoolFactory, Ownable {
      */
     mapping(address => bool) public override isValidPool;
 
+    /**
+     * @notice Format: PoolCommitter address => validity
+     */
+    mapping(address => bool) public override isValidPoolCommitter;
+
     // #### Functions
     constructor(address _feeReceiver) {
+        require(_feeReceiver != address(0), "Address cannot be null");
+
         // Deploy base contracts
         pairTokenBase = new PoolToken(DEFAULT_NUM_DECIMALS);
         pairTokenBaseAddress = address(pairTokenBase);
         poolBase = new LeveragedPool();
         poolBaseAddress = address(poolBase);
+        poolCommitterBase = new PoolCommitter(address(this), address(this), address(this), 0, 0);
+        poolCommitterBaseAddress = address(poolCommitterBase);
 
         ILeveragedPool.Initialization memory baseInitialization = ILeveragedPool.Initialization(
+            address(this),
             address(this),
             address(this),
             address(this),
@@ -66,60 +87,87 @@ contract PoolFactory is IPoolFactory, Ownable {
             0,
             1,
             address(this),
-            address(this)
+            address(0),
+            address(this),
+            secondaryFeeSplitPercent
         );
         // Init bases
         poolBase.initialize(baseInitialization);
-
         pairTokenBase.initialize(address(this), "BASE_TOKEN", "BASE", DEFAULT_NUM_DECIMALS);
         feeReceiver = _feeReceiver;
     }
 
     /**
-     * @notice Deploy a leveraged pool with given parameters
-     * @param deploymentParameters Deployment parameters of the market. Some may be reconfigurable
+     * @notice Deploy a leveraged pool and its committer/pool tokens with given parameters
+     * @param deploymentParameters Deployment parameters of the market. Some may be reconfigurable.
      * @return Address of the created pool
+     * @dev Throws if pool keeper is null
+     * @dev Throws if deployer does not own the oracle wrapper
+     * @dev Throws if leverage amount is invalid
+     * @dev Throws if decimal precision is too high (i.e., greater than `MAX_DECIMALS`)
      */
-    function deployPool(PoolDeployment calldata deploymentParameters) external override onlyGov returns (address) {
+    function deployPool(PoolDeployment calldata deploymentParameters) external override returns (address) {
         address _poolKeeper = address(poolKeeper);
         require(_poolKeeper != address(0), "PoolKeeper not set");
-        require(address(poolCommitterDeployer) != address(0), "PoolCommitterDeployer not set");
-        address poolCommitter = poolCommitterDeployer.deploy(
-            deploymentParameters.minimumCommitSize,
-            deploymentParameters.maximumCommitQueueLength
+        require(
+            IOracleWrapper(deploymentParameters.oracleWrapper).deployer() == msg.sender,
+            "Deployer must be oracle wrapper owner"
         );
+
+        bytes32 uniquePoolHash = keccak256(
+            abi.encode(
+                deploymentParameters.leverageAmount,
+                deploymentParameters.quoteToken,
+                deploymentParameters.oracleWrapper
+            )
+        );
+
+        PoolCommitter poolCommitter = PoolCommitter(
+            Clones.cloneDeterministic(poolCommitterBaseAddress, uniquePoolHash)
+        );
+        poolCommitter.initialize(
+            address(this),
+            deploymentParameters.invariantCheckContract,
+            autoClaim,
+            mintingFee,
+            burningFee
+        );
+        address poolCommitterAddress = address(poolCommitter);
+
         require(
             deploymentParameters.leverageAmount >= 1 && deploymentParameters.leverageAmount <= maxLeverage,
             "PoolKeeper: leveraged amount invalid"
         );
-        require(IERC20DecimalsWrapper(deploymentParameters.quoteToken).decimals() <= 18, "Token decimals > 18");
-        LeveragedPool pool = LeveragedPool(Clones.clone(poolBaseAddress));
-        address _pool = address(pool);
-        emit DeployPool(_pool, deploymentParameters.poolName);
-
-        string memory leverage = uint2str(deploymentParameters.leverageAmount);
-        string memory longString = string(abi.encodePacked(leverage, "L-", deploymentParameters.poolName));
-        string memory shortString = string(abi.encodePacked(leverage, "S-", deploymentParameters.poolName));
-
-        uint8 settlementDecimals = IERC20DecimalsWrapper(deploymentParameters.quoteToken).decimals();
-        address shortToken = deployPairToken(_pool, shortString, shortString, settlementDecimals);
-        address longToken = deployPairToken(_pool, longString, longString, settlementDecimals);
-        ILeveragedPool.Initialization memory initialization = ILeveragedPool.Initialization(
-            owner(), // governance is the owner of pools -- if this changes, `onlyGov` breaks
-            _poolKeeper,
-            deploymentParameters.oracleWrapper,
-            deploymentParameters.settlementEthOracle,
-            longToken,
-            shortToken,
-            poolCommitter,
-            string(abi.encodePacked(leverage, "-", deploymentParameters.poolName)),
-            deploymentParameters.frontRunningInterval,
-            deploymentParameters.updateInterval,
-            fee,
-            deploymentParameters.leverageAmount,
-            feeReceiver,
-            deploymentParameters.quoteToken
+        require(
+            IERC20DecimalsWrapper(deploymentParameters.quoteToken).decimals() <= MAX_DECIMALS,
+            "Decimal precision too high"
         );
+
+        LeveragedPool pool = LeveragedPool(Clones.cloneDeterministic(poolBaseAddress, uniquePoolHash));
+        address _pool = address(pool);
+        emit DeployPool(_pool, poolCommitterAddress, deploymentParameters.poolName);
+
+        string memory leverage = Strings.toString(deploymentParameters.leverageAmount);
+
+        ILeveragedPool.Initialization memory initialization = ILeveragedPool.Initialization({
+            _owner: owner(), // governance is the owner of pools -- if this changes, `onlyGov` breaks
+            _keeper: _poolKeeper,
+            _oracleWrapper: deploymentParameters.oracleWrapper,
+            _settlementEthOracle: deploymentParameters.settlementEthOracle,
+            _longToken: deployPairToken(_pool, leverage, deploymentParameters, "L-"),
+            _shortToken: deployPairToken(_pool, leverage, deploymentParameters, "S-"),
+            _poolCommitter: poolCommitterAddress,
+            _invariantCheckContract: deploymentParameters.invariantCheckContract,
+            _poolName: string(abi.encodePacked(leverage, "-", deploymentParameters.poolName)),
+            _frontRunningInterval: deploymentParameters.frontRunningInterval,
+            _updateInterval: deploymentParameters.updateInterval,
+            _fee: (fee * deploymentParameters.updateInterval) / (365 days),
+            _leverageAmount: deploymentParameters.leverageAmount,
+            _feeAddress: feeReceiver,
+            _secondaryFeeAddress: msg.sender,
+            _quoteToken: deploymentParameters.quoteToken,
+            _secondaryFeeSplitPercent: secondaryFeeSplitPercent
+        });
 
         // approve the quote token on the pool committer to finalise linking
         // this also stores the pool address in the committer
@@ -127,95 +175,138 @@ contract PoolFactory is IPoolFactory, Ownable {
         pool.initialize(initialization);
         // approve the quote token on the pool commiter to finalise linking
         // this also stores the pool address in the commiter
-        IPoolCommitter(poolCommitter).setQuoteAndPool(deploymentParameters.quoteToken, _pool);
+        IPoolCommitter(poolCommitterAddress).setQuoteAndPool(deploymentParameters.quoteToken, _pool);
         poolKeeper.newPool(_pool);
         pools[numPools] = _pool;
         numPools += 1;
         isValidPool[_pool] = true;
+        isValidPoolCommitter[poolCommitterAddress] = true;
         return _pool;
     }
 
     /**
      * @notice Deploy a contract for pool tokens
-     * @param name Name of the token
-     * @param symbol Symbol of the token
-     * @param decimals Number of decimal places to be supported
+     * @param leverage Amount of leverage for pool
+     * @param deploymentParameters Deployment parameters for parent function
+     * @param direction Long or short token, L- or S-
      * @return Address of the pool token
      */
     function deployPairToken(
         address owner,
-        string memory name,
-        string memory symbol,
-        uint8 decimals
+        string memory leverage,
+        PoolDeployment memory deploymentParameters,
+        string memory direction
     ) internal returns (address) {
-        PoolToken pairToken = PoolToken(Clones.clone(pairTokenBaseAddress));
-        pairToken.initialize(owner, name, symbol, decimals);
+        string memory poolNameAndSymbol = string(abi.encodePacked(leverage, direction, deploymentParameters.poolName));
+        uint8 settlementDecimals = IERC20DecimalsWrapper(deploymentParameters.quoteToken).decimals();
+        bytes32 uniqueTokenHash = keccak256(
+            abi.encode(
+                deploymentParameters.leverageAmount,
+                deploymentParameters.quoteToken,
+                deploymentParameters.oracleWrapper,
+                direction
+            )
+        );
 
+        PoolToken pairToken = PoolToken(Clones.cloneDeterministic(pairTokenBaseAddress, uniqueTokenHash));
+        pairToken.initialize(owner, poolNameAndSymbol, poolNameAndSymbol, settlementDecimals);
         return address(pairToken);
     }
 
+    /**
+     * @notice Sets the address of the associated `PoolKeeper` contract
+     * @param _poolKeeper Address of the `PoolKeeper`
+     * @dev Throws if provided address is null
+     * @dev Only callable by the owner
+     */
     function setPoolKeeper(address _poolKeeper) external override onlyOwner {
         require(_poolKeeper != address(0), "address cannot be null");
         poolKeeper = IPoolKeeper(_poolKeeper);
-        emit PoolKeeperChanged(_poolKeeper);
     }
 
+    /**
+     * @notice Sets the address of the associated `AutoClaim` contract
+     * @param _autoClaim Address of the `AutoClaim`
+     * @dev Throws if provided address is null
+     * @dev Only callable by the owner
+     */
+    function setAutoClaim(address _autoClaim) external override onlyOwner {
+        require(_autoClaim != address(0), "address cannot be null");
+        autoClaim = _autoClaim;
+    }
+
+    /**
+     * @notice Sets the maximum leverage
+     * @param newMaxLeverage Maximum leverage permitted for all pools
+     * @dev Throws if provided maximum leverage is non-positive
+     * @dev Only callable by the owner
+     */
     function setMaxLeverage(uint16 newMaxLeverage) external override onlyOwner {
         require(newMaxLeverage > 0, "Maximum leverage must be non-zero");
         maxLeverage = newMaxLeverage;
     }
 
+    /**
+     * @notice Sets the primary fee receiver of deployed Leveraged pools.
+     * @param _feeReceiver address of fee receiver
+     * @dev Only callable by the owner of this contract
+     * @dev This fuction does not change anything for already deployed pools, only pools deployed after the change
+     */
     function setFeeReceiver(address _feeReceiver) external override onlyOwner {
         require(_feeReceiver != address(0), "address cannot be null");
         feeReceiver = _feeReceiver;
     }
 
     /**
-     * @notice Set the fee amount. This is a percentage multiplied by 10^18.
-     *         e.g. 5% is 0.05 * 10^18
-     * @param _fee The fee amount as a percentage multiplied by 10^18
+     * @notice Sets the proportion of fees to be split to the nominated secondary fees recipient
+     * @param newFeePercent Proportion of fees to split
+     * @dev Only callable by the owner of this contract
+     * @dev Throws if `newFeePercent` exceeds 100
+     */
+    function setSecondaryFeeSplitPercent(uint256 newFeePercent) external override onlyOwner {
+        require(newFeePercent <= 100, "Secondary fee split cannot exceed 100%");
+        secondaryFeeSplitPercent = newFeePercent;
+    }
+
+    /**
+     * @notice Set the yearly fee amount. The max yearly fee is 10%
+     * @dev This is a percentage in WAD; multiplied by 10^18 e.g. 5% is 0.05 * 10^18
+     * @param _fee The fee amount as a percentage
+     * @dev Throws if fee is greater than 10%
      */
     function setFee(uint256 _fee) external override onlyOwner {
+        require(_fee <= 0.1e18, "Fee cannot be > 10%");
         fee = _fee;
     }
 
-    function setPoolCommitterDeployer(address _poolCommitterDeployer) external override onlyOwner {
-        require(_poolCommitterDeployer != address(0), "address cannot be null");
-        poolCommitterDeployer = IPoolCommitterDeployer(_poolCommitterDeployer);
-        emit PoolCommitterDeployerChanged(_poolCommitterDeployer);
+    /**
+     * @notice Set the minting and burning fee amount. The max yearly fee is 10%
+     * @dev This is a percentage in WAD; multiplied by 10^18 e.g. 5% is 0.05 * 10^18
+     * @param _mintingFee The fee amount for mints
+     * @param _burningFee The fee amount for burns
+     * @dev Only callable by the owner of this contract
+     * @dev Throws if minting fee is greater than 10%
+     * @dev Throws if burning fee is greater than 10%
+     */
+    function setMintAndBurnFee(uint256 _mintingFee, uint256 _burningFee) external override onlyOwner {
+        require(_mintingFee <= 0.1e18, "Fee cannot be > 10%");
+        require(_burningFee <= 0.1e18, "Fee cannot be > 10%");
+        mintingFee = _mintingFee;
+        burningFee = _burningFee;
     }
 
+    /*
+     * @notice Returns the address that owns this contract
+     * @return Address of the owner
+     * @dev Required due to the `IPoolFactory` interface
+     */
     function getOwner() external view override returns (address) {
         return owner();
     }
 
     /**
-     * @notice Converts a uint to a str
-     * @dev Assumes ASCII strings
-     * @return raw string representation of the uint
+     * @notice Ensures that the caller is the designated governance address
      */
-    function uint2str(uint256 _i) internal pure returns (string memory) {
-        if (_i == 0) {
-            return "0";
-        }
-        uint256 j = _i;
-        uint256 len;
-        while (j != 0) {
-            len++;
-            j /= 10;
-        }
-        bytes memory bstr = new bytes(len);
-        uint256 k = len;
-        while (_i != 0) {
-            k = k - 1;
-            uint8 temp = (48 + uint8(_i - (_i / 10) * 10));
-            bytes1 b1 = bytes1(temp);
-            bstr[k] = b1;
-            _i /= 10;
-        }
-        return string(bstr);
-    }
-
     modifier onlyGov() {
         require(msg.sender == owner(), "msg.sender not governance");
         _;
