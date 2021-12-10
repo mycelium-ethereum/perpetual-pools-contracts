@@ -4,11 +4,7 @@ import chaiAsPromised from "chai-as-promised"
 import { PoolKeeper, PoolFactory } from "../../types"
 
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import {
-    POOL_CODE,
-    DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
-    DEFAULT_MIN_COMMIT_SIZE,
-} from "../constants"
+import { POOL_CODE } from "../constants"
 import { deployPoolSetupContracts, generateRandomAddress } from "../utilities"
 
 chai.use(chaiAsPromised)
@@ -22,7 +18,6 @@ describe("PoolKeeper - createPool", () => {
     let signers: SignerWithAddress[]
     beforeEach(async () => {
         // Deploy the contracts
-        signers = await ethers.getSigners()
         signers = await ethers.getSigners()
         const setup = await deployPoolSetupContracts()
         const token = setup.token
@@ -42,8 +37,7 @@ describe("PoolKeeper - createPool", () => {
             quoteToken: token.address,
             oracleWrapper: oracleWrapper.address,
             settlementEthOracle: settlementEthOracle.address,
-            minimumCommitSize: DEFAULT_MIN_COMMIT_SIZE,
-            maximumCommitQueueLength: DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
+            invariantCheckContract: setup.invariantCheck.address,
         }
     })
 
@@ -58,14 +52,6 @@ describe("PoolKeeper - createPool", () => {
         )
     })
 
-    it("should Revert if fee > one (in ABDK Math IEEE precision)", async () => {
-        const justAboveOne = "0x3fff0000000000000000000000000001"
-        await factory.setFee(justAboveOne)
-        await expect(factory.deployPool(deploymentData)).to.be.revertedWith(
-            "Fee >= 100%"
-        )
-    })
-
     it("should create a new pool in the given market", async () => {
         const receipt = await (await factory.deployPool(deploymentData)).wait()
         const event = receipt?.events?.find((el) => el.event === "DeployPool")
@@ -75,9 +61,9 @@ describe("PoolKeeper - createPool", () => {
     })
 
     it("should emit an event containing the details of the new pool", async () => {
-        const receipt = await (await factory.deployPool(deploymentData)).wait()
-        const event = receipt?.events?.find((el) => el.event === "DeployPool")
-        expect(!!event).to.eq(true)
-        expect(!!event?.args?.pool).to.eq(true)
+        expect(await factory.deployPool(deploymentData)).to.emit(
+            factory,
+            "DeployPool"
+        )
     })
 })

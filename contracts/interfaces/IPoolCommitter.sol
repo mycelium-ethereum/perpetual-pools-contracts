@@ -5,10 +5,32 @@ pragma solidity 0.8.7;
 interface IPoolCommitter {
     /// Type of commit
     enum CommitType {
-        ShortMint,
-        ShortBurn,
-        LongMint,
-        LongBurn
+        ShortMint, // Mint short tokens
+        ShortBurn, // Burn short tokens
+        LongMint, // Mint long tokens
+        LongBurn, // Burn long tokens
+        LongBurnShortMint, // Burn Long tokens, then instantly mint in same upkeep
+        ShortBurnLongMint // Burn Short tokens, then instantly mint in same upkeep
+    }
+
+    struct BalancesAndSupplies {
+        uint256 shortBalance;
+        uint256 longBalance;
+        uint256 longTotalSupplyBefore;
+        uint256 shortTotalSupplyBefore;
+    }
+
+    // User aggregate balance
+    struct Balance {
+        uint256 longTokens;
+        uint256 shortTokens;
+        uint256 settlementTokens;
+    }
+
+    // Token Prices
+    struct Prices {
+        bytes16 longPrice;
+        bytes16 shortPrice;
     }
 
     // Commit information
@@ -19,59 +41,91 @@ interface IPoolCommitter {
         address owner;
     }
 
+    // Commit information
+    struct TotalCommitment {
+        uint256 longMintAmount;
+        uint256 longBurnAmount;
+        uint256 shortMintAmount;
+        uint256 shortBurnAmount;
+        uint256 shortBurnLongMintAmount;
+        uint256 longBurnShortMintAmount;
+        uint256 updateIntervalId;
+    }
+
+    struct BalanceUpdate {
+        uint256 _updateIntervalId;
+        uint256 _newLongTokensSum;
+        uint256 _newShortTokensSum;
+        uint256 _newSettlementTokensSum;
+        uint256 _balanceLongBurnAmount;
+        uint256 _balanceShortBurnAmount;
+        uint256 _longBurnFee;
+        uint256 _shortBurnFee;
+    }
+
+    // Track how much of a user's commitments are being done from their aggregate balance
+    struct UserCommitment {
+        uint256 longMintAmount;
+        uint256 longBurnAmount;
+        uint256 balanceLongBurnAmount;
+        uint256 shortMintAmount;
+        uint256 shortBurnAmount;
+        uint256 balanceShortBurnAmount;
+        uint256 shortBurnLongMintAmount;
+        uint256 balanceShortBurnMintAmount;
+        uint256 longBurnShortMintAmount;
+        uint256 balanceLongBurnMintAmount;
+        uint256 updateIntervalId;
+    }
+
     /**
      * @notice Creates a notification when a commit is created
-     * @param commitID ID of the commit
+     * @param user The user making the commitment
      * @param amount Amount of the commit
      * @param commitType Type of the commit (Short v Long, Mint v Burn)
      */
-    event CreateCommit(uint128 indexed commitID, uint256 indexed amount, CommitType indexed commitType);
+    event CreateCommit(address indexed user, uint256 indexed amount, CommitType indexed commitType);
 
     /**
-     * @notice Creates a notification when a commit is removed (uncommitted)
-     * @param commitID ID of the commit
-     * @param amount Amount of the commit
-     * @param commitType Type of the commit (Short v Long, Mint v Burn)
+     * @notice Creates a notification when a user's aggregate balance is updated
      */
-    event RemoveCommit(uint128 indexed commitID, uint256 indexed amount, CommitType indexed commitType);
+    event AggregateBalanceUpdated(address indexed user);
 
     /**
-     * @notice Creates a notification when a commit is executed
-     * @param commitID ID of the commit that's executed
+     * @notice Creates a notification when a claim is made, depositing pool tokens in user's wallet
      */
-    event ExecuteCommit(uint128 commitID);
-
-    /**
-     * @notice Creates a notification when a commit fails to execute
-     * @param commitID ID of the commit
-     */
-    event FailedCommitExecution(uint128 commitID);
-
-    /**
-     * @notice Creates a notification when the min commit size changes
-     * @param _maximumCommitQueueLength New min commit size for mints and burns
-     */
-    event MinCommitSizeChanged(uint128 _maximumCommitQueueLength);
-
-    /**
-     * @notice Creates a notification when the max commit queue length changes
-     * @param newMaxQueueLength New maximum queue length for an update interval
-     */
-    event MaxCommitQueueLengthChanged(uint128 newMaxQueueLength);
+    event Claim(address indexed user);
 
     // #### Functions
 
-    function commit(CommitType commitType, uint256 amount) external;
+    function initialize(
+        address _factory,
+        address _invariantCheckContract,
+        address _autoClaim,
+        uint256 mintingFee,
+        uint256 burningFee
+    ) external;
 
-    function executeAllCommitments() external;
+    function commit(
+        CommitType commitType,
+        uint256 amount,
+        bool fromAggregateBalance,
+        bool payForClaim
+    ) external payable;
 
-    function executeCommitment(Commit memory _commit) external;
+    function updateIntervalId() external view returns (uint128);
 
-    function getCommit(uint128 _commitID) external view returns (Commit memory);
+    function claim(address user) external;
 
-    function setQuoteAndPool(address quoteToken, address leveragedPool) external;
+    function executeCommitments() external;
 
-    function setMinimumCommitSize(uint128 _minimumCommitSize) external;
+    function updateAggregateBalance(address user) external;
 
-    function setMaxCommitQueueLength(uint128 _maximumCommitQueueLength) external;
+    function getAggregateBalance(address user) external view returns (Balance memory _balance);
+
+    function getAppropriateUpdateIntervalId() external view returns (uint128);
+
+    function setQuoteAndPool(address _quoteToken, address _leveragedPool) external;
+
+    function getPendingCommits() external view returns (TotalCommitment memory, TotalCommitment memory);
 }

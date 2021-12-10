@@ -5,15 +5,32 @@ import "abdk-libraries-solidity/ABDKMathQuad.sol";
 
 /// @title Library for various useful (mostly) mathematical functions
 library PoolSwapLibrary {
+    /// ABDKMathQuad-formatted representation of the number one
     bytes16 public constant one = 0x3fff0000000000000000000000000000;
-    bytes16 public constant zero = 0x00000000000000000000000000000000;
 
-    /* ABDKMathQuad defines this but it's private */
-    bytes16 private constant NEGATIVE_ZERO = 0x80000000000000000000000000000000;
+    /// Maximum number of decimal places supported by this contract
+    /// (ABDKMathQuad defines this but it's private)
     uint256 public constant MAX_DECIMALS = 18;
 
+    /// Maximum precision supportable via wad arithmetic (for this contract)
     uint256 public constant WAD_PRECISION = 10**18;
 
+    /// Information required to update a given user's aggregated balance
+    struct UpdateData {
+        bytes16 longPrice;
+        bytes16 shortPrice;
+        uint256 currentUpdateIntervalId;
+        uint256 updateIntervalId;
+        uint256 longMintAmount;
+        uint256 longBurnAmount;
+        uint256 shortMintAmount;
+        uint256 shortBurnAmount;
+        uint256 longBurnShortMintAmount;
+        uint256 shortBurnLongMintAmount;
+        bytes16 burnFee;
+    }
+
+    /// Information required to perform a price change (of the underlying asset)
     struct PriceChangeData {
         int256 oldPrice;
         int256 newPrice;
@@ -103,6 +120,16 @@ library PoolSwapLibrary {
     }
 
     /**
+     * @notice Divides two unsigned integers
+     * @param a The dividend
+     * @param b The divisor
+     * @return The quotient
+     */
+    function divUInt(uint256 a, uint256 b) private pure returns (bytes16) {
+        return ABDKMathQuad.div(ABDKMathQuad.fromUInt(a), ABDKMathQuad.fromUInt(b));
+    }
+
+    /**
      * @notice Divides two integers
      * @param a The dividend
      * @param b The divisor
@@ -110,6 +137,23 @@ library PoolSwapLibrary {
      */
     function divInt(int256 a, int256 b) public pure returns (bytes16) {
         return ABDKMathQuad.div(ABDKMathQuad.fromInt(a), ABDKMathQuad.fromInt(b));
+    }
+
+    /**
+     * @notice Multiply an integer by a fraction
+     * @return The result as an integer
+     */
+    function mulFraction(
+        uint256 number,
+        uint256 numerator,
+        uint256 denominator
+    ) public pure returns (uint256) {
+        if (denominator == 0) {
+            return 0;
+        }
+        bytes16 multiplyResult = ABDKMathQuad.mul(ABDKMathQuad.fromUInt(number), ABDKMathQuad.fromUInt(numerator));
+        bytes16 result = ABDKMathQuad.div(multiplyResult, ABDKMathQuad.fromUInt(denominator));
+        return convertDecimalToUInt(result);
     }
 
     /**
@@ -151,8 +195,11 @@ library PoolSwapLibrary {
      * @notice Calculates the effect of a price change. This involves calculating how many funds to transfer from the losing pool to the other.
      * @dev This function should be called by the LeveragedPool.
      * @param priceChange The struct containing necessary data to calculate price change
+     * @return Resulting long balance
+     * @return Resulting short balance
+     * @return Total fees (across both long and short sides) resulting from this price change
      */
-    function calculatePriceChange(PriceChangeData memory priceChange)
+    function calculatePriceChange(PriceChangeData calldata priceChange)
         external
         pure
         returns (
@@ -215,15 +262,57 @@ library PoolSwapLibrary {
         uint256 lastPriceTimestamp,
         uint256 updateInterval,
         uint256 frontRunningInterval
-    ) external pure returns (bool) {
+    ) public pure returns (bool) {
         return lastPriceTimestamp + updateInterval - frontRunningInterval > subjectTime;
+    }
+
+    /**
+     * @notice Calculates the update interval ID that a commitment should be placed in.
+     * @param timestamp Current block.timestamp
+     * @param lastPriceTimestamp The timestamp of the last price update
+     * @param frontRunningInterval The frontrunning interval of a pool - The amount of time before an update interval that you must commit to get included in that update
+     * @param updateInterval The frequency of a pool's updates
+     * @param currentUpdateIntervalId The current update interval's ID
+     * @dev Note that the timestamp parameter is required to be >= lastPriceTimestamp
+     * @return The update interval ID in which a commit being made at time timestamp should be included
+     */
+    function appropriateUpdateIntervalId(
+        uint256 timestamp,
+        uint256 lastPriceTimestamp,
+        uint256 frontRunningInterval,
+        uint256 updateInterval,
+        uint256 currentUpdateIntervalId
+    ) external pure returns (uint256) {
+        // Since lastPriceTimestamp <= block.timestamp, the below also confirms that timestamp >= block.timestamp
+        require(timestamp >= lastPriceTimestamp, "timestamp in the past");
+        if (frontRunningInterval <= updateInterval) {
+            // This is the "simple" case where we either want the current update interval or the next one
+            if (isBeforeFrontRunningInterval(timestamp, lastPriceTimestamp, updateInterval, frontRunningInterval)) {
+                // We are before the frontRunning interval
+                return currentUpdateIntervalId;
+            } else {
+                return currentUpdateIntervalId + 1;
+            }
+        } else {
+            // frontRunningInterval > updateInterval
+            // This is the generalised case, where it could be any number of update intervals in the future
+            uint256 factorDifference = ABDKMathQuad.toUInt(divUInt(frontRunningInterval, updateInterval));
+            uint256 timeOfNextAvailableInterval = lastPriceTimestamp + (updateInterval * (factorDifference + 1));
+            // frontRunningInterval is factorDifference times larger than updateInterval
+            uint256 minimumUpdateIntervalId = currentUpdateIntervalId + factorDifference;
+            // but, if timestamp is still within minimumUpdateInterval's frontRunningInterval we need to go to the next one
+            return
+                timestamp + frontRunningInterval > timeOfNextAvailableInterval
+                    ? minimumUpdateIntervalId + 1
+                    : minimumUpdateIntervalId;
+        }
     }
 
     /**
      * @notice Gets the number of settlement tokens to be withdrawn based on a pool token burn amount
      * @dev Calculates as `balance * amountIn / (tokenSupply + shadowBalance)
      * @param tokenSupply Total supply of pool tokens
-     * @param amountIn Commitment amount of collateral tokens going into the pool
+     * @param amountIn Commitment amount of pool tokens going into the pool
      * @param balance Balance of the pool (no. of underlying collateral tokens in pool)
      * @param shadowBalance Balance the shadow pool at time of mint
      * @return Number of settlement tokens to be withdrawn on a burn
@@ -234,10 +323,8 @@ library PoolSwapLibrary {
         uint256 balance,
         uint256 shadowBalance
     ) external pure returns (uint256) {
-        require(amountIn > 0, "Invalid amount");
-
-        // Catch the divide by zero error.
-        if (balance == 0 || tokenSupply + shadowBalance == 0) {
+        // Catch the divide by zero error, or return 0 if amountIn is 0
+        if ((balance == 0) || (tokenSupply + shadowBalance == 0) || (amountIn == 0)) {
             return amountIn;
         }
         bytes16 numerator = ABDKMathQuad.mul(ABDKMathQuad.fromUInt(balance), ABDKMathQuad.fromUInt(amountIn));
@@ -259,10 +346,8 @@ library PoolSwapLibrary {
         uint256 balance,
         uint256 shadowBalance
     ) external pure returns (uint256) {
-        require(amountIn > 0, "Invalid amount");
-
-        // Catch the divide by zero error.
-        if (balance == 0 || tokenSupply + shadowBalance == 0) {
+        // Catch the divide by zero error, or return 0 if amountIn is 0
+        if (balance == 0 || tokenSupply + shadowBalance == 0 || amountIn == 0) {
             return amountIn;
         }
 
@@ -274,11 +359,141 @@ library PoolSwapLibrary {
     }
 
     /**
+     * @notice Get the Settlement/PoolToken price, in ABDK IEE754 precision
+     * @dev Divide the side balance by the pool token's total supply
+     * @param sideBalance no. of underlying collateral tokens on that side of the pool
+     * @param tokenSupply Total supply of pool tokens
+     */
+    function getPrice(uint256 sideBalance, uint256 tokenSupply) external pure returns (bytes16) {
+        if (tokenSupply == 0) {
+            return one;
+        }
+        return ABDKMathQuad.div(ABDKMathQuad.fromUInt(sideBalance), ABDKMathQuad.fromUInt(tokenSupply));
+    }
+
+    /**
+     * @notice Calculates the number of pool tokens to mint, given some settlement token amount and a price
+     * @param price Price of a pool token
+     * @param amount Amount of settlement tokens being used to mint
+     * @return Quantity of pool tokens to mint
+     * @dev Throws if price is zero
+     * @dev `getBurn()`
+     */
+    function getMint(bytes16 price, uint256 amount) public pure returns (uint256) {
+        require(price != 0, "price == 0");
+        return ABDKMathQuad.toUInt(ABDKMathQuad.div(ABDKMathQuad.fromUInt(amount), price));
+    }
+
+    /**
+     * @notice Calculate the number of settlement tokens to burn, based on a price and an amount of pool tokens
+     * @param price Price of a pool token
+     * @param amount Amount of settlement tokens being used to burn
+     * @return Quantity of pool tokens to burn
+     * @dev amount * price, where amount is in PoolToken and price is in USD/PoolToken
+     * @dev Throws if price is zero
+     * @dev `getMint()`
+     */
+    function getBurn(bytes16 price, uint256 amount) public pure returns (uint256) {
+        require(price != 0, "price == 0");
+        return ABDKMathQuad.toUInt(ABDKMathQuad.mul(ABDKMathQuad.fromUInt(amount), price));
+    }
+
+    /**
+     * @notice Calculate the number of pool tokens to mint, given some settlement token amount, a price, and a burn amount from other side for instant mint
+     * @param price The price of a pool token
+     * @param amount The amount of settlement tokens being used to mint
+     * @param oppositePrice The price of the opposite side's pool token
+     * @param amountBurnedInstantMint The amount of pool tokens that were burnt from the opposite side for an instant mint in this side
+     * @return Quantity of pool tokens to mint
+     * @dev Throws if price is zero
+     */
+    function getMintWithBurns(
+        bytes16 price,
+        bytes16 oppositePrice,
+        uint256 amount,
+        uint256 amountBurnedInstantMint
+    ) public pure returns (uint256) {
+        require(price != 0, "price == 0");
+        if (amountBurnedInstantMint > 0) {
+            // Calculate amount of settlement tokens generated from the burn.
+            amount += getBurn(oppositePrice, amountBurnedInstantMint);
+        }
+        return getMint(price, amount);
+    }
+
+    /**
      * @notice Converts from a WAD to normal value
-     * @return Converted non-WAD value
+     * @param _wadValue wad number
+     * @param _decimals Quantity of decimal places to support
+     * @return Converted (non-WAD) value
      */
     function fromWad(uint256 _wadValue, uint256 _decimals) external pure returns (uint256) {
         uint256 scaler = 10**(MAX_DECIMALS - _decimals);
         return _wadValue / scaler;
+    }
+
+    /**
+     * @notice Calculate the change in a user's balance based on recent commit(s)
+     * @param data Information needed for updating the balance including prices and recent commit amounts
+     * @return _newLongTokens Quantity of additional long tokens the user would receive
+     * @return _newShortTokens Quantity of additional short tokens the user would receive
+     * @return _longBurnFee Quantity of settlement tokens taken as a fee from long burns
+     * @return _shortBurnFee Quantity of settlement tokens taken as a fee from short burns
+     * @return _newSettlementTokens Quantity of additional settlement tokens the user would receive
+     */
+    function getUpdatedAggregateBalance(UpdateData calldata data)
+        external
+        pure
+        returns (
+            uint256 _newLongTokens,
+            uint256 _newShortTokens,
+            uint256 _longBurnFee,
+            uint256 _shortBurnFee,
+            uint256 _newSettlementTokens
+        )
+    {
+        if (data.updateIntervalId == data.currentUpdateIntervalId) {
+            // Update interval has not passed: No change
+            return (0, 0, 0, 0, 0);
+        }
+        uint256 longBurnResult; // The amount of settlement tokens to withdraw based on long token burn
+        uint256 shortBurnResult; // The amount of settlement tokens to withdraw based on short token burn
+        if (data.longMintAmount > 0 || data.shortBurnLongMintAmount > 0) {
+            _newLongTokens = getMintWithBurns(
+                data.longPrice,
+                data.shortPrice,
+                data.longMintAmount,
+                data.shortBurnLongMintAmount
+            );
+        }
+
+        if (data.longBurnAmount > 0) {
+            // Calculate the amount of settlement tokens earned from burning long tokens
+            longBurnResult = getBurn(data.longPrice, data.longBurnAmount);
+            // Calculate the fee
+            _longBurnFee = convertDecimalToUInt(multiplyDecimalByUInt(data.burnFee, longBurnResult)) / WAD_PRECISION;
+            // Subtract the fee from settlement token amount
+            longBurnResult -= _longBurnFee;
+        }
+
+        if (data.shortMintAmount > 0 || data.longBurnShortMintAmount > 0) {
+            _newShortTokens = getMintWithBurns(
+                data.shortPrice,
+                data.longPrice,
+                data.shortMintAmount,
+                data.longBurnShortMintAmount
+            );
+        }
+
+        if (data.shortBurnAmount > 0) {
+            // Calculate the amount of settlement tokens earned from burning short tokens
+            shortBurnResult = getBurn(data.shortPrice, data.shortBurnAmount);
+            // Calculate the fee
+            _shortBurnFee = convertDecimalToUInt(multiplyDecimalByUInt(data.burnFee, shortBurnResult)) / WAD_PRECISION;
+            // Subtract the fee from settlement token amount
+            shortBurnResult -= _shortBurnFee;
+        }
+
+        _newSettlementTokens = shortBurnResult + longBurnResult;
     }
 }

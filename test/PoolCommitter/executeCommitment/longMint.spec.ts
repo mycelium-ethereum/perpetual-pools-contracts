@@ -9,12 +9,7 @@ import {
     PoolCommitter,
 } from "../../../types"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import {
-    DEFAULT_FEE,
-    DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
-    DEFAULT_MIN_COMMIT_SIZE,
-    POOL_CODE,
-} from "../../constants"
+import { DEFAULT_FEE, LONG_MINT, POOL_CODE } from "../../constants"
 import {
     deployPoolAndTokenContracts,
     generateRandomAddress,
@@ -29,8 +24,8 @@ const { expect } = chai
 const amountCommitted = ethers.utils.parseEther("2000")
 const amountMinted = ethers.utils.parseEther("10000")
 const feeAddress = generateRandomAddress()
-const updateInterval = 2
-const frontRunningInterval = 1 // seconds
+const updateInterval = 200
+const frontRunningInterval = 100 // seconds
 const fee = DEFAULT_FEE
 const leverage = 2
 
@@ -50,8 +45,6 @@ describe("LeveragedPool - executeCommitment: Long Mint", () => {
                 frontRunningInterval,
                 updateInterval,
                 leverage,
-                DEFAULT_MIN_COMMIT_SIZE,
-                DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
                 feeAddress,
                 fee
             )
@@ -63,29 +56,26 @@ describe("LeveragedPool - executeCommitment: Long Mint", () => {
             library = result.library
             longToken = result.longToken
             await token.approve(pool.address, amountMinted)
-            commit = await createCommit(poolCommitter, [2], amountCommitted)
+            commit = await createCommit(
+                poolCommitter,
+                LONG_MINT,
+                amountCommitted
+            )
         })
         it("should adjust the live long pool balance", async () => {
             expect(await pool.longBalance()).to.eq(0)
-            await timeout(2000)
+            await timeout(updateInterval * 1000)
             await pool.poolUpkeep(9, 10)
             expect(await pool.longBalance()).to.eq(amountCommitted)
         })
-        it("should reduce the shadow long mint pool balance", async () => {
-            expect(await poolCommitter.shadowPools(commit.commitType)).to.eq(
-                amountCommitted
-            )
-            await timeout(2000)
-            await pool.poolUpkeep(9, 10)
-            expect(await poolCommitter.shadowPools(commit.commitType)).to.eq(0)
-        })
         it("should mint long pair tokens", async () => {
             expect(await longToken.balanceOf(signers[0].address)).to.eq(0)
-            await timeout(2000)
+            await timeout(updateInterval * 1000)
             await pool.poolUpkeep(9, 10)
-            expect(await longToken.balanceOf(signers[0].address)).to.eq(
-                amountCommitted
-            )
+            expect(
+                (await poolCommitter.getAggregateBalance(signers[0].address))
+                    .longTokens
+            ).to.eq(amountCommitted)
         })
     })
 })
