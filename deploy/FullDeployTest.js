@@ -75,6 +75,14 @@ module.exports = async (hre) => {
         args: [accounts[0].address],
     })
 
+    /* deploy PoolFactory */
+    const poolCommitterDeployer = await deploy("PoolCommitterDeployer", {
+        from: deployer,
+        log: true,
+        libraries: { PoolSwapLibrary: library.address },
+        args: [factory.address],
+    })
+
     /* deploy PoolKeeper */
     const poolKeeper = await deploy("PoolKeeper", {
         from: deployer,
@@ -104,6 +112,20 @@ module.exports = async (hre) => {
         },
         "setFee",
         fee
+    )
+
+    console.log(
+        "Setting factory committer deployer",
+        poolCommitterDeployer.address
+    )
+    await execute(
+        "PoolFactory",
+        {
+            from: deployer,
+            log: true,
+        },
+        "setPoolCommitterDeployer",
+        poolCommitterDeployer.address
     )
 
     const POOL_CODE = "tETH"
