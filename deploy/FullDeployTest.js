@@ -71,28 +71,28 @@ module.exports = async (hre) => {
         from: deployer,
         log: true,
         libraries: { PoolSwapLibrary: library.address },
-        // (fee receiver)
-        args: [accounts[0].address],
+        // (fee receiver, pool Keeper, auto Claim)
+        args: [accounts[0].address, factory.address, factory.address],
     })
 
-    /* deploy PoolKeeper */
-    const poolKeeper = await deploy("PoolKeeper", {
-        from: deployer,
-        log: true,
-        libraries: { PoolSwapLibrary: library.address },
-        args: [factory.address],
-    })
+    // /* deploy PoolKeeper */
+    // const poolKeeper = await deploy("PoolKeeper", {
+    //     from: deployer,
+    //     log: true,
+    //     libraries: { PoolSwapLibrary: library.address },
+    //     args: [factory.address],
+    // })
 
     /* Set PoolKeeper*/
-    await execute(
-        "PoolFactory",
-        {
-            from: deployer,
-            log: true,
-        },
-        "setPoolKeeper",
-        poolKeeper.address
-    )
+    // await execute(
+    //     "PoolFactory",
+    //     {
+    //         from: deployer,
+    //         log: true,
+    //     },
+    //     "setPoolKeeper",
+    //     poolKeeper.address
+    // )
 
     console.log("Setting factory fee")
     const fee = "0x00000000000000000000000000000000"
@@ -137,7 +137,7 @@ module.exports = async (hre) => {
 
     console.log(`Deployed PoolFactory: ${factory.address}`)
     console.log(`Deployed LeveragedPool: ${event.args.pool}`)
-    console.log(`Deploy PoolKeeper: ${poolKeeper.address}`)
+    // console.log(`Deploy PoolKeeper: ${poolKeeper.address}`)
     console.log(`Deployed TestToken: ${token.address}`)
     console.log(`Deployed TestOracle: ${chainlinkOracle.address}`)
     console.log(`Deployed OracleWrapper: ${oracleWrapper.address}`)

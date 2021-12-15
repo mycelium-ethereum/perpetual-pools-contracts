@@ -143,8 +143,8 @@ module.exports = async (hre) => {
         from: deployer,
         log: true,
         libraries: { PoolSwapLibrary: library.address },
-        // (fee receiver)
-        args: [multisigAddress],
+        // (fee receiver, pool Keeper, auto Claim)
+        args: [multisigAddress, factory.address, factory.address],
     })
 
     // deploy InvariantCheck
@@ -154,20 +154,20 @@ module.exports = async (hre) => {
         args: [factory.address],
     })
 
-    // deploy Autoclaim
-    const autoClaim = await deploy("AutoClaim", {
-        from: deployer,
-        log: true,
-        args: [factory.address],
-    })
+    // // deploy Autoclaim
+    // const autoClaim = await deploy("AutoClaim", {
+    //     from: deployer,
+    //     log: true,
+    //     args: [factory.address],
+    // })
 
-    // deploy PoolKeeper
-    const poolKeeper = await deploy("PoolKeeper", {
-        from: deployer,
-        log: true,
-        libraries: { PoolSwapLibrary: library.address },
-        args: [factory.address],
-    })
+    // // deploy PoolKeeper
+    // const poolKeeper = await deploy("PoolKeeper", {
+    //     from: deployer,
+    //     log: true,
+    //     libraries: { PoolSwapLibrary: library.address },
+    //     args: [factory.address],
+    // })
 
     /*
     await execute(
@@ -181,27 +181,27 @@ module.exports = async (hre) => {
     )
     */
 
-    // Set PoolKeeper
-    await execute(
-        "PoolFactory",
-        {
-            from: deployer,
-            log: true,
-        },
-        "setPoolKeeper",
-        poolKeeper.address
-    )
+    // // Set PoolKeeper
+    // await execute(
+    //     "PoolFactory",
+    //     {
+    //         from: deployer,
+    //         log: true,
+    //     },
+    //     "setPoolKeeper",
+    //     poolKeeper.address
+    // )
 
-    // Set Autoclaim
-    await execute(
-        "PoolFactory",
-        {
-            from: deployer,
-            log: true,
-        },
-        "setAutoClaim",
-        autoClaim.address
-    )
+    // // Set Autoclaim
+    // await execute(
+    //     "PoolFactory",
+    //     {
+    //         from: deployer,
+    //         log: true,
+    //     },
+    //     "setAutoClaim",
+    //     autoClaim.address
+    // )
 
     console.log("Setting factory fee")
     const fee = ethers.utils.parseEther("0.01")
@@ -307,7 +307,7 @@ module.exports = async (hre) => {
         console.log(`Deployed PoolFactory: ${factory.address}`)
         console.log(`Deployed LeveragedPool: ${event.args.pool}`)
         console.log(`Deployed PoolCommitter: ${event.args.poolCommitter}`)
-        console.log(`Deploy PoolKeeper: ${poolKeeper.address}`)
+        // console.log(`Deploy PoolKeeper: ${poolKeeper.address}`)
         console.log(`Deployed TestToken: ${token.address}`)
         console.log(`Deployed OracleWrapper: ${oracleWrapper.address}`)
     }
