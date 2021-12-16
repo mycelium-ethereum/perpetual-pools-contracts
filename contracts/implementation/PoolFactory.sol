@@ -61,7 +61,11 @@ contract PoolFactory is IPoolFactory, Ownable {
     mapping(address => bool) public override isValidPoolCommitter;
 
     // #### Functions
-    constructor(address _feeReceiver, address _poolKeeper, address _autoClaim) {
+    constructor(
+        address _feeReceiver,
+        address _poolKeeper,
+        address _autoClaim
+    ) {
         require(_feeReceiver != address(0), "Address cannot be null");
         require(_poolKeeper != address(0), "Address cannot be null");
         require(_autoClaim != address(0), "Address cannot be null");
@@ -97,7 +101,7 @@ contract PoolFactory is IPoolFactory, Ownable {
         poolBase.initialize(baseInitialization);
         pairTokenBase.initialize(address(this), "BASE_TOKEN", "BASE", DEFAULT_NUM_DECIMALS);
         feeReceiver = _feeReceiver;
-        
+
         //Sets the address of the associated `PoolKeeper` contract
         poolKeeper = IPoolKeeper(_poolKeeper);
 
@@ -220,7 +224,6 @@ contract PoolFactory is IPoolFactory, Ownable {
         pairToken.initialize(owner, poolNameAndSymbol, poolNameAndSymbol, settlementDecimals);
         return address(pairToken);
     }
-
 
     /**
      * @notice Sets the address of the associated `PoolKeeper` contract
