@@ -28,7 +28,7 @@ contract AutoClaim is IAutoClaim, Initializable {
     }
 
     /**
-     * @notice Pay for your commit to be claimed. This means that a willing participant can claim on `user`'s behalf when the current update interval ends.
+     * @notice Pay for your commit to be claimed, while making a commitment. This means that a willing participant can claim on `user`'s behalf when the current update interval ends.
      * @dev Only callable by this contract's associated PoolCommitter instance. This prevents griefing. Consider a permissionless function, where a user can claim that somebody else wants to auto claim when they do not.
      * @param user The user who wants to autoclaim.
      */
@@ -36,10 +36,20 @@ contract AutoClaim is IAutoClaim, Initializable {
         _makePaidClaimRequest(user, msg.sender);
     }
 
+    /**
+     * @notice Pay for your commit to be claimed after the next update interval. This means that a willing participant can claim on `user`'s behalf when the current update interval ends.
+     * @param poolCommitterAddress The PoolCommitter in which you want to have your balance claimed.
+     */
     function selfRequestAutoClaim(address poolCommitterAddress) external payable override {
         _makePaidClaimRequest(msg.sender, poolCommitterAddress);
     }
 
+    /**
+     * @notice The internal logic for actually adding an auto-claim request.
+     * @dev Either called by selfRequestAutoClaim or requestAutoClaimDuringCommitment.
+     * @param requester The account who is requesting the auto-claim.
+     * @param poolCommitterAddress The PoolCommitter where the auto-claim will happen.
+     */
     function _makePaidClaimRequest(address requester, address poolCommitterAddress) private {
         ClaimRequest storage request = claimRequests[requester][poolCommitterAddress];
         IPoolCommitter poolCommitter = IPoolCommitter(poolCommitterAddress);

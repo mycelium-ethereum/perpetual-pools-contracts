@@ -90,7 +90,7 @@ describe("AutoClaim - selfRequestAutoClaim", () => {
         })
     })
 
-    context.only(
+    context(
         "When a pending request already exists, but is not yet ready to be claimed",
         async () => {
             it("increments reward", async () => {
@@ -112,7 +112,7 @@ describe("AutoClaim - selfRequestAutoClaim", () => {
         }
     )
 
-    context.only(
+    context(
         "When a pending request already exists, and is ready to be claimed",
         async () => {
             it("Resets the pending request and executes previous one", async () => {
