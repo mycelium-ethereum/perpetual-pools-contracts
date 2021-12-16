@@ -54,3 +54,21 @@ These are the configurable parameters of an individual pool:
 | Autoclaimer | `address` | False | Factory Owner | TODO |
 | Pool Keeper | `address` | False | Factory Owner | TODO |
 
+### Oracle Wrappers ###
+
+#### SMA ####
+
+| Name | Type | Deployment Only? | Who? | Description |
+| --- | --- | --- | --- | --- |
+| Sampling Periods | `uint256` | True | Deployer | Number of previous periods to be used for calculating the SMA |
+| Price Observer | `address` | True | Deployer | Address of the `PriceObserver` contract which will provide historical **spot** price data |
+| Spot Price Oracle | `address` | True | Deployer | Address of **spot** price oracle to average over |
+| Update Interval | `uint256` | True | Deployer | Minimum number of seconds between price updates |
+| Spot Oracle Precision | `uint256` | True | Deployer | Number of decimal places supported by the underlying spot oracle | 
+
+#### Chainlink ####
+
+| Name | Type | Deployment Only? | Who? | Description |
+| --- | --- | --- | --- | --- |
+| Oracle | `address` | True | Deployer | Address of the associated Chainlink oracle to wrap |
+
