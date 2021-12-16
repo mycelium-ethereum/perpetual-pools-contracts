@@ -76,7 +76,9 @@ describe("AutoClaim - selfRequestAutoClaim", () => {
 
     context("When no pending request already exists", async () => {
         it("adds a new one", async () => {
-            await autoClaim.selfRequestAutoClaim(poolCommitter.address, { value: reward })
+            await autoClaim.selfRequestAutoClaim(poolCommitter.address, {
+                value: reward,
+            })
             const request = await autoClaim.claimRequests(
                 signers[0].address,
                 poolCommitter.address
@@ -92,8 +94,12 @@ describe("AutoClaim - selfRequestAutoClaim", () => {
         "When a pending request already exists, but is not yet ready to be claimed",
         async () => {
             it("increments reward", async () => {
-                await autoClaim.selfRequestAutoClaim(poolCommitter.address, { value: reward })
-                await autoClaim.selfRequestAutoClaim(poolCommitter.address, { value: reward })
+                await autoClaim.selfRequestAutoClaim(poolCommitter.address, {
+                    value: reward,
+                })
+                await autoClaim.selfRequestAutoClaim(poolCommitter.address, {
+                    value: reward,
+                })
                 const request = await autoClaim.claimRequests(
                     signers[0].address,
                     poolCommitter.address
@@ -115,7 +121,11 @@ describe("AutoClaim - selfRequestAutoClaim", () => {
                 await token
                     .connect(signers[1])
                     .approve(pool.address, amountMinted)
-                await autoClaim.connect(signers[1]).selfRequestAutoClaim(poolCommitter.address, { value: reward })
+                await autoClaim
+                    .connect(signers[1])
+                    .selfRequestAutoClaim(poolCommitter.address, {
+                        value: reward,
+                    })
                 await timeout(updateInterval * 1000)
                 await poolKeeper.performUpkeepSinglePool(pool.address)
 
@@ -124,7 +134,11 @@ describe("AutoClaim - selfRequestAutoClaim", () => {
                 )
 
                 const receipt = await (
-                    await autoClaim.connect(signers[1]).selfRequestAutoClaim(poolCommitter.address, { value: secondReward })
+                    await autoClaim
+                        .connect(signers[1])
+                        .selfRequestAutoClaim(poolCommitter.address, {
+                            value: secondReward,
+                        })
                 ).wait()
                 const gasCost = receipt.gasUsed.mul(receipt.effectiveGasPrice)
 
