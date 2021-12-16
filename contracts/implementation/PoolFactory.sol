@@ -61,7 +61,7 @@ contract PoolFactory is IPoolFactory, Ownable {
     mapping(address => bool) public override isValidPoolCommitter;
 
     // #### Functions
-    constructor(address _feeReceiver, IPoolKeeper _poolKeeper, address _autoClaim) {
+    constructor(address _feeReceiver, address _poolKeeper, address _autoClaim) {
         require(_feeReceiver != address(0), "Address cannot be null");
         require(_poolKeeper != address(0), "Address cannot be null");
         require(_autoClaim != address(0), "Address cannot be null");
@@ -99,7 +99,7 @@ contract PoolFactory is IPoolFactory, Ownable {
         feeReceiver = _feeReceiver;
         
         //Sets the address of the associated `PoolKeeper` contract
-        poolKeeper = _poolKeeper;
+        poolKeeper = IPoolKeeper(_poolKeeper);
 
         // Sets the address of the associated `AutoClaim` contract
         autoClaim = _autoClaim;
@@ -219,6 +219,29 @@ contract PoolFactory is IPoolFactory, Ownable {
         PoolToken pairToken = PoolToken(Clones.cloneDeterministic(pairTokenBaseAddress, uniqueTokenHash));
         pairToken.initialize(owner, poolNameAndSymbol, poolNameAndSymbol, settlementDecimals);
         return address(pairToken);
+    }
+
+
+    /**
+     * @notice Sets the address of the associated `PoolKeeper` contract
+     * @param _poolKeeper Address of the `PoolKeeper`
+     * @dev Throws if provided address is null
+     * @dev Only callable by the owner
+     */
+    function setPoolKeeper(address _poolKeeper) external override onlyOwner {
+        require(_poolKeeper != address(0), "address cannot be null");
+        poolKeeper = IPoolKeeper(_poolKeeper);
+    }
+
+    /**
+     * @notice Sets the address of the associated `AutoClaim` contract
+     * @param _autoClaim Address of the `AutoClaim`
+     * @dev Throws if provided address is null
+     * @dev Only callable by the owner
+     */
+    function setAutoClaim(address _autoClaim) external override onlyOwner {
+        require(_autoClaim != address(0), "address cannot be null");
+        autoClaim = _autoClaim;
     }
 
     /**
