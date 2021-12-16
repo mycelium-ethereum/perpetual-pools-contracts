@@ -51,7 +51,9 @@ interface IAutoClaim {
      * @dev Only callable by this contract's associated PoolCommitter instance. This prevents griefing. Consider a permissionless function, where a user can claim that somebody else wants to auto claim when they do not.
      * @param user The user who wants to autoclaim.
      */
-    function makePaidClaimRequest(address user) external payable;
+    function requestAutoClaimDuringCommitment(address user) external payable;
+
+    function selfRequestAutoClaim(address poolCommitterAddress) external payable;
 
     /**
      * @notice Claim on the behalf of a user who has requests to have their commit automatically claimed by a keeper.

@@ -43,7 +43,7 @@ const fee = DEFAULT_FEE
 const leverage = 1
 const reward = 123123
 
-describe("AutoClaim - makePaidClaimRequest", () => {
+describe("AutoClaim - requestAutoClaimDuringCommitment", () => {
     let poolCommitter: PoolCommitter
     let token: TestToken
     let shortToken: ERC20
@@ -81,7 +81,7 @@ describe("AutoClaim - makePaidClaimRequest", () => {
     context("When called from a non-pool committer", async () => {
         it("reverts", async () => {
             await expect(
-                autoClaim.makePaidClaimRequest(signers[0].address)
+                autoClaim.requestAutoClaimDuringCommitment(signers[0].address)
             ).to.be.revertedWith("msg.sender not valid PoolCommitter")
         })
     })

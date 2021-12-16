@@ -32,9 +32,17 @@ contract AutoClaim is IAutoClaim, Initializable {
      * @dev Only callable by this contract's associated PoolCommitter instance. This prevents griefing. Consider a permissionless function, where a user can claim that somebody else wants to auto claim when they do not.
      * @param user The user who wants to autoclaim.
      */
-    function makePaidClaimRequest(address user) external payable override onlyPoolCommitter {
-        ClaimRequest storage request = claimRequests[user][msg.sender];
-        IPoolCommitter poolCommitter = IPoolCommitter(msg.sender);
+    function requestAutoClaimDuringCommitment(address user) external payable override onlyPoolCommitter {
+        _makePaidClaimRequest(user, msg.sender);
+    }
+
+    function selfRequestAutoClaim(address poolCommitterAddress) external payable override {
+        _makePaidClaimRequest(msg.sender, poolCommitterAddress);
+    }
+
+    function _makePaidClaimRequest(address requester, address poolCommitterAddress) private {
+        ClaimRequest storage request = claimRequests[requester][poolCommitterAddress];
+        IPoolCommitter poolCommitter = IPoolCommitter(poolCommitterAddress);
 
         uint128 requestUpdateIntervalId = request.updateIntervalId;
         // Check if a previous claim request is pending...
@@ -42,24 +50,23 @@ contract AutoClaim is IAutoClaim, Initializable {
             // and if it is claimable (the current update interval is greater than the one where the request was made).
             if (requestUpdateIntervalId < poolCommitter.updateIntervalId()) {
                 // If so, this person may as well claim for themself (if allowed). They have signified their want of claim, after all.
-                // Note that this function is only called by PoolCommitter when a user `commits` and therefore `user` will always equal the original `msg.sender`.
-                payable(user).transfer(claimRequests[user][msg.sender].reward);
-                delete claimRequests[user][msg.sender];
-                poolCommitter.claim(user);
+                payable(requester).transfer(claimRequests[requester][poolCommitterAddress].reward);
+                delete claimRequests[requester][poolCommitterAddress];
+                poolCommitter.claim(requester);
             } else {
                 // If the claim request is pending but not yet valid (it was made in the current commit), we want to add to the value.
                 // Note that in context, the user *usually* won't need or want to increment `ClaimRequest.reward` more than once because the first call to `payForClaim` should suffice.
                 request.reward += msg.value;
-                emit PaidClaimRequestUpdate(user, msg.sender, msg.value);
+                emit PaidClaimRequestUpdate(requester, poolCommitterAddress, msg.value);
                 return;
             }
         }
 
         // If no previous claim requests are pending, we need to make a new one.
         requestUpdateIntervalId = poolCommitter.getAppropriateUpdateIntervalId();
-        claimRequests[user][msg.sender].updateIntervalId = requestUpdateIntervalId;
-        claimRequests[user][msg.sender].reward = msg.value;
-        emit PaidClaimRequestUpdate(user, msg.sender, msg.value);
+        claimRequests[requester][poolCommitterAddress].updateIntervalId = requestUpdateIntervalId;
+        claimRequests[requester][poolCommitterAddress].reward = msg.value;
+        emit PaidClaimRequest(requester, poolCommitterAddress, requestUpdateIntervalId, msg.value);
     }
 
     /**

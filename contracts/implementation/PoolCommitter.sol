@@ -239,7 +239,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         uint256 frontRunningInterval = pool.frontRunningInterval();
 
         if (payForClaim) {
-            autoClaim.makePaidClaimRequest{value: msg.value}(msg.sender);
+            autoClaim.requestAutoClaimDuringCommitment{value: msg.value}(msg.sender);
         }
 
         uint256 appropriateUpdateIntervalId = PoolSwapLibrary.appropriateUpdateIntervalId(
