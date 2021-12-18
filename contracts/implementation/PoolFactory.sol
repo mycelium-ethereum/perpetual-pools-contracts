@@ -116,6 +116,7 @@ contract PoolFactory is IPoolFactory, Ownable {
 
         bytes32 uniquePoolHash = keccak256(
             abi.encode(
+                deploymentParameters.updateInterval,
                 deploymentParameters.leverageAmount,
                 deploymentParameters.quoteToken,
                 deploymentParameters.oracleWrapper
