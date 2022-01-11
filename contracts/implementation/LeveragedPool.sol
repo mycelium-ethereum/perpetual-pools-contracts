@@ -250,10 +250,10 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
      * @param totalFeeAmount total amount of fees paid
      */
     function feeTransfer(uint256 totalFeeAmount) internal {
+        require(secondaryFeeSplitPercent <= 100, "Secondary fee split cannot exceed 100%");
         if (secondaryFeeAddress == address(0)) {
             IERC20(quoteToken).safeTransfer(feeAddress, totalFeeAmount);
         } else {
-            require(secondaryFeeSplitPercent <= 100, "Secondary fee split cannot exceed 100%");
             uint256 secondaryFee = PoolSwapLibrary.mulFraction(totalFeeAmount, secondaryFeeSplitPercent, 100);
             uint256 remainder = totalFeeAmount - secondaryFee;
             IERC20(quoteToken).safeTransfer(secondaryFeeAddress, secondaryFee);
