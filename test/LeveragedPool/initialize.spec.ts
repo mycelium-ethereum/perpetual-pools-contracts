@@ -186,13 +186,7 @@ describe("LeveragedPool - initialize", () => {
             )) as PoolCommitter__factory
 
             const poolCommitter = await (
-                await poolCommitterFactory.deploy(
-                    setupContracts.factory.address,
-                    setupContracts.invariantCheck.address,
-                    setupContracts.autoClaim.address,
-                    0,
-                    0
-                )
+                await poolCommitterFactory.deploy()
             ).deployed()
 
             const testFactory = (await ethers.getContractFactory(
