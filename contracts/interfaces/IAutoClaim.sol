@@ -44,8 +44,6 @@ interface IAutoClaim {
         uint256 reward; // The amount of ETH in wei that was given by the user to pay for upkeep
     }
 
-    function initialize(address _poolFactoryAddress) external;
-
     /**
      * @notice Pay for your commit to be claimed. This means that a willing participant can claim on `user`'s behalf when the current update interval ends.
      * @dev Only callable by this contract's associated PoolCommitter instance. This prevents griefing. Consider a permissionless function, where a user can claim that somebody else wants to auto claim when they do not.
