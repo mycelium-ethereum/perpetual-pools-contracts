@@ -192,7 +192,7 @@ contract PoolFactory is IPoolFactory, Ownable {
      * @return Address of the pool token
      */
     function deployPairToken(
-        address owner,
+        address poolOwner,
         string memory leverage,
         PoolDeployment memory deploymentParameters,
         string memory direction
@@ -209,7 +209,7 @@ contract PoolFactory is IPoolFactory, Ownable {
         );
 
         PoolToken pairToken = PoolToken(Clones.cloneDeterministic(pairTokenBaseAddress, uniqueTokenHash));
-        pairToken.initialize(owner, poolNameAndSymbol, poolNameAndSymbol, settlementDecimals);
+        pairToken.initialize(poolOwner, poolNameAndSymbol, poolNameAndSymbol, settlementDecimals);
         return address(pairToken);
     }
 
