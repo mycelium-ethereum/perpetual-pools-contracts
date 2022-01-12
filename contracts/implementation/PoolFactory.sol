@@ -141,16 +141,6 @@ contract PoolFactory is IPoolFactory, Ownable {
             burningFee
         );
         address poolCommitterAddress = address(poolCommitter);
-
-        require(
-            deploymentParameters.leverageAmount >= 1 && deploymentParameters.leverageAmount <= maxLeverage,
-            "PoolKeeper: leveraged amount invalid"
-        );
-        require(
-            IERC20DecimalsWrapper(deploymentParameters.quoteToken).decimals() <= MAX_DECIMALS,
-            "Decimal precision too high"
-        );
-
         LeveragedPool pool = LeveragedPool(Clones.cloneDeterministic(poolBaseAddress, uniquePoolHash));
         address _pool = address(pool);
         emit DeployPool(_pool, poolCommitterAddress, deploymentParameters.poolName);
