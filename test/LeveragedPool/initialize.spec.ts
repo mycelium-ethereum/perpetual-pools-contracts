@@ -404,6 +404,29 @@ describe("LeveragedPool - initialize", () => {
                 })
             ).to.rejectedWith(Error)
         })
+        it("should revert if the update interval is zero", async () => {
+            await expect(
+                leveragedPool.initialize({
+                    _owner: signers[0].address,
+                    _keeper: generateRandomAddress(),
+                    _oracleWrapper: oracleWrapper.address,
+                    _settlementEthOracle: settlementEthOracle.address,
+                    _longToken: long.address,
+                    _shortToken: short.address,
+                    _poolCommitter: poolCommitter.address,
+                    _poolName: POOL_CODE,
+                    _frontRunningInterval: frontRunningInterval,
+                    _updateInterval: 0,
+                    _fee: fee,
+                    _leverageAmount: leverage,
+                    _feeAddress: feeAddress,
+                    _secondaryFeeAddress: ethers.constants.AddressZero,
+                    _quoteToken: quoteToken,
+                    _secondaryFeeSplitPercent: 10,
+                    _invariantCheckContract: invariantCheck.address,
+                })
+            ).to.rejectedWith(Error)
+        })
         it("should be able to coexist with other clones", async () => {
             const secondPoolReceipt = await (
                 await testFactoryActual.createPool(POOL_CODE_2)
