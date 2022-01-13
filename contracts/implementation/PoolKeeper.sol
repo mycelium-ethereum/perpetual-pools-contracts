@@ -35,7 +35,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     bytes16 constant fixedPoint = 0x403abc16d674ec800000000000000000; // 1 ether
 
     uint256 public gasPrice = 10 gwei;
-    address public observer = address(0);
+    address public observer;
 
     // #### Functions
     constructor(address _factory) {

@@ -104,7 +104,7 @@ contract AutoClaim is IAutoClaim, Initializable {
     {
         require(users.length == poolCommitterAddresses.length, "Supplied arrays must be same length");
         uint256 reward;
-        for (uint256 i = 0; i < users.length; i++) {
+        for (uint256 i; i < users.length; i++) {
             reward += claim(users[i], poolCommitterAddresses[i]);
         }
         payable(msg.sender).transfer(reward);
@@ -121,7 +121,7 @@ contract AutoClaim is IAutoClaim, Initializable {
         override
     {
         uint256 reward;
-        for (uint256 i = 0; i < users.length; i++) {
+        for (uint256 i; i < users.length; i++) {
             reward += claim(users[i], poolCommitterAddress);
         }
         payable(msg.sender).transfer(reward);
