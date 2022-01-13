@@ -153,4 +153,14 @@ contract SMAOracle is IOracleWrapper {
     function getLastUpdate() public view returns (uint256) {
         return lastUpdate;
     }
+
+    /**
+     * @notice Retrieves the timestamp of the duration between price updates
+     * @return Timestamp of the duration between price updates
+     * @dev `updateInterval`
+     *
+     */
+    function getUpdateInterval() public view returns (uint256) {
+        return updateInterval;
+    }
 }

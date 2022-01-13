@@ -305,6 +305,24 @@ contract PoolCommitter is IPoolCommitter, Initializable {
     }
 
     /**
+     * @notice Retrieves minting fee from each mint being left in the pool
+     * @return Minting fee
+     *
+     */
+    function getMintingFee() public view returns (uint256) {
+        return PoolSwapLibrary.convertDecimalToUInt(mintingFee);
+    }
+
+    /**
+     * @notice Retrieves burning fee from each burn being left in the pool
+     * @return Burning fee
+     *
+     */
+    function getBurningFee() public view returns (uint256) {
+        return PoolSwapLibrary.convertDecimalToUInt(burningFee);
+    }
+
+    /**
      * @notice Executes every commitment specified in the list
      * @param _commits Array of `TotalCommitment`s
      */
