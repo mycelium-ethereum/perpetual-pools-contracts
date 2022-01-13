@@ -88,6 +88,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
      * @param _factory Address of the associated `PoolFactory` contract
      * @param _invariantCheckContract Address of the associated `InvariantCheck` contract
      * @param _autoClaim Address of the associated `AutoClaim` contract
+     * @param _factoryOwner Address of the owner of the `PoolFactory`
      * @param _mintingFee The percentage that is taken from each mint, given as a decimal * 10 ^ 18
      * @param _burningFee The percentage that is taken from each burn, given as a decimal * 10 ^ 18
      * @dev Throws if factory contract address is null
@@ -102,6 +103,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         address _factory,
         address _invariantCheckContract,
         address _autoClaim,
+        address _factoryOwner,
         uint256 _mintingFee,
         uint256 _burningFee
     ) external override initializer {
@@ -115,10 +117,9 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         mintingFee = PoolSwapLibrary.convertUIntToDecimal(_mintingFee);
         burningFee = PoolSwapLibrary.convertUIntToDecimal(_burningFee);
         autoClaim = IAutoClaim(_autoClaim);
-        governance = IPoolFactory(_factory).getOwner();
         invariantCheckContract = _invariantCheckContract;
         invariantCheck = IInvariantCheck(_invariantCheckContract);
-        governance = IPoolFactory(factory).getOwner();
+        governance = _factoryOwner;
     }
 
     /**

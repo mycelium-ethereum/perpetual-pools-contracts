@@ -127,6 +127,7 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
             address(this),
             deploymentParameters.invariantCheckContract,
             autoClaim,
+            owner(),
             mintingFee,
             burningFee
         );

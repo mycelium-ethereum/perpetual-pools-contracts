@@ -102,6 +102,7 @@ interface IPoolCommitter {
         address _factory,
         address _invariantCheckContract,
         address _autoClaim,
+        address _factoryOwner,
         uint256 mintingFee,
         uint256 burningFee
     ) external;
