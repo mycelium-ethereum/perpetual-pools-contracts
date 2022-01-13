@@ -445,11 +445,16 @@ contract PoolCommitter is IPoolCommitter, Initializable {
                 burnFeeHistory[_updateIntervalId] = burningFee;
                 executeGivenCommitments(totalPoolCommitments[_updateIntervalId]);
                 delete totalPoolCommitments[_updateIntervalId];
+                // counter overflowing would require an unrealistic number of update intervals
                 updateIntervalId += 1;
             } else {
                 break;
             }
-            counter += 1;
+            // counter overflowing would require an unrealistic number of update intervals to be updated
+            // This wouldn't fit in a block, anyway.
+            unchecked {
+                counter += 1;
+            }
         }
     }
 

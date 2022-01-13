@@ -154,7 +154,10 @@ contract PoolFactory is IPoolFactory, Ownable {
         IPoolCommitter(poolCommitterAddress).setQuoteAndPool(deploymentParameters.quoteToken, _pool);
         poolKeeper.newPool(_pool);
         pools[numPools] = _pool;
-        numPools += 1;
+        // numPools overflowing would require an unrealistic number of markets
+        unchecked {
+            numPools++;
+        }
         isValidPool[_pool] = true;
         isValidPoolCommitter[poolCommitterAddress] = true;
         return _pool;

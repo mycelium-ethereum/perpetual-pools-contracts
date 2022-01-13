@@ -255,9 +255,11 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
         } else {
             require(secondaryFeeSplitPercent <= 100, "Secondary fee split cannot exceed 100%");
             uint256 secondaryFee = PoolSwapLibrary.mulFraction(totalFeeAmount, secondaryFeeSplitPercent, 100);
+            uint256 remainder;
             unchecked {
-                // secondaryFee is calculated as
-                uint256 remainder = totalFeeAmount - secondaryFee;
+                // secondaryFee is calculated as totalFeeAmount * secondaryFeeSplitPercent / 100
+                // secondaryFeeSplitPercent <= 100 and therefore secondaryFee <= totalFeeAmount - The following line can not underflow
+                remainder = totalFeeAmount - secondaryFee;
             }
             IERC20 _quoteToken = IERC20(quoteToken);
             _quoteToken.safeTransfer(secondaryFeeAddress, secondaryFee);
