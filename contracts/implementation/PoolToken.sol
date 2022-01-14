@@ -19,7 +19,7 @@ contract PoolToken is ERC20_Cloneable, IPoolToken {
      * @param account Account to burn pool tokens to
      * @return Whether the mint was successful
      */
-    function mint(uint256 amount, address account) external override onlyOwner returns (bool) {
+    function mint(address account, uint256 amount) external override onlyOwner returns (bool) {
         _mint(account, amount);
         return true;
     }
@@ -30,7 +30,7 @@ contract PoolToken is ERC20_Cloneable, IPoolToken {
      * @param account Account to burn pool tokens from
      * @return Whether the burn was successful
      */
-    function burn(uint256 amount, address account) external override onlyOwner returns (bool) {
+    function burn(address account, uint256 amount) external override onlyOwner returns (bool) {
         _burn(account, amount);
         return true;
     }

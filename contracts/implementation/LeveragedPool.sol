@@ -292,9 +292,9 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
         address minter
     ) external override onlyPoolCommitter checkInvariantsBeforeFunction {
         if (isLongToken) {
-            require(IPoolToken(tokens[LONG_INDEX]).mint(amount, minter), "Mint failed");
+            require(IPoolToken(tokens[LONG_INDEX]).mint(minter, amount), "Mint failed");
         } else {
-            require(IPoolToken(tokens[SHORT_INDEX]).mint(amount, minter), "Mint failed");
+            require(IPoolToken(tokens[SHORT_INDEX]).mint(minter, amount), "Mint failed");
         }
     }
 
@@ -313,9 +313,9 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
         address burner
     ) external override onlyPoolCommitter checkInvariantsAfterFunction {
         if (isLongToken) {
-            require(IPoolToken(tokens[LONG_INDEX]).burn(amount, burner), "Burn failed");
+            require(IPoolToken(tokens[LONG_INDEX]).burn(burner, amount), "Burn failed");
         } else {
-            require(IPoolToken(tokens[SHORT_INDEX]).burn(amount, burner), "Burn failed");
+            require(IPoolToken(tokens[SHORT_INDEX]).burn(burner, amount), "Burn failed");
         }
     }
 

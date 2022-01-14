@@ -46,7 +46,7 @@ const setupHook = async () => {
     )) as TestToken__factory
     const token = await testToken.deploy("TEST TOKEN", "TST1")
     await token.deployed()
-    await token.mint(10000, signers[0].address)
+    await token.mint(signers[0].address, 10000)
     quoteToken = token.address
 
     // Deploy oracle. Using a test oracle for predictability
