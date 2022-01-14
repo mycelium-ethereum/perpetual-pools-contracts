@@ -55,7 +55,7 @@ contract PriceObserver is Ownable, IPriceObserver {
      * @dev Note that, due to this view simply returning a reference to the
      *      backing array, it's possible for there to be null prices (i.e., 0)
      */
-    function getAll() public view override returns (int256[24] memory) {
+    function getAll() public view override returns (int256[MAX_NUM_ELEMS] memory) {
         return observations;
     }
 

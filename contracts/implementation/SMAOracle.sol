@@ -25,6 +25,8 @@ contract SMAOracle is IOracleWrapper {
 
     int256 public scaler;
     uint256 public constant MAX_DECIMALS = 18;
+    /// Maximum number of elements storable by the backing array
+    uint256 public constant MAX_NUM_ELEMS = 24;
 
     constructor(
         address _spotOracle,
@@ -115,7 +117,7 @@ contract SMAOracle is IOracleWrapper {
      * @dev It's a true tragedy that we have to stipulate a fixed-length array for `xs`, but alas, Solidity's type system cannot
      *          reason about this at all due to the value's runtime requirement
      */
-    function SMA(int256[24] memory xs, uint256 k) public pure returns (int256) {
+    function SMA(int256[MAX_NUM_ELEMS] memory xs, uint256 k) public pure returns (int256) {
         uint256 n = xs.length;
 
         /* bounds check */
