@@ -18,6 +18,7 @@ contract ChainlinkOracleWrapper is IOracleWrapper {
     // #### Functions
     constructor(address _oracle, address _deployer) {
         require(_oracle != address(0), "Oracle cannot be 0 address");
+        require(_deployer != address(0), "Deployer cannot be 0 address");
         oracle = _oracle;
         deployer = _deployer;
         // reset the scaler for consistency
