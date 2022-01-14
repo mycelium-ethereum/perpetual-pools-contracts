@@ -67,7 +67,7 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
         pairTokenBaseAddress = address(pairTokenBase);
         poolBase = new LeveragedPoolBalanceDrainMock();
         poolBaseAddress = address(poolBase);
-        poolCommitterBase = new PoolCommitter(address(this), address(this), address(this), 0, 0);
+        poolCommitterBase = new PoolCommitter();
         poolCommitterBaseAddress = address(poolCommitterBase);
 
         ILeveragedPool.Initialization memory baseInitialization = ILeveragedPool.Initialization(
