@@ -307,7 +307,6 @@ contract PoolCommitter is IPoolCommitter, Initializable {
     /**
      * @notice Retrieves minting fee from each mint being left in the pool
      * @return Minting fee
-     *
      */
     function getMintingFee() public view returns (uint256) {
         return PoolSwapLibrary.convertDecimalToUInt(mintingFee);
