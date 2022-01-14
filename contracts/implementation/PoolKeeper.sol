@@ -227,11 +227,18 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         bytes16 _tipPercent = ABDKMathQuad.fromUInt(keeperTip(_savedPreviousUpdatedTimestamp, _poolInterval));
 
         // amount of settlement tokens to give to the keeper
-        _tipPercent = ABDKMathQuad.div(_tipPercent, ABDKMathQuad.fromUInt(100));
         int256 wadRewardValue = ABDKMathQuad.toInt(
             ABDKMathQuad.add(
                 ABDKMathQuad.fromUInt(_keeperGas),
-                ABDKMathQuad.div((ABDKMathQuad.mul(ABDKMathQuad.fromUInt(_keeperGas), _tipPercent)), fixedPoint)
+                ABDKMathQuad.div(
+                    (
+                        ABDKMathQuad.div(
+                            (ABDKMathQuad.mul(ABDKMathQuad.fromUInt(_keeperGas), _tipPercent)),
+                            ABDKMathQuad.fromUInt(100)
+                        )
+                    ),
+                    fixedPoint
+                )
             )
         );
         uint256 decimals = IERC20DecimalsWrapper(ILeveragedPool(_pool).quoteToken()).decimals();
