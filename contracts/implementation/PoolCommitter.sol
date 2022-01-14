@@ -281,8 +281,8 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         BalancesAndSupplies memory balancesAndSupplies = BalancesAndSupplies({
             shortBalance: pool.shortBalance(),
             longBalance: pool.longBalance(),
-            longTotalSupplyBefore: IERC20(tokens[0]).totalSupply(),
-            shortTotalSupplyBefore: IERC20(tokens[1]).totalSupply()
+            longTotalSupplyBefore: IERC20(tokens[LONG_INDEX]).totalSupply(),
+            shortTotalSupplyBefore: IERC20(tokens[SHORT_INDEX]).totalSupply()
         });
 
         uint256 totalLongBurn = _commits.longBurnAmount + _commits.longBurnShortMintAmount;
