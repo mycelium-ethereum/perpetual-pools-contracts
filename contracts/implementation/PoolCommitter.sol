@@ -315,7 +315,6 @@ contract PoolCommitter is IPoolCommitter, Initializable {
     /**
      * @notice Retrieves burning fee from each burn being left in the pool
      * @return Burning fee
-     *
      */
     function getBurningFee() public view returns (uint256) {
         return PoolSwapLibrary.convertDecimalToUInt(burningFee);
