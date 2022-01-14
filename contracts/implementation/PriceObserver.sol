@@ -44,7 +44,7 @@ contract PriceObserver is Ownable, IPriceObserver {
      * @return `i`th price observation
      * @dev Throws if index is out of bounds (i.e., `i >= length()`)
      */
-    function get(uint256 i) public view override returns (int256) {
+    function get(uint256 i) external view override returns (int256) {
         require(i < length(), "PO: Out of bounds");
         return observations[i];
     }
@@ -55,7 +55,7 @@ contract PriceObserver is Ownable, IPriceObserver {
      * @dev Note that, due to this view simply returning a reference to the
      *      backing array, it's possible for there to be null prices (i.e., 0)
      */
-    function getAll() public view override returns (int256[24] memory) {
+    function getAll() external view override returns (int256[24] memory) {
         return observations;
     }
 
@@ -67,7 +67,7 @@ contract PriceObserver is Ownable, IPriceObserver {
      *      it is rotated such that the oldest price observation is deleted
      * @dev Only callable by the associated writer for this contract
      */
-    function add(int256 x) public override onlyWriter returns (bool) {
+    function add(int256 x) external override onlyWriter returns (bool) {
         if (full()) {
             leftRotateWithPad(x);
             return true;
@@ -84,7 +84,7 @@ contract PriceObserver is Ownable, IPriceObserver {
      * @dev Only callable by the owner of this contract
      * @dev Throws if `_writer` is the null address
      */
-    function setWriter(address _writer) public onlyOwner {
+    function setWriter(address _writer) external onlyOwner {
         require(_writer != address(0), "PO: Null address not allowed");
         writer = _writer;
     }
@@ -94,7 +94,7 @@ contract PriceObserver is Ownable, IPriceObserver {
      * @return Address of the writer for this contract
      * @dev `writer`
      */
-    function getWriter() public view returns (address) {
+    function getWriter() external view returns (address) {
         return writer;
     }
 
@@ -111,7 +111,7 @@ contract PriceObserver is Ownable, IPriceObserver {
      * @notice Resets the backing array and clears all of its stored prices
      * @dev Only callable by the owner of this contract
      */
-    function clear() public onlyOwner {
+    function clear() external onlyOwner {
         numElems = 0;
         delete observations;
     }
