@@ -112,6 +112,16 @@ describe("SMAOracle", async () => {
         priceObserver = await priceObserverFactory.deploy()
         await priceObserver.deployed()
 
+        /* populate the price observer with the same number of observations as
+         * our sampling period */
+        await priceObserver.setWriter(owner.address)
+        const initialPrices = [1, 2, 3, 4]
+        await Promise.all(
+            initialPrices
+                .map((x) => ethers.BigNumber.from(x))
+                .map(async (x) => priceObserver.add(x))
+        )
+
         /* deploy SMA oracle contract */
         const smaOracleFactory = (await ethers.getContractFactory(
             "SMAOracle",
