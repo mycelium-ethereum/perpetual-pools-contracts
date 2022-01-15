@@ -30,7 +30,7 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
  * functions have been added to mitigate the well-known issues around setting
  * allowances. See {IERC20-approve}.
  */
-contract ERC20_Cloneable is Context, ERC20, Initializable {
+contract ERC20_Cloneable is ERC20, Initializable {
     uint8 _decimals;
     string private _name;
     string private _symbol;
