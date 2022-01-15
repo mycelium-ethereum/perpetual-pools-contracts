@@ -6,6 +6,7 @@ import "../interfaces/IPoolCommitter.sol";
 import "../interfaces/IAutoClaim.sol";
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
 
 /// @title The contract to be used for paying to have a keeper claim your commit automatically
 /// @notice The way this works is when a user commits with `PoolCommitter::commit`, they have the option to set the `bool payForClaim` parameter to `true`.
@@ -43,9 +44,10 @@ contract AutoClaim is IAutoClaim, Initializable {
             if (requestUpdateIntervalId < poolCommitter.updateIntervalId()) {
                 // If so, this person may as well claim for themself (if allowed). They have signified their want of claim, after all.
                 // Note that this function is only called by PoolCommitter when a user `commits` and therefore `user` will always equal the original `msg.sender`.
-                payable(user).transfer(claimRequests[user][msg.sender].reward);
+                uint256 reward = claimRequests[user][msg.sender].reward;
                 delete claimRequests[user][msg.sender];
                 poolCommitter.claim(user);
+                Address.sendValue(payable(user), reward);
             } else {
                 // If the claim request is pending but not yet valid (it was made in the current commit), we want to add to the value.
                 // Note that in context, the user *usually* won't need or want to increment `ClaimRequest.reward` more than once because the first call to `payForClaim` should suffice.
@@ -68,7 +70,7 @@ contract AutoClaim is IAutoClaim, Initializable {
      * @param poolCommitterAddress The PoolCommitter address within which the user's claim will be executed
      */
     function paidClaim(address user, address poolCommitterAddress) public override {
-        payable(msg.sender).transfer(claim(user, poolCommitterAddress));
+        Address.sendValue(payable(msg.sender), claim(user, poolCommitterAddress));
     }
 
     /**
@@ -107,7 +109,7 @@ contract AutoClaim is IAutoClaim, Initializable {
         for (uint256 i; i < users.length; i++) {
             reward += claim(users[i], poolCommitterAddresses[i]);
         }
-        payable(msg.sender).transfer(reward);
+        Address.sendValue(payable(msg.sender), reward);
     }
 
     /**
@@ -124,7 +126,7 @@ contract AutoClaim is IAutoClaim, Initializable {
         for (uint256 i; i < users.length; i++) {
             reward += claim(users[i], poolCommitterAddress);
         }
-        payable(msg.sender).transfer(reward);
+        Address.sendValue(payable(msg.sender), reward);
     }
 
     /**
@@ -134,8 +136,9 @@ contract AutoClaim is IAutoClaim, Initializable {
      */
     function withdrawClaimRequest(address poolCommitter) external override {
         if (claimRequests[msg.sender][poolCommitter].updateIntervalId > 0) {
-            payable(msg.sender).transfer(claimRequests[msg.sender][poolCommitter].reward);
+            uint256 reward = claimRequests[msg.sender][poolCommitter].reward;
             delete claimRequests[msg.sender][poolCommitter];
+            Address.sendValue(payable(msg.sender), reward);
             emit RequestWithdrawn(msg.sender, poolCommitter);
         }
     }
@@ -146,8 +149,10 @@ contract AutoClaim is IAutoClaim, Initializable {
      * @dev Only callable by the associated `PoolCommitter` contract
      */
     function withdrawUserClaimRequest(address user) public override onlyPoolCommitter {
-        payable(user).transfer(claimRequests[user][msg.sender].reward);
+        // msg.sender is the PoolCommitter
+        uint256 reward = claimRequests[user][msg.sender].reward;
         delete claimRequests[user][msg.sender];
+        Address.sendValue(payable(user), reward);
     }
 
     /**
