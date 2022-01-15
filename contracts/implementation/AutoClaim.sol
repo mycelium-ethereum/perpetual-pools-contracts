@@ -56,24 +56,33 @@ contract AutoClaim is IAutoClaim {
     }
 
     /**
-     * @notice Claim on the behalf of a user who has requests to have their commit automatically claimed by a keeper.
+     * @notice Claim on the behalf of a user who has requested to have their commit automatically claimed by a keeper.
      * @param user The user who requested an autoclaim.
      * @param poolCommitterAddress The PoolCommitter address within which the user's claim will be executed
      */
     function paidClaim(address user, address poolCommitterAddress) public override {
+        payable(msg.sender).transfer(claim(user, poolCommitterAddress));
+    }
+
+    /**
+     * @notice Claim on the behalf of a user who has requested to have their commit automatically claimed by a keeper.
+     * @dev Does not transfer the reward, but instead returns the reward amount. This is a private function and is used to batch multiple reward transfers into one.
+     */
+    function claim(address user, address poolCommitterAddress) private returns (uint256) {
         ClaimRequest memory request = claimRequests[user][poolCommitterAddress];
         IPoolCommitter poolCommitter = IPoolCommitter(poolCommitterAddress);
         uint256 currentUpdateIntervalId = poolCommitter.updateIntervalId();
         // Check if a previous claim request has been made, and if it is claimable.
         if (checkClaim(request, currentUpdateIntervalId)) {
             // Send the reward to msg.sender.
-            payable(msg.sender).transfer(request.reward);
             // delete the ClaimRequest from storage
             delete claimRequests[user][poolCommitterAddress];
             // execute the claim
             poolCommitter.claim(user);
             emit PaidRequestExecution(user, poolCommitterAddress, request.reward);
+            return request.reward;
         }
+        return 0;
     }
 
     /**
@@ -87,9 +96,11 @@ contract AutoClaim is IAutoClaim {
         override
     {
         require(users.length == poolCommitterAddresses.length, "Supplied arrays must be same length");
-        for (uint256 i = 0; i < users.length; i++) {
-            paidClaim(users[i], poolCommitterAddresses[i]);
+        uint256 reward;
+        for (uint256 i; i < users.length; i++) {
+            reward += claim(users[i], poolCommitterAddresses[i]);
         }
+        payable(msg.sender).transfer(reward);
     }
 
     /**
@@ -102,9 +113,11 @@ contract AutoClaim is IAutoClaim {
         external
         override
     {
-        for (uint256 i = 0; i < users.length; i++) {
-            paidClaim(users[i], poolCommitterAddress);
+        uint256 reward;
+        for (uint256 i; i < users.length; i++) {
+            reward += claim(users[i], poolCommitterAddress);
         }
+        payable(msg.sender).transfer(reward);
     }
 
     /**

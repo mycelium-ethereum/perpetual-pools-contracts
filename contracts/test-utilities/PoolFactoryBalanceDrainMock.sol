@@ -127,6 +127,7 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
             address(this),
             deploymentParameters.invariantCheckContract,
             autoClaim,
+            owner(),
             mintingFee,
             burningFee
         );
@@ -178,7 +179,9 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
         IPoolCommitter(poolCommitterAddress).setQuoteAndPool(deploymentParameters.quoteToken, _pool);
         poolKeeper.newPool(_pool);
         pools[numPools] = _pool;
-        numPools += 1;
+        unchecked {
+            numPools++;
+        }
         isValidPool[_pool] = true;
         return _pool;
     }

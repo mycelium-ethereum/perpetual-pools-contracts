@@ -255,9 +255,15 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
         } else {
             require(secondaryFeeSplitPercent <= 100, "Secondary fee split cannot exceed 100%");
             uint256 secondaryFee = PoolSwapLibrary.mulFraction(totalFeeAmount, secondaryFeeSplitPercent, 100);
-            uint256 remainder = totalFeeAmount - secondaryFee;
-            IERC20(quoteToken).safeTransfer(secondaryFeeAddress, secondaryFee);
-            IERC20(quoteToken).safeTransfer(feeAddress, remainder);
+            uint256 remainder;
+            unchecked {
+                // secondaryFee is calculated as totalFeeAmount * secondaryFeeSplitPercent / 100
+                // secondaryFeeSplitPercent <= 100 and therefore secondaryFee <= totalFeeAmount - The following line can not underflow
+                remainder = totalFeeAmount - secondaryFee;
+            }
+            IERC20 _quoteToken = IERC20(quoteToken);
+            _quoteToken.safeTransfer(secondaryFeeAddress, secondaryFee);
+            _quoteToken.safeTransfer(feeAddress, remainder);
         }
     }
 
@@ -341,7 +347,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
         require(account != address(0), "Account cannot be 0 address");
         address oldFeeAddress = feeAddress;
         feeAddress = account;
-        emit FeeAddressUpdated(oldFeeAddress, feeAddress);
+        emit FeeAddressUpdated(oldFeeAddress, account);
     }
 
     /**
@@ -363,7 +369,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
         require(_keeper != address(0), "Keeper address cannot be 0 address");
         address oldKeeper = keeper;
         keeper = _keeper;
-        emit KeeperAddressChanged(oldKeeper, keeper);
+        emit KeeperAddressChanged(oldKeeper, _keeper);
     }
 
     /**
@@ -394,11 +400,12 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
      */
     function claimGovernance() external override checkInvariantsAfterFunction {
         require(governanceTransferInProgress, "No governance change active");
-        require(msg.sender == provisionalGovernance, "Not provisional governor");
+        address _provisionalGovernance = provisionalGovernance;
+        require(msg.sender == _provisionalGovernance, "Not provisional governor");
         address oldGovernance = governance; /* for later event emission */
-        governance = provisionalGovernance;
+        governance = _provisionalGovernance;
         governanceTransferInProgress = false;
-        emit GovernanceAddressChanged(oldGovernance, governance);
+        emit GovernanceAddressChanged(oldGovernance, _provisionalGovernance);
     }
 
     /**
