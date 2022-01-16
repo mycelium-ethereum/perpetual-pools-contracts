@@ -96,7 +96,7 @@ contract AutoClaim is IAutoClaim {
      * @notice Call `paidClaim` for multiple users, in a single PoolCommitter.
      * @param users All users to execute claims for.
      * @param poolCommitterAddress The PoolCommitter address within which you would like to claim for the respective user
-     * @dev The nth index in poolCommitterAddresses should be the PoolCommitter where the nth address in user requested an auto claim
+     * @dev The poolCommitterAddresses should be the PoolCommitter where the nth address in user requested an auto claim
      */
     function multiPaidClaimSinglePoolCommitter(address[] calldata users, address poolCommitterAddress)
         external

@@ -186,6 +186,7 @@ contract PoolFactory is IPoolFactory, Ownable {
 
     /**
      * @notice Deploy a contract for pool tokens
+     * @param poolOwner Address of the owner of the pool
      * @param leverage Amount of leverage for pool
      * @param deploymentParameters Deployment parameters for parent function
      * @param direction Long or short token, L- or S-

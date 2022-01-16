@@ -61,7 +61,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
      * @dev Throws if autoClaim contract address is null
      * @dev Throws if invariantCheck contract address is null
      * @dev Throws if autoclaim contract address is null
-     * @dev Only callable by the associated initialiser address
+     * @dev Only callable by the associated initializer address
      * @dev Throws if minting fee is over 100%
      * @dev Throws if burning fee is over 100%
      */
@@ -96,7 +96,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
      * @param fromAggregateBalance If minting, burning, or rebalancing into a delta neutral position,
      *                             will tokens be taken from user's aggregate balance?
      * @param userCommit The appropriate update interval's commitment data for the user
-     * @param userCommit The appropriate update interval's commitment data for the entire pool
+     * @param totalCommit The appropriate update interval's commitment data for the entire pool
      */
     function applyCommitment(
         ILeveragedPool pool,
@@ -191,6 +191,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
      *               tokens you want to burn
      * @param fromAggregateBalance If minting, burning, or rebalancing into a delta neutral position,
      *                             will tokens be taken from user's aggregate balance?
+     * @param payForClaim True if user wants to pay for the commit to be claimed
      * @dev Emits a `CreateCommit` event on success
      */
     function commit(

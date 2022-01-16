@@ -38,11 +38,7 @@ contract ERC20_Cloneable is Context, ERC20, Initializable {
     address public owner;
 
     /**
-     * @dev Sets the values for {name} and {symbol}, initializes {decimals} with
-     * a default value of 18.
-     *
-     * To select a different value for {decimals}, use {_setupDecimals}.
-     *
+     * @dev Sets the values for {name}, {symbol} and {decimals}.
      * All three of these values are immutable: they can only be set once during
      * construction.
      */

@@ -165,8 +165,8 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
 
     /**
      * @notice Transfer long tokens from pool to user
+     * @param isLongToken True if transferring long pool token; False if transferring short pool token
      * @param to Address of account to transfer to
-     * @param isLongToken True if transferring long pool token
      * @param amount Amount of quote tokens being transferred
      * @dev Only callable by the associated `PoolCommitter` contract
      * @dev Only callable when the market is *not* paused
@@ -277,7 +277,7 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
 
     /**
      * @notice Mint tokens to a user
-     * @param isLongToken True if minting short token
+     * @param isLongToken True if minting long token; False if burning short token
      * @param amount Amount of tokens to mint
      * @param minter Address of user/minter
      * @dev Only callable by the associated `PoolCommitter` contract
@@ -298,7 +298,7 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
     /**
      * @notice Burn tokens by a user
      * @dev Can only be called by & used by the pool committer
-     * @param isLongToken True if burning short token
+     * @param isLongToken True if burning long token; False if burning short token
      * @param amount Amount of tokens to burn
      * @param burner Address of user/burner
      * @dev Only callable by the associated `PoolCommitter` contract
@@ -436,7 +436,7 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
     }
 
     /**
-     * @return Quantities of pool tokens for this pool (long and short,
+     * @return Quantities of pool tokens for this pool (short and long,
      *          respectively)
      */
     function balances() external view override returns (uint256, uint256) {
@@ -445,7 +445,7 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
 
     /**
      * @notice Withdraws all available quote asset from the pool
-     * @dev Pool must not be paused
+     * @dev Pool must be paused
      * @dev ERC20 transfer
      * @dev Only callable by governance
      */
@@ -474,6 +474,7 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
         emit Unpaused();
     }
 
+    // #### Modifiers
     /**
      * @dev Check invariants before function body only. This is used in functions where the state of the pool is updated after exiting PoolCommitter (i.e. executeCommitments)
      */
@@ -483,7 +484,6 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
         _;
     }
 
-    // #### Modifiers
     modifier checkInvariantsAfterFunction() {
         require(!paused, "Pool is paused");
         _;
