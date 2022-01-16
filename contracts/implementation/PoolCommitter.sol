@@ -51,43 +51,11 @@ contract PoolCommitter is IPoolCommitter, Initializable {
     IInvariantCheck public invariantCheck;
 
     /**
-     * @notice Constructor
-     * @param _factory Address of the associated `PoolFactory` contract
-     * @param _invariantCheckContract Address of the associated `InvariantCheck` contract
-     * @param _autoClaim Address of the associated `AutoClaim` contract
-     * @param _mintingFee The percentage that is taken from each mint, given as a decimal * 10 ^ 18
-     * @param _burningFee The percentage that is taken from each burn, given as a decimal * 10 ^ 18
-     * @dev Throws if factory contract address is null
-     * @dev Throws if autoClaim contract address is null
-     * @dev Throws if invariantCheck contract address is null
-     * @dev Throws if minting fee is over 100%
-     * @dev Throws if burning fee is over 100%
-     */
-    constructor(
-        address _factory,
-        address _invariantCheckContract,
-        address _autoClaim,
-        uint256 _mintingFee,
-        uint256 _burningFee
-    ) {
-        require(_factory != address(0), "Factory address cannot be null");
-        require(_autoClaim != address(0), "AutoClaim address cannot be null");
-        require(_invariantCheckContract != address(0), "InvariantCheck address cannot be null");
-        require(_mintingFee < PoolSwapLibrary.WAD_PRECISION, "Minting fee >= 100%");
-        require(_burningFee < PoolSwapLibrary.WAD_PRECISION, "Burning fee >= 100%");
-        factory = _factory;
-        autoClaim = IAutoClaim(_autoClaim);
-        mintingFee = PoolSwapLibrary.convertUIntToDecimal(_mintingFee);
-        burningFee = PoolSwapLibrary.convertUIntToDecimal(_burningFee);
-        invariantCheckContract = _invariantCheckContract;
-        invariantCheck = IInvariantCheck(_invariantCheckContract);
-    }
-
-    /**
      * @notice Initialises the contract
      * @param _factory Address of the associated `PoolFactory` contract
      * @param _invariantCheckContract Address of the associated `InvariantCheck` contract
      * @param _autoClaim Address of the associated `AutoClaim` contract
+     * @param _factoryOwner Address of the owner of the `PoolFactory`
      * @param _mintingFee The percentage that is taken from each mint, given as a decimal * 10 ^ 18
      * @param _burningFee The percentage that is taken from each burn, given as a decimal * 10 ^ 18
      * @dev Throws if factory contract address is null
@@ -102,6 +70,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         address _factory,
         address _invariantCheckContract,
         address _autoClaim,
+        address _factoryOwner,
         uint256 _mintingFee,
         uint256 _burningFee
     ) external override initializer {
@@ -115,10 +84,9 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         mintingFee = PoolSwapLibrary.convertUIntToDecimal(_mintingFee);
         burningFee = PoolSwapLibrary.convertUIntToDecimal(_burningFee);
         autoClaim = IAutoClaim(_autoClaim);
-        governance = IPoolFactory(_factory).getOwner();
         invariantCheckContract = _invariantCheckContract;
         invariantCheck = IInvariantCheck(_invariantCheckContract);
-        governance = IPoolFactory(factory).getOwner();
+        governance = _factoryOwner;
     }
 
     /**
@@ -452,17 +420,24 @@ contract PoolCommitter is IPoolCommitter, Initializable {
          * In reality, this should never iterate more than once, since more than one update interval
          * should never be passed without the previous one being upkept.
          */
+        uint256 _updateIntervalId;
         while (true) {
             if (block.timestamp >= lastPriceTimestamp + updateInterval * counter) {
                 // Another update interval has passed, so we have to do the nextIntervalCommit as well
-                burnFeeHistory[updateIntervalId] = burningFee;
-                executeGivenCommitments(totalPoolCommitments[updateIntervalId]);
-                delete totalPoolCommitments[updateIntervalId];
+                _updateIntervalId = updateIntervalId;
+                burnFeeHistory[_updateIntervalId] = burningFee;
+                executeGivenCommitments(totalPoolCommitments[_updateIntervalId]);
+                delete totalPoolCommitments[_updateIntervalId];
+                // counter overflowing would require an unrealistic number of update intervals
                 updateIntervalId += 1;
             } else {
                 break;
             }
-            counter += 1;
+            // counter overflowing would require an unrealistic number of update intervals to be updated
+            // This wouldn't fit in a block, anyway.
+            unchecked {
+                counter += 1;
+            }
         }
     }
 
