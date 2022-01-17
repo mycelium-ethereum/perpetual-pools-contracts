@@ -5,7 +5,6 @@ import "../interfaces/IPoolFactory.sol";
 import "../interfaces/IPoolCommitter.sol";
 import "../interfaces/IAutoClaim.sol";
 
-import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 
 /// @title The contract to be used for paying to have a keeper claim your commit automatically
@@ -13,17 +12,12 @@ import "@openzeppelin/contracts/utils/Address.sol";
 ///         During this function execution, `AutoClaim::payForClaim` is called, and `msg.value` is taken as the reward to whoever claims for requester (by using `AutoClaim::paidClaim`).
 /// @dev A question I had to ask was "What happens if one requests a second claim before one's pending request from a previous update interval one gets executed on?".
 ///      My solution to this was to have the committer instantly claim for themself. They have signified their desire to claim their tokens, after all.
-contract AutoClaim is IAutoClaim, Initializable {
+contract AutoClaim is IAutoClaim {
     // User => PoolCommitter address => Claim Request
     mapping(address => mapping(address => ClaimRequest)) public claimRequests;
     IPoolFactory internal poolFactory;
 
     constructor(address _poolFactoryAddress) {
-        require(_poolFactoryAddress != address(0), "PoolFactory address == 0");
-        poolFactory = IPoolFactory(_poolFactoryAddress);
-    }
-
-    function initialize(address _poolFactoryAddress) external override initializer {
         require(_poolFactoryAddress != address(0), "PoolFactory address == 0");
         poolFactory = IPoolFactory(_poolFactoryAddress);
     }
