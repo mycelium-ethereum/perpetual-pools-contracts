@@ -253,7 +253,6 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
         if (secondaryFeeAddress == address(0)) {
             IERC20(quoteToken).safeTransfer(feeAddress, totalFeeAmount);
         } else {
-            require(secondaryFeeSplitPercent <= 100, "Secondary fee split cannot exceed 100%");
             uint256 secondaryFee = PoolSwapLibrary.mulFraction(totalFeeAmount, secondaryFeeSplitPercent, 100);
             uint256 remainder;
             unchecked {
