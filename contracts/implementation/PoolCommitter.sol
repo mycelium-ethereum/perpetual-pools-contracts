@@ -85,7 +85,6 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         governance = IPoolFactory(_factory).getOwner();
         invariantCheckContract = _invariantCheckContract;
         invariantCheck = IInvariantCheck(_invariantCheckContract);
-        governance = IPoolFactory(factory).getOwner();
     }
 
     /**
