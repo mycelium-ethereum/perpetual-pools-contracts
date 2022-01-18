@@ -19,6 +19,15 @@ contract PriceObserver is Ownable, IPriceObserver {
     address writer = address(0);
 
     /**
+     * @notice Enforces that the caller is the associated writer of this
+     *          contract
+     */
+    modifier onlyWriter() {
+        require(msg.sender == writer, "PO: Permission denied");
+        _;
+    }
+
+    /**
      * @notice Returns the capacity of the backing array (i.e., the maximum
      *          number of price observations able to be stored by this contract)
      * @return Maximum number of price observations that can be stored
@@ -132,14 +141,5 @@ contract PriceObserver is Ownable, IPriceObserver {
         /* rotate `x` into `observations` from the right (remember, we're
          * **left** rotating -- with padding!) */
         observations[n - 1] = x;
-    }
-
-    /**
-     * @notice Enforces that the caller is the associated writer of this
-     *          contract
-     */
-    modifier onlyWriter() {
-        require(msg.sender == writer, "PO: Permission denied");
-        _;
     }
 }

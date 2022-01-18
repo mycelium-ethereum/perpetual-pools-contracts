@@ -47,6 +47,44 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
 
     string public override poolName;
 
+    // #### Modifiers
+
+    /**
+     * @dev Check invariants before function body only. This is used in functions where the state of the pool is updated after exiting PoolCommitter (i.e. executeCommitments)
+     */
+    modifier checkInvariantsBeforeFunction() {
+        invariantCheck.checkInvariants(address(this));
+        require(!paused, "Pool is paused");
+        _;
+    }
+
+    modifier checkInvariantsAfterFunction() {
+        require(!paused, "Pool is paused");
+        _;
+        invariantCheck.checkInvariants(address(this));
+        require(!paused, "Pool is paused");
+    }
+
+    modifier onlyKeeper() {
+        require(msg.sender == keeper, "msg.sender not keeper");
+        _;
+    }
+
+    modifier onlyInvariantCheckContract() {
+        require(msg.sender == invariantCheckContract, "msg.sender not invariantCheckContract");
+        _;
+    }
+
+    modifier onlyPoolCommitter() {
+        require(msg.sender == poolCommitter, "msg.sender not poolCommitter");
+        _;
+    }
+
+    modifier onlyGov() {
+        require(msg.sender == governance, "msg.sender not governance");
+        _;
+    }
+
     // #### Functions
 
     function initialize(ILeveragedPool.Initialization calldata initialization) external override initializer {
@@ -475,42 +513,5 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
     function unpause() external override onlyGov {
         paused = false;
         emit Unpaused();
-    }
-
-    /**
-     * @dev Check invariants before function body only. This is used in functions where the state of the pool is updated after exiting PoolCommitter (i.e. executeCommitments)
-     */
-    modifier checkInvariantsBeforeFunction() {
-        invariantCheck.checkInvariants(address(this));
-        require(!paused, "Pool is paused");
-        _;
-    }
-
-    // #### Modifiers
-    modifier checkInvariantsAfterFunction() {
-        require(!paused, "Pool is paused");
-        _;
-        invariantCheck.checkInvariants(address(this));
-        require(!paused, "Pool is paused");
-    }
-
-    modifier onlyKeeper() {
-        require(msg.sender == keeper, "msg.sender not keeper");
-        _;
-    }
-
-    modifier onlyInvariantCheckContract() {
-        require(msg.sender == invariantCheckContract, "msg.sender not invariantCheckContract");
-        _;
-    }
-
-    modifier onlyPoolCommitter() {
-        require(msg.sender == poolCommitter, "msg.sender not poolCommitter");
-        _;
-    }
-
-    modifier onlyGov() {
-        require(msg.sender == governance, "msg.sender not governance");
-        _;
     }
 }

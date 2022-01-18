@@ -37,6 +37,14 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     uint256 public gasPrice = 10 gwei;
     address public observer = address(0);
 
+    /**
+     * @notice Ensures that the caller is the associated `PoolFactory` contract
+     */
+    modifier onlyFactory() {
+        require(msg.sender == address(factory), "Caller not factory");
+        _;
+    }
+
     // #### Functions
     constructor(address _factory) {
         require(_factory != address(0), "Factory cannot be 0 address");
@@ -307,13 +315,5 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      */
     function setGasPrice(uint256 _price) external onlyOwner {
         gasPrice = _price;
-    }
-
-    /**
-     * @notice Ensures that the caller is the associated `PoolFactory` contract
-     */
-    modifier onlyFactory() {
-        require(msg.sender == address(factory), "Caller not factory");
-        _;
     }
 }

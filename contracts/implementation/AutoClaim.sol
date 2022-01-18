@@ -15,6 +15,11 @@ contract AutoClaim is IAutoClaim {
     mapping(address => mapping(address => ClaimRequest)) public claimRequests;
     IPoolFactory internal poolFactory;
 
+    modifier onlyPoolCommitter() {
+        require(poolFactory.isValidPoolCommitter(msg.sender), "msg.sender not valid PoolCommitter");
+        _;
+    }
+
     constructor(address _poolFactoryAddress) {
         require(_poolFactoryAddress != address(0), "PoolFactory address == 0");
         poolFactory = IPoolFactory(_poolFactoryAddress);
@@ -153,10 +158,5 @@ contract AutoClaim is IAutoClaim {
         returns (bool)
     {
         return request.updateIntervalId > 0 && request.updateIntervalId < currentUpdateIntervalId;
-    }
-
-    modifier onlyPoolCommitter() {
-        require(poolFactory.isValidPoolCommitter(msg.sender), "msg.sender not valid PoolCommitter");
-        _;
     }
 }

@@ -37,6 +37,11 @@ contract ERC20_Cloneable is Context, ERC20, Initializable {
 
     address public owner;
 
+    modifier onlyOwner() {
+        require(msg.sender == owner, "msg.sender not owner");
+        _;
+    }
+
     /**
      * @dev Sets the values for {name} and {symbol}, initializes {decimals} with
      * a default value of 18.
@@ -84,10 +89,5 @@ contract ERC20_Cloneable is Context, ERC20, Initializable {
     function transferOwnership(address _owner) external onlyOwner {
         require(_owner != address(0), "Owner: setting to 0 address");
         owner = _owner;
-    }
-
-    modifier onlyOwner() {
-        require(msg.sender == owner, "msg.sender not owner");
-        _;
     }
 }
