@@ -199,7 +199,7 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
             await pool.setKeeper(poolKeeper.address)
             await expect(
                 poolKeeper.performUpkeepMultiplePools([POOL1_ADDR, POOL2_ADDR])
-            ).to.be.revertedWith("observer not initialized")
+            ).to.be.revertedWith("Observer not initialized")
         })
     })
 
