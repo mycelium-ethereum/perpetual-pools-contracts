@@ -83,8 +83,6 @@ contract AutoClaim is IAutoClaim {
         uint256 currentUpdateIntervalId
     ) private returns (uint256) {
         ClaimRequest memory request = claimRequests[user][poolCommitterAddress];
-        IPoolCommitter poolCommitter = IPoolCommitter(poolCommitterAddress);
-        uint256 currentUpdateIntervalId = poolCommitter.updateIntervalId();
         // Check if a previous claim request has been made, and if it is claimable.
         if (checkClaim(request, currentUpdateIntervalId)) {
             // Send the reward to msg.sender.
