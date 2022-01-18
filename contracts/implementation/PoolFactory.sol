@@ -17,12 +17,9 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 /// @title The pool factory contract
 contract PoolFactory is IPoolFactory, Ownable {
     // #### Globals
-    PoolToken public pairTokenBase;
     address public immutable pairTokenBaseAddress;
-    LeveragedPool public poolBase;
     address public immutable poolBaseAddress;
     IPoolKeeper public poolKeeper;
-    PoolCommitter public poolCommitterBase;
     address public immutable poolCommitterBaseAddress;
 
     address public autoClaim;
@@ -65,35 +62,13 @@ contract PoolFactory is IPoolFactory, Ownable {
         require(_feeReceiver != address(0), "Address cannot be null");
 
         // Deploy base contracts
-        pairTokenBase = new PoolToken(DEFAULT_NUM_DECIMALS);
+        PoolToken pairTokenBase = new PoolToken(DEFAULT_NUM_DECIMALS);
         pairTokenBaseAddress = address(pairTokenBase);
-        poolBase = new LeveragedPool();
+        LeveragedPool poolBase = new LeveragedPool();
         poolBaseAddress = address(poolBase);
-        poolCommitterBase = new PoolCommitter();
+        PoolCommitter poolCommitterBase = new PoolCommitter();
         poolCommitterBaseAddress = address(poolCommitterBase);
 
-        ILeveragedPool.Initialization memory baseInitialization = ILeveragedPool.Initialization(
-            address(this),
-            address(this),
-            address(this),
-            address(this),
-            address(this),
-            address(this),
-            address(this),
-            address(this),
-            "BASE_POOL",
-            15,
-            30,
-            0,
-            1,
-            address(this),
-            address(0),
-            address(this),
-            secondaryFeeSplitPercent
-        );
-        // Init bases
-        poolBase.initialize(baseInitialization);
-        pairTokenBase.initialize(address(this), "BASE_TOKEN", "BASE", DEFAULT_NUM_DECIMALS);
         feeReceiver = _feeReceiver;
     }
 
@@ -113,6 +88,14 @@ contract PoolFactory is IPoolFactory, Ownable {
             IOracleWrapper(deploymentParameters.oracleWrapper).deployer() == msg.sender,
             "Deployer must be oracle wrapper owner"
         );
+        require(
+            deploymentParameters.leverageAmount >= 1 && deploymentParameters.leverageAmount <= maxLeverage,
+            "PoolKeeper: leveraged amount invalid"
+        );
+        require(
+            IERC20DecimalsWrapper(deploymentParameters.quoteToken).decimals() <= MAX_DECIMALS,
+            "Decimal precision too high"
+        );
 
         bytes32 uniquePoolHash = keccak256(
             abi.encode(
@@ -129,20 +112,11 @@ contract PoolFactory is IPoolFactory, Ownable {
             address(this),
             deploymentParameters.invariantCheckContract,
             autoClaim,
+            owner(),
             mintingFee,
             burningFee
         );
         address poolCommitterAddress = address(poolCommitter);
-
-        require(
-            deploymentParameters.leverageAmount >= 1 && deploymentParameters.leverageAmount <= maxLeverage,
-            "PoolKeeper: leveraged amount invalid"
-        );
-        require(
-            IERC20DecimalsWrapper(deploymentParameters.quoteToken).decimals() <= MAX_DECIMALS,
-            "Decimal precision too high"
-        );
-
         LeveragedPool pool = LeveragedPool(Clones.cloneDeterministic(poolBaseAddress, uniquePoolHash));
         address _pool = address(pool);
         emit DeployPool(_pool, poolCommitterAddress, deploymentParameters.poolName);
@@ -178,7 +152,10 @@ contract PoolFactory is IPoolFactory, Ownable {
         IPoolCommitter(poolCommitterAddress).setQuoteAndPool(deploymentParameters.quoteToken, _pool);
         poolKeeper.newPool(_pool);
         pools[numPools] = _pool;
-        numPools += 1;
+        // numPools overflowing would require an unrealistic number of markets
+        unchecked {
+            numPools++;
+        }
         isValidPool[_pool] = true;
         isValidPoolCommitter[poolCommitterAddress] = true;
         return _pool;

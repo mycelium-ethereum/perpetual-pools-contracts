@@ -10,13 +10,13 @@ contract PriceObserver is Ownable, IPriceObserver {
     uint256 public constant MAX_NUM_ELEMS = 24;
 
     /// Current number of elements stored by the backing array
-    uint256 public numElems = 0;
+    uint256 public numElems;
 
     /// Backing array for storing price data
     int256[MAX_NUM_ELEMS] public observations;
 
     /// Writer -- only address allowed to add data to the backing array
-    address writer = address(0);
+    address writer;
 
     /**
      * @notice Returns the capacity of the backing array (i.e., the maximum
