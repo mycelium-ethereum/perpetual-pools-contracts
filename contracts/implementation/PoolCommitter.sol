@@ -570,7 +570,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
      * @param user Address of the given user
      * @return Associated `Balance` for the given user after aggregation
      */
-    function getAggregateBalance(address user) public view override returns (Balance memory) {
+    function getAggregateBalance(address user) external view override returns (Balance memory) {
         Balance memory _balance = userAggregateBalance[user];
 
         BalanceUpdate memory update = BalanceUpdate({

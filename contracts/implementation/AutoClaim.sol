@@ -142,6 +142,7 @@ contract AutoClaim is IAutoClaim {
      * @param user The user who will have their claim request withdrawn.
      * @dev Only callable by the associated `PoolCommitter` contract
      */
+
     function withdrawUserClaimRequest(address user) public override onlyPoolCommitter {
         // msg.sender is the PoolCommitter
         uint256 reward = claimRequests[user][msg.sender].reward;
@@ -155,7 +156,7 @@ contract AutoClaim is IAutoClaim {
      * @param user The user whose claim request will be checked.
      * @param poolCommitter The pool committer in which to look for a user's claim request.
      */
-    function checkUserClaim(address user, address poolCommitter) public view override returns (bool) {
+    function checkUserClaim(address user, address poolCommitter) external view override returns (bool) {
         return checkClaim(claimRequests[user][poolCommitter], IPoolCommitter(poolCommitter).updateIntervalId());
     }
 
