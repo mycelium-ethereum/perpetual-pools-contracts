@@ -197,12 +197,14 @@ library PoolSwapLibrary {
      * @param priceChange The struct containing necessary data to calculate price change
      * @return Resulting long balance
      * @return Resulting short balance
-     * @return Total fees (across both long and short sides) resulting from this price change
+     * @return Resulting fees taken from long balance
+     * @return Resulting fees taken from short balance
      */
     function calculatePriceChange(PriceChangeData calldata priceChange)
         external
         pure
         returns (
+            uint256,
             uint256,
             uint256,
             uint256
@@ -223,7 +225,6 @@ library PoolSwapLibrary {
 
         shortBalance = shortBalance - shortFeeAmount;
         longBalance = longBalance - longFeeAmount;
-        uint256 totalFeeAmount = shortFeeAmount + longFeeAmount;
 
         // Use the ratio to determine if the price increased or decreased and therefore which direction
         // the funds should be transferred towards.
@@ -245,7 +246,7 @@ library PoolSwapLibrary {
             longBalance = longBalance - lossAmount;
         }
 
-        return (longBalance, shortBalance, totalFeeAmount);
+        return (longBalance, shortBalance, longFeeAmount, shortFeeAmount);
     }
 
     /**

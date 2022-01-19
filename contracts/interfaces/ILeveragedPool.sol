@@ -38,8 +38,15 @@ interface ILeveragedPool {
      * @notice Creates a notification when the pool is rebalanced
      * @param shortBalanceChange The change of funds in the short side
      * @param longBalanceChange The change of funds in the long side
+     * @param longFeeAmount Proportional fee taken from short side
+     * @param shortFeeAmount Proportional fee taken from long side
      */
-    event PoolRebalance(int256 shortBalanceChange, int256 longBalanceChange);
+    event PoolRebalance(
+        int256 shortBalanceChange,
+        int256 longBalanceChange,
+        uint256 shortFeeAmount,
+        uint256 longFeeAmount
+    );
 
     /**
      * @notice Creates a notification when the pool's price execution fails
