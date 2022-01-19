@@ -47,6 +47,44 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
 
     string public override poolName;
 
+    // #### Modifiers
+
+    /**
+     * @dev Check invariants before function body only. This is used in functions where the state of the pool is updated after exiting PoolCommitter (i.e. executeCommitments)
+     */
+    modifier checkInvariantsBeforeFunction() {
+        invariantCheck.checkInvariants(address(this));
+        require(!paused, "Pool is paused");
+        _;
+    }
+
+    modifier checkInvariantsAfterFunction() {
+        require(!paused, "Pool is paused");
+        _;
+        invariantCheck.checkInvariants(address(this));
+        require(!paused, "Pool is paused");
+    }
+
+    modifier onlyKeeper() {
+        require(msg.sender == keeper, "msg.sender not keeper");
+        _;
+    }
+
+    modifier onlyInvariantCheckContract() {
+        require(msg.sender == invariantCheckContract, "msg.sender not invariantCheckContract");
+        _;
+    }
+
+    modifier onlyPoolCommitter() {
+        require(msg.sender == poolCommitter, "msg.sender not poolCommitter");
+        _;
+    }
+
+    modifier onlyGov() {
+        require(msg.sender == governance, "msg.sender not governance");
+        _;
+    }
+
     // #### Functions
 
     function initialize(ILeveragedPool.Initialization calldata initialization) external override initializer {
@@ -253,11 +291,16 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
         if (secondaryFeeAddress == address(0)) {
             IERC20(quoteToken).safeTransfer(feeAddress, totalFeeAmount);
         } else {
-            require(secondaryFeeSplitPercent <= 100, "Secondary fee split cannot exceed 100%");
             uint256 secondaryFee = PoolSwapLibrary.mulFraction(totalFeeAmount, secondaryFeeSplitPercent, 100);
-            uint256 remainder = totalFeeAmount - secondaryFee;
-            IERC20(quoteToken).safeTransfer(secondaryFeeAddress, secondaryFee);
-            IERC20(quoteToken).safeTransfer(feeAddress, remainder);
+            uint256 remainder;
+            unchecked {
+                // secondaryFee is calculated as totalFeeAmount * secondaryFeeSplitPercent / 100
+                // secondaryFeeSplitPercent <= 100 and therefore secondaryFee <= totalFeeAmount - The following line can not underflow
+                remainder = totalFeeAmount - secondaryFee;
+            }
+            IERC20 _quoteToken = IERC20(quoteToken);
+            _quoteToken.safeTransfer(secondaryFeeAddress, secondaryFee);
+            _quoteToken.safeTransfer(feeAddress, remainder);
         }
     }
 
@@ -341,7 +384,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
         require(account != address(0), "Account cannot be 0 address");
         address oldFeeAddress = feeAddress;
         feeAddress = account;
-        emit FeeAddressUpdated(oldFeeAddress, feeAddress);
+        emit FeeAddressUpdated(oldFeeAddress, account);
     }
 
     /**
@@ -363,7 +406,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
         require(_keeper != address(0), "Keeper address cannot be 0 address");
         address oldKeeper = keeper;
         keeper = _keeper;
-        emit KeeperAddressChanged(oldKeeper, keeper);
+        emit KeeperAddressChanged(oldKeeper, _keeper);
     }
 
     /**
@@ -394,11 +437,12 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
      */
     function claimGovernance() external override checkInvariantsAfterFunction {
         require(governanceTransferInProgress, "No governance change active");
-        require(msg.sender == provisionalGovernance, "Not provisional governor");
+        address _provisionalGovernance = provisionalGovernance;
+        require(msg.sender == _provisionalGovernance, "Not provisional governor");
         address oldGovernance = governance; /* for later event emission */
-        governance = provisionalGovernance;
+        governance = _provisionalGovernance;
         governanceTransferInProgress = false;
-        emit GovernanceAddressChanged(oldGovernance, governance);
+        emit GovernanceAddressChanged(oldGovernance, _provisionalGovernance);
     }
 
     /**
@@ -475,42 +519,5 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
     function unpause() external override onlyGov {
         paused = false;
         emit Unpaused();
-    }
-
-    /**
-     * @dev Check invariants before function body only. This is used in functions where the state of the pool is updated after exiting PoolCommitter (i.e. executeCommitments)
-     */
-    modifier checkInvariantsBeforeFunction() {
-        invariantCheck.checkInvariants(address(this));
-        require(!paused, "Pool is paused");
-        _;
-    }
-
-    // #### Modifiers
-    modifier checkInvariantsAfterFunction() {
-        require(!paused, "Pool is paused");
-        _;
-        invariantCheck.checkInvariants(address(this));
-        require(!paused, "Pool is paused");
-    }
-
-    modifier onlyKeeper() {
-        require(msg.sender == keeper, "msg.sender not keeper");
-        _;
-    }
-
-    modifier onlyInvariantCheckContract() {
-        require(msg.sender == invariantCheckContract, "msg.sender not invariantCheckContract");
-        _;
-    }
-
-    modifier onlyPoolCommitter() {
-        require(msg.sender == poolCommitter, "msg.sender not poolCommitter");
-        _;
-    }
-
-    modifier onlyGov() {
-        require(msg.sender == governance, "msg.sender not governance");
-        _;
     }
 }

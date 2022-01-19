@@ -35,7 +35,15 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     bytes16 constant fixedPoint = 0x403abc16d674ec800000000000000000; // 1 ether
 
     uint256 public gasPrice = 10 gwei;
-    address public observer = address(0);
+    address public observer;
+
+    /**
+     * @notice Ensures that the caller is the associated `PoolFactory` contract
+     */
+    modifier onlyFactory() {
+        require(msg.sender == address(factory), "Caller not factory");
+        _;
+    }
 
     // #### Functions
     constructor(address _factory) {
@@ -59,8 +67,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @dev Only callable by the associated `PoolFactory` contract
      */
     function newPool(address _poolAddress) external override onlyFactory {
-        address oracleWrapper = ILeveragedPool(_poolAddress).oracleWrapper();
-        int256 firstPrice = IOracleWrapper(oracleWrapper).getPrice();
+        int256 firstPrice = ILeveragedPool(_poolAddress).getOraclePrice();
         require(firstPrice > 0, "First price is non-positive");
         int256 startingPrice = ABDKMathQuad.toInt(ABDKMathQuad.mul(ABDKMathQuad.fromInt(firstPrice), fixedPoint));
         emit PoolAdded(_poolAddress, firstPrice);
@@ -227,11 +234,18 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         bytes16 _tipPercent = ABDKMathQuad.fromUInt(keeperTip(_savedPreviousUpdatedTimestamp, _poolInterval));
 
         // amount of settlement tokens to give to the keeper
-        _tipPercent = ABDKMathQuad.div(_tipPercent, ABDKMathQuad.fromUInt(100));
         int256 wadRewardValue = ABDKMathQuad.toInt(
             ABDKMathQuad.add(
                 ABDKMathQuad.fromUInt(_keeperGas),
-                ABDKMathQuad.div((ABDKMathQuad.mul(ABDKMathQuad.fromUInt(_keeperGas), _tipPercent)), fixedPoint)
+                ABDKMathQuad.div(
+                    (
+                        ABDKMathQuad.div(
+                            (ABDKMathQuad.mul(ABDKMathQuad.fromUInt(_keeperGas), _tipPercent)),
+                            ABDKMathQuad.fromUInt(100)
+                        )
+                    ),
+                    fixedPoint
+                )
             )
         );
         uint256 decimals = IERC20DecimalsWrapper(ILeveragedPool(_pool).quoteToken()).decimals();
@@ -307,13 +321,5 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      */
     function setGasPrice(uint256 _price) external onlyOwner {
         gasPrice = _price;
-    }
-
-    /**
-     * @notice Ensures that the caller is the associated `PoolFactory` contract
-     */
-    modifier onlyFactory() {
-        require(msg.sender == address(factory), "Caller not factory");
-        _;
     }
 }
