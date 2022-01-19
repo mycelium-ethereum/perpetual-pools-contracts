@@ -18,7 +18,6 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     uint256 public constant BASE_TIP = 5; // 5% base tip
     uint256 public constant TIP_DELTA_PER_BLOCK = 5; // 5% increase per block
     uint256 public constant BLOCK_TIME = 13; /* in seconds */
-    uint256 public constant MAX_DECIMALS = 18;
     uint256 public constant MAX_TIP = 100; /* maximum keeper tip */
 
     /// Captures fixed gas overhead for performing upkeep that's unreachable

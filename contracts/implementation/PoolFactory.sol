@@ -57,14 +57,6 @@ contract PoolFactory is IPoolFactory, Ownable {
      */
     mapping(address => bool) public override isValidPoolCommitter;
 
-    /**
-     * @notice Ensures that the caller is the designated governance address
-     */
-    modifier onlyGov() {
-        require(msg.sender == owner(), "msg.sender not governance");
-        _;
-    }
-
     // #### Functions
     constructor(address _feeReceiver) {
         require(_feeReceiver != address(0), "Address cannot be null");

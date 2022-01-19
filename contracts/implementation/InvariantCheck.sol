@@ -48,7 +48,9 @@ contract InvariantCheck is IInvariantCheck {
         uint256 shortBalance = pool.shortBalance();
         if (!balanceInvariant(poolBalance, pendingMints, longBalance, shortBalance)) {
             pause(IPausable(poolToCheck), IPausable(address(poolCommitter)));
+            emit InvariantsFail("Balance invariant fails");
         }
+        emit InvariantsHold();
     }
 
     /**
