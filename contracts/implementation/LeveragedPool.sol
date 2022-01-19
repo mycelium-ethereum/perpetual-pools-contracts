@@ -380,7 +380,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
      * @dev Only callable when the market is *not* paused
      * @dev Emits `FeeAddressUpdated` event on success
      */
-    function updateFeeAddress(address account) external override onlyGov checkInvariantsAfterFunction {
+    function updateFeeAddress(address account) external override onlyGov {
         require(account != address(0), "Account cannot be 0 address");
         address oldFeeAddress = feeAddress;
         feeAddress = account;
@@ -402,7 +402,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
      * @notice Updates the keeper contract of the pool
      * @param _keeper New address of the keeper contract
      */
-    function setKeeper(address _keeper) external override onlyGov checkInvariantsAfterFunction {
+    function setKeeper(address _keeper) external override onlyGov {
         require(_keeper != address(0), "Keeper address cannot be 0 address");
         address oldKeeper = keeper;
         keeper = _keeper;
@@ -419,7 +419,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
      * @dev Sets the governance transfer flag to true
      * @dev See `claimGovernance`
      */
-    function transferGovernance(address _governance) external override onlyGov checkInvariantsAfterFunction {
+    function transferGovernance(address _governance) external override onlyGov {
         require(_governance != address(0), "Governance address cannot be 0 address");
         provisionalGovernance = _governance;
         governanceTransferInProgress = true;
@@ -435,7 +435,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
      * @dev After a successful call to this function, the actual governance
      *      address and the provisional governance address MUST be equal.
      */
-    function claimGovernance() external override checkInvariantsAfterFunction {
+    function claimGovernance() external override {
         require(governanceTransferInProgress, "No governance change active");
         address _provisionalGovernance = provisionalGovernance;
         require(msg.sender == _provisionalGovernance, "Not provisional governor");
