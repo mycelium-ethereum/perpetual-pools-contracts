@@ -271,7 +271,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         }
 
         applyCommitment(pool, commitType, amount, fromAggregateBalance, userCommit, totalCommit);
-        emit CreateCommit(msg.sender, amount, commitType);
+        emit CreateCommit(msg.sender, amount, commitType, appropriateUpdateIntervalId);
     }
 
     /**
@@ -400,6 +400,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
     /**
      * @notice Executes all commitments currently queued for the associated `LeveragedPool`
      * @dev Only callable by the associated `LeveragedPool` contract
+     * @dev Emits an `ExecutedCommitsForInterval` event for each update interval processed
      */
     function executeCommitments() external override onlyPool checkInvariantsBeforeFunction {
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
@@ -438,6 +439,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
                 // Another update interval has passed, so we have to do the nextIntervalCommit as well
                 burnFeeHistory[updateIntervalId] = burningFee;
                 executeGivenCommitments(totalPoolCommitments[updateIntervalId]);
+                emit ExecutedCommitsForInterval(updateIntervalId);
                 delete totalPoolCommitments[updateIntervalId];
                 updateIntervalId += 1;
             } else {
