@@ -327,9 +327,9 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
         address minter
     ) external override onlyPoolCommitter checkInvariantsBeforeFunction {
         if (isLongToken) {
-            require(IPoolToken(tokens[LONG_INDEX]).mint(amount, minter), "Mint failed");
+            IPoolToken(tokens[LONG_INDEX]).mint(amount, minter);
         } else {
-            require(IPoolToken(tokens[SHORT_INDEX]).mint(amount, minter), "Mint failed");
+            IPoolToken(tokens[SHORT_INDEX]).mint(amount, minter);
         }
     }
 
@@ -348,9 +348,9 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
         address burner
     ) external override onlyPoolCommitter checkInvariantsAfterFunction {
         if (isLongToken) {
-            require(IPoolToken(tokens[LONG_INDEX]).burn(amount, burner), "Burn failed");
+            IPoolToken(tokens[LONG_INDEX]).burn(amount, burner);
         } else {
-            require(IPoolToken(tokens[SHORT_INDEX]).burn(amount, burner), "Burn failed");
+            IPoolToken(tokens[SHORT_INDEX]).burn(amount, burner);
         }
     }
 
