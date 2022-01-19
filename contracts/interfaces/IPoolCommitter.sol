@@ -98,6 +98,11 @@ interface IPoolCommitter {
     event AggregateBalanceUpdated(address indexed user);
 
     /**
+     * @notice Creates a notification when commits for a given update interval are executed
+     */
+    event ExecutedCommitsForInterval(uint256 indexed updateIntervalId);
+
+    /**
      * @notice Creates a notification when a claim is made, depositing pool tokens in user's wallet
      */
     event Claim(address indexed user);
