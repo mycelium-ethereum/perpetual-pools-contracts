@@ -271,7 +271,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         }
 
         applyCommitment(pool, commitType, amount, fromAggregateBalance, userCommit, totalCommit);
-        emit CreateCommit(msg.sender, amount, commitType, appropriateUpdateIntervalId);
+        emit CreateCommit(msg.sender, amount, commitType, appropriateUpdateIntervalId, mintingFee);
     }
 
     /**
