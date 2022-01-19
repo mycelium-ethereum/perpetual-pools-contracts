@@ -102,8 +102,9 @@ interface IPoolCommitter {
     /**
      * @notice Creates a notification when commits for a given update interval are executed
      * @param updateIntervalId Unique identifier for the relevant update interval
+     * @param burningFee Burning fee at the time of commit execution
      */
-    event ExecutedCommitsForInterval(uint256 indexed updateIntervalId);
+    event ExecutedCommitsForInterval(uint256 indexed updateIntervalId, bytes16 burningFee);
 
     /**
      * @notice Creates a notification when a claim is made, depositing pool tokens in user's wallet
