@@ -18,10 +18,10 @@ contract SMAOracle is IOracleWrapper {
     uint256 public periods;
 
     /// Time of last successful price update
-    uint256 lastUpdate = 0;
+    uint256 lastUpdate;
 
     /// Duration between price updates
-    uint256 updateInterval = 0;
+    uint256 updateInterval;
 
     int256 public scaler;
     uint256 public constant MAX_DECIMALS = 18;
@@ -122,7 +122,7 @@ contract SMAOracle is IOracleWrapper {
         require(k > 0 && k <= n && k <= uint256(type(int256).max), "SMA: Out of bounds");
 
         /* running total */
-        int256 S = 0;
+        int256 S;
 
         /* linear scan over the [n - k, n] subsequence */
         for (uint256 i = n - k; i < n; i++) {

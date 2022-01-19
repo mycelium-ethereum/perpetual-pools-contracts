@@ -58,6 +58,14 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
      */
     mapping(address => bool) public override isValidPoolCommitter;
 
+    /**
+     * @notice Ensures that the caller is the designated governance address
+     */
+    modifier onlyGov() {
+        require(msg.sender == owner(), "msg.sender not governance");
+        _;
+    }
+
     // #### Functions
     constructor(address _feeReceiver) {
         require(_feeReceiver != address(0), "Address cannot be null");
@@ -127,6 +135,7 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
             address(this),
             deploymentParameters.invariantCheckContract,
             autoClaim,
+            owner(),
             mintingFee,
             burningFee
         );
@@ -178,7 +187,9 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
         IPoolCommitter(poolCommitterAddress).setQuoteAndPool(deploymentParameters.quoteToken, _pool);
         poolKeeper.newPool(_pool);
         pools[numPools] = _pool;
-        numPools += 1;
+        unchecked {
+            numPools++;
+        }
         isValidPool[_pool] = true;
         return _pool;
     }
@@ -299,13 +310,5 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
      */
     function getOwner() external view override returns (address) {
         return owner();
-    }
-
-    /**
-     * @notice Ensures that the caller is the designated governance address
-     */
-    modifier onlyGov() {
-        require(msg.sender == owner(), "msg.sender not governance");
-        _;
     }
 }
