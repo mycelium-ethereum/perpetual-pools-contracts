@@ -400,6 +400,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
     /**
      * @notice Executes all commitments currently queued for the associated `LeveragedPool`
      * @dev Only callable by the associated `LeveragedPool` contract
+     * @dev Emits an `ExecutedCommitsForInterval` event for each update interval processed
      */
     function executeCommitments() external override onlyPool checkInvariantsBeforeFunction {
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
