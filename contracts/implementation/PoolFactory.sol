@@ -82,6 +82,7 @@ contract PoolFactory is IPoolFactory, Ownable {
 
     /**
      * @notice Deploy a leveraged pool and its committer/pool tokens with given parameters
+     * @notice Rebasing tokens are not supported and will break functionality
      * @param deploymentParameters Deployment parameters of the market. Some may be reconfigurable.
      * @return Address of the created pool
      * @dev Throws if pool keeper is null
