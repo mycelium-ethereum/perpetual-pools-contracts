@@ -23,6 +23,7 @@ contract PoolFactory is IPoolFactory, Ownable {
     address public immutable poolCommitterBaseAddress;
 
     address public autoClaim;
+    address public invariantCheck;
 
     // Contract address to receive protocol fees
     address public feeReceiver;
@@ -92,6 +93,8 @@ contract PoolFactory is IPoolFactory, Ownable {
     function deployPool(PoolDeployment calldata deploymentParameters) external override returns (address) {
         address _poolKeeper = address(poolKeeper);
         require(_poolKeeper != address(0), "PoolKeeper not set");
+        require(autoClaim != address(0), "AutoClaim not set");
+        require(invariantCheck != address(0), "InvariantCheck not set");
         require(
             IOracleWrapper(deploymentParameters.oracleWrapper).deployer() == msg.sender,
             "Deployer must be oracle wrapper owner"
@@ -116,14 +119,7 @@ contract PoolFactory is IPoolFactory, Ownable {
         PoolCommitter poolCommitter = PoolCommitter(
             Clones.cloneDeterministic(poolCommitterBaseAddress, uniquePoolHash)
         );
-        poolCommitter.initialize(
-            address(this),
-            deploymentParameters.invariantCheckContract,
-            autoClaim,
-            owner(),
-            mintingFee,
-            burningFee
-        );
+        poolCommitter.initialize(address(this), invariantCheck, autoClaim, owner(), mintingFee, burningFee);
         address poolCommitterAddress = address(poolCommitter);
         LeveragedPool pool = LeveragedPool(Clones.cloneDeterministic(poolBaseAddress, uniquePoolHash));
         address _pool = address(pool);
@@ -139,7 +135,7 @@ contract PoolFactory is IPoolFactory, Ownable {
             _longToken: deployPairToken(_pool, leverage, deploymentParameters, "L-"),
             _shortToken: deployPairToken(_pool, leverage, deploymentParameters, "S-"),
             _poolCommitter: poolCommitterAddress,
-            _invariantCheckContract: deploymentParameters.invariantCheckContract,
+            _invariantCheckContract: invariantCheck,
             _poolName: string(abi.encodePacked(leverage, "-", deploymentParameters.poolName)),
             _frontRunningInterval: deploymentParameters.frontRunningInterval,
             _updateInterval: deploymentParameters.updateInterval,
@@ -207,6 +203,17 @@ contract PoolFactory is IPoolFactory, Ownable {
     function setPoolKeeper(address _poolKeeper) external override onlyOwner {
         require(_poolKeeper != address(0), "address cannot be null");
         poolKeeper = IPoolKeeper(_poolKeeper);
+    }
+
+    /**
+     * @notice Sets the address of the associated `InvariantCheck` contract
+     * @param _invariantCheck Address of the `InvariantCheck`
+     * @dev Throws if provided address is null
+     * @dev Only callable by the owner
+     */
+    function setInvariantCheck(address _invariantCheck) external override onlyOwner {
+        require(_invariantCheck != address(0), "address cannot be null");
+        invariantCheck = _invariantCheck;
     }
 
     /**
