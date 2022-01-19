@@ -302,13 +302,4 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
         mintingFee = _mintingFee;
         burningFee = _burningFee;
     }
-
-    /*
-     * @notice Returns the address that owns this contract
-     * @return Address of the owner
-     * @dev Required due to the `IPoolFactory` interface
-     */
-    function getOwner() external view override returns (address) {
-        return owner();
-    }
 }
