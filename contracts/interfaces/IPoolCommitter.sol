@@ -83,8 +83,14 @@ interface IPoolCommitter {
      * @param user The user making the commitment
      * @param amount Amount of the commit
      * @param commitType Type of the commit (Short v Long, Mint v Burn)
+     * @param appropriateUpdateIntervalId id of update interval where this commit can be executed as part of upkeep
      */
-    event CreateCommit(address indexed user, uint256 indexed amount, CommitType indexed commitType);
+    event CreateCommit(
+        address indexed user,
+        uint256 indexed amount,
+        CommitType indexed commitType,
+        uint256 appropriateUpdateIntervalId
+    );
 
     /**
      * @notice Creates a notification when a user's aggregate balance is updated
