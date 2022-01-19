@@ -225,8 +225,12 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
                 leverageAmount,
                 fee
             );
-            (uint256 newLongBalance, uint256 newShortBalance, uint256 longFeeAmount, uint256 shortFeeAmount) =
-                PoolSwapLibrary.calculatePriceChange(priceChangeData);
+            (
+                uint256 newLongBalance,
+                uint256 newShortBalance,
+                uint256 longFeeAmount,
+                uint256 shortFeeAmount
+            ) = PoolSwapLibrary.calculatePriceChange(priceChangeData);
 
             unchecked {
                 emit PoolRebalance(
