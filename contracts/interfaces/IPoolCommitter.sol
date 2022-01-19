@@ -99,6 +99,7 @@ interface IPoolCommitter {
 
     /**
      * @notice Creates a notification when commits for a given update interval are executed
+     * @param updateIntervalId Unique identifier for the relevant update interval
      */
     event ExecutedCommitsForInterval(uint256 indexed updateIntervalId);
 
