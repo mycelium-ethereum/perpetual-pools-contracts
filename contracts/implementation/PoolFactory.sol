@@ -297,8 +297,9 @@ contract PoolFactory is IPoolFactory, Ownable {
         uint256 _burningFee,
         uint256 _changeInterval
     ) external override onlyOwner {
-        require(_mintingFee <= 0.1e18, "Fee cannot be > 10%");
-        require(_burningFee <= 0.1e18, "Fee cannot be > 10%");
+        require(_mintingFee <= 1e18, "Fee cannot be > 100%");
+        require(_burningFee <= 1e18, "Fee cannot be > 100%");
+        require(_changeInterval <= 1e18, "Change interval cannot be > 100%");
         mintingFee = _mintingFee;
         burningFee = _burningFee;
         changeInterval = _changeInterval;

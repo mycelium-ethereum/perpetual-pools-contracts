@@ -25,6 +25,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
     // The amount that is extracted from each mint and burn, being left in the pool. Given as the decimal * 10 ^ 18. For example, 60% fee is 0.6 * 10 ^ 18
     bytes16 public mintingFee;
     bytes16 public burningFee;
+    // The amount that the `mintingFee` will change each update interval, based on `updateMintingFee`, given as a decimal * 10 ^ 18 (same format as `_mintingFee`)
     bytes16 public changeInterval;
     // Set max minting fee to 100%. This is a ABDKQuad representation of 1 * 10 ** 18
     bytes16 public constant MAX_MINTING_FEE = 0x403abc16d674ec800000000000000000;
@@ -122,6 +123,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         mintingFee = PoolSwapLibrary.convertUIntToDecimal(_mintingFee);
         burningFee = PoolSwapLibrary.convertUIntToDecimal(_burningFee);
         changeInterval = PoolSwapLibrary.convertUIntToDecimal(_changeInterval);
+        emit ChangeIntervalSet(_changeInterval);
         autoClaim = IAutoClaim(_autoClaim);
         governance = IPoolFactory(_factory).getOwner();
         invariantCheckContract = _invariantCheckContract;
@@ -718,6 +720,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
      */
     function setBurningFee(uint256 _burningFee) external override onlyGov {
         burningFee = PoolSwapLibrary.convertUIntToDecimal(_burningFee);
+        emit BurningFeeSet(_burningFee);
     }
 
     /**
@@ -727,6 +730,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
      */
     function setMintingFee(uint256 _mintingFee) external override onlyGov {
         mintingFee = PoolSwapLibrary.convertUIntToDecimal(_mintingFee);
+        emit MintingFeeSet(_mintingFee);
     }
 
     /**
@@ -736,6 +740,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
      */
     function setChangeInterval(uint256 _changeInterval) external override onlyGov {
         changeInterval = PoolSwapLibrary.convertUIntToDecimal(_changeInterval);
+        emit ChangeIntervalSet(_changeInterval);
     }
 
     /**

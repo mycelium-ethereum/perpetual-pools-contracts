@@ -96,6 +96,21 @@ interface IPoolCommitter {
      */
     event Claim(address indexed user);
 
+    /**
+     * @notice Creates a notification when the burningFee is updated
+     */
+    event BurningFeeSet(uint256 indexed _burningFee);
+
+    /**
+     * @notice Creates a notification when the mintingFee is updated
+     */
+    event MintingFeeSet(uint256 indexed _mintingFee);
+
+    /**
+     * @notice Creates a notification when the changeInterval is updated
+     */
+    event ChangeIntervalSet(uint256 indexed _changeInterval);
+
     // #### Functions
 
     function initialize(
