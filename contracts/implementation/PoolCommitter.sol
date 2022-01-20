@@ -50,6 +50,9 @@ contract PoolCommitter is IPoolCommitter, Initializable {
     bool public paused;
     IInvariantCheck public invariantCheck;
 
+    event Paused();
+    event Unpaused();
+
     /**
      * @notice Aggregates user balances **prior** to executing the wrapped code
      */
@@ -697,6 +700,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
      * @param _leveragedPool Address of the pool to use
      * @dev Only callable by the associated `PoolFactory` contract
      * @dev Throws if either address are null
+     * @dev Emits a `QuoteAndPoolChanged` event on success
      */
     function setQuoteAndPool(address _quoteToken, address _leveragedPool) external override onlyFactory onlyUnpaused {
         require(_quoteToken != address(0), "Quote token address cannot be 0 address");
@@ -707,6 +711,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         bool approvalSuccess = _token.approve(leveragedPool, _token.totalSupply());
         require(approvalSuccess, "ERC20 approval failed");
         tokens = ILeveragedPool(leveragedPool).poolTokens();
+        emit QuoteAndPoolChanged(_quoteToken, _leveragedPool);
     }
 
     /**
@@ -715,6 +720,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
      */
     function pause() external onlyInvariantCheckContract {
         paused = true;
+        emit Paused();
     }
 
     /**
@@ -723,5 +729,6 @@ contract PoolCommitter is IPoolCommitter, Initializable {
      */
     function unpause() external onlyGov {
         paused = false;
+        emit Unpaused();
     }
 }

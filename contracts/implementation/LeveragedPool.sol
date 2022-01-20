@@ -310,6 +310,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
      * @param _shortBalance New balance of the short pool
      * @dev Only callable by the associated `PoolCommitter` contract
      * @dev Only callable when the market is *not* paused
+     * @dev Emits a `PoolBalancesChanged` event on success
      */
     function setNewPoolBalances(uint256 _longBalance, uint256 _shortBalance)
         external
@@ -319,6 +320,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
     {
         longBalance = _longBalance;
         shortBalance = _shortBalance;
+        emit PoolBalancesChanged(_longBalance, _shortBalance);
     }
 
     /**
@@ -501,6 +503,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
         IERC20 quoteERC = IERC20(quoteToken);
         uint256 balance = quoteERC.balanceOf(address(this));
         IERC20(quoteToken).safeTransfer(msg.sender, balance);
+        emit QuoteWithdrawn(msg.sender, balance);
     }
 
     /**

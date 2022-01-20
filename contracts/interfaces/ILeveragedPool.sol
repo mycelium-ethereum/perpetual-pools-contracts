@@ -82,6 +82,21 @@ interface ILeveragedPool {
      */
     event GovernanceAddressChanged(address indexed oldAddress, address indexed newAddress);
 
+    /**
+     * @notice Indicates quote assets have been withdrawn from the system
+     * @param to Receipient
+     * @param quantity Quantity of quote tokens withdrawn
+     */
+    event QuoteWithdrawn(address indexed to, uint256 indexed quantity);
+
+    /**
+     * @notice Indicates that the balance of pool tokens on issue for the pool
+     *          changed
+     * @param long New quantity of long pool tokens
+     * @param short New quantity of short pool tokens
+     */
+    event PoolBalancesChanged(uint256 indexed long, uint256 indexed short);
+
     function leverageAmount() external view returns (bytes16);
 
     function poolCommitter() external view returns (address);

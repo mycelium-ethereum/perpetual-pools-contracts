@@ -28,6 +28,37 @@ interface IPoolFactory {
      */
     event PoolKeeperChanged(address _poolKeeper);
 
+    /**
+     * @notice Indicates that the maximum allowed leverage has changed
+     * @param leverage New maximum allowed leverage value
+     */
+    event MaxLeverageChanged(uint256 indexed leverage);
+
+    /**
+     * @notice Indicates that the receipient of fees has changed
+     * @param receiver Address of the new receipient of fees
+     */
+    event FeeReceiverChanged(address indexed receiver);
+
+    /**
+     * @notice Indicates that the receipient of fees has changed
+     * @param fee Address of the new receipient of fees
+     */
+    event SecondaryFeeSplitChanged(uint256 indexed fee);
+
+    /**
+     * @notice Indicates that the trading fee has changed
+     * @param fee New trading fee
+     */
+    event FeeChanged(uint256 indexed fee);
+
+    /**
+     * @notice Indicates that the minting and burning fees have changed
+     * @param mint Minting fee
+     * @param burn Burning fee
+     */
+    event MintAndBurnFeesChanged(uint256 indexed mint, uint256 indexed burn);
+
     // #### Getters for Globals
     function pools(uint256 id) external view returns (address);
 

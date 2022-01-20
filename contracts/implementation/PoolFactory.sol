@@ -203,10 +203,12 @@ contract PoolFactory is IPoolFactory, Ownable {
      * @param _poolKeeper Address of the `PoolKeeper`
      * @dev Throws if provided address is null
      * @dev Only callable by the owner
+     * @dev Emits a `PoolKeeperChanged` event on success
      */
     function setPoolKeeper(address _poolKeeper) external override onlyOwner {
         require(_poolKeeper != address(0), "address cannot be null");
         poolKeeper = IPoolKeeper(_poolKeeper);
+        emit PoolKeeperChanged(_poolKeeper);
     }
 
     /**
@@ -225,10 +227,12 @@ contract PoolFactory is IPoolFactory, Ownable {
      * @param newMaxLeverage Maximum leverage permitted for all pools
      * @dev Throws if provided maximum leverage is non-positive
      * @dev Only callable by the owner
+     * @dev Emits a `MaxLeverageChanged` event on success
      */
     function setMaxLeverage(uint16 newMaxLeverage) external override onlyOwner {
         require(newMaxLeverage > 0, "Maximum leverage must be non-zero");
         maxLeverage = newMaxLeverage;
+        emit MaxLeverageChanged(newMaxLeverage);
     }
 
     /**
@@ -236,10 +240,12 @@ contract PoolFactory is IPoolFactory, Ownable {
      * @param _feeReceiver address of fee receiver
      * @dev Only callable by the owner of this contract
      * @dev This fuction does not change anything for already deployed pools, only pools deployed after the change
+     * @dev Emits a `FeeReceiverChanged` event on success
      */
     function setFeeReceiver(address _feeReceiver) external override onlyOwner {
         require(_feeReceiver != address(0), "address cannot be null");
         feeReceiver = _feeReceiver;
+        emit FeeReceiverChanged(_feeReceiver);
     }
 
     /**
@@ -247,10 +253,12 @@ contract PoolFactory is IPoolFactory, Ownable {
      * @param newFeePercent Proportion of fees to split
      * @dev Only callable by the owner of this contract
      * @dev Throws if `newFeePercent` exceeds 100
+     * @dev Emits a `SecondaryFeeSplitChanged` event on success
      */
     function setSecondaryFeeSplitPercent(uint256 newFeePercent) external override onlyOwner {
         require(newFeePercent <= 100, "Secondary fee split cannot exceed 100%");
         secondaryFeeSplitPercent = newFeePercent;
+        emit SecondaryFeeSplitChanged(newFeePercent);
     }
 
     /**
@@ -258,10 +266,12 @@ contract PoolFactory is IPoolFactory, Ownable {
      * @dev This is a percentage in WAD; multiplied by 10^18 e.g. 5% is 0.05 * 10^18
      * @param _fee The fee amount as a percentage
      * @dev Throws if fee is greater than 10%
+     * @dev Emits a `FeeChanged` event on success
      */
     function setFee(uint256 _fee) external override onlyOwner {
         require(_fee <= 0.1e18, "Fee cannot be > 10%");
         fee = _fee;
+        emit FeeChanged(_fee);
     }
 
     /**
@@ -272,12 +282,14 @@ contract PoolFactory is IPoolFactory, Ownable {
      * @dev Only callable by the owner of this contract
      * @dev Throws if minting fee is greater than 10%
      * @dev Throws if burning fee is greater than 10%
+     * @dev Emits a `MintAndBurnFeesChanged` event on success
      */
     function setMintAndBurnFee(uint256 _mintingFee, uint256 _burningFee) external override onlyOwner {
         require(_mintingFee <= 0.1e18, "Fee cannot be > 10%");
         require(_burningFee <= 0.1e18, "Fee cannot be > 10%");
         mintingFee = _mintingFee;
         burningFee = _burningFee;
+        emit MintAndBurnFeesChanged(_mintingFee, _burningFee);
     }
 
     /*

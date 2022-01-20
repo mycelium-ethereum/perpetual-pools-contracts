@@ -92,10 +92,12 @@ contract PriceObserver is Ownable, IPriceObserver {
      * @param _writer Address of the new writer
      * @dev Only callable by the owner of this contract
      * @dev Throws if `_writer` is the null address
+     * @dev Emits a `WriterChanged` event on success
      */
     function setWriter(address _writer) external onlyOwner {
         require(_writer != address(0), "PO: Null address not allowed");
         writer = _writer;
+        emit WriterChanged(_writer);
     }
 
     /**

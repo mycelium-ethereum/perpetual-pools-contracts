@@ -55,10 +55,12 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @notice Sets the address of the associated `PriceObserver` contract
      * @param _observer Address of the `PriceObserver` contract
      * @dev Throws if provided address is null
+     * @dev Emits a `PriceObserverChanged` event on success
      */
     function setPriceObserver(address _observer) external onlyOwner {
         require(_observer != address(0), "Price observer cannot be 0 address");
         observer = _observer;
+        emit PriceObserverChanged(_observer);
     }
 
     /**
@@ -308,9 +310,11 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @notice Sets the address of the associated `PoolFactory` contract
      * @param _factory Address of the `PoolFactory` contract
      * @dev Only callable by the owner
+     * @dev Emits a `FactoryChanged` event on success
      */
     function setFactory(address _factory) external override onlyOwner {
         factory = IPoolFactory(_factory);
+        emit FactoryChanged(_factory);
     }
 
     /**
@@ -318,8 +322,10 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @param _price Price (in ETH) per unit gas
      * @dev Only callable by the owner
      * @dev This function is only necessary due to the L2 deployment of Pools -- in reality, it should be `BASEFEE`
+     * @dev Emits a `GasPriceChanged` event on success
      */
     function setGasPrice(uint256 _price) external onlyOwner {
         gasPrice = _price;
+        emit GasPriceChanged(_price);
     }
 }
