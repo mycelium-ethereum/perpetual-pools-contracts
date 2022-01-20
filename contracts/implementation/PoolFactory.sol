@@ -17,12 +17,9 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 /// @title The pool factory contract
 contract PoolFactory is IPoolFactory, Ownable {
     // #### Globals
-    PoolToken public pairTokenBase;
     address public immutable pairTokenBaseAddress;
-    LeveragedPool public poolBase;
     address public immutable poolBaseAddress;
     IPoolKeeper public poolKeeper;
-    PoolCommitter public poolCommitterBase;
     address public immutable poolCommitterBaseAddress;
 
     address public autoClaim;
@@ -60,45 +57,32 @@ contract PoolFactory is IPoolFactory, Ownable {
      */
     mapping(address => bool) public override isValidPoolCommitter;
 
+    /**
+     * @notice Ensures that the caller is the designated governance address
+     */
+    modifier onlyGov() {
+        require(msg.sender == owner(), "msg.sender not governance");
+        _;
+    }
+
     // #### Functions
     constructor(address _feeReceiver) {
         require(_feeReceiver != address(0), "Address cannot be null");
 
         // Deploy base contracts
-        pairTokenBase = new PoolToken(DEFAULT_NUM_DECIMALS);
+        PoolToken pairTokenBase = new PoolToken(DEFAULT_NUM_DECIMALS);
         pairTokenBaseAddress = address(pairTokenBase);
-        poolBase = new LeveragedPool();
+        LeveragedPool poolBase = new LeveragedPool();
         poolBaseAddress = address(poolBase);
-        poolCommitterBase = new PoolCommitter();
+        PoolCommitter poolCommitterBase = new PoolCommitter();
         poolCommitterBaseAddress = address(poolCommitterBase);
 
-        ILeveragedPool.Initialization memory baseInitialization = ILeveragedPool.Initialization(
-            address(this),
-            address(this),
-            address(this),
-            address(this),
-            address(this),
-            address(this),
-            address(this),
-            address(this),
-            "BASE_POOL",
-            15,
-            30,
-            0,
-            1,
-            address(this),
-            address(0),
-            address(this),
-            secondaryFeeSplitPercent
-        );
-        // Init bases
-        poolBase.initialize(baseInitialization);
-        pairTokenBase.initialize(address(this), "BASE_TOKEN", "BASE", DEFAULT_NUM_DECIMALS);
         feeReceiver = _feeReceiver;
     }
 
     /**
      * @notice Deploy a leveraged pool and its committer/pool tokens with given parameters
+     * @notice Rebasing tokens are not supported and will break functionality
      * @param deploymentParameters Deployment parameters of the market. Some may be reconfigurable.
      * @return Address of the created pool
      * @dev Throws if pool keeper is null
@@ -112,6 +96,14 @@ contract PoolFactory is IPoolFactory, Ownable {
         require(
             IOracleWrapper(deploymentParameters.oracleWrapper).deployer() == msg.sender,
             "Deployer must be oracle wrapper owner"
+        );
+        require(
+            deploymentParameters.leverageAmount >= 1 && deploymentParameters.leverageAmount <= maxLeverage,
+            "PoolKeeper: leveraged amount invalid"
+        );
+        require(
+            IERC20DecimalsWrapper(deploymentParameters.quoteToken).decimals() <= MAX_DECIMALS,
+            "Decimal precision too high"
         );
 
         bytes32 uniquePoolHash = keccak256(
@@ -129,20 +121,11 @@ contract PoolFactory is IPoolFactory, Ownable {
             address(this),
             deploymentParameters.invariantCheckContract,
             autoClaim,
+            owner(),
             mintingFee,
             burningFee
         );
         address poolCommitterAddress = address(poolCommitter);
-
-        require(
-            deploymentParameters.leverageAmount >= 1 && deploymentParameters.leverageAmount <= maxLeverage,
-            "PoolKeeper: leveraged amount invalid"
-        );
-        require(
-            IERC20DecimalsWrapper(deploymentParameters.quoteToken).decimals() <= MAX_DECIMALS,
-            "Decimal precision too high"
-        );
-
         LeveragedPool pool = LeveragedPool(Clones.cloneDeterministic(poolBaseAddress, uniquePoolHash));
         address _pool = address(pool);
         emit DeployPool(_pool, poolCommitterAddress, deploymentParameters.poolName);
@@ -178,7 +161,10 @@ contract PoolFactory is IPoolFactory, Ownable {
         IPoolCommitter(poolCommitterAddress).setQuoteAndPool(deploymentParameters.quoteToken, _pool);
         poolKeeper.newPool(_pool);
         pools[numPools] = _pool;
-        numPools += 1;
+        // numPools overflowing would require an unrealistic number of markets
+        unchecked {
+            numPools++;
+        }
         isValidPool[_pool] = true;
         isValidPoolCommitter[poolCommitterAddress] = true;
         return _pool;
@@ -218,10 +204,12 @@ contract PoolFactory is IPoolFactory, Ownable {
      * @param _poolKeeper Address of the `PoolKeeper`
      * @dev Throws if provided address is null
      * @dev Only callable by the owner
+     * @dev Emits a `PoolKeeperChanged` event on success
      */
     function setPoolKeeper(address _poolKeeper) external override onlyOwner {
         require(_poolKeeper != address(0), "address cannot be null");
         poolKeeper = IPoolKeeper(_poolKeeper);
+        emit PoolKeeperChanged(_poolKeeper);
     }
 
     /**
@@ -240,10 +228,12 @@ contract PoolFactory is IPoolFactory, Ownable {
      * @param newMaxLeverage Maximum leverage permitted for all pools
      * @dev Throws if provided maximum leverage is non-positive
      * @dev Only callable by the owner
+     * @dev Emits a `MaxLeverageChanged` event on success
      */
     function setMaxLeverage(uint16 newMaxLeverage) external override onlyOwner {
         require(newMaxLeverage > 0, "Maximum leverage must be non-zero");
         maxLeverage = newMaxLeverage;
+        emit MaxLeverageChanged(newMaxLeverage);
     }
 
     /**
@@ -251,10 +241,12 @@ contract PoolFactory is IPoolFactory, Ownable {
      * @param _feeReceiver address of fee receiver
      * @dev Only callable by the owner of this contract
      * @dev This fuction does not change anything for already deployed pools, only pools deployed after the change
+     * @dev Emits a `FeeReceiverChanged` event on success
      */
     function setFeeReceiver(address _feeReceiver) external override onlyOwner {
         require(_feeReceiver != address(0), "address cannot be null");
         feeReceiver = _feeReceiver;
+        emit FeeReceiverChanged(_feeReceiver);
     }
 
     /**
@@ -262,10 +254,12 @@ contract PoolFactory is IPoolFactory, Ownable {
      * @param newFeePercent Proportion of fees to split
      * @dev Only callable by the owner of this contract
      * @dev Throws if `newFeePercent` exceeds 100
+     * @dev Emits a `SecondaryFeeSplitChanged` event on success
      */
     function setSecondaryFeeSplitPercent(uint256 newFeePercent) external override onlyOwner {
         require(newFeePercent <= 100, "Secondary fee split cannot exceed 100%");
         secondaryFeeSplitPercent = newFeePercent;
+        emit SecondaryFeeSplitChanged(newFeePercent);
     }
 
     /**
@@ -273,10 +267,12 @@ contract PoolFactory is IPoolFactory, Ownable {
      * @dev This is a percentage in WAD; multiplied by 10^18 e.g. 5% is 0.05 * 10^18
      * @param _fee The fee amount as a percentage
      * @dev Throws if fee is greater than 10%
+     * @dev Emits a `FeeChanged` event on success
      */
     function setFee(uint256 _fee) external override onlyOwner {
         require(_fee <= 0.1e18, "Fee cannot be > 10%");
         fee = _fee;
+        emit FeeChanged(_fee);
     }
 
     /**
@@ -287,28 +283,13 @@ contract PoolFactory is IPoolFactory, Ownable {
      * @dev Only callable by the owner of this contract
      * @dev Throws if minting fee is greater than 10%
      * @dev Throws if burning fee is greater than 10%
+     * @dev Emits a `MintAndBurnFeesChanged` event on success
      */
     function setMintAndBurnFee(uint256 _mintingFee, uint256 _burningFee) external override onlyOwner {
         require(_mintingFee <= 0.1e18, "Fee cannot be > 10%");
         require(_burningFee <= 0.1e18, "Fee cannot be > 10%");
         mintingFee = _mintingFee;
         burningFee = _burningFee;
-    }
-
-    /*
-     * @notice Returns the address that owns this contract
-     * @return Address of the owner
-     * @dev Required due to the `IPoolFactory` interface
-     */
-    function getOwner() external view override returns (address) {
-        return owner();
-    }
-
-    /**
-     * @notice Ensures that the caller is the designated governance address
-     */
-    modifier onlyGov() {
-        require(msg.sender == owner(), "msg.sender not governance");
-        _;
+        emit MintAndBurnFeesChanged(_mintingFee, _burningFee);
     }
 }

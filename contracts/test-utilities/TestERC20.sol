@@ -10,14 +10,12 @@ contract TestToken is ERC20 {
 
     constructor(string memory name, string memory symbol) ERC20(name, symbol) {}
 
-    function mint(address account, uint256 amount) external returns (bool) {
+    function mint(address account, uint256 amount) external {
         _mint(account, amount);
-        return true;
     }
 
-    function burn(address account, uint256 amount) external returns (bool) {
+    function burn(address account, uint256 amount) external {
         _burn(account, amount);
-        return true;
     }
 
     function decimals() public view override returns (uint8) {

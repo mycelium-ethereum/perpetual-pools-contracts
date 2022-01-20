@@ -327,7 +327,7 @@ describe("LeveragedPool - initialize", () => {
                     _secondaryFeeSplitPercent: 10,
                     _invariantCheckContract: invariantCheck.address,
                 })
-            ).to.rejectedWith(Error)
+            ).to.rejectedWith("Initializable: contract is already initialized")
         })
         it("should revert if quoteToken address is the zero address", async () => {
             await expect(
@@ -350,7 +350,7 @@ describe("LeveragedPool - initialize", () => {
                     _secondaryFeeSplitPercent: 10,
                     _invariantCheckContract: invariantCheck.address,
                 })
-            ).to.rejectedWith(Error)
+            ).to.rejectedWith("Quote token cannot be 0 address")
         })
         it("should revert if oracleWrapper address is the zero address", async () => {
             await expect(
@@ -373,7 +373,7 @@ describe("LeveragedPool - initialize", () => {
                     _secondaryFeeSplitPercent: 10,
                     _invariantCheckContract: invariantCheck.address,
                 })
-            ).to.rejectedWith(Error)
+            ).to.rejectedWith("Oracle wrapper cannot be 0 address")
         })
         it("should revert if the fee address is the zero address", async () => {
             await expect(
@@ -396,7 +396,30 @@ describe("LeveragedPool - initialize", () => {
                     _secondaryFeeSplitPercent: 10,
                     _invariantCheckContract: invariantCheck.address,
                 })
-            ).to.rejectedWith(Error)
+            ).to.rejectedWith("Fee address cannot be 0 address")
+        })
+        it("should revert if the update interval is zero", async () => {
+            await expect(
+                leveragedPool.initialize({
+                    _owner: signers[0].address,
+                    _keeper: generateRandomAddress(),
+                    _oracleWrapper: oracleWrapper.address,
+                    _settlementEthOracle: settlementEthOracle.address,
+                    _longToken: long.address,
+                    _shortToken: short.address,
+                    _poolCommitter: poolCommitter.address,
+                    _poolName: POOL_CODE,
+                    _frontRunningInterval: frontRunningInterval,
+                    _updateInterval: 0,
+                    _fee: fee,
+                    _leverageAmount: leverage,
+                    _feeAddress: feeAddress,
+                    _secondaryFeeAddress: ethers.constants.AddressZero,
+                    _quoteToken: quoteToken,
+                    _secondaryFeeSplitPercent: 10,
+                    _invariantCheckContract: invariantCheck.address,
+                })
+            ).to.rejectedWith("Update interval cannot be 0")
         })
         it("should be able to coexist with other clones", async () => {
             const secondPoolReceipt = await (
