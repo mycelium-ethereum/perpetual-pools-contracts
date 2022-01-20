@@ -578,7 +578,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
                 update._newSettlementTokensSum += _newSettlementTokens;
                 update._longBurnFee += _longBurnFee;
                 update._shortBurnFee += _shortBurnFee;
-                delete userCommitments[user][i];
+                delete userCommitments[user][id];
                 delete unAggregatedCommitments[user][i];
             } else {
                 // Clear them now that they have been accounted for in the balance
