@@ -39,6 +39,8 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
     // precision to the base pool tokens as we use the Cloneable pattern
     uint8 constant DEFAULT_NUM_DECIMALS = 18;
     uint8 constant MAX_DECIMALS = DEFAULT_NUM_DECIMALS;
+    // Considering leap year thus using 365.2425 days per year
+    uint32 constant DAYS_PER_LEAP_YEAR = 365.2425 days;
     // Default max leverage of 10
     uint16 public maxLeverage = 10;
 
@@ -170,7 +172,7 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
             _poolName: string(abi.encodePacked(leverage, "-", deploymentParameters.poolName)),
             _frontRunningInterval: deploymentParameters.frontRunningInterval,
             _updateInterval: deploymentParameters.updateInterval,
-            _fee: (fee * deploymentParameters.updateInterval) / (365 days),
+            _fee: (fee * deploymentParameters.updateInterval) / (DAYS_PER_LEAP_YEAR),
             _leverageAmount: deploymentParameters.leverageAmount,
             _feeAddress: feeReceiver,
             _secondaryFeeAddress: msg.sender,
