@@ -111,6 +111,21 @@ interface IPoolCommitter {
      */
     event Claim(address indexed user);
 
+    /**
+     * @notice Creates a notification when the burningFee is updated
+     */
+    event BurningFeeSet(uint256 indexed _burningFee);
+
+    /**
+     * @notice Creates a notification when the mintingFee is updated
+     */
+    event MintingFeeSet(uint256 indexed _mintingFee);
+
+    /**
+     * @notice Creates a notification when the changeInterval is updated
+     */
+    event ChangeIntervalSet(uint256 indexed _changeInterval);
+
     // #### Functions
 
     function initialize(
@@ -118,7 +133,8 @@ interface IPoolCommitter {
         address _invariantCheckContract,
         address _autoClaim,
         uint256 mintingFee,
-        uint256 burningFee
+        uint256 burningFee,
+        uint256 _changeInterval
     ) external;
 
     function commit(
@@ -141,6 +157,12 @@ interface IPoolCommitter {
     function getAppropriateUpdateIntervalId() external view returns (uint128);
 
     function setQuoteAndPool(address _quoteToken, address _leveragedPool) external;
+
+    function setBurningFee(uint256 _burningFee) external;
+
+    function setMintingFee(uint256 _mintingFee) external;
+
+    function setChangeInterval(uint256 _changeInterval) external;
 
     function getPendingCommits() external view returns (TotalCommitment memory, TotalCommitment memory);
 }
