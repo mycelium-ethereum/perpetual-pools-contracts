@@ -27,6 +27,7 @@ contract InvariantCheck is IInvariantCheck {
      * @notice Checks all invariants, and pauses all contracts if
      *         any invariant does not hold.
      * @dev This should be called before onlyUnpaused, in case contracts are paused then pause check must happen after.
+     * @dev Emits `InvariantsHold` event if invariants hold.
      * @param poolToCheck The LeveragedPool contract to be checked.
      */
     function checkInvariants(address poolToCheck) external override {
@@ -48,7 +49,9 @@ contract InvariantCheck is IInvariantCheck {
         uint256 shortBalance = pool.shortBalance();
         if (!balanceInvariant(poolBalance, pendingMints, longBalance, shortBalance)) {
             pause(IPausable(poolToCheck), IPausable(address(poolCommitter)));
+            emit InvariantsFail("Balance invariant fails");
         }
+        emit InvariantsHold();
     }
 
     /**
