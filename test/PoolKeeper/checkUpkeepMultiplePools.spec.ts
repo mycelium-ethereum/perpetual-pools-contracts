@@ -156,7 +156,7 @@ describe("PoolKeeper - checkUpkeepMultiplePools", () => {
             await oracleWrapper.oracle()
         )) as TestChainlinkOracle
     })
-    it.only("should return true if the trigger condition is met", async () => {
+    it("should return true if the trigger condition is met", async () => {
         const poolAddresses = [await factory.pools(0), await factory.pools(1)]
         await forwardTime(5)
         expect(await poolKeeper.checkUpkeepMultiplePools(poolAddresses)).to.eq(
