@@ -118,7 +118,7 @@ export const deployPoolSetupContracts = async () => {
     )) as TestToken__factory
     const token = await testToken.deploy("TEST TOKEN", "TST1")
     await token.deployed()
-    await token.mint(amountMinted, signers[0].address)
+    await token.mint(signers[0].address, amountMinted)
 
     // Deploy tokens
     const poolTokenFactory = (await ethers.getContractFactory(
@@ -380,7 +380,7 @@ export const deployMockPool = async (
     )) as TestToken__factory
     const token = await testToken.deploy("TEST TOKEN", "TST1")
     await token.deployed()
-    await token.mint(amountMinted, signers[0].address)
+    await token.mint(signers[0].address, amountMinted)
 
     // Deploy tokens
     const poolTokenFactory = (await ethers.getContractFactory(

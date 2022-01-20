@@ -340,9 +340,9 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
         address minter
     ) external override onlyPoolCommitter checkInvariantsBeforeFunction {
         if (isLongToken) {
-            IPoolToken(tokens[LONG_INDEX]).mint(amount, minter);
+            IPoolToken(tokens[LONG_INDEX]).mint(minter, amount);
         } else {
-            IPoolToken(tokens[SHORT_INDEX]).mint(amount, minter);
+            IPoolToken(tokens[SHORT_INDEX]).mint(minter, amount);
         }
     }
 
@@ -361,9 +361,9 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
         address burner
     ) external override onlyPoolCommitter checkInvariantsAfterFunction {
         if (isLongToken) {
-            IPoolToken(tokens[LONG_INDEX]).burn(amount, burner);
+            IPoolToken(tokens[LONG_INDEX]).burn(burner, amount);
         } else {
-            IPoolToken(tokens[SHORT_INDEX]).burn(amount, burner);
+            IPoolToken(tokens[SHORT_INDEX]).burn(burner, amount);
         }
     }
 

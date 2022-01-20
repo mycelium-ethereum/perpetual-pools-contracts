@@ -18,7 +18,7 @@ contract PoolToken is ERC20_Cloneable, IPoolToken {
      * @param amount Pool tokens to burn
      * @param account Account to burn pool tokens to
      */
-    function mint(uint256 amount, address account) external override onlyOwner {
+    function mint(address account, uint256 amount) external override onlyOwner {
         _mint(account, amount);
     }
 
@@ -27,7 +27,7 @@ contract PoolToken is ERC20_Cloneable, IPoolToken {
      * @param amount Pool tokens to burn
      * @param account Account to burn pool tokens from
      */
-    function burn(uint256 amount, address account) external override onlyOwner {
+    function burn(address account, uint256 amount) external override onlyOwner {
         _burn(account, amount);
     }
 }

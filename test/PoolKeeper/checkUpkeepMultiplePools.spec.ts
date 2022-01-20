@@ -39,6 +39,7 @@ const forwardTime = async (seconds: number) => {
 
 const setupHook = async () => {
     const signers = await ethers.getSigners()
+    const amount = 10000
     // Deploy quote token
     const testToken = (await ethers.getContractFactory(
         "TestToken",
@@ -46,7 +47,7 @@ const setupHook = async () => {
     )) as TestToken__factory
     const token = await testToken.deploy("TEST TOKEN", "TST1")
     await token.deployed()
-    await token.mint(10000, signers[0].address)
+    await token.mint(signers[0].address, amount)
     quoteToken = token.address
 
     // Deploy oracle. Using a test oracle for predictability

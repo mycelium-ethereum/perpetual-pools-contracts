@@ -716,7 +716,6 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         require(_leveragedPool != address(0), "Leveraged pool address cannot be 0 address");
 
         leveragedPool = _leveragedPool;
-        IERC20 _token = IERC20(_quoteToken);
         tokens = ILeveragedPool(leveragedPool).poolTokens();
         emit QuoteAndPoolChanged(_quoteToken, _leveragedPool);
     }

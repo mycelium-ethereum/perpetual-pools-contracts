@@ -3,7 +3,7 @@ pragma solidity 0.8.7;
 
 /// @title Interface for the pool tokens
 interface IPoolToken {
-    function mint(uint256 amount, address account) external;
+    function mint(address account, uint256 amount) external;
 
-    function burn(uint256 amount, address account) external;
+    function burn(address account, uint256 amount) external;
 }
