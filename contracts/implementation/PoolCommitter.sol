@@ -53,14 +53,6 @@ contract PoolCommitter is IPoolCommitter, Initializable {
     event Paused();
     event Unpaused();
 
-    /**
-     * @notice Aggregates user balances **prior** to executing the wrapped code
-     */
-    modifier updateBalance() {
-        updateAggregateBalance(msg.sender);
-        _;
-    }
-
     modifier onlyUnpaused() {
         require(!paused, "Pool is paused");
         _;
@@ -262,8 +254,9 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         uint256 amount,
         bool fromAggregateBalance,
         bool payForClaim
-    ) external payable override updateBalance checkInvariantsAfterFunction {
+    ) external payable override checkInvariantsAfterFunction {
         require(amount > 0, "Amount must not be zero");
+        updateAggregateBalance(msg.sender);
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
         uint256 updateInterval = pool.updateInterval();
         uint256 lastPriceTimestamp = pool.lastPriceTimestamp();
