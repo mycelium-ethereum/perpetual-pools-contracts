@@ -18,10 +18,10 @@ contract SMAOracle is IOracleWrapper {
     uint256 public periods;
 
     /// Time of last successful price update
-    uint256 lastUpdate;
+    uint256 public lastUpdate;
 
     /// Duration between price updates
-    uint256 updateInterval;
+    uint256 public updateInterval;
 
     int256 public scaler;
     uint256 public constant MAX_DECIMALS = 18;
@@ -144,15 +144,5 @@ contract SMAOracle is IOracleWrapper {
     function getPriceAndMetadata() external view override returns (int256 _price, bytes memory _data) {
         _price = SMA(IPriceObserver(observer).getAll(), periods);
         _data = "";
-    }
-
-    /**
-     * @notice Retrieves the timestamp of the most recent price update
-     * @return Timestamp of the most recent price update
-     * @dev `lastUpdate`
-     *
-     */
-    function getLastUpdate() public view returns (uint256) {
-        return lastUpdate;
     }
 }

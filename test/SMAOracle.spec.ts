@@ -251,9 +251,9 @@ describe("SMAOracle", async () => {
                 })
 
                 it("Updates the most recent price update timestamp correctly", async () => {
-                    let prevTimestamp = await smaOracle.getLastUpdate()
+                    let prevTimestamp = await smaOracle.lastUpdate()
                     await smaOracle.poll()
-                    let currTimestamp = await smaOracle.getLastUpdate()
+                    let currTimestamp = await smaOracle.lastUpdate()
 
                     expect(currTimestamp).to.be.gt(prevTimestamp)
                 })
