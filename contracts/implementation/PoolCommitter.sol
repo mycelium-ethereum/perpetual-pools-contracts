@@ -271,7 +271,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         }
 
         applyCommitment(pool, commitType, amount, fromAggregateBalance, userCommit, totalCommit);
-        emit CreateCommit(msg.sender, amount, commitType, appropriateUpdateIntervalId);
+        emit CreateCommit(msg.sender, amount, commitType, appropriateUpdateIntervalId, mintingFee);
     }
 
     /**
@@ -439,7 +439,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
                 // Another update interval has passed, so we have to do the nextIntervalCommit as well
                 burnFeeHistory[updateIntervalId] = burningFee;
                 executeGivenCommitments(totalPoolCommitments[updateIntervalId]);
-                emit ExecutedCommitsForInterval(updateIntervalId);
+                emit ExecutedCommitsForInterval(updateIntervalId, burningFee);
                 delete totalPoolCommitments[updateIntervalId];
                 updateIntervalId += 1;
             } else {

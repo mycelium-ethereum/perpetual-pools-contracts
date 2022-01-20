@@ -83,13 +83,15 @@ interface IPoolCommitter {
      * @param user The user making the commitment
      * @param amount Amount of the commit
      * @param commitType Type of the commit (Short v Long, Mint v Burn)
-     * @param appropriateUpdateIntervalId id of update interval where this commit can be executed as part of upkeep
+     * @param appropriateUpdateIntervalId Id of update interval where this commit can be executed as part of upkeep
+     * @param mintingFee Minting fee at time of commit creation
      */
     event CreateCommit(
         address indexed user,
         uint256 indexed amount,
         CommitType indexed commitType,
-        uint256 appropriateUpdateIntervalId
+        uint256 appropriateUpdateIntervalId,
+        bytes16 mintingFee
     );
 
     /**
@@ -100,8 +102,9 @@ interface IPoolCommitter {
     /**
      * @notice Creates a notification when commits for a given update interval are executed
      * @param updateIntervalId Unique identifier for the relevant update interval
+     * @param burningFee Burning fee at the time of commit execution
      */
-    event ExecutedCommitsForInterval(uint256 indexed updateIntervalId);
+    event ExecutedCommitsForInterval(uint256 indexed updateIntervalId, bytes16 burningFee);
 
     /**
      * @notice Creates a notification when a claim is made, depositing pool tokens in user's wallet
