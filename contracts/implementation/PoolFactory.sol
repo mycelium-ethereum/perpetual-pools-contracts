@@ -292,13 +292,4 @@ contract PoolFactory is IPoolFactory, Ownable {
         burningFee = _burningFee;
         emit MintAndBurnFeesChanged(_mintingFee, _burningFee);
     }
-
-    /*
-     * @notice Returns the address that owns this contract
-     * @return Address of the owner
-     * @dev Required due to the `IPoolFactory` interface
-     */
-    function getOwner() external view override returns (address) {
-        return owner();
-    }
 }
