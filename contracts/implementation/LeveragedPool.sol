@@ -47,6 +47,44 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
 
     string public override poolName;
 
+    // #### Modifiers
+
+    /**
+     * @dev Check invariants before function body only. This is used in functions where the state of the pool is updated after exiting PoolCommitter (i.e. executeCommitments)
+     */
+    modifier checkInvariantsBeforeFunction() {
+        invariantCheck.checkInvariants(address(this));
+        require(!paused, "Pool is paused");
+        _;
+    }
+
+    modifier checkInvariantsAfterFunction() {
+        require(!paused, "Pool is paused");
+        _;
+        invariantCheck.checkInvariants(address(this));
+        require(!paused, "Pool is paused");
+    }
+
+    modifier onlyKeeper() {
+        require(msg.sender == keeper, "msg.sender not keeper");
+        _;
+    }
+
+    modifier onlyInvariantCheckContract() {
+        require(msg.sender == invariantCheckContract, "msg.sender not invariantCheckContract");
+        _;
+    }
+
+    modifier onlyPoolCommitter() {
+        require(msg.sender == poolCommitter, "msg.sender not poolCommitter");
+        _;
+    }
+
+    modifier onlyGov() {
+        require(msg.sender == governance, "msg.sender not governance");
+        _;
+    }
+
     // #### Functions
 
     function initialize(ILeveragedPool.Initialization calldata initialization) external override initializer {
@@ -253,7 +291,6 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
         if (secondaryFeeAddress == address(0)) {
             IERC20(quoteToken).safeTransfer(feeAddress, totalFeeAmount);
         } else {
-            require(secondaryFeeSplitPercent <= 100, "Secondary fee split cannot exceed 100%");
             uint256 secondaryFee = PoolSwapLibrary.mulFraction(totalFeeAmount, secondaryFeeSplitPercent, 100);
             uint256 remainder;
             unchecked {
@@ -273,6 +310,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
      * @param _shortBalance New balance of the short pool
      * @dev Only callable by the associated `PoolCommitter` contract
      * @dev Only callable when the market is *not* paused
+     * @dev Emits a `PoolBalancesChanged` event on success
      */
     function setNewPoolBalances(uint256 _longBalance, uint256 _shortBalance)
         external
@@ -282,6 +320,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
     {
         longBalance = _longBalance;
         shortBalance = _shortBalance;
+        emit PoolBalancesChanged(_longBalance, _shortBalance);
     }
 
     /**
@@ -464,6 +503,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
         IERC20 quoteERC = IERC20(quoteToken);
         uint256 balance = quoteERC.balanceOf(address(this));
         IERC20(quoteToken).safeTransfer(msg.sender, balance);
+        emit QuoteWithdrawn(msg.sender, balance);
     }
 
     /**
@@ -482,42 +522,5 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
     function unpause() external override onlyGov {
         paused = false;
         emit Unpaused();
-    }
-
-    /**
-     * @dev Check invariants before function body only. This is used in functions where the state of the pool is updated after exiting PoolCommitter (i.e. executeCommitments)
-     */
-    modifier checkInvariantsBeforeFunction() {
-        invariantCheck.checkInvariants(address(this));
-        require(!paused, "Pool is paused");
-        _;
-    }
-
-    // #### Modifiers
-    modifier checkInvariantsAfterFunction() {
-        require(!paused, "Pool is paused");
-        _;
-        invariantCheck.checkInvariants(address(this));
-        require(!paused, "Pool is paused");
-    }
-
-    modifier onlyKeeper() {
-        require(msg.sender == keeper, "msg.sender not keeper");
-        _;
-    }
-
-    modifier onlyInvariantCheckContract() {
-        require(msg.sender == invariantCheckContract, "msg.sender not invariantCheckContract");
-        _;
-    }
-
-    modifier onlyPoolCommitter() {
-        require(msg.sender == poolCommitter, "msg.sender not poolCommitter");
-        _;
-    }
-
-    modifier onlyGov() {
-        require(msg.sender == governance, "msg.sender not governance");
-        _;
     }
 }

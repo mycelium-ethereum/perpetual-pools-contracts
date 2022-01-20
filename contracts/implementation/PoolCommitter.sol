@@ -50,6 +50,61 @@ contract PoolCommitter is IPoolCommitter, Initializable {
     bool public paused;
     IInvariantCheck public invariantCheck;
 
+    event Paused();
+    event Unpaused();
+
+    modifier onlyUnpaused() {
+        require(!paused, "Pool is paused");
+        _;
+    }
+
+    modifier onlyGov() {
+        require(msg.sender == governance, "msg.sender not governance");
+        _;
+    }
+
+    /**
+     * @dev Check invariants before function body only. This is used in functions where the state of the pool is updated after exiting PoolCommitter (i.e. executeCommitments)
+     */
+    modifier checkInvariantsBeforeFunction() {
+        invariantCheck.checkInvariants(leveragedPool);
+        require(!paused, "Pool is paused");
+        _;
+    }
+
+    modifier checkInvariantsAfterFunction() {
+        require(!paused, "Pool is paused");
+        _;
+        invariantCheck.checkInvariants(leveragedPool);
+        require(!paused, "Pool is paused");
+    }
+
+    modifier onlyInvariantCheckContract() {
+        require(msg.sender == invariantCheckContract, "msg.sender not invariantCheckContract");
+        _;
+    }
+
+    /**
+     * @notice Asserts that the caller is the associated `PoolFactory` contract
+     */
+    modifier onlyFactory() {
+        require(msg.sender == factory, "Committer: not factory");
+        _;
+    }
+
+    /**
+     * @notice Asserts that the caller is the associated `LeveragedPool` contract
+     */
+    modifier onlyPool() {
+        require(msg.sender == leveragedPool, "msg.sender not leveragedPool");
+        _;
+    }
+
+    modifier onlyAutoClaimOrCommitter(address user) {
+        require(msg.sender == user || msg.sender == address(autoClaim), "msg.sender not committer or AutoClaim");
+        _;
+    }
+
     /**
      * @notice Initialises the contract
      * @param _factory Address of the associated `PoolFactory` contract
@@ -571,7 +626,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
      * @param user Address of the given user
      * @return Associated `Balance` for the given user after aggregation
      */
-    function getAggregateBalance(address user) public view override returns (Balance memory) {
+    function getAggregateBalance(address user) external view override returns (Balance memory) {
         Balance memory _balance = userAggregateBalance[user];
 
         BalanceUpdate memory update = BalanceUpdate({
@@ -638,6 +693,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
      * @param _leveragedPool Address of the pool to use
      * @dev Only callable by the associated `PoolFactory` contract
      * @dev Throws if either address are null
+     * @dev Emits a `QuoteAndPoolChanged` event on success
      */
     function setQuoteAndPool(address _quoteToken, address _leveragedPool) external override onlyFactory onlyUnpaused {
         require(_quoteToken != address(0), "Quote token address cannot be 0 address");
@@ -648,6 +704,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         bool approvalSuccess = _token.approve(leveragedPool, _token.totalSupply());
         require(approvalSuccess, "ERC20 approval failed");
         tokens = ILeveragedPool(leveragedPool).poolTokens();
+        emit QuoteAndPoolChanged(_quoteToken, _leveragedPool);
     }
 
     /**
@@ -656,6 +713,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
      */
     function pause() external onlyInvariantCheckContract {
         paused = true;
+        emit Paused();
     }
 
     /**
@@ -664,57 +722,6 @@ contract PoolCommitter is IPoolCommitter, Initializable {
      */
     function unpause() external onlyGov {
         paused = false;
-    }
-
-    modifier onlyUnpaused() {
-        require(!paused, "Pool is paused");
-        _;
-    }
-
-    modifier onlyGov() {
-        require(msg.sender == governance, "msg.sender not governance");
-        _;
-    }
-
-    /**
-     * @dev Check invariants before function body only. This is used in functions where the state of the pool is updated after exiting PoolCommitter (i.e. executeCommitments)
-     */
-    modifier checkInvariantsBeforeFunction() {
-        invariantCheck.checkInvariants(leveragedPool);
-        require(!paused, "Pool is paused");
-        _;
-    }
-
-    modifier checkInvariantsAfterFunction() {
-        require(!paused, "Pool is paused");
-        _;
-        invariantCheck.checkInvariants(leveragedPool);
-        require(!paused, "Pool is paused");
-    }
-
-    modifier onlyInvariantCheckContract() {
-        require(msg.sender == invariantCheckContract, "msg.sender not invariantCheckContract");
-        _;
-    }
-
-    /**
-     * @notice Asserts that the caller is the associated `PoolFactory` contract
-     */
-    modifier onlyFactory() {
-        require(msg.sender == factory, "Committer: not factory");
-        _;
-    }
-
-    /**
-     * @notice Asserts that the caller is the associated `LeveragedPool` contract
-     */
-    modifier onlyPool() {
-        require(msg.sender == leveragedPool, "msg.sender not leveragedPool");
-        _;
-    }
-
-    modifier onlyAutoClaimOrCommitter(address user) {
-        require(msg.sender == user || msg.sender == address(autoClaim), "msg.sender not committer or AutoClaim");
-        _;
+        emit Unpaused();
     }
 }
