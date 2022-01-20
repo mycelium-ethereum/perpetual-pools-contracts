@@ -54,5 +54,9 @@ interface IPoolFactory {
 
     function setSecondaryFeeSplitPercent(uint256 newFeePercent) external;
 
-    function setMintAndBurnFee(uint256 _mintingFee, uint256 _burningFee) external;
+    function setMintAndBurnFeeAndChangeInterval(
+        uint256 _mintingFee,
+        uint256 _burningFee,
+        uint256 _changeInterval
+    ) external;
 }

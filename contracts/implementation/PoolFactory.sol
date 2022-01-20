@@ -36,6 +36,8 @@ contract PoolFactory is IPoolFactory, Ownable {
     // The fee taken for each mint and burn. Fee value as a decimal multiplied by 10^18. For example, 50% is represented as 0.5 * 10^18
     uint256 public mintingFee;
     uint256 public burningFee;
+    //The interval at which the mintingFee in a market either increases or decreases, as per the logic in `PoolCommitter::updateMintingFee`
+    uint256 public changeInterval;
 
     // This is required because we must pass along *some* value for decimal
     // precision to the base pool tokens as we use the Cloneable pattern
@@ -130,7 +132,8 @@ contract PoolFactory is IPoolFactory, Ownable {
             deploymentParameters.invariantCheckContract,
             autoClaim,
             mintingFee,
-            burningFee
+            burningFee,
+            changeInterval
         );
         address poolCommitterAddress = address(poolCommitter);
 
@@ -284,15 +287,21 @@ contract PoolFactory is IPoolFactory, Ownable {
      * @dev This is a percentage in WAD; multiplied by 10^18 e.g. 5% is 0.05 * 10^18
      * @param _mintingFee The fee amount for mints
      * @param _burningFee The fee amount for burns
+     * @param _changeInterval The interval at which the mintingFee in a market either increases or decreases, as per the logic in `PoolCommitter::updateMintingFee`
      * @dev Only callable by the owner of this contract
      * @dev Throws if minting fee is greater than 10%
      * @dev Throws if burning fee is greater than 10%
      */
-    function setMintAndBurnFee(uint256 _mintingFee, uint256 _burningFee) external override onlyOwner {
+    function setMintAndBurnFeeAndChangeInterval(
+        uint256 _mintingFee,
+        uint256 _burningFee,
+        uint256 _changeInterval
+    ) external override onlyOwner {
         require(_mintingFee <= 0.1e18, "Fee cannot be > 10%");
         require(_burningFee <= 0.1e18, "Fee cannot be > 10%");
         mintingFee = _mintingFee;
         burningFee = _burningFee;
+        changeInterval = _changeInterval;
     }
 
     /*

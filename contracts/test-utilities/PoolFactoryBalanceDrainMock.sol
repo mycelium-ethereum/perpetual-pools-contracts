@@ -5,7 +5,8 @@ import "../interfaces/IPoolFactory.sol";
 import "../interfaces/ILeveragedPool.sol";
 import "../interfaces/IPoolCommitter.sol";
 import "../interfaces/IERC20DecimalsWrapper.sol";
-import "../test-utilities/LeveragedPoolBalanceDrainMock.sol";
+import "../interfaces/IAutoClaim.sol";
+import "./LeveragedPoolBalanceDrainMock.sol";
 import "../implementation/PoolToken.sol";
 import "../implementation/PoolKeeper.sol";
 import "../implementation/PoolCommitter.sol";
@@ -30,10 +31,13 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
     address public feeReceiver;
     // Default fee, annualised; Fee value as a decimal multiplied by 10^18. For example, 50% is represented as 0.5 * 10^18
     uint256 public fee;
+    // Percent of fees that go to secondary fee address if applicable.
     uint256 public secondaryFeeSplitPercent = 10;
     // The fee taken for each mint and burn. Fee value as a decimal multiplied by 10^18. For example, 50% is represented as 0.5 * 10^18
     uint256 public mintingFee;
     uint256 public burningFee;
+    //The interval at which the mintingFee in a market either increases or decreases, as per the logic in `PoolCommitter::updateMintingFee`
+    uint256 public changeInterval;
 
     // This is required because we must pass along *some* value for decimal
     // precision to the base pool tokens as we use the Cloneable pattern
@@ -87,7 +91,7 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
             address(this),
             address(0),
             address(this),
-            10
+            secondaryFeeSplitPercent
         );
         // Init bases
         poolBase.initialize(baseInitialization);
@@ -128,7 +132,8 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
             deploymentParameters.invariantCheckContract,
             autoClaim,
             mintingFee,
-            burningFee
+            burningFee,
+            changeInterval
         );
         address poolCommitterAddress = address(poolCommitter);
 
@@ -180,6 +185,7 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
         pools[numPools] = _pool;
         numPools += 1;
         isValidPool[_pool] = true;
+        isValidPoolCommitter[poolCommitterAddress] = true;
         return _pool;
     }
 
@@ -245,11 +251,23 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
         maxLeverage = newMaxLeverage;
     }
 
+    /**
+     * @notice Sets the primary fee receiver of deployed Leveraged pools.
+     * @param _feeReceiver address of fee receiver
+     * @dev Only callable by the owner of this contract
+     * @dev This fuction does not change anything for already deployed pools, only pools deployed after the change
+     */
     function setFeeReceiver(address _feeReceiver) external override onlyOwner {
         require(_feeReceiver != address(0), "address cannot be null");
         feeReceiver = _feeReceiver;
     }
 
+    /**
+     * @notice Sets the proportion of fees to be split to the nominated secondary fees recipient
+     * @param newFeePercent Proportion of fees to split
+     * @dev Only callable by the owner of this contract
+     * @dev Throws if `newFeePercent` exceeds 100
+     */
     function setSecondaryFeeSplitPercent(uint256 newFeePercent) external override onlyOwner {
         require(newFeePercent <= 100, "Secondary fee split cannot exceed 100%");
         secondaryFeeSplitPercent = newFeePercent;
@@ -267,29 +285,25 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
     }
 
     /**
-     * @notice Sets a valid PoolCommitter.
-     * @dev TEST FUNCTION
-     * @param _address The address whose validity will be toggled.
-     * @param _validity True or false, depending on whether to mark it as valid or not.
-     */
-    function setValidPoolCommitter(address _address, bool _validity) external {
-        isValidPoolCommitter[_address] = _validity;
-    }
-
-    /**
      * @notice Set the minting and burning fee amount. The max yearly fee is 10%
      * @dev This is a percentage in WAD; multiplied by 10^18 e.g. 5% is 0.05 * 10^18
      * @param _mintingFee The fee amount for mints
      * @param _burningFee The fee amount for burns
+     * @param _changeInterval The interval at which the mintingFee in a market either increases or decreases, as per the logic in `PoolCommitter::updateMintingFee`
      * @dev Only callable by the owner of this contract
      * @dev Throws if minting fee is greater than 10%
      * @dev Throws if burning fee is greater than 10%
      */
-    function setMintAndBurnFee(uint256 _mintingFee, uint256 _burningFee) external override onlyOwner {
+    function setMintAndBurnFeeAndChangeInterval(
+        uint256 _mintingFee,
+        uint256 _burningFee,
+        uint256 _changeInterval
+    ) external override onlyOwner {
         require(_mintingFee <= 0.1e18, "Fee cannot be > 10%");
         require(_burningFee <= 0.1e18, "Fee cannot be > 10%");
         mintingFee = _mintingFee;
         burningFee = _burningFee;
+        changeInterval = _changeInterval;
     }
 
     /*

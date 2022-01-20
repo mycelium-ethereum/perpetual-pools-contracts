@@ -242,7 +242,8 @@ export const deployPoolAndTokenContracts = async (
     feeAddress?: string,
     fee?: BigNumberish,
     mintFee?: BigNumberish,
-    burnFee?: BigNumberish
+    burnFee?: BigNumberish,
+    changeInterval?: BigNumberish
 ): Promise<{
     signers: SignerWithAddress[]
     pool: LeveragedPool
@@ -280,10 +281,11 @@ export const deployPoolAndTokenContracts = async (
     if (feeAddress) {
         await setupContracts.factory.setFeeReceiver(feeAddress)
     }
-    if (mintFee || burnFee) {
-        await setupContracts.factory.setMintAndBurnFee(
+    if (mintFee || burnFee || changeInterval) {
+        await setupContracts.factory.setMintAndBurnFeeAndChangeInterval(
             mintFee || 0,
-            burnFee || 0
+            burnFee || 0,
+            changeInterval || 0
         )
     }
     await setupContracts.factory.deployPool(deployParams)

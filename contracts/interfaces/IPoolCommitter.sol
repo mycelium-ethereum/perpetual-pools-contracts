@@ -103,7 +103,8 @@ interface IPoolCommitter {
         address _invariantCheckContract,
         address _autoClaim,
         uint256 mintingFee,
-        uint256 burningFee
+        uint256 burningFee,
+        uint256 _changeInterval
     ) external;
 
     function commit(
@@ -126,6 +127,12 @@ interface IPoolCommitter {
     function getAppropriateUpdateIntervalId() external view returns (uint128);
 
     function setQuoteAndPool(address _quoteToken, address _leveragedPool) external;
+
+    function setBurningFee(uint256 _burningFee) external;
+
+    function setMintingFee(uint256 _mintingFee) external;
+
+    function setChangeInterval(uint256 _changeInterval) external;
 
     function getPendingCommits() external view returns (TotalCommitment memory, TotalCommitment memory);
 }
