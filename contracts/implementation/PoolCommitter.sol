@@ -104,6 +104,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
      * @dev Only callable by the associated initialiser address
      * @dev Throws if minting fee is over 100%
      * @dev Throws if burning fee is over 100%
+     * @dev Emits a `ChangeIntervalSet` event on success
      */
     function initialize(
         address _factory,
@@ -717,6 +718,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
      * @notice Sets the burning fee to be applied to future burn commitments indefinitely
      * @param _burningFee The new burning fee
      * @dev Converts `_burningFee` to a `bytes16` to be compatible with arithmetic library
+     * @dev Emits a `BurningFeeSet` event on success
      */
     function setBurningFee(uint256 _burningFee) external override onlyGov {
         burningFee = PoolSwapLibrary.convertUIntToDecimal(_burningFee);
@@ -727,6 +729,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
      * @notice Sets the minting fee to be applied to future burn commitments indefinitely
      * @param _mintingFee The new minting fee
      * @dev Converts `_mintingFee` to a `bytes16` to be compatible with arithmetic library
+     * @dev Emits a `MintingFeeSet` event on success
      */
     function setMintingFee(uint256 _mintingFee) external override onlyGov {
         mintingFee = PoolSwapLibrary.convertUIntToDecimal(_mintingFee);
@@ -737,6 +740,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
      * @notice Sets the change interval used to update the minting fee every update interval
      * @param _changeInterval The new change interval
      * @dev Converts `_changeInterval` to a `bytes16` to be compatible with arithmetic library TODO UPDATE
+     * @dev Emits a `ChangeIntervalSet` event on success
      */
     function setChangeInterval(uint256 _changeInterval) external override onlyGov {
         changeInterval = PoolSwapLibrary.convertUIntToDecimal(_changeInterval);
