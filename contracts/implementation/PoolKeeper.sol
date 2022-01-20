@@ -117,6 +117,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      */
     function performUpkeepSinglePool(address _pool) public override {
         uint256 startGas = gasleft();
+        require(observer != address(0), "Observer not initialized");
 
         // validate the pool, check that the interval time has passed
         if (!checkUpkeepSinglePool(_pool)) {
