@@ -100,6 +100,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
         require(initialization._invariantCheckContract != address(0), "InvariantCheck cannot be 0 address");
         require(initialization._fee < PoolSwapLibrary.WAD_PRECISION, "Fee >= 100%");
         require(initialization._secondaryFeeSplitPercent <= 100, "Secondary fee split cannot exceed 100%");
+        require(initialization._updateInterval != 0, "Update interval cannot be 0");
 
         // set the owner of the pool. This is governance when deployed from the factory
         governance = initialization._owner;
