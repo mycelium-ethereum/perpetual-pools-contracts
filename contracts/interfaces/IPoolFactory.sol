@@ -11,7 +11,6 @@ interface IPoolFactory {
         address quoteToken; // The digital asset that the pool accepts
         address oracleWrapper; // The IOracleWrapper implementation for fetching price feed data
         address settlementEthOracle; // The oracle to fetch the price of Ether in terms of the settlement token
-        address invariantCheckContract; // The IInvariantCheck contract that performs invariant checking
     }
 
     // #### Events
@@ -72,6 +71,8 @@ interface IPoolFactory {
     function deployPool(PoolDeployment calldata deploymentParameters) external returns (address);
 
     function setPoolKeeper(address _poolKeeper) external;
+
+    function setInvariantCheck(address _invariantCheck) external;
 
     function setAutoClaim(address _autoClaim) external;
 

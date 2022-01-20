@@ -82,7 +82,6 @@ describe("Leveraged pool fees", () => {
             quoteToken: setupContracts.token.address,
             oracleWrapper: setupContracts.oracleWrapper.address,
             settlementEthOracle: setupContracts.settlementEthOracle.address,
-            invariantCheckContract: setupContracts.invariantCheck.address,
         }
 
         await expect(

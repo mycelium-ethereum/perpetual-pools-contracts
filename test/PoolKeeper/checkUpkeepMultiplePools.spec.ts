@@ -121,6 +121,7 @@ const setupHook = async () => {
     )) as InvariantCheck__factory
 
     const invariantCheck = await invariantCheckFactory.deploy(factory.address)
+    await factory.setInvariantCheck(invariantCheck.address)
 
     // Create pool
     const deploymentData = {
@@ -131,7 +132,6 @@ const setupHook = async () => {
         quoteToken: quoteToken,
         oracleWrapper: oracleWrapper.address,
         settlementEthOracle: settlementEthOracle.address,
-        invariantCheckContract: invariantCheck.address,
     }
     await factory.deployPool(deploymentData)
 
@@ -143,7 +143,6 @@ const setupHook = async () => {
         quoteToken: quoteToken,
         oracleWrapper: oracleWrapper.address,
         settlementEthOracle: settlementEthOracle.address,
-        invariantCheckContract: invariantCheck.address,
     }
     await factory.deployPool(deploymentData2)
 }

@@ -276,7 +276,6 @@ describe("AutoClaim - multiPaidClaimSinglePoolCommitter", () => {
                     quoteToken: token.address,
                     oracleWrapper: result.oracleWrapper.address,
                     settlementEthOracle: result.settlementEthOracle.address,
-                    invariantCheckContract: result.invariantCheck.address,
                 }
 
                 await result.factory.deployPool(deployParams)

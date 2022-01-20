@@ -24,6 +24,7 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
     PoolCommitter public poolCommitterBase;
     address public immutable poolCommitterBaseAddress;
 
+    address public invariantCheck;
     address public autoClaim;
 
     // Contract address to receive protocol fees
@@ -133,14 +134,7 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
         PoolCommitter poolCommitter = PoolCommitter(
             Clones.cloneDeterministic(poolCommitterBaseAddress, uniquePoolHash)
         );
-        poolCommitter.initialize(
-            address(this),
-            deploymentParameters.invariantCheckContract,
-            autoClaim,
-            owner(),
-            mintingFee,
-            burningFee
-        );
+        poolCommitter.initialize(address(this), invariantCheck, autoClaim, owner(), mintingFee, burningFee);
         address poolCommitterAddress = address(poolCommitter);
 
         require(
@@ -168,7 +162,7 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
             _longToken: deployPairToken(_pool, leverage, deploymentParameters, "L-"),
             _shortToken: deployPairToken(_pool, leverage, deploymentParameters, "S-"),
             _poolCommitter: poolCommitterAddress,
-            _invariantCheckContract: deploymentParameters.invariantCheckContract,
+            _invariantCheckContract: invariantCheck,
             _poolName: string(abi.encodePacked(leverage, "-", deploymentParameters.poolName)),
             _frontRunningInterval: deploymentParameters.frontRunningInterval,
             _updateInterval: deploymentParameters.updateInterval,
@@ -234,6 +228,17 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
     function setPoolKeeper(address _poolKeeper) external override onlyOwner {
         require(_poolKeeper != address(0), "address cannot be null");
         poolKeeper = IPoolKeeper(_poolKeeper);
+    }
+
+    /**
+     * @notice Sets the address of the associated `InvariantCheck` contract
+     * @param _invariantCheck Address of the `InvariantCheck`
+     * @dev Throws if provided address is null
+     * @dev Only callable by the owner
+     */
+    function setInvariantCheck(address _invariantCheck) external override onlyOwner {
+        require(_invariantCheck != address(0), "address cannot be null");
+        invariantCheck = _invariantCheck;
     }
 
     /**
