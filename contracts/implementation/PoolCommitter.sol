@@ -435,7 +435,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
      * @notice Executes all commitments currently queued for the associated `LeveragedPool`
      * @dev Only callable by the associated `LeveragedPool` contract
      */
-    function executeCommitments() external override onlyPool checkInvariantsBeforeFunction {
+    function executeCommitments() external override onlyPool {
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
 
         uint32 counter = 1;
