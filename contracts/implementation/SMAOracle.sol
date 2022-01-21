@@ -141,8 +141,9 @@ contract SMAOracle is IOracleWrapper {
      *          the metadata as implementation-defined. For the SMA oracle, there
      *          is no clear use case for additional data, so it's left blank
      */
-    function getPriceAndMetadata() external view override returns (int256 _price, bytes memory _data) {
-        _price = SMA(IPriceObserver(observer).getAll(), periods);
-        _data = "";
+    function getPriceAndMetadata() external view override returns (int256, bytes memory) {
+        int256 _price = SMA(IPriceObserver(observer).getAll(), periods);
+        bytes memory _data;
+        return (_price, _data);
     }
 }
