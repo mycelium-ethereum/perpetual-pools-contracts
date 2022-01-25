@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.7;
+
+import "prb-math/contracts/PRBMathSD59x18.sol";
+
 import "../interfaces/IOracleWrapper.sol";
 import "../interfaces/IPriceObserver.sol";
 import "../implementation/PriceObserver.sol";
-import "prb-math/contracts/PRBMathSD59x18.sol";
 
 /**
  * @notice Applies a simple moving average (SMA) smoothing function to the spot
@@ -44,8 +46,14 @@ contract SMAOracle is IOracleWrapper {
      *       |
      *       +---------------------------------------------------------------> t
      *
+     *
+     * Here, K is the `periods` instance variable and time, t, is an integer
+     * representing successive calls to `SMAOracle::poll`.
+     *
      */
 
+    /// Initial value for `periods` (this is the denominator in the SMA equation
+    /// so it *must* be non-zero for SMA to be well-defined)
     uint256 public constant INITIAL_NUM_PERIODS = 1;
 
     /// Price oracle supplying the spot price of the quote asset
@@ -132,8 +140,7 @@ contract SMAOracle is IOracleWrapper {
         priceObserver.add(latestPrice);
 
         /* if we're ramping up still, increment the number of *actual* sampling
-         * periods used
-         */
+         * periods used */
         if (periods < desiredPeriods) {
             periods++;
         }
