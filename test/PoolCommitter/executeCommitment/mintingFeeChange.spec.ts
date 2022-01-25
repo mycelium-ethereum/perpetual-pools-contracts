@@ -40,7 +40,7 @@ describe("PoolCommitter - mintingFee update", () => {
     let library: PoolSwapLibrary
     let poolCommitter: PoolCommitter
 
-    describe("updateMintFee", () => {
+    describe("updateMintFee", async () => {
         beforeEach(async () => {
             const startMintingFee = 0
             const startBurningFee = 0
