@@ -509,7 +509,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
      *                                  application
      * @dev Wraps two (pure) library functions from `PoolSwapLibrary`
      */
-    function updateBalanceSingleCommitment(UserCommitment memory _commit)
+    function getBalanceSingleCommitment(UserCommitment memory _commit)
         internal
         view
         returns (
@@ -581,7 +581,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
                     uint256 _longBurnFee,
                     uint256 _shortBurnFee,
                     uint256 _newSettlementTokens
-                ) = updateBalanceSingleCommitment(commitment);
+                ) = getBalanceSingleCommitment(commitment);
                 update._newLongTokensSum += _newLongTokens;
                 update._newShortTokensSum += _newShortTokens;
                 update._newSettlementTokensSum += _newSettlementTokens;
@@ -679,7 +679,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
                     ,
                     ,
                     uint256 _newSettlementTokens
-                ) = updateBalanceSingleCommitment(commitment);
+                ) = getBalanceSingleCommitment(commitment);
                 update._newLongTokensSum += _newLongTokens;
                 update._newShortTokensSum += _newShortTokens;
                 update._newSettlementTokensSum += _newSettlementTokens;

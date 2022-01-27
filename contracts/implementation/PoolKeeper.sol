@@ -19,6 +19,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     uint256 public constant TIP_DELTA_PER_BLOCK = 5; // 5% increase per block
     uint256 public constant BLOCK_TIME = 13; /* in seconds */
     uint256 public constant MAX_TIP = 100; /* maximum keeper tip */
+    bytes16 public constant FIXEDPOINT = 0x403abc16d674ec800000000000000000; // 1 ether
 
     /// Captures fixed gas overhead for performing upkeep that's unreachable
     /// by `gasleft()` due to our approach to error handling in that code
@@ -31,7 +32,6 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     mapping(address => int256) public executionPrice;
 
     IPoolFactory public factory;
-    bytes16 constant fixedPoint = 0x403abc16d674ec800000000000000000; // 1 ether
 
     uint256 public gasPrice = 10 gwei;
     address public observer;
@@ -70,7 +70,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     function newPool(address _poolAddress) external override onlyFactory {
         int256 firstPrice = ILeveragedPool(_poolAddress).getOraclePrice();
         require(firstPrice > 0, "First price is non-positive");
-        int256 startingPrice = ABDKMathQuad.toInt(ABDKMathQuad.mul(ABDKMathQuad.fromInt(firstPrice), fixedPoint));
+        int256 startingPrice = ABDKMathQuad.toInt(ABDKMathQuad.mul(ABDKMathQuad.fromInt(firstPrice), FIXEDPOINT));
         emit PoolAdded(_poolAddress, firstPrice);
         executionPrice[_poolAddress] = startingPrice;
     }
@@ -80,7 +80,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @param _pool The address of the pool to upkeep
      * @return Whether or not upkeep is needed for this single pool
      */
-    function checkUpkeepSinglePool(address _pool) public view override returns (bool) {
+    function isUpkeepRequiredSinglePool(address _pool) public view override returns (bool) {
         if (!factory.isValidPool(_pool)) {
             return false;
         }
@@ -98,7 +98,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     function checkUpkeepMultiplePools(address[] calldata _pools) external view override returns (bool) {
         uint256 poolsLength = _pools.length;
         for (uint256 i = 0; i < poolsLength; i++) {
-            if (checkUpkeepSinglePool(_pools[i])) {
+            if (isUpkeepRequiredSinglePool(_pools[i])) {
                 // One has been found that requires upkeeping
                 return true;
             }
@@ -119,7 +119,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         require(observer != address(0), "Observer not initialized");
 
         // validate the pool, check that the interval time has passed
-        if (!checkUpkeepSinglePool(_pool)) {
+        if (!isUpkeepRequiredSinglePool(_pool)) {
             return;
         }
 
@@ -246,7 +246,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
                             ABDKMathQuad.fromUInt(100)
                         )
                     ),
-                    fixedPoint
+                    FIXEDPOINT
                 )
             )
         );
@@ -282,7 +282,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
             bytes16 _weiSpent = ABDKMathQuad.fromUInt(_gasPrice * gasUsed);
             bytes16 _settlementTokenPrice = ABDKMathQuad.fromUInt(uint256(settlementTokenPrice));
             return
-                ABDKMathQuad.toUInt(ABDKMathQuad.div(ABDKMathQuad.mul(_weiSpent, _settlementTokenPrice), fixedPoint));
+                ABDKMathQuad.toUInt(ABDKMathQuad.div(ABDKMathQuad.mul(_weiSpent, _settlementTokenPrice), FIXEDPOINT));
         }
     }
 
