@@ -69,6 +69,7 @@ contract AutoClaim is IAutoClaim {
      * @param poolCommitterAddress The PoolCommitter address within which the user's claim will be executed
      */
     function paidClaim(address user, address poolCommitterAddress) public override {
+        require(poolFactory.isValidPoolCommitter(poolCommitterAddress), "poolCommitterAddress is not valid");
         IPoolCommitter poolCommitter = IPoolCommitter(poolCommitterAddress);
         uint256 currentUpdateIntervalId = poolCommitter.updateIntervalId();
         Address.sendValue(

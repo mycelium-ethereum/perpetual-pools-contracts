@@ -101,6 +101,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
         require(initialization._fee < PoolSwapLibrary.WAD_PRECISION, "Fee >= 100%");
         require(initialization._secondaryFeeSplitPercent <= 100, "Secondary fee split cannot exceed 100%");
         require(initialization._updateInterval != 0, "Update interval cannot be 0");
+        require(initialization._frontRunningInterval != 0, "Front running interval cannot be 0");
 
         // set the owner of the pool. This is governance when deployed from the factory
         governance = initialization._owner;
@@ -425,6 +426,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
      * @dev See `claimGovernance`
      */
     function transferGovernance(address _governance) external override onlyGov {
+        require(_governance != governance, "New governance address cannot be same as old governance address");
         require(_governance != address(0), "Governance address cannot be 0 address");
         provisionalGovernance = _governance;
         governanceTransferInProgress = true;
