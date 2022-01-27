@@ -300,7 +300,9 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
                 remainder = totalFeeAmount - secondaryFee;
             }
             IERC20 _quoteToken = IERC20(quoteToken);
-            _quoteToken.safeTransfer(secondaryFeeAddress, secondaryFee);
+            if (secondaryFee != 0) {
+                _quoteToken.safeTransfer(secondaryFeeAddress, secondaryFee);
+            }
             if (remainder != 0) {
                 _quoteToken.safeTransfer(feeAddress, remainder);
             }
