@@ -1,12 +1,60 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.7;
+
+import "prb-math/contracts/PRBMathSD59x18.sol";
+
 import "../interfaces/IOracleWrapper.sol";
 import "../interfaces/IPriceObserver.sol";
 import "../implementation/PriceObserver.sol";
-import "prb-math/contracts/PRBMathSD59x18.sol";
 
+/**
+ * @notice Applies a simple moving average (SMA) smoothing function to the spot
+ *          price of an underlying oracle.
+ */
 contract SMAOracle is IOracleWrapper {
     using PRBMathSD59x18 for int256;
+    /*
+     * A note on "ramping up":
+     *
+     * `SMAOracle` works by pulling stored *spot* prices from an associated
+     * data store (i.e., a `PriceObserver` contract). Obviously, we need to
+     * handle the case of insufficient data: specifically, the case where the
+     * number of actual stored observations, n, is strictly less than the number
+     * of sampling periods to use for averaging, k.
+     *
+     * To achieve this, `SMAOracle` needs to "ramp up". This means that the
+     * number of sampling periods *actually used*, K, looks like this (w.r.t.
+     * time, t):
+     *
+     *     K ^
+     *       |
+     *       |
+     *       |
+     *       |
+     *       |
+     * k --> |+++++++++++++++++++++++++++++++++-----------------------------
+     *       |                                |
+     *       |                                |
+     *       |                     +----------+
+     *       |                     |
+     *       |                     |
+     *       |          +----------+
+     *       |          |
+     *       |          |
+     *       |----------+
+     *       |
+     *       |
+     *       +---------------------------------------------------------------> t
+     *
+     *
+     * Here, K is the `periods` instance variable and time, t, is an integer
+     * representing successive calls to `SMAOracle::poll`.
+     *
+     */
+
+    /// Initial value for `periods` (this is the denominator in the SMA equation
+    /// so it *must* be non-zero for SMA to be well-defined)
+    uint256 public constant INITIAL_NUM_PERIODS = 1;
 
     /// Price oracle supplying the spot price of the quote asset
     address public override oracle;
@@ -22,6 +70,10 @@ contract SMAOracle is IOracleWrapper {
 
     /// Number of periods to use in calculating the SMA (`k` in the SMA equation)
     uint256 public periods;
+
+    /// Number of desired sampling periods to use -- this will differ from
+    /// `periods` initially until the SMA oracle ramps up
+    uint256 immutable desiredPeriods;
 
     /// Time of last successful price update
     uint256 lastUpdate = 0;
@@ -43,7 +95,8 @@ contract SMAOracle is IOracleWrapper {
         require(_spotOracle != address(0) && _observer != address(0), "SMA: Null address forbidden");
         require(_periods > 0 && _periods <= IPriceObserver(_observer).capacity(), "SMA: Out of bounds");
         require(_spotDecimals <= MAX_DECIMALS, "SMA: Decimal precision too high");
-        periods = _periods;
+        desiredPeriods = _periods;
+        periods = INITIAL_NUM_PERIODS;
         oracle = _spotOracle;
         observer = _observer;
         deployer = _deployer;
@@ -85,6 +138,12 @@ contract SMAOracle is IOracleWrapper {
         /* expire the oldest observation and load the fresh one in */
         PriceObserver priceObserver = PriceObserver(observer);
         priceObserver.add(latestPrice);
+
+        /* if we're ramping up still, increment the number of *actual* sampling
+         * periods used */
+        if (periods < desiredPeriods) {
+            periods++;
+        }
 
         /* update current reported SMA price */
         return SMA(priceObserver.getAll(), periods);
