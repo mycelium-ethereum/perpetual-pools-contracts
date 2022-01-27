@@ -135,7 +135,6 @@ contract PoolFactory is IPoolFactory, Ownable {
             burningFee,
             changeInterval
         );
-        address poolCommitterAddress = address(poolCommitter);
 
         require(
             deploymentParameters.leverageAmount >= 1 && deploymentParameters.leverageAmount <= maxLeverage,
@@ -148,7 +147,7 @@ contract PoolFactory is IPoolFactory, Ownable {
 
         LeveragedPool pool = LeveragedPool(Clones.cloneDeterministic(poolBaseAddress, uniquePoolHash));
         address _pool = address(pool);
-        emit DeployPool(_pool, poolCommitterAddress, deploymentParameters.poolName);
+        emit DeployPool(_pool, address(poolCommitter), deploymentParameters.poolName);
 
         string memory leverage = Strings.toString(deploymentParameters.leverageAmount);
 
@@ -159,7 +158,7 @@ contract PoolFactory is IPoolFactory, Ownable {
             _settlementEthOracle: deploymentParameters.settlementEthOracle,
             _longToken: deployPairToken(_pool, leverage, deploymentParameters, "L-"),
             _shortToken: deployPairToken(_pool, leverage, deploymentParameters, "S-"),
-            _poolCommitter: poolCommitterAddress,
+            _poolCommitter: address(poolCommitter),
             _invariantCheckContract: deploymentParameters.invariantCheckContract,
             _poolName: string(abi.encodePacked(leverage, "-", deploymentParameters.poolName)),
             _frontRunningInterval: deploymentParameters.frontRunningInterval,
@@ -178,12 +177,12 @@ contract PoolFactory is IPoolFactory, Ownable {
         pool.initialize(initialization);
         // approve the quote token on the pool commiter to finalise linking
         // this also stores the pool address in the commiter
-        IPoolCommitter(poolCommitterAddress).setQuoteAndPool(deploymentParameters.quoteToken, _pool);
+        poolCommitter.setQuoteAndPool(deploymentParameters.quoteToken, _pool);
         poolKeeper.newPool(_pool);
         pools[numPools] = _pool;
         numPools += 1;
         isValidPool[_pool] = true;
-        isValidPoolCommitter[poolCommitterAddress] = true;
+        isValidPoolCommitter[address(poolCommitter)] = true;
         return _pool;
     }
 
