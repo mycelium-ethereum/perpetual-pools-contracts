@@ -73,7 +73,7 @@ contract SMAOracle is IOracleWrapper {
 
     /// Number of desired sampling periods to use -- this will differ from
     /// `periods` initially until the SMA oracle ramps up
-    uint256 desiredPeriods;
+    uint256 immutable desiredPeriods;
 
     /// Time of last successful price update
     uint256 lastUpdate = 0;
