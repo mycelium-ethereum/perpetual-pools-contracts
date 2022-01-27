@@ -19,7 +19,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     uint256 public constant TIP_DELTA_PER_BLOCK = 5; // 5% increase per block
     uint256 public constant BLOCK_TIME = 13; /* in seconds */
     uint256 public constant MAX_TIP = 100; /* maximum keeper tip */
-    bytes16 public constant FIXEDPOINT = 0x403abc16d674ec800000000000000000; // 1 ether
+    bytes16 public constant FIXED_POINT = 0x403abc16d674ec800000000000000000; // 1 ether
 
     /// Captures fixed gas overhead for performing upkeep that's unreachable
     /// by `gasleft()` due to our approach to error handling in that code
@@ -70,7 +70,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     function newPool(address _poolAddress) external override onlyFactory {
         int256 firstPrice = ILeveragedPool(_poolAddress).getOraclePrice();
         require(firstPrice > 0, "First price is non-positive");
-        int256 startingPrice = ABDKMathQuad.toInt(ABDKMathQuad.mul(ABDKMathQuad.fromInt(firstPrice), FIXEDPOINT));
+        int256 startingPrice = ABDKMathQuad.toInt(ABDKMathQuad.mul(ABDKMathQuad.fromInt(firstPrice), FIXED_POINT));
         emit PoolAdded(_poolAddress, firstPrice);
         executionPrice[_poolAddress] = startingPrice;
     }
@@ -246,7 +246,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
                             ABDKMathQuad.fromUInt(100)
                         )
                     ),
-                    FIXEDPOINT
+                    FIXED_POINT
                 )
             )
         );
@@ -282,7 +282,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
             bytes16 _weiSpent = ABDKMathQuad.fromUInt(_gasPrice * gasUsed);
             bytes16 _settlementTokenPrice = ABDKMathQuad.fromUInt(uint256(settlementTokenPrice));
             return
-                ABDKMathQuad.toUInt(ABDKMathQuad.div(ABDKMathQuad.mul(_weiSpent, _settlementTokenPrice), FIXEDPOINT));
+                ABDKMathQuad.toUInt(ABDKMathQuad.div(ABDKMathQuad.mul(_weiSpent, _settlementTokenPrice), FIXED_POINT));
         }
     }
 
