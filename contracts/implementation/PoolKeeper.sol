@@ -128,7 +128,10 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         /* update SMA oracle */
         PriceObserver priceObserver = PriceObserver(observer);
         IOracleWrapper priceObserverWriter = IOracleWrapper(priceObserver.getWriter());
-        priceObserverWriter.poll();
+
+        try priceObserverWriter.poll() {} catch Error(string memory reason) {
+            emit PoolUpkeepError(_pool, reason);
+        }
 
         (int256 latestPrice, bytes memory data, uint256 savedPreviousUpdatedTimestamp, uint256 updateInterval) = pool
             .getUpkeepInformation();
@@ -138,10 +141,12 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         int256 lastExecutionPrice = executionPrice[_pool];
         executionPrice[_pool] = latestPrice;
 
-        // This allows us to still batch multiple calls to executePriceChange, even if some are invalid
-        // Without reverting the entire transaction
+        /* This allows us to still batch multiple calls to
+         * executePriceChange, even if some are invalid
+         * without reverting the entire transaction */
         try pool.poolUpkeep(lastExecutionPrice, latestPrice) {
-            // If poolUpkeep is successful, refund the keeper for their gas costs
+            /* If poolUpkeep is successful, refund the keeper for their gas
+                costs */
             uint256 gasSpent = startGas - gasleft();
 
             payKeeper(_pool, gasPrice, gasSpent, savedPreviousUpdatedTimestamp, updateInterval);
