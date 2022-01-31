@@ -17,8 +17,6 @@ import {
     PoolSwapLibrary,
     PoolSwapLibrary__factory,
     TestChainlinkOracle__factory,
-    PriceObserver__factory,
-    PriceObserver,
     PoolKeeper,
     PoolFactory__factory,
     PoolKeeper__factory,
@@ -145,22 +143,12 @@ export const deployPoolSetupContracts = deployments.createFixture(async () => {
 
     await factory.setPoolCommitterDeployer(poolCommitterDeployer.address)
 
-    /* deploy price observer contract */
-    const priceObserverFactory = (await ethers.getContractFactory(
-        "PriceObserver",
-        signers[0]
-    )) as PriceObserver__factory
-    const priceObserver: PriceObserver = await priceObserverFactory.deploy()
-    await priceObserver.deployed()
-    await priceObserver.setWriter(oracleWrapper.address)
-
     const poolKeeperFactory = (await ethers.getContractFactory("PoolKeeper", {
         signer: signers[0],
         libraries: { PoolSwapLibrary: library.address },
     })) as PoolKeeper__factory
     let poolKeeper = await poolKeeperFactory.deploy(factory.address)
     poolKeeper = await poolKeeper.deployed()
-    await poolKeeper.setPriceObserver(priceObserver.address)
     await factory.setPoolKeeper(poolKeeper.address)
     await factory.setFee(DEFAULT_FEE)
 
