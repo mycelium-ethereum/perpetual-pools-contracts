@@ -54,7 +54,12 @@ If you have `slither` installed and on your PATH, you can run `npm run slither` 
 
 Create/modify network config in `hardhat.config.ts` and add API key and private key, then run:
 
-`npx hardhat run --network rinkeby scripts/deploy.ts`
+##### Deploy on Arbitrum Mainnet
+`npx hardhat deploy --network arb --tags ArbDeploy --reset`
+
+##### Deploy on Arbitrum Rinkeby
+`npx hardhat deploy --network arbRinkeby --tags ArbRinkebyDeploy --reset`
+
 **Note:** As of this commit, deploys are out of sync with the current contract set-up and therefore will not work.
 
 ### Verify on Etherscan
