@@ -79,6 +79,6 @@ The leveraged pool fee is a `bytes16` value simply due to the maths library used
 
 Most tests are unit tests. There is a single E2E test in `e2e.spec.ts` right now. We plan to add more.
 
-**Whats the `deployments/kovan` folder for? They seem to be different from the ABIs I get from `artifacts` folder when I compile.**
+**What's the `deployments/kovan` folder for? They seem to be different from the ABIs I get from `artifacts` folder when I compile.**
 
 We use a plugin for hardhat called hardhat deploy that helps with deployment. They recommend you commit the `deployments` folder to have consistent data across deploys. The deploys you find there will be deploys that have been run from old versions of the contract, hence the ABI difference.
