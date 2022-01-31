@@ -172,12 +172,6 @@ export const deployPoolSetupContracts = deployments.createFixture(async () => {
         settlementEthOracle,
         token,
         library,
-<<<<<<< HEAD
-=======
-        priceObserver,
-        invariantCheck,
-        autoClaim,
->>>>>>> parent of 4669848... fix poolkeeper observer bug (#273)
     }
 })
 
@@ -215,12 +209,6 @@ export const deployPoolAndTokenContracts = async (
     factory: PoolFactory
     oracleWrapper: ChainlinkOracleWrapper
     settlementEthOracle: ChainlinkOracleWrapper
-<<<<<<< HEAD
-=======
-    invariantCheck: InvariantCheck
-    priceObserver: PriceObserver
-    autoClaim: AutoClaim
->>>>>>> parent of 4669848... fix poolkeeper observer bug (#273)
 }> => {
     const setupContracts = await deployPoolSetupContracts()
 
