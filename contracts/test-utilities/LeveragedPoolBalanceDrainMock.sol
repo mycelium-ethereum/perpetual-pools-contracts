@@ -233,7 +233,7 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
         address from,
         address to,
         uint256 amount
-    ) external override onlyPoolCommitter checkInvariantsBeforeFunction {
+    ) external override onlyPoolCommitter {
         IERC20(quoteToken).safeTransferFrom(from, to, amount);
     }
 
@@ -303,12 +303,7 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
      * @dev Only callable by the associated `PoolCommitter` contract
      * @dev Only callable when the market is *not* paused
      */
-    function setNewPoolBalances(uint256 _longBalance, uint256 _shortBalance)
-        external
-        override
-        onlyPoolCommitter
-        checkInvariantsBeforeFunction
-    {
+    function setNewPoolBalances(uint256 _longBalance, uint256 _shortBalance) external override onlyPoolCommitter {
         longBalance = _longBalance;
         shortBalance = _shortBalance;
     }

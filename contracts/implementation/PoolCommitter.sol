@@ -262,10 +262,6 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         uint256 lastPriceTimestamp = pool.lastPriceTimestamp();
         uint256 frontRunningInterval = pool.frontRunningInterval();
 
-        if (payForClaim) {
-            autoClaim.makePaidClaimRequest{value: msg.value}(msg.sender);
-        }
-
         uint256 appropriateUpdateIntervalId = PoolSwapLibrary.appropriateUpdateIntervalId(
             block.timestamp,
             lastPriceTimestamp,
@@ -283,18 +279,29 @@ contract PoolCommitter is IPoolCommitter, Initializable {
             unAggregatedCommitments[msg.sender].push(appropriateUpdateIntervalId);
         }
 
-        if (commitType == CommitType.LongMint || commitType == CommitType.ShortMint) {
-            // minting: pull in the quote token from the committer
-            // Do not need to transfer if minting using aggregate balance tokens, since the leveraged pool already owns these tokens.
-            if (!fromAggregateBalance) {
-                pool.quoteTokenTransferFrom(msg.sender, leveragedPool, amount);
-            } else {
-                // Want to take away from their balance's settlement tokens
-                userAggregateBalance[msg.sender].settlementTokens -= amount;
-            }
+        /*
+         * Below, we want to follow the "Checks, Effects, Interactions" pattern.
+         * `applyCommitment` adheres to the pattern, so we must put our effects before this, and interactions after.
+         * Hence, we do the storage change if `fromAggregateBalance == true` before calling `applyCommitment`, and do the interaction if `fromAggregateBalance == false` after.
+         * Lastly, we call `AutoClaim::makePaidClaimRequest`, which is an external interaction (albeit with a protocol contract).
+         */
+        if ((commitType == CommitType.LongMint || commitType == CommitType.ShortMint) && fromAggregateBalance) {
+            // Want to take away from their balance's settlement tokens
+            userAggregateBalance[msg.sender].settlementTokens -= amount;
         }
 
         applyCommitment(pool, commitType, amount, fromAggregateBalance, userCommit, totalCommit);
+
+        if (commitType == CommitType.LongMint || (commitType == CommitType.ShortMint && !fromAggregateBalance)) {
+            // minting: pull in the quote token from the committer
+            // Do not need to transfer if minting using aggregate balance tokens, since the leveraged pool already owns these tokens.
+            pool.quoteTokenTransferFrom(msg.sender, leveragedPool, amount);
+        }
+
+        if (payForClaim) {
+            autoClaim.makePaidClaimRequest{value: msg.value}(msg.sender);
+        }
+
         emit CreateCommit(msg.sender, amount, commitType);
     }
 
