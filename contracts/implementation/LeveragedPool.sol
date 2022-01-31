@@ -427,6 +427,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
      * @dev See `claimGovernance`
      */
     function transferGovernance(address _governance) external override onlyGov {
+        require(_governance != governance, "New governance address cannot be same as old governance address");
         require(_governance != address(0), "Governance address cannot be 0 address");
         provisionalGovernance = _governance;
         governanceTransferInProgress = true;

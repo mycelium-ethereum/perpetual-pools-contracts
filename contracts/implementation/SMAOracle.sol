@@ -42,6 +42,7 @@ contract SMAOracle is IOracleWrapper {
         );
         require(_periods > 0 && _periods <= IPriceObserver(_observer).capacity(), "SMA: Out of bounds");
         require(_spotDecimals <= MAX_DECIMALS, "SMA: Decimal precision too high");
+        require(_updateInterval != 0, "Update interval cannot be 0");
         periods = _periods;
         oracle = _spotOracle;
         observer = _observer;
