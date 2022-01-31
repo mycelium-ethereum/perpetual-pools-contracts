@@ -4,59 +4,24 @@ module.exports = async (hre) => {
     const { deployer } = await getNamedAccounts()
     const accounts = await ethers.getSigners()
 
-    const arbitrumRinkEthUsdOracle = {
-        address: "0x5f0423B1a6935dc5596e7A24d98532b67A0AeFd8",
-    }
-    const arbitrumRinkBtcUsdOracle = {
-        address: "0x0c9973e7a27d00e656B9f153348dA46CaD70d03d",
-    }
-    const RinkebyEthUsdOracle = {
-        address: "0x5f0423B1a6935dc5596e7A24d98532b67A0AeFd8",
-    }
-    const RinkebyBtcUsdOracle = {
-        address: "0x0c9973e7a27d00e656B9f153348dA46CaD70d03d",
-    }
     const MainnetEthUsdOracle = {
         address: "0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612",
     }
     const MainnetBtcUsdOracle = {
         address: "0x6ce185860a4963106506C203335A2910413708e9",
     }
-    const KovanEurUsdOracle = {
-        address: "0x0c15Ab9A0DB086e062194c273CC79f41597Bbf13",
-    }
-    const KovanEthUsdOracle = {
-        address: "0x9326BFA02ADD2366b30bacB125260Af641031331",
-    }
 
     const multisigAddress = "0x0f79e82aE88E1318B8cfC8b4A205fE2F982B928A"
 
     /* deploy testToken */
-    const token = await deploy("TestToken", {
-        args: ["Test Tracer USDC", "TUSDC"],
-        from: deployer,
-        log: true,
-        contract: "TestToken",
-    })
-
-    // mint some dollar bills
-    await execute(
-        "TestToken",
-        {
-            from: deployer,
-            log: true,
-        },
-        "mint",
-        ethers.utils.parseEther("10000000"), // 10 mil supply
-        accounts[0].address
-    )
+    // Set `address` to be the address of the settlement token to use.
 
     // deploy ChainlinkOracleWrapper
     const oracleWrapper = await deploy("BtcUsdOracleWrapper", {
         from: deployer,
         log: true,
         contract: "ChainlinkOracleWrapper",
-        args: [arbitrumRinkBtcUsdOracle.address, deployer],
+        args: [MainnetBtcUsdOracle.address, deployer],
     })
 
     // deploy ChainlinkOracleWrapper for keeper
@@ -64,7 +29,7 @@ module.exports = async (hre) => {
         from: deployer,
         log: true,
         contract: "ChainlinkOracleWrapper",
-        args: [arbitrumRinkEthUsdOracle.address, deployer],
+        args: [MainnetEthUsdOracle.address, deployer],
     })
 
     // deploy SMA PriceObserver
@@ -101,6 +66,7 @@ module.exports = async (hre) => {
         smaOracleWrapper.address
     )
 
+    // TODO rogue warden is working on a fix for this aspect of the SMA oracle
     // Poll so there is an initial price
     await execute(
         "EthUsdPriceSMAOracle",
