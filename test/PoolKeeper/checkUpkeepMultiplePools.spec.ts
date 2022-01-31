@@ -14,6 +14,8 @@ import {
     ChainlinkOracleWrapper,
     ChainlinkOracleWrapper__factory,
     TestChainlinkOracle__factory,
+    PriceObserver__factory,
+    PriceObserver,
     PoolFactory__factory,
     PoolKeeper,
     PoolKeeper__factory,
