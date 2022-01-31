@@ -11,7 +11,8 @@ interface IPoolFactory {
         address quoteToken; // The digital asset that the pool accepts
         address oracleWrapper; // The IOracleWrapper implementation for fetching price feed data
         address settlementEthOracle; // The oracle to fetch the price of Ether in terms of the settlement token
-        address invariantCheckContract; // The IInvariantCheck contract that performs invariant checking
+        uint128 minimumCommitSize; // The minimum amount (in settlement tokens) that a user can commit in a single commitment
+        uint128 maximumCommitQueueLength; // The maximum number of commitments that can be made for a given updateInterval
     }
 
     // #### Events
@@ -20,13 +21,19 @@ interface IPoolFactory {
      * @param pool Address of the new pool
      * @param ticker Ticker of the neew pool
      */
-    event DeployPool(address indexed pool, address poolCommitter, string ticker);
+    event DeployPool(address indexed pool, string ticker);
 
     /**
      * @notice Creates a notification when the pool keeper changes
      * @param _poolKeeper Address of the new pool keeper
      */
     event PoolKeeperChanged(address _poolKeeper);
+
+    /**
+     * @notice Creates a notification when the pool committer deployer for the factory changes
+     * @param _poolCommitterDeployer Address of the new pool committer deployer
+     */
+    event PoolCommitterDeployerChanged(address _poolCommitterDeployer);
 
     // #### Getters for Globals
     function pools(uint256 id) external view returns (address);
@@ -35,8 +42,6 @@ interface IPoolFactory {
 
     function isValidPool(address _pool) external view returns (bool);
 
-    function isValidPoolCommitter(address _poolCommitter) external view returns (bool);
-
     // #### Functions
     function deployPool(PoolDeployment calldata deploymentParameters) external returns (address);
 
@@ -44,15 +49,11 @@ interface IPoolFactory {
 
     function setPoolKeeper(address _poolKeeper) external;
 
-    function setAutoClaim(address _autoClaim) external;
-
     function setMaxLeverage(uint16 newMaxLeverage) external;
 
     function setFeeReceiver(address _feeReceiver) external;
 
     function setFee(uint256 _fee) external;
 
-    function setSecondaryFeeSplitPercent(uint256 newFeePercent) external;
-
-    function setMintAndBurnFee(uint256 _mintingFee, uint256 _burningFee) external;
+    function setPoolCommitterDeployer(address _poolCommitterDeployer) external;
 }

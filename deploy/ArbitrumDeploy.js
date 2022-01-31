@@ -4,12 +4,6 @@ module.exports = async (hre) => {
     const { deployer } = await getNamedAccounts()
     const accounts = await ethers.getSigners()
 
-    const arbitrumRinkEthUsdOracle = {
-        address: "0x5f0423B1a6935dc5596e7A24d98532b67A0AeFd8",
-    }
-    const arbitrumRinkBtcUsdOracle = {
-        address: "0x0c9973e7a27d00e656B9f153348dA46CaD70d03d",
-    }
     // used for both keepers and the eth market
     const RinkebyEthUsdOracle = {
         address: "0x5f0423B1a6935dc5596e7A24d98532b67A0AeFd8",
@@ -25,9 +19,10 @@ module.exports = async (hre) => {
     }
     const multisigAddress = "0x0f79e82aE88E1318B8cfC8b4A205fE2F982B928A"
 
-    // const token = { address: "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8" }
+    const token = { address: "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8" }
 
     /* deploy testToken */
+    /*
     const token = await deploy("TestToken", {
         args: ["Test Tracer USDC", "TUSDC"],
         from: deployer,
@@ -47,12 +42,14 @@ module.exports = async (hre) => {
         accounts[0].address
     )
 
+    */
+
     // deploy ChainlinkOracleWrapper
     const oracleWrapper = await deploy("BTCChainlinkOracleWrapper", {
         from: deployer,
         log: true,
         contract: "ChainlinkOracleWrapper",
-        args: [arbitrumRinkBtcUsdOracle.address],
+        args: [MainnetBtcUsdOracle.address],
     })
 
     // const oracleWrapper = { address: "0x57A81f7B72D2703ae7c533F3FB1CdEFa6B8f25F7" }
@@ -63,7 +60,7 @@ module.exports = async (hre) => {
         from: deployer,
         log: true,
         contract: "ChainlinkOracleWrapper",
-        args: [arbitrumRinkEthUsdOracle.address],
+        args: [MainnetEthUsdOracle.address],
     })
 
     /* Commented out, because we want to wait till multisig governs pools before doing it for the rest of them
@@ -275,11 +272,11 @@ module.exports = async (hre) => {
 
     await hre.run("verify:verify", {
         address: oracleWrapper.address,
-        constructorArguments: [arbitrumRinkBtcUsdOracle.address],
+        constructorArguments: [MainnetBtcUsdOracle.address],
     })
     await hre.run("verify:verify", {
         address: keeperOracle.address,
-        constructorArguments: [arbitrumRinkEthUsdOracle.address],
+        constructorArguments: [MainnetEthUsdOracle.address],
     })
     await hre.run("verify:verify", {
         address: poolCommitterDeployer.address,

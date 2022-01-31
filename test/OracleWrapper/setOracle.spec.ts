@@ -12,11 +12,11 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 chai.use(chaiAsPromised)
 const { expect } = chai
 
-describe("OracleWrapper - getPrice", () => {
+describe("OracleWrapper - setOracle", () => {
     let oracleWrapper: ChainlinkOracleWrapper
+    let signers: SignerWithAddress[]
     let testOracle: TestChainlinkOracle
     let testOracle2: TestChainlinkOracle
-    let signers: SignerWithAddress[]
     beforeEach(async () => {
         // Deploy the contract
         signers = await ethers.getSigners()
@@ -25,6 +25,10 @@ describe("OracleWrapper - getPrice", () => {
             signers[0]
         )) as TestChainlinkOracle__factory
         const chainlinkOracle = await chainlinkOracleFactory.deploy()
+        testOracle = await chainlinkOracleFactory.deploy()
+        testOracle2 = await chainlinkOracleFactory.deploy()
+        await testOracle.deployed()
+        await testOracle2.deployed()
 
         // Deploy tokens
         const oracleWrapperFactory = (await ethers.getContractFactory(
@@ -36,20 +40,23 @@ describe("OracleWrapper - getPrice", () => {
         )
         await oracleWrapper.deployed()
 
-        // Deploy the sample oracle
-        const oracleFactory = (await ethers.getContractFactory(
-            "TestChainlinkOracle",
-            signers[0]
-        )) as TestChainlinkOracle__factory
-        testOracle = await oracleFactory.deploy()
-        testOracle2 = await oracleFactory.deploy()
-
-        await oracleWrapper.setOracle(testOracle.address)
-
         // Sanity check the deployment
+        expect(await oracleWrapper.owner()).to.equal(signers[0].address)
+    })
+    it("should allow an authorized operator to set an oracle", async () => {
+        await oracleWrapper.transferOwnership(signers[1].address)
+        await oracleWrapper.connect(signers[1]).setOracle(testOracle.address)
+
         expect(await oracleWrapper.oracle()).to.eq(testOracle.address)
     })
-    it("should return the current price for the requested market", async () => {
-        expect((await oracleWrapper.getPrice()).gte(0)).to.eq(true)
+    it("should prevent unauthorized operators from setting an oracle", async () => {
+        await expect(
+            oracleWrapper.connect(signers[2]).setOracle(testOracle.address)
+        ).to.be.rejectedWith(Error)
+    })
+    it("should prevent setting an oracle to the null address", async () => {
+        await expect(
+            oracleWrapper.setOracle(ethers.constants.AddressZero)
+        ).to.be.rejectedWith(Error)
     })
 })

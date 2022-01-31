@@ -22,7 +22,7 @@ These are the current contracts that are being used on Arbitrum One.
 | `LeveragedPool` | 1p BTC/USD | [0x146808f54DB24Be2902CA9f595AD8f27f56B2E76](https://arbiscan.io/address/0x146808f54DB24Be2902CA9f595AD8f27f56B2E76) |
 | `PoolCommitter` | 1p BTC/USD | [0x539Bf88D729B65F8eC25896cFc7a5f44bbf1816b](https://arbiscan.io/address/0x539Bf88D729B65F8eC25896cFc7a5f44bbf1816b) |
 | `LeveragedPool` | 3p ETH/USD | [0x54114e9e1eEf979070091186D7102805819e916B](https://arbiscan.io/address/0x54114e9e1eEf979070091186D7102805819e916B) |
-| `PoolCommitter` | 3p ETH/USD | [0x759E817F0C40B11C775d1071d466B5ff5c6ce28e](https://arbiscan.io/address/0x759E817F0C40B11C775d1071d466B5ff5c6ce28e) |
+| `PoolCommitter` | 3p ETH/USD | [0x72c4e7Aa6c743DA4e690Fa7FA66904BC3f2C9C04](https://arbiscan.io/address/0x72c4e7Aa6c743DA4e690Fa7FA66904BC3f2C9C04) |
 | `LeveragedPool` | 1p ETH/USD | [0x3A52aD74006D927e3471746D4EAC73c9366974Ee](https://arbiscan.io/address/0x3A52aD74006D927e3471746D4EAC73c9366974Ee) |
 | `PoolCommitter` | 1p ETH/USD | [0x047Cd47925C2390ce26dDeB302b8b165d246d450](https://arbiscan.io/address/0x047Cd47925C2390ce26dDeB302b8b165d246d450) |
 
