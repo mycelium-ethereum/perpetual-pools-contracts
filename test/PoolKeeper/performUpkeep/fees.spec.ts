@@ -5,18 +5,26 @@ import {
     createCommit,
     deployPoolAndTokenContracts,
     deployPoolSetupContracts,
+    generateRandomAddress,
     timeout,
 } from "../../utilities"
 
-import { DEFAULT_MINT_AMOUNT, POOL_CODE } from "../../constants"
+import {
+    DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
+    DEFAULT_MINT_AMOUNT,
+    DEFAULT_MIN_COMMIT_SIZE,
+    POOL_CODE,
+} from "../../constants"
 import {
     PoolKeeper,
     ChainlinkOracleWrapper,
     TestToken,
     TestChainlinkOracle,
     PoolCommitter,
+    LeveragedPool,
 } from "../../../types"
 import { BigNumber } from "ethers"
+import { Result } from "ethers/lib/utils"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 
 chai.use(chaiAsPromised)
@@ -27,13 +35,15 @@ let derivativeOracleWrapper: ChainlinkOracleWrapper
 let poolKeeper: PoolKeeper
 let pool: any
 let poolCommitter: PoolCommitter
+let pool2: any
 let POOL1_ADDR: string
+let POOL2_ADDR: string
 let signers: SignerWithAddress[]
 let token: TestToken
 
 const updateInterval = 10
 const frontRunningInterval = 1
-const fee = ethers.utils.parseEther("0.05")
+const fee = ethers.utils.parseEther("0.5")
 const mintAmount = DEFAULT_MINT_AMOUNT
 
 const setupHook = async () => {
@@ -44,6 +54,8 @@ const setupHook = async () => {
         frontRunningInterval,
         updateInterval,
         1,
+        DEFAULT_MIN_COMMIT_SIZE,
+        DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
         signers[0].address,
         fee
     )
@@ -70,7 +82,9 @@ interface Upkeep {
     roundStart: number
 }
 describe("Leveraged pool fees", () => {
-    it("Should revert if fee above 10%", async () => {
+    it("Should revert if fee above 100%", async () => {
+        let lastTime: BigNumber
+
         const setupContracts = await deployPoolSetupContracts()
 
         // deploy the pool using the factory, not separately
@@ -82,12 +96,14 @@ describe("Leveraged pool fees", () => {
             quoteToken: setupContracts.token.address,
             oracleWrapper: setupContracts.oracleWrapper.address,
             settlementEthOracle: setupContracts.settlementEthOracle.address,
-            invariantCheckContract: setupContracts.invariantCheck.address,
+            minimumCommitSize: 120,
+            maximumCommitQueueLength: 1000,
         }
 
+        await setupContracts.factory.setFee(ethers.utils.parseEther("100"))
         await expect(
-            setupContracts.factory.setFee(ethers.utils.parseEther("100"))
-        ).to.be.revertedWith("Fee cannot be > 10%")
+            setupContracts.factory.deployPool(deployParams)
+        ).to.be.revertedWith("Fee >= 100%")
     })
 
     describe("Fees on price change", () => {

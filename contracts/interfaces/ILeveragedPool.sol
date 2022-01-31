@@ -12,16 +12,13 @@ interface ILeveragedPool {
         address _longToken; // Address of the long pool token
         address _shortToken; // Address of the short pool token
         address _poolCommitter; // Address of the PoolCommitter contract
-        address _invariantCheckContract; // Address of the PoolCommitter contract
         string _poolName; // The pool identification name
         uint32 _frontRunningInterval; // The minimum number of seconds that must elapse before a commit is forced to wait until the next interval
         uint32 _updateInterval; // The minimum number of seconds that must elapse before a commit can be executed
+        uint256 _fee; // The fund movement fee. This amount is extracted from the deposited asset with every update and sent to the fee address
         uint16 _leverageAmount; // The amount of exposure to price movements for the pool
-        uint256 _fee; // The fund movement fee. This amount is extracted from the deposited asset with every update and sent to the fee address. Given as the decimal * 10 ^ 18. For example, 60% fee is 0.6 * 10 ^ 18
         address _feeAddress; // The address that the fund movement fee is sent to
-        address _secondaryFeeAddress; // The address of fee recieved by third party deployers
         address _quoteToken; //  The digital asset that the pool accepts. Must have a decimals() function
-        uint256 _secondaryFeeSplitPercent; // Percent of fees that go to secondary fee address if it exists
     }
 
     // #### Events
@@ -54,13 +51,6 @@ interface ILeveragedPool {
      * @param newAddress Address after change
      */
     event FeeAddressUpdated(address indexed oldAddress, address indexed newAddress);
-
-    /**
-     * @notice Represents change in secondary fee receiver's address
-     * @param oldAddress Previous address
-     * @param newAddress Address after change
-     */
-    event SecondaryFeeAddressUpdated(address indexed oldAddress, address indexed newAddress);
 
     /**
      * @notice Represents change in keeper's address
@@ -126,12 +116,6 @@ interface ILeveragedPool {
 
     function quoteTokenTransfer(address to, uint256 amount) external;
 
-    function poolTokenTransfer(
-        bool isLongToken,
-        address to,
-        uint256 amount
-    ) external;
-
     function setNewPoolBalances(uint256 _longBalance, uint256 _shortBalance) external;
 
     /**
@@ -165,16 +149,14 @@ interface ILeveragedPool {
 
     function updateFeeAddress(address account) external;
 
-    function updateSecondaryFeeAddress(address account) external;
-
     function mintTokens(
-        bool isLongToken,
+        uint256 token,
         uint256 amount,
         address burner
     ) external;
 
     function burnTokens(
-        bool isLongToken,
+        uint256 token,
         uint256 amount,
         address burner
     ) external;

@@ -8,7 +8,12 @@ import {
     PoolCommitter,
 } from "../../../types"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import { DEFAULT_FEE, LONG_MINT, POOL_CODE, SHORT_MINT } from "../../constants"
+import {
+    DEFAULT_FEE,
+    DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
+    DEFAULT_MIN_COMMIT_SIZE,
+    POOL_CODE,
+} from "../../constants"
 import {
     getEventArgs,
     deployPoolAndTokenContracts,
@@ -17,7 +22,6 @@ import {
     createCommit,
     CommitEventArgs,
     timeout,
-    getCurrentTotalCommit,
 } from "../../utilities"
 
 chai.use(chaiAsPromised)
@@ -26,11 +30,11 @@ const { expect } = chai
 const amountCommitted = ethers.utils.parseEther("2000")
 const feeAddress = generateRandomAddress()
 const lastPrice = getRandomInt(99999999, 1)
-const updateInterval = 200
-const frontRunningInterval = 100 // seconds
+const updateInterval = 2
+const frontRunningInterval = 1 // seconds
 const fee = DEFAULT_FEE
 const leverage = 2
-const commitType = LONG_MINT
+const commitType = [2] //long mint;
 
 describe("poolCommitter - executeCommitment: Basic test cases", () => {
     let token: TestToken
@@ -41,13 +45,13 @@ describe("poolCommitter - executeCommitment: Basic test cases", () => {
 
     context("When committing during the frontRunningInterval", () => {
         it("Does not execute until the next update interval", async () => {
-            const _updateInterval = 250
-            const _frontRunningInterval = 100
             const elements = await deployPoolAndTokenContracts(
                 POOL_CODE,
-                _frontRunningInterval,
-                _updateInterval,
+                100,
+                250,
                 leverage,
+                DEFAULT_MIN_COMMIT_SIZE,
+                DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
                 feeAddress,
                 fee
             )
@@ -59,12 +63,13 @@ describe("poolCommitter - executeCommitment: Basic test cases", () => {
             await token.approve(pool.address, ethers.constants.MaxUint256)
             await pool.setKeeper(signers[0].address)
             // Wait until somewhere between `frontRunningInterval <-> updateInterval`
-            await timeout((_updateInterval - _frontRunningInterval / 2) * 1000)
-            await committer.commit(SHORT_MINT, amountCommitted, false, false)
+            await timeout(175 * 1000)
+            await committer.commitIDCounter()
+            await committer.commit([0], amountCommitted)
 
             const shortTokensSupplyBefore = await shortToken.totalSupply()
             // Now wait for updateInterval to pass
-            await timeout(_updateInterval * 1000)
+            await timeout(76 * 1000)
             await pool.poolUpkeep(lastPrice, lastPrice)
             const shortTokensSupplyAfter = await shortToken.totalSupply()
             expect(shortTokensSupplyAfter).to.equal(shortTokensSupplyBefore)
@@ -85,6 +90,8 @@ describe("poolCommitter - executeCommitment: Basic test cases", () => {
                 frontRunningInterval,
                 updateInterval,
                 leverage,
+                DEFAULT_MIN_COMMIT_SIZE,
+                DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
                 feeAddress,
                 fee
             )
@@ -96,7 +103,11 @@ describe("poolCommitter - executeCommitment: Basic test cases", () => {
         })
         it("should revert if the commitment is too new", async () => {
             await token.approve(pool.address, amountCommitted)
-            await createCommit(poolCommitter, commitType, amountCommitted)
+            const commit = await createCommit(
+                poolCommitter,
+                commitType,
+                amountCommitted
+            )
             await expect(
                 pool.poolUpkeep(lastPrice, lastPrice)
             ).to.be.rejectedWith(Error)
@@ -117,6 +128,8 @@ describe("poolCommitter - executeCommitment: Basic test cases", () => {
                 frontRunningInterval,
                 updateInterval,
                 leverage,
+                DEFAULT_MIN_COMMIT_SIZE,
+                DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
                 feeAddress,
                 fee
             )
@@ -136,30 +149,34 @@ describe("poolCommitter - executeCommitment: Basic test cases", () => {
         })
 
         it("should remove the commitment after execution", async () => {
-            expect(
-                (await getCurrentTotalCommit(poolCommitter)).longMintAmount
-            ).to.eq(amountCommitted)
-            await timeout(updateInterval * 1000)
+            expect((await poolCommitter.commits(commit.commitID)).amount).to.eq(
+                amountCommitted
+            )
+            await timeout(2000)
             await pool.poolUpkeep(9, 10)
-            expect(
-                (await getCurrentTotalCommit(poolCommitter)).longMintAmount
-            ).to.eq(0)
+            expect((await poolCommitter.commits(commit.commitID)).amount).to.eq(
+                0
+            )
         })
 
         // TODO this can not get the ExecuteCommit event because it happens internally (not at top level)
         // Not sure how to account for this/test it
-        it("should emit an event for commitment removal", async () => {
-            await timeout(updateInterval * 1000)
+        it.skip("should emit an event for commitment removal", async () => {
+            await timeout(2000)
             const receipt = await (await pool.poolUpkeep(9, 10)).wait()
             expect(getEventArgs(receipt, "ExecuteCommit")?.commitID).to.eq(
                 commit.commitID
             )
         })
         it("should not allow anyone to execute a commitment", async () => {
-            await timeout(updateInterval * 1000)
+            await timeout(2000)
             await expect(
                 pool.connect(signers[1]).poolUpkeep(9, 10)
             ).to.be.revertedWith("msg.sender not keeper")
+            // Doesn't delete commit
+            expect((await poolCommitter.commits(commit.commitID)).amount).to.eq(
+                amountCommitted
+            )
         })
     })
 })

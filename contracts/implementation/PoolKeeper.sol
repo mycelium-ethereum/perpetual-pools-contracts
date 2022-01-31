@@ -4,13 +4,16 @@ pragma solidity 0.8.7;
 import "../interfaces/IPoolKeeper.sol";
 import "../interfaces/IOracleWrapper.sol";
 import "../interfaces/IPoolFactory.sol";
-import "../implementation/PriceObserver.sol";
 import "../interfaces/ILeveragedPool.sol";
+import "../interfaces/IERC20DecimalsWrapper.sol";
 import "../interfaces/IERC20DecimalsWrapper.sol";
 import "./PoolSwapLibrary.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/proxy/Clones.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "abdk-libraries-solidity/ABDKMathQuad.sol";
+import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV2V3Interface.sol";
 
 /// @title The manager contract for multiple markets and the pools in them
 contract PoolKeeper is IPoolKeeper, Ownable {
@@ -19,7 +22,6 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     uint256 public constant TIP_DELTA_PER_BLOCK = 5; // 5% increase per block
     uint256 public constant BLOCK_TIME = 13; /* in seconds */
     uint256 public constant MAX_DECIMALS = 18;
-    uint256 public constant MAX_TIP = 100; /* maximum keeper tip */
 
     // #### Global variables
     /**
@@ -41,7 +43,6 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     /**
      * @notice When a pool is created, this function is called by the factory to initiate price trackings
      * @param _poolAddress The address of the newly-created pools
-     * @dev Only callable by the associated `PoolFactory` contract
      */
     function newPool(address _poolAddress) external override onlyFactory {
         address oracleWrapper = ILeveragedPool(_poolAddress).oracleWrapper();
@@ -52,10 +53,11 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         executionPrice[_poolAddress] = startingPrice;
     }
 
+    // Keeper network
     /**
      * @notice Check if upkeep is required
      * @param _pool The address of the pool to upkeep
-     * @return Whether or not upkeep is needed for this single pool
+     * @return upkeepNeeded Whether or not upkeep is needed for this single pool
      */
     function checkUpkeepSinglePool(address _pool) public view override returns (bool) {
         if (!factory.isValidPool(_pool)) {
@@ -68,13 +70,11 @@ contract PoolKeeper is IPoolKeeper, Ownable {
 
     /**
      * @notice Checks multiple pools if any of them need updating
-     * @param _pools Array of pools to check
-     * @return Whether or not at least one pool needs upkeeping
-     * @dev Iterates over the provided array of pool addresses
+     * @param _pools The array of pools to check
+     * @return upkeepNeeded Whether or not at least one pool needs upkeeping
      */
     function checkUpkeepMultiplePools(address[] calldata _pools) external view override returns (bool) {
-        uint256 poolsLength = _pools.length;
-        for (uint256 i = 0; i < poolsLength; i++) {
+        for (uint256 i = 0; i < _pools.length; i++) {
             if (checkUpkeepSinglePool(_pools[i])) {
                 // One has been found that requires upkeeping
                 return true;
@@ -85,11 +85,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
 
     /**
      * @notice Called by keepers to perform an update on a single pool
-     * @param _pool Address of the pool to be upkept
-     * @dev Induces an update of the associated `PriceObserver` contract
-     * @dev Tracks gas usage via `gasleft` accounting and uses this to inform
-     *          keeper payment
-     * @dev Catches any failure of the underlying `pool.poolUpkeep` call
+     * @param _pool The pool code to perform the update for
      */
     function performUpkeepSinglePool(address _pool) public override {
         uint256 startGas = gasleft();
@@ -98,13 +94,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         if (!checkUpkeepSinglePool(_pool)) {
             return;
         }
-
         ILeveragedPool pool = ILeveragedPool(_pool);
-
-        /* update SMA oracle, does nothing for spot oracles */
-        IOracleWrapper poolOracleWrapper = IOracleWrapper(pool.oracleWrapper());
-        poolOracleWrapper.poll();
-
         (int256 latestPrice, bytes memory data, uint256 savedPreviousUpdatedTimestamp, uint256 updateInterval) = pool
             .getUpkeepInformation();
 
@@ -129,13 +119,10 @@ contract PoolKeeper is IPoolKeeper, Ownable {
 
     /**
      * @notice Called by keepers to perform an update on multiple pools
-     * @param pools Addresses of each pool to upkeep
-     * @dev Iterates over the provided array
-     * @dev Essentially wraps calls to `performUpkeepSinglePool`
+     * @param pools pool codes to perform the update for
      */
     function performUpkeepMultiplePools(address[] calldata pools) external override {
-        uint256 poolsLength = pools.length;
-        for (uint256 i = 0; i < poolsLength; i++) {
+        for (uint256 i = 0; i < pools.length; i++) {
             performUpkeepSinglePool(pools[i]);
         }
     }
@@ -143,12 +130,10 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     /**
      * @notice Pay keeper for upkeep
      * @param _pool Address of the given pool
-     * @param _gasPrice Price of a single gas unit (in ETH (wei))
+     * @param _gasPrice Price of a single gas unit (in ETH)
      * @param _gasSpent Number of gas units spent
      * @param _savedPreviousUpdatedTimestamp Last timestamp when the pool's price execution happened
      * @param _updateInterval Pool interval of the given pool
-     * @dev Emits a `KeeperPaid` event if the underlying call to `pool.payKeeperFromBalances` succeeds
-     * @dev Emits a `KeeperPaymentError` event otherwise
      */
     function payKeeper(
         address _pool,
@@ -169,7 +154,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     /**
      * @notice Payment keeper receives for performing upkeep on a given pool
      * @param _pool Address of the given pool
-     * @param _gasPrice Price of a single gas unit (in ETH (wei))
+     * @param _gasPrice Price of a single gas unit (in ETH)
      * @param _gasSpent Number of gas units spent
      * @param _savedPreviousUpdatedTimestamp Last timestamp when the pool's price execution happened
      * @param _poolInterval Pool interval of the given pool
@@ -182,28 +167,6 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         uint256 _savedPreviousUpdatedTimestamp,
         uint256 _poolInterval
     ) public view returns (uint256) {
-        /**
-         * Conceptually, we have
-         *
-         * Reward = Gas + Tip = Gas + (Base + Premium * Blocks)
-         *
-         * Very roughly to scale:
-         *
-         * +---------------------------+------+---+---+~~~~~
-         * | GGGGGGGGGGGGGGGGGGGGGGGGG | BBBB | P | P | ...
-         * +---------------------------+------+---+---+~~~~~
-         *
-         * Under normal circumstances, we don't expect there to be any time
-         * premium at all. The time premium exists in order to *further*
-         * incentivise upkeep in the event of lateness.
-         *
-         * The base tip exists to act as pure profit for a keeper.
-         *
-         * Of course, the gas component acts as compensation for performing
-         * on-chain computation.
-         *
-         */
-
         // keeper gas cost in wei. WAD formatted
         uint256 _keeperGas = keeperGas(_pool, _gasPrice, _gasSpent);
 
@@ -227,7 +190,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     /**
      * @notice Compensation a keeper will receive for their gas expenditure
      * @param _pool Address of the given pool
-     * @param _gasPrice Price of a single gas unit (in ETH (wei))
+     * @param _gasPrice Price of a single gas unit (in ETH)
      * @param _gasSpent Number of gas units spent
      * @return Keeper's gas compensation
      */
@@ -263,18 +226,13 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         uint256 keeperTip = BASE_TIP + (TIP_DELTA_PER_BLOCK * elapsedBlocksNumerator) / BLOCK_TIME;
 
         // In case of network outages or otherwise, we want to cap the tip so that the keeper cost isn't unbounded
-        if (keeperTip > MAX_TIP) {
-            return MAX_TIP;
+        if (keeperTip > 100) {
+            return 100;
         } else {
             return keeperTip;
         }
     }
 
-    /**
-     * @notice Sets the address of the associated `PoolFactory` contract
-     * @param _factory Address of the `PoolFactory` contract
-     * @dev Only callable by the owner
-     */
     function setFactory(address _factory) external override onlyOwner {
         factory = IPoolFactory(_factory);
     }
@@ -282,16 +240,12 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     /**
      * @notice Sets the gas price to be used in compensating keepers for successful upkeep
      * @param _price Price (in ETH) per unit gas
-     * @dev Only callable by the owner
-     * @dev This function is only necessary due to the L2 deployment of Pools -- in reality, it should be `BASEFEE`
+     * @dev Only owner
      */
     function setGasPrice(uint256 _price) external onlyOwner {
         gasPrice = _price;
     }
 
-    /**
-     * @notice Ensures that the caller is the associated `PoolFactory` contract
-     */
     modifier onlyFactory() {
         require(msg.sender == address(factory), "Caller not factory");
         _;
