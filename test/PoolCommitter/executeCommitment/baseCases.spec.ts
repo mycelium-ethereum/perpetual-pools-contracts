@@ -60,7 +60,7 @@ describe("poolCommitter - executeCommitment: Basic test cases", () => {
             await pool.setKeeper(signers[0].address)
             // Wait until somewhere between `frontRunningInterval <-> updateInterval`
             await timeout((_updateInterval - _frontRunningInterval / 2) * 1000)
-            await committer.commit(SHORT_MINT, amountCommitted, false)
+            await committer.commit(SHORT_MINT, amountCommitted, false, false)
 
             const shortTokensSupplyBefore = await shortToken.totalSupply()
             // Now wait for updateInterval to pass

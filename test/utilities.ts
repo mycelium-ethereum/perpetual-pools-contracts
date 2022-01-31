@@ -25,8 +25,6 @@ import {
     PoolSwapLibrary,
     PoolSwapLibrary__factory,
     TestChainlinkOracle__factory,
-    PriceObserver__factory,
-    PriceObserver,
     PoolKeeper,
     PoolFactory__factory,
     PoolKeeper__factory,
@@ -34,12 +32,14 @@ import {
     PoolCommitter,
     TestChainlinkOracle,
     ChainlinkOracleWrapper,
+    AutoClaim__factory,
     InvariantCheck__factory,
     InvariantCheck,
     PoolFactoryBalanceDrainMock__factory,
     LeveragedPoolBalanceDrainMock,
     PoolFactoryBalanceDrainMock,
     PoolCommitter__factory,
+    AutoClaim,
 } from "../types"
 
 import { abi as ERC20Abi } from "../artifacts/@openzeppelin/contracts/token/ERC20/ERC20.sol/ERC20.json"
@@ -180,24 +180,21 @@ export const deployPoolSetupContracts = async () => {
 
     const invariantCheck = await invariantCheckFactory.deploy(factory.address)
 
-    /* deploy price observer contract */
-    const priceObserverFactory = (await ethers.getContractFactory(
-        "PriceObserver",
-        signers[0]
-    )) as PriceObserver__factory
-    const priceObserver: PriceObserver = await priceObserverFactory.deploy()
-    await priceObserver.deployed()
-    await priceObserver.setWriter(oracleWrapper.address)
-
     const poolKeeperFactory = (await ethers.getContractFactory("PoolKeeper", {
         signer: signers[0],
         libraries: { PoolSwapLibrary: library.address },
     })) as PoolKeeper__factory
     let poolKeeper = await poolKeeperFactory.deploy(factory.address)
     poolKeeper = await poolKeeper.deployed()
-    await poolKeeper.setPriceObserver(priceObserver.address)
     await factory.setPoolKeeper(poolKeeper.address)
     await factory.setFee(DEFAULT_FEE)
+
+    const autoClaimFactory = (await ethers.getContractFactory("AutoClaim", {
+        signer: signers[0],
+    })) as AutoClaim__factory
+    let autoClaim = await autoClaimFactory.deploy(factory.address)
+    autoClaim = await autoClaim.deployed()
+    await factory.setAutoClaim(autoClaim.address)
 
     return {
         factory,
@@ -207,8 +204,8 @@ export const deployPoolSetupContracts = async () => {
         settlementEthOracle,
         token,
         library,
-        priceObserver,
         invariantCheck,
+        autoClaim,
     }
 }
 
@@ -247,7 +244,7 @@ export const deployPoolAndTokenContracts = async (
     oracleWrapper: ChainlinkOracleWrapper
     settlementEthOracle: ChainlinkOracleWrapper
     invariantCheck: InvariantCheck
-    priceObserver: PriceObserver
+    autoClaim: AutoClaim
 }> => {
     const setupContracts = await deployPoolSetupContracts()
 
@@ -300,6 +297,7 @@ export const deployPoolAndTokenContracts = async (
     const oracleWrapper = setupContracts.oracleWrapper
     const settlementEthOracle = setupContracts.settlementEthOracle
     const invariantCheck = setupContracts.invariantCheck
+    const autoClaim = setupContracts.autoClaim
 
     return {
         signers,
@@ -319,6 +317,7 @@ export const deployPoolAndTokenContracts = async (
         oracleWrapper,
         settlementEthOracle,
         invariantCheck,
+        autoClaim,
     }
 }
 
@@ -355,6 +354,7 @@ export const deployMockPool = async (
     oracleWrapper: ChainlinkOracleWrapper
     settlementEthOracle: ChainlinkOracleWrapper
     invariantCheck: InvariantCheck
+    autoClaim: AutoClaim
 }> => {
     const amountMinted = DEFAULT_MINT_AMOUNT
 
@@ -426,6 +426,13 @@ export const deployMockPool = async (
         await PoolFactory.deploy(generateRandomAddress())
     ).deployed()
 
+    const autoClaimFactory = (await ethers.getContractFactory("AutoClaim", {
+        signer: signers[0],
+    })) as AutoClaim__factory
+    let autoClaim = await autoClaimFactory.deploy(factory.address)
+    autoClaim = await autoClaim.deployed()
+    await factory.setAutoClaim(autoClaim.address)
+
     const invariantCheckFactory = (await ethers.getContractFactory(
         "InvariantCheck",
         signers[0]
@@ -475,18 +482,6 @@ export const deployMockPool = async (
     let commiter = await pool.poolCommitter()
     const poolCommitter = await ethers.getContractAt("PoolCommitter", commiter)
 
-    /* deploy price observer contract */
-    const priceObserverFactory = (await ethers.getContractFactory(
-        "PriceObserver",
-        signers[0]
-    )) as PriceObserver__factory
-    const priceObserver: PriceObserver = await priceObserverFactory.deploy()
-    await priceObserver.deployed()
-    await priceObserver.setWriter(oracleWrapper.address)
-
-    /* inform PoolKeeper of our newly-deployed PriceObserver */
-    await poolKeeper.setPriceObserver(priceObserver.address)
-
     return {
         signers,
         //@ts-ignore
@@ -505,7 +500,7 @@ export const deployMockPool = async (
         oracleWrapper,
         settlementEthOracle,
         invariantCheck,
-        priceObserver,
+        autoClaim,
     }
 }
 
@@ -524,16 +519,26 @@ export const createCommit = async (
     poolCommitter: PoolCommitter,
     commitType: BigNumberish,
     amount: BigNumberish,
-    fromAggregateBalance?: boolean
+    fromAggregateBalance?: boolean,
+    payForClaim?: boolean,
+    rewardAmount?: BigNumberish
 ): Promise<any> /*Promise<CommitEventArgs>*/ => {
     const fromAggBal = fromAggregateBalance ? fromAggregateBalance : false
+    const isPayingForClaim = payForClaim ? payForClaim : false
     const receipt = await (
-        await poolCommitter.commit(commitType, amount, fromAggBal)
+        await poolCommitter.commit(
+            commitType,
+            amount,
+            fromAggBal,
+            isPayingForClaim,
+            { value: rewardAmount }
+        )
     ).wait()
     return {
         commitID: getEventArgs(receipt, "CreateCommit")?.commitID,
         amount: getEventArgs(receipt, "CreateCommit")?.amount,
         commitType: getEventArgs(receipt, "CreateCommit")?.commitType,
+        receipt: receipt,
     }
 }
 

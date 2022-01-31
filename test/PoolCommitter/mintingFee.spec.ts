@@ -66,7 +66,12 @@ describe("PoolCommitter - Mint commit with mint fee", () => {
             shortToken = result.shortToken
             await token.approve(pool.address, amountCommitted)
             receipt = await (
-                await poolCommitter.commit(SHORT_MINT, amountCommitted, false)
+                await poolCommitter.commit(
+                    SHORT_MINT,
+                    amountCommitted,
+                    false,
+                    false
+                )
             ).wait()
         })
         it("transfers all tokens to the pool", async () => {
@@ -130,7 +135,12 @@ describe("PoolCommitter - Mint commit with mint fee", () => {
             longToken = result.longToken
             await token.approve(pool.address, amountCommitted)
             receipt = await (
-                await poolCommitter.commit(LONG_MINT, amountCommitted, false)
+                await poolCommitter.commit(
+                    LONG_MINT,
+                    amountCommitted,
+                    false,
+                    false
+                )
             ).wait()
         })
         it("transfers all tokens to the pool", async () => {

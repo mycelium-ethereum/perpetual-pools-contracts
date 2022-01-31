@@ -76,10 +76,20 @@ describe("PoolCommitter - Burn commit with burn fee", () => {
             shortToken = result.shortToken
             await poolKeeper.setGasPrice("0")
             await token.approve(pool.address, amountCommitted)
-            await await poolCommitter.commit(SHORT_MINT, amountCommitted, false)
+            await await poolCommitter.commit(
+                SHORT_MINT,
+                amountCommitted,
+                false,
+                false
+            )
             await timeout(updateInterval * 1000)
             await poolKeeper.performUpkeepSinglePool(pool.address)
-            await await poolCommitter.commit(SHORT_BURN, amountCommitted, true)
+            await await poolCommitter.commit(
+                SHORT_BURN,
+                amountCommitted,
+                true,
+                false
+            )
         })
         it("burns all pool tokens", async () => {
             expect(await shortToken.totalSupply()).to.equal(0)
@@ -150,10 +160,20 @@ describe("PoolCommitter - Burn commit with burn fee", () => {
             longToken = result.longToken
             await poolKeeper.setGasPrice("0")
             await token.approve(pool.address, amountCommitted)
-            await await poolCommitter.commit(LONG_MINT, amountCommitted, false)
+            await await poolCommitter.commit(
+                LONG_MINT,
+                amountCommitted,
+                false,
+                false
+            )
             await timeout(updateInterval * 1000)
             await poolKeeper.performUpkeepSinglePool(pool.address)
-            await await poolCommitter.commit(LONG_BURN, amountCommitted, true)
+            await await poolCommitter.commit(
+                LONG_BURN,
+                amountCommitted,
+                true,
+                false
+            )
         })
         it("burns all pool tokens", async () => {
             expect(await longToken.totalSupply()).to.equal(0)
