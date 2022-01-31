@@ -313,16 +313,17 @@ contract PoolCommitter is IPoolCommitter, Initializable {
      */
     function claim(address user) external override checkInvariantsAfterFunction onlyAutoClaimOrCommitter(user) {
         updateAggregateBalance(user);
-        if (msg.sender == user && autoClaim.checkUserClaim(user, address(this))) {
-            // If the committer is claiming for themself and they have a valid pending claim, clear it.
-            autoClaim.withdrawUserClaimRequest(user);
-        }
         Balance memory balance = userAggregateBalance[user];
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
 
         /* update bookkeeping *before* external calls! */
         delete userAggregateBalance[user];
         emit Claim(user);
+
+        if (msg.sender == user && autoClaim.checkUserClaim(user, address(this))) {
+            // If the committer is claiming for themself and they have a valid pending claim, clear it.
+            autoClaim.withdrawUserClaimRequest(user);
+        }
 
         if (balance.settlementTokens > 0) {
             pool.quoteTokenTransfer(user, balance.settlementTokens);
