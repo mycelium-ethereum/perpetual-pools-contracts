@@ -236,7 +236,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
         address from,
         address to,
         uint256 amount
-    ) external override onlyPoolCommitter checkInvariantsBeforeFunction {
+    ) external override onlyPoolCommitter {
         IERC20(quoteToken).safeTransferFrom(from, to, amount);
     }
 
@@ -317,12 +317,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
      * @dev Only callable when the market is *not* paused
      * @dev Emits a `PoolBalancesChanged` event on success
      */
-    function setNewPoolBalances(uint256 _longBalance, uint256 _shortBalance)
-        external
-        override
-        onlyPoolCommitter
-        checkInvariantsBeforeFunction
-    {
+    function setNewPoolBalances(uint256 _longBalance, uint256 _shortBalance) external override onlyPoolCommitter {
         longBalance = _longBalance;
         shortBalance = _shortBalance;
         emit PoolBalancesChanged(_longBalance, _shortBalance);
