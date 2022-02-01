@@ -73,6 +73,9 @@ contract PoolFactory is IPoolFactory, Ownable {
         poolCommitterBaseAddress = address(poolCommitterBase);
 
         feeReceiver = _feeReceiver;
+
+        /* initialise base PoolCommitter template (with dummy values) */
+        poolCommitterBase.initialize(address(this), address(this), address(this), owner(), 0, 0);
     }
 
     /**
