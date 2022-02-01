@@ -11,10 +11,10 @@ import {
 
 import {
     POOL_CODE,
+    NO_COMMITS_REMAINING,
     DEFAULT_FEE,
-    LONG_MINT,
-    LONG_BURN,
-    SHORT_MINT,
+    DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
+    DEFAULT_MIN_COMMIT_SIZE,
 } from "../constants"
 import {
     deployPoolAndTokenContracts,
@@ -23,7 +23,6 @@ import {
     createCommit,
     CommitEventArgs,
     timeout,
-    deployMockPool,
 } from "../utilities"
 import { BigNumber } from "ethers"
 chai.use(chaiAsPromised)
@@ -33,12 +32,12 @@ const amountCommitted = ethers.utils.parseEther("2000")
 const amountMinted = ethers.utils.parseEther("10000")
 const feeAddress = generateRandomAddress()
 const lastPrice = ethers.utils.parseEther(getRandomInt(99999999, 1).toString())
-const updateInterval = 200
-const frontRunningInterval = 100 // seconds
+const updateInterval = 2
+const frontRunningInterval = 1 // seconds
 const fee = DEFAULT_FEE
 const leverage = 1
 
-describe("LeveragedPool - executeAllCommitments", async () => {
+describe("LeveragedPool - executeAllCommitments", () => {
     let poolCommitter: PoolCommitter
     let token: TestToken
     let shortToken: ERC20
@@ -53,6 +52,8 @@ describe("LeveragedPool - executeAllCommitments", async () => {
             frontRunningInterval,
             updateInterval,
             leverage,
+            DEFAULT_MIN_COMMIT_SIZE,
+            DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
             feeAddress,
             fee
         )
@@ -67,31 +68,29 @@ describe("LeveragedPool - executeAllCommitments", async () => {
         await token.approve(pool.address, amountMinted)
 
         // Long mint commit
-        await createCommit(poolCommitter, LONG_MINT, amountCommitted)
+        await createCommit(poolCommitter, [2], amountCommitted)
         // short mint commit
-        await createCommit(poolCommitter, SHORT_MINT, amountCommitted)
+        await createCommit(poolCommitter, [0], amountCommitted)
 
         await shortToken.approve(pool.address, amountMinted)
         await longToken.approve(pool.address, await longToken.totalSupply())
-        await timeout(updateInterval * 1000)
+        await timeout(2000)
         const signers = await ethers.getSigners()
         await pool.setKeeper(signers[0].address)
 
         // No price change so only commits are executed
         await pool.poolUpkeep(lastPrice, lastPrice)
 
-        // await poolCommitter.updateAggregateBalance(signers[0].address)
-        await poolCommitter.claim(signers[0].address)
         // End state: `amountCommitted` worth of Long and short token minted. Price = lastPrice
     })
 
     describe("With one Long Mint and one Long Burn and normal price change", async () => {
         it("Updates state", async () => {
             // Long mint commit
-            await createCommit(poolCommitter, LONG_MINT, amountCommitted)
+            await createCommit(poolCommitter, [2], amountCommitted)
             // Long burn commit
-            await createCommit(poolCommitter, LONG_BURN, amountCommitted.div(2))
-            await timeout(updateInterval * 1000)
+            await createCommit(poolCommitter, [3], amountCommitted.div(2))
+            await timeout(2000)
 
             const shortTokenTotalSupplyBefore = await shortToken.totalSupply()
             const longTokenTotalSupplyBefore = await longToken.totalSupply()
@@ -127,28 +126,10 @@ describe("LeveragedPool - executeAllCommitments", async () => {
                     .sub(longBalanceDecreaseOnBurn)
             )
             expect(shortBalanceAfter).to.equal(shortBalanceBefore.div(2))
-        })
-    })
 
-    describe("paused pools", async () => {
-        it("Paused pools cannot upkeep", async () => {
-            await timeout(updateInterval * 1000)
-            const result = await deployMockPool(
-                POOL_CODE,
-                frontRunningInterval,
-                updateInterval,
-                leverage,
-                feeAddress,
-                fee
-            )
-            await result.pool.setKeeper(result.signers[0].address)
-            await result.token.approve(result.pool.address, 10000)
-            await result.poolCommitter.commit(LONG_MINT, 1000, false, false)
-            await result.pool.drainPool(10)
-            await result.invariantCheck.checkInvariants(result.pool.address)
-            await expect(
-                result.pool.poolUpkeep(lastPrice, lastPrice)
-            ).to.revertedWith("Pool is paused")
+            const earliestCommitUnexecuted =
+                await poolCommitter.earliestCommitUnexecuted()
+            expect(earliestCommitUnexecuted).to.equal(NO_COMMITS_REMAINING)
         })
     })
     /*
@@ -160,6 +141,8 @@ describe("LeveragedPool - executeAllCommitments", async () => {
                 frontRunningInterval,
                 updateInterval,
                 leverage,
+                DEFAULT_MIN_COMMIT_SIZE,
+                DEFAULT_MAX_COMMIT_QUEUE_LENGTH,
                 feeAddress,
                 fee
             )

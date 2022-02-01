@@ -2,31 +2,36 @@
 pragma solidity 0.8.7;
 
 import "../interfaces/IOracleWrapper.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV2V3Interface.sol";
 
 /// @title The oracle management contract for chainlink V3 oracles
-contract ChainlinkOracleWrapper is IOracleWrapper {
+contract ChainlinkOracleWrapper is IOracleWrapper, Ownable {
     // #### Globals
     /**
      * @notice The address of the feed oracle
      */
     address public override oracle;
-    address public immutable override deployer;
     uint256 private constant MAX_DECIMALS = 18;
     int256 public scaler;
 
     // #### Functions
-    constructor(address _oracle, address _deployer) {
+    constructor(address _oracle) {
+        setOracle(_oracle);
+    }
+
+    /**
+     * @notice Sets the address of the underlying oracle and related information
+     * @param _oracle New address
+     */
+    function setOracle(address _oracle) public override onlyOwner {
         require(_oracle != address(0), "Oracle cannot be 0 address");
         oracle = _oracle;
-        deployer = _deployer;
         // reset the scaler for consistency
         uint8 _decimals = AggregatorV2V3Interface(oracle).decimals();
         require(_decimals <= MAX_DECIMALS, "COA: too many decimals");
         // scaler is always <= 10^18 and >= 1 so this cast is safe
-        unchecked {
-            scaler = int256(10**(MAX_DECIMALS - _decimals));
-        }
+        scaler = int256(10**(MAX_DECIMALS - _decimals));
     }
 
     /**
@@ -50,8 +55,13 @@ contract ChainlinkOracleWrapper is IOracleWrapper {
      * @dev An internal function that gets the WAD value price and latest roundID
      */
     function _latestRoundData() internal view returns (int256 _price, uint80 _roundID) {
-        (uint80 roundID, int256 price, , uint256 timeStamp, uint80 answeredInRound) = AggregatorV2V3Interface(oracle)
-            .latestRoundData();
+        (
+            uint80 roundID,
+            int256 price,
+            uint256 startedAt,
+            uint256 timeStamp,
+            uint80 answeredInRound
+        ) = AggregatorV2V3Interface(oracle).latestRoundData();
         require(answeredInRound >= roundID, "COA: Stale answer");
         require(timeStamp != 0, "COA: Round incomplete");
         return (toWad(price), roundID);
@@ -72,10 +82,5 @@ contract ChainlinkOracleWrapper is IOracleWrapper {
      */
     function fromWad(int256 wad) external view override returns (int256) {
         return wad / scaler;
-    }
-
-    function poll() external view override returns (int256) {
-        (int256 _price, ) = _latestRoundData();
-        return _price;
     }
 }
