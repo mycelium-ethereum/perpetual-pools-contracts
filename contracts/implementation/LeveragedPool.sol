@@ -166,10 +166,10 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
     }
 
     /**
-     * @notice Transfer long tokens from pool to user
+     * @notice Transfer pool tokens from pool to user
      * @param isLongToken True if transferring long pool token; False if transferring short pool token
      * @param to Address of account to transfer to
-     * @param amount Amount of quote tokens being transferred
+     * @param amount Amount of pool tokens being transferred
      * @dev Only callable by the associated `PoolCommitter` contract
      * @dev Only callable when the market is *not* paused
      */

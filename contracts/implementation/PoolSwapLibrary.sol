@@ -388,7 +388,7 @@ library PoolSwapLibrary {
      * @notice Calculate the number of settlement tokens to burn, based on a price and an amount of pool tokens
      * @param price Price of a pool token
      * @param amount Amount of pool tokens being used to burn
-     * @return Quantity of settlement tokens to burn
+     * @return Quantity of settlement tokens to return to the user after `amount` pool tokens are burnt.
      * @dev amount * price, where amount is in PoolToken and price is in USD/PoolToken
      * @dev Throws if price is zero
      * @dev `getBurn()`
