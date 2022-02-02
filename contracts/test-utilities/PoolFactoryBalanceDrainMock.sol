@@ -118,6 +118,7 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
 
         bytes32 uniquePoolHash = keccak256(
             abi.encode(
+                deploymentParameters.updateInterval,
                 deploymentParameters.leverageAmount,
                 deploymentParameters.quoteToken,
                 deploymentParameters.oracleWrapper
@@ -206,6 +207,7 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
         uint8 settlementDecimals = IERC20DecimalsWrapper(deploymentParameters.quoteToken).decimals();
         bytes32 uniqueTokenHash = keccak256(
             abi.encode(
+                deploymentParameters.updateInterval,
                 deploymentParameters.leverageAmount,
                 deploymentParameters.quoteToken,
                 deploymentParameters.oracleWrapper,
