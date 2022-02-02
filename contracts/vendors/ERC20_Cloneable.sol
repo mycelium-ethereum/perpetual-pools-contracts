@@ -30,12 +30,17 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
  * functions have been added to mitigate the well-known issues around setting
  * allowances. See {IERC20-approve}.
  */
-contract ERC20_Cloneable is Context, ERC20, Initializable {
+contract ERC20_Cloneable is ERC20, Initializable {
     uint8 _decimals;
     string private _name;
     string private _symbol;
 
     address public owner;
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "msg.sender not owner");
+        _;
+    }
 
     /**
      * @dev Sets the values for {name}, {symbol} and {decimals}.
@@ -80,10 +85,5 @@ contract ERC20_Cloneable is Context, ERC20, Initializable {
     function transferOwnership(address _owner) external onlyOwner {
         require(_owner != address(0), "Owner: setting to 0 address");
         owner = _owner;
-    }
-
-    modifier onlyOwner() {
-        require(msg.sender == owner, "msg.sender not owner");
-        _;
     }
 }

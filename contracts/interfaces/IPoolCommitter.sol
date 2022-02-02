@@ -96,12 +96,20 @@ interface IPoolCommitter {
      */
     event Claim(address indexed user);
 
+    /**
+     * @notice Indicates that both the quote and pool addresses have been modified
+     * @param quote Address of new quote token
+     * @param pool Address of new `LeveragedPool`
+     */
+    event QuoteAndPoolChanged(address indexed quote, address indexed pool);
+
     // #### Functions
 
     function initialize(
         address _factory,
         address _invariantCheckContract,
         address _autoClaim,
+        address _factoryOwner,
         uint256 mintingFee,
         uint256 burningFee
     ) external;

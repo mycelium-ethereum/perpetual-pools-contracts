@@ -19,13 +19,15 @@ contract SMAOracle is IOracleWrapper {
     uint256 public periods;
 
     /// Time of last successful price update
-    uint256 lastUpdate = 0;
+    uint256 public lastUpdate;
 
     /// Duration between price updates
-    uint256 updateInterval = 0;
+    uint256 public updateInterval;
 
     int256 public scaler;
     uint256 public constant MAX_DECIMALS = 18;
+    /// Maximum number of elements storable by the backing array
+    uint256 public constant MAX_NUM_ELEMS = 24;
 
     constructor(
         address _spotOracle,
@@ -41,6 +43,7 @@ contract SMAOracle is IOracleWrapper {
         );
         require(_periods > 0 && _periods <= IPriceObserver(_observer).capacity(), "SMA: Out of bounds");
         require(_spotDecimals <= MAX_DECIMALS, "SMA: Decimal precision too high");
+        require(_updateInterval != 0, "Update interval cannot be 0");
         periods = _periods;
         oracle = _spotOracle;
         observer = _observer;
@@ -116,14 +119,14 @@ contract SMAOracle is IOracleWrapper {
      * @dev It's a true tragedy that we have to stipulate a fixed-length array for `xs`, but alas, Solidity's type system cannot
      *          reason about this at all due to the value's runtime requirement
      */
-    function SMA(int256[24] memory xs, uint256 k) public pure returns (int256) {
+    function SMA(int256[MAX_NUM_ELEMS] memory xs, uint256 k) public pure returns (int256) {
         uint256 n = xs.length;
 
         /* bounds check */
         require(k > 0 && k <= n && k <= uint256(type(int256).max), "SMA: Out of bounds");
 
         /* running total */
-        int256 S = 0;
+        int256 S;
 
         /* linear scan over the [n - k, n] subsequence */
         for (uint256 i = n - k; i < n; i++) {
@@ -140,18 +143,9 @@ contract SMAOracle is IOracleWrapper {
      *          the metadata as implementation-defined. For the SMA oracle, there
      *          is no clear use case for additional data, so it's left blank
      */
-    function getPriceAndMetadata() external view override returns (int256 _price, bytes memory _data) {
-        _price = SMA(IPriceObserver(observer).getAll(), periods);
-        _data = "";
-    }
-
-    /**
-     * @notice Retrieves the timestamp of the most recent price update
-     * @return Timestamp of the most recent price update
-     * @dev `lastUpdate`
-     *
-     */
-    function getLastUpdate() public view returns (uint256) {
-        return lastUpdate;
+    function getPriceAndMetadata() external view override returns (int256, bytes memory) {
+        int256 _price = SMA(IPriceObserver(observer).getAll(), periods);
+        bytes memory _data;
+        return (_price, _data);
     }
 }

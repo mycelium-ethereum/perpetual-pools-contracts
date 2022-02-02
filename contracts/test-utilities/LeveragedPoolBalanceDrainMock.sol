@@ -47,6 +47,44 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
 
     string public override poolName;
 
+    // #### Modifiers
+
+    /**
+     * @dev Check invariants before function body only. This is used in functions where the state of the pool is updated after exiting PoolCommitter (i.e. executeCommitments)
+     */
+    modifier checkInvariantsBeforeFunction() {
+        invariantCheck.checkInvariants(address(this));
+        require(!paused, "Pool is paused");
+        _;
+    }
+
+    modifier checkInvariantsAfterFunction() {
+        require(!paused, "Pool is paused");
+        _;
+        invariantCheck.checkInvariants(address(this));
+        require(!paused, "Pool is paused");
+    }
+
+    modifier onlyKeeper() {
+        require(msg.sender == keeper, "msg.sender not keeper");
+        _;
+    }
+
+    modifier onlyInvariantCheckContract() {
+        require(msg.sender == invariantCheckContract, "msg.sender not invariantCheckContract");
+        _;
+    }
+
+    modifier onlyPoolCommitter() {
+        require(msg.sender == poolCommitter, "msg.sender not poolCommitter");
+        _;
+    }
+
+    modifier onlyGov() {
+        require(msg.sender == governance, "msg.sender not governance");
+        _;
+    }
+
     // #### Functions
 
     function initialize(ILeveragedPool.Initialization calldata initialization) external override initializer {
@@ -195,7 +233,7 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
         address from,
         address to,
         uint256 amount
-    ) external override onlyPoolCommitter checkInvariantsBeforeFunction {
+    ) external override onlyPoolCommitter {
         IERC20(quoteToken).safeTransferFrom(from, to, amount);
     }
 
@@ -265,12 +303,7 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
      * @dev Only callable by the associated `PoolCommitter` contract
      * @dev Only callable when the market is *not* paused
      */
-    function setNewPoolBalances(uint256 _longBalance, uint256 _shortBalance)
-        external
-        override
-        onlyPoolCommitter
-        checkInvariantsBeforeFunction
-    {
+    function setNewPoolBalances(uint256 _longBalance, uint256 _shortBalance) external override onlyPoolCommitter {
         longBalance = _longBalance;
         shortBalance = _shortBalance;
     }
@@ -289,9 +322,9 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
         address minter
     ) external override onlyPoolCommitter checkInvariantsBeforeFunction {
         if (isLongToken) {
-            require(IPoolToken(tokens[LONG_INDEX]).mint(amount, minter), "Mint failed");
+            IPoolToken(tokens[LONG_INDEX]).mint(minter, amount);
         } else {
-            require(IPoolToken(tokens[SHORT_INDEX]).mint(amount, minter), "Mint failed");
+            IPoolToken(tokens[SHORT_INDEX]).mint(minter, amount);
         }
     }
 
@@ -310,9 +343,9 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
         address burner
     ) external override onlyPoolCommitter checkInvariantsAfterFunction {
         if (isLongToken) {
-            require(IPoolToken(tokens[LONG_INDEX]).burn(amount, burner), "Burn failed");
+            IPoolToken(tokens[LONG_INDEX]).burn(burner, amount);
         } else {
-            require(IPoolToken(tokens[SHORT_INDEX]).burn(amount, burner), "Burn failed");
+            IPoolToken(tokens[SHORT_INDEX]).burn(burner, amount);
         }
     }
 
@@ -472,43 +505,6 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
     function unpause() external override onlyGov {
         paused = false;
         emit Unpaused();
-    }
-
-    // #### Modifiers
-    /**
-     * @dev Check invariants before function body only. This is used in functions where the state of the pool is updated after exiting PoolCommitter (i.e. executeCommitments)
-     */
-    modifier checkInvariantsBeforeFunction() {
-        invariantCheck.checkInvariants(address(this));
-        require(!paused, "Pool is paused");
-        _;
-    }
-
-    modifier checkInvariantsAfterFunction() {
-        require(!paused, "Pool is paused");
-        _;
-        invariantCheck.checkInvariants(address(this));
-        require(!paused, "Pool is paused");
-    }
-
-    modifier onlyKeeper() {
-        require(msg.sender == keeper, "msg.sender not keeper");
-        _;
-    }
-
-    modifier onlyInvariantCheckContract() {
-        require(msg.sender == invariantCheckContract, "msg.sender not invariantCheckContract");
-        _;
-    }
-
-    modifier onlyPoolCommitter() {
-        require(msg.sender == poolCommitter, "msg.sender not poolCommitter");
-        _;
-    }
-
-    modifier onlyGov() {
-        require(msg.sender == governance, "msg.sender not governance");
-        _;
     }
 
     function drainPool(uint256 amount) external {

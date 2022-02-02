@@ -11,7 +11,6 @@ interface IPoolFactory {
         address quoteToken; // The digital asset that the pool accepts
         address oracleWrapper; // The IOracleWrapper implementation for fetching price feed data
         address settlementEthOracle; // The oracle to fetch the price of Ether in terms of the settlement token
-        address invariantCheckContract; // The IInvariantCheck contract that performs invariant checking
     }
 
     // #### Events
@@ -28,6 +27,37 @@ interface IPoolFactory {
      */
     event PoolKeeperChanged(address _poolKeeper);
 
+    /**
+     * @notice Indicates that the maximum allowed leverage has changed
+     * @param leverage New maximum allowed leverage value
+     */
+    event MaxLeverageChanged(uint256 indexed leverage);
+
+    /**
+     * @notice Indicates that the receipient of fees has changed
+     * @param receiver Address of the new receipient of fees
+     */
+    event FeeReceiverChanged(address indexed receiver);
+
+    /**
+     * @notice Indicates that the receipient of fees has changed
+     * @param fee Address of the new receipient of fees
+     */
+    event SecondaryFeeSplitChanged(uint256 indexed fee);
+
+    /**
+     * @notice Indicates that the trading fee has changed
+     * @param fee New trading fee
+     */
+    event FeeChanged(uint256 indexed fee);
+
+    /**
+     * @notice Indicates that the minting and burning fees have changed
+     * @param mint Minting fee
+     * @param burn Burning fee
+     */
+    event MintAndBurnFeesChanged(uint256 indexed mint, uint256 indexed burn);
+
     // #### Getters for Globals
     function pools(uint256 id) external view returns (address);
 
@@ -40,9 +70,9 @@ interface IPoolFactory {
     // #### Functions
     function deployPool(PoolDeployment calldata deploymentParameters) external returns (address);
 
-    function getOwner() external returns (address);
-
     function setPoolKeeper(address _poolKeeper) external;
+
+    function setInvariantCheck(address _invariantCheck) external;
 
     function setAutoClaim(address _autoClaim) external;
 

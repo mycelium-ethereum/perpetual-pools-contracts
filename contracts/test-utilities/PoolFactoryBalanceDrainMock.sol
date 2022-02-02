@@ -24,6 +24,7 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
     PoolCommitter public poolCommitterBase;
     address public immutable poolCommitterBaseAddress;
 
+    address public invariantCheck;
     address public autoClaim;
 
     // Contract address to receive protocol fees
@@ -39,6 +40,8 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
     // precision to the base pool tokens as we use the Cloneable pattern
     uint8 constant DEFAULT_NUM_DECIMALS = 18;
     uint8 constant MAX_DECIMALS = DEFAULT_NUM_DECIMALS;
+    // Considering leap year thus using 365.2425 days per year
+    uint32 constant DAYS_PER_LEAP_YEAR = 365.2425 days;
     // Default max leverage of 10
     uint16 public maxLeverage = 10;
 
@@ -57,6 +60,14 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
      * @notice Format: PoolCommitter address => validity
      */
     mapping(address => bool) public override isValidPoolCommitter;
+
+    /**
+     * @notice Ensures that the caller is the designated governance address
+     */
+    modifier onlyGov() {
+        require(msg.sender == owner(), "msg.sender not governance");
+        _;
+    }
 
     // #### Functions
     constructor(address _feeReceiver) {
@@ -123,13 +134,7 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
         PoolCommitter poolCommitter = PoolCommitter(
             Clones.cloneDeterministic(poolCommitterBaseAddress, uniquePoolHash)
         );
-        poolCommitter.initialize(
-            address(this),
-            deploymentParameters.invariantCheckContract,
-            autoClaim,
-            mintingFee,
-            burningFee
-        );
+        poolCommitter.initialize(address(this), invariantCheck, autoClaim, owner(), mintingFee, burningFee);
         address poolCommitterAddress = address(poolCommitter);
 
         require(
@@ -157,11 +162,11 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
             _longToken: deployPairToken(_pool, leverage, deploymentParameters, "L-"),
             _shortToken: deployPairToken(_pool, leverage, deploymentParameters, "S-"),
             _poolCommitter: poolCommitterAddress,
-            _invariantCheckContract: deploymentParameters.invariantCheckContract,
+            _invariantCheckContract: invariantCheck,
             _poolName: string(abi.encodePacked(leverage, "-", deploymentParameters.poolName)),
             _frontRunningInterval: deploymentParameters.frontRunningInterval,
             _updateInterval: deploymentParameters.updateInterval,
-            _fee: (fee * deploymentParameters.updateInterval) / (365 days),
+            _fee: (fee * deploymentParameters.updateInterval) / (DAYS_PER_LEAP_YEAR),
             _leverageAmount: deploymentParameters.leverageAmount,
             _feeAddress: feeReceiver,
             _secondaryFeeAddress: msg.sender,
@@ -178,7 +183,9 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
         IPoolCommitter(poolCommitterAddress).setQuoteAndPool(deploymentParameters.quoteToken, _pool);
         poolKeeper.newPool(_pool);
         pools[numPools] = _pool;
-        numPools += 1;
+        unchecked {
+            numPools++;
+        }
         isValidPool[_pool] = true;
         return _pool;
     }
@@ -222,6 +229,17 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
     function setPoolKeeper(address _poolKeeper) external override onlyOwner {
         require(_poolKeeper != address(0), "address cannot be null");
         poolKeeper = IPoolKeeper(_poolKeeper);
+    }
+
+    /**
+     * @notice Sets the address of the associated `InvariantCheck` contract
+     * @param _invariantCheck Address of the `InvariantCheck`
+     * @dev Throws if provided address is null
+     * @dev Only callable by the owner
+     */
+    function setInvariantCheck(address _invariantCheck) external override onlyOwner {
+        require(_invariantCheck != address(0), "address cannot be null");
+        invariantCheck = _invariantCheck;
     }
 
     /**
@@ -291,22 +309,5 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
         require(_burningFee <= 0.1e18, "Fee cannot be > 10%");
         mintingFee = _mintingFee;
         burningFee = _burningFee;
-    }
-
-    /*
-     * @notice Returns the address that owns this contract
-     * @return Address of the owner
-     * @dev Required due to the `IPoolFactory` interface
-     */
-    function getOwner() external view override returns (address) {
-        return owner();
-    }
-
-    /**
-     * @notice Ensures that the caller is the designated governance address
-     */
-    modifier onlyGov() {
-        require(msg.sender == owner(), "msg.sender not governance");
-        _;
     }
 }

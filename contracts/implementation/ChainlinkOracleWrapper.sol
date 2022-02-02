@@ -18,6 +18,7 @@ contract ChainlinkOracleWrapper is IOracleWrapper {
     // #### Functions
     constructor(address _oracle, address _deployer) {
         require(_oracle != address(0), "Oracle cannot be 0 address");
+        require(_deployer != address(0), "Deployer cannot be 0 address");
         oracle = _oracle;
         deployer = _deployer;
         // reset the scaler for consistency
@@ -32,24 +33,25 @@ contract ChainlinkOracleWrapper is IOracleWrapper {
     /**
      * @notice Returns the oracle price in WAD format
      */
-    function getPrice() external view override returns (int256 _price) {
-        (_price, ) = _latestRoundData();
+    function getPrice() external view override returns (int256) {
+        (int256 _price, ) = _latestRoundData();
+        return _price;
     }
 
     /**
      * @return _price The latest round data price
      * @return _data The metadata. Implementations can choose what data to return here. This implementation returns the roundID
      */
-    function getPriceAndMetadata() external view override returns (int256 _price, bytes memory _data) {
+    function getPriceAndMetadata() external view override returns (int256, bytes memory) {
         (int256 price, uint80 roundID) = _latestRoundData();
-        _data = abi.encodePacked(roundID);
+        bytes memory _data = abi.encodePacked(roundID);
         return (price, _data);
     }
 
     /**
      * @dev An internal function that gets the WAD value price and latest roundID
      */
-    function _latestRoundData() internal view returns (int256 _price, uint80 _roundID) {
+    function _latestRoundData() internal view returns (int256, uint80) {
         (uint80 roundID, int256 price, , uint256 timeStamp, uint80 answeredInRound) = AggregatorV2V3Interface(oracle)
             .latestRoundData();
         require(answeredInRound >= roundID, "COA: Stale answer");
@@ -74,11 +76,7 @@ contract ChainlinkOracleWrapper is IOracleWrapper {
         return wad / scaler;
     }
 
-    /**
-     * @notice Returns The latest round data price
-     */
-    function poll() external view override returns (int256) {
-        (int256 _price, ) = _latestRoundData();
-        return _price;
+    function poll() external pure override returns (int256) {
+        return 0;
     }
 }

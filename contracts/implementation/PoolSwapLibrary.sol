@@ -141,7 +141,11 @@ library PoolSwapLibrary {
 
     /**
      * @notice Multiply an integer by a fraction
-     * @return The result as an integer
+     * @notice number * numerator / denominator
+     * @param number The number with which the fraction calculated from `numerator` and `denominator` will be multiplied
+     * @param numerator The numerator of the fraction being multipled with `number`
+     * @param denominator The denominator of the fraction being multipled with `number`
+     * @return The result of multiplying number with numerator/denominator, as an integer
      */
     function mulFraction(
         uint256 number,

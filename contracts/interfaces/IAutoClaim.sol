@@ -30,14 +30,14 @@ interface IAutoClaim {
      * @param poolCommitter The PoolCommitter instance in which the original commit was made
      * @param reward The reward for the auto-claim
      */
-    event PaidRequestExecution(address user, address poolCommitter, uint256 reward);
+    event PaidRequestExecution(address indexed user, address indexed poolCommitter, uint256 indexed reward);
 
     /**
      * @notice Creates a notification when an auto-claim request is withdrawn
      * @param user The user whose request got withdrawn
      * @param poolCommitter The PoolCommitter instance in which the original commit was made
      */
-    event RequestWithdrawn(address user, address poolCommitter);
+    event RequestWithdrawn(address indexed user, address indexed poolCommitter);
 
     struct ClaimRequest {
         uint128 updateIntervalId; // The update interval during which a user requested a claim.
