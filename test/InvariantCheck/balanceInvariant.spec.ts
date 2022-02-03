@@ -125,7 +125,7 @@ describe("InvariantCheck - balanceInvariant", () => {
                 shortToken = result.shortToken
                 longToken = result.longToken
 
-                await token.approve(pool.address, amountMinted)
+                await token.approve(pool.address, amountMinted.mul(10000))
 
                 // Long mint commit
                 await createCommit(poolCommitter, LONG_MINT, amountCommitted)
@@ -147,7 +147,7 @@ describe("InvariantCheck - balanceInvariant", () => {
                 await createCommit(poolCommitter, SHORT_MINT, amountCommitted)
             })
 
-            it.only("Pauses contracts", async () => {
+            it("Pauses contracts", async () => {
                 await pool.drainPool(1)
                 let pendingMintsBefore = await poolCommitter.totalPendingMints()
                 const balanceBefore = await token.balanceOf(pool.address)
