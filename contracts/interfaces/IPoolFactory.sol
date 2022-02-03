@@ -18,7 +18,7 @@ interface IPoolFactory {
     /**
      * @notice Creates a notification when a pool is deployed
      * @param pool Address of the new pool
-     * @param ticker Ticker of the neew pool
+     * @param ticker Ticker of the new pool
      */
     event DeployPool(address indexed pool, address poolCommitter, string ticker);
 
