@@ -102,6 +102,72 @@ describe("InvariantCheck - balanceInvariant", () => {
             ).to.be.revertedWith("Pool is invalid")
         })
     })
+    context(
+        "Pool funds getting drained with large frontrunning interval",
+        async () => {
+            beforeEach(async () => {
+                const largeFrontRunningInterval = updateInterval * 7
+                const result = await deployMockPool(
+                    POOL_CODE,
+                    largeFrontRunningInterval,
+                    updateInterval,
+                    leverage,
+                    feeAddress,
+                    fee
+                )
+                pool = result.pool
+                poolKeeper = result.poolKeeper
+                library = result.library
+                poolCommitter = result.poolCommitter
+                invariantCheck = result.invariantCheck
+
+                token = result.token
+                shortToken = result.shortToken
+                longToken = result.longToken
+
+                await token.approve(pool.address, amountMinted)
+
+                // Long mint commit
+                await createCommit(poolCommitter, LONG_MINT, amountCommitted)
+
+                await timeout(updateInterval * 1000)
+                // short mint commit
+                await createCommit(poolCommitter, SHORT_MINT, amountCommitted)
+                await timeout(updateInterval * 1000)
+                // short mint commit
+                await createCommit(poolCommitter, SHORT_MINT, amountCommitted)
+                await timeout(updateInterval * 1000)
+                // short mint commit
+                await createCommit(poolCommitter, SHORT_MINT, amountCommitted)
+                await timeout(updateInterval * 1000)
+                // short mint commit
+                await createCommit(poolCommitter, SHORT_MINT, amountCommitted)
+                await timeout(updateInterval * 1000)
+                // short mint commit
+                await createCommit(poolCommitter, SHORT_MINT, amountCommitted)
+            })
+
+            it.only("Pauses contracts", async () => {
+                await pool.drainPool(1)
+                let pendingMintsBefore = await poolCommitter.totalPendingMints()
+                const balanceBefore = await token.balanceOf(pool.address)
+
+                // Creating a commit reverts, since pools is drained
+                await expect(
+                    createCommit(poolCommitter, SHORT_MINT, amountCommitted)
+                ).to.be.revertedWith("Pool is paused")
+
+                // Performing upkeep does not work
+                await timeout(updateInterval * 2000)
+                await poolKeeper.performUpkeepSinglePool(pool.address)
+                let pendingMintsAfter = await poolCommitter.totalPendingMints()
+                const balanceAfter = await token.balanceOf(pool.address)
+                expect(pendingMintsBefore).to.equal(pendingMintsAfter)
+                expect(balanceAfter).to.equal(balanceBefore)
+            })
+        }
+    )
+
     context("Pool funds getting drained", async () => {
         beforeEach(async () => {
             const result = await deployMockPool(
@@ -132,11 +198,8 @@ describe("InvariantCheck - balanceInvariant", () => {
 
         it("Pauses contracts", async () => {
             await pool.drainPool(1)
-            let pendingCommits = await poolCommitter.getPendingCommits()
-            let totalMostRecentCommit = pendingCommits[0]
-            const shortMintAmountBefore = totalMostRecentCommit.shortMintAmount
+            let pendingMintsBefore = await poolCommitter.totalPendingMints()
             const balanceBefore = await token.balanceOf(pool.address)
-            const longMintAmountBefore = totalMostRecentCommit.longMintAmount
 
             // Creating a commit reverts, since pools is drained
             await expect(
@@ -146,13 +209,9 @@ describe("InvariantCheck - balanceInvariant", () => {
             // Performing upkeep does not work
             await timeout(updateInterval * 2000)
             await poolKeeper.performUpkeepSinglePool(pool.address)
-            pendingCommits = await poolCommitter.getPendingCommits()
-            totalMostRecentCommit = pendingCommits[0]
-            const shortMintAmountAfter = totalMostRecentCommit.shortMintAmount
+            let pendingMintsAfter = await poolCommitter.totalPendingMints()
             const balanceAfter = await token.balanceOf(pool.address)
-            let longMintAmountAfter = totalMostRecentCommit.longMintAmount
-            expect(shortMintAmountAfter).to.equal(shortMintAmountBefore)
-            expect(longMintAmountAfter).to.equal(longMintAmountBefore)
+            expect(pendingMintsBefore).to.equal(pendingMintsAfter)
             expect(balanceAfter).to.equal(balanceBefore)
         })
         it("Doesn't allow the contracts to get unpaused (Needs governance to unpause)", async () => {

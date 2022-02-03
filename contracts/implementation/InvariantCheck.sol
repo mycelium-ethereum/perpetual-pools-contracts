@@ -35,16 +35,7 @@ contract InvariantCheck is IInvariantCheck {
         require(poolFactory.isValidPool(poolToCheck), "Pool is invalid");
         IPoolCommitter poolCommitter = IPoolCommitter(pool.poolCommitter());
         uint256 poolBalance = IERC20(pool.quoteToken()).balanceOf(poolToCheck);
-        (
-            IPoolCommitter.TotalCommitment memory totalCommitment,
-            IPoolCommitter.TotalCommitment memory nextTotalCommitment
-        ) = poolCommitter.getPendingCommits();
-        uint256 pendingMints;
-        pendingMints =
-            totalCommitment.longMintAmount +
-            totalCommitment.shortMintAmount +
-            nextTotalCommitment.longMintAmount +
-            nextTotalCommitment.shortMintAmount;
+        uint256 pendingMints = poolCommitter.totalPendingMints();
         uint256 longBalance = pool.longBalance();
         uint256 shortBalance = pool.shortBalance();
         if (!balanceInvariant(poolBalance, pendingMints, longBalance, shortBalance)) {
