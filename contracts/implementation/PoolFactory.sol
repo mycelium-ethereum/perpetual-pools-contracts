@@ -296,4 +296,12 @@ contract PoolFactory is IPoolFactory, Ownable {
         burningFee = _burningFee;
         emit MintAndBurnFeesChanged(_mintingFee, _burningFee);
     }
+
+    /**
+     * @notice Override OpenZeppelin's `renounceOwnership` function to prevent it from ever being called.
+     * @notice We have no use-case for ever wanted to renounce ownership
+     */
+    function renounceOwnership() public override onlyOwner {
+        // Do nothing
+    }
 }
