@@ -52,6 +52,17 @@ interface IPoolFactory {
     event FeeChanged(uint256 indexed fee);
 
     /**
+     * @notice Indicates that the InvariantCheck contract has changed
+     * @param invariantCheck New InvariantCheck contract
+     */
+    event InvariantCheckChanged(address indexed invariantCheck);
+    /**
+     * @notice Indicates that the AutoClaim contract has changed
+     * @param autoClaim New AutoClaim contract
+     */
+    event AutoClaimChanged(address indexed autoClaim);
+
+    /**
      * @notice Indicates that the minting and burning fees have changed
      * @param mint Minting fee
      * @param burn Burning fee
