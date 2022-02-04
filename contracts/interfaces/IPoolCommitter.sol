@@ -123,6 +123,8 @@ interface IPoolCommitter {
 
     function updateIntervalId() external view returns (uint128);
 
+    function totalPendingMints() external view returns (uint256);
+
     function claim(address user) external;
 
     function executeCommitments() external;
@@ -134,6 +136,4 @@ interface IPoolCommitter {
     function getAppropriateUpdateIntervalId() external view returns (uint128);
 
     function setQuoteAndPool(address _quoteToken, address _leveragedPool) external;
-
-    function getPendingCommits() external view returns (TotalCommitment memory, TotalCommitment memory);
 }

@@ -226,6 +226,7 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
     function setInvariantCheck(address _invariantCheck) external override onlyGov {
         require(_invariantCheck != address(0), "address cannot be null");
         invariantCheck = _invariantCheck;
+        emit InvariantCheckChanged(_invariantCheck);
     }
 
     /**
@@ -237,6 +238,7 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
     function setAutoClaim(address _autoClaim) external override onlyGov {
         require(_autoClaim != address(0), "address cannot be null");
         autoClaim = _autoClaim;
+        emit AutoClaimChanged(_autoClaim);
     }
 
     /**
