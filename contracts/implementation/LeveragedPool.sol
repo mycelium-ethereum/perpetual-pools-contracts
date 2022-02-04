@@ -21,16 +21,17 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
     // Each balance is the amount of quote tokens in the pair
     uint256 public override shortBalance;
     uint256 public override longBalance;
-    uint32 public override frontRunningInterval;
-    uint32 public override updateInterval;
-    bytes16 public fee;
-    bytes16 public override leverageAmount;
     uint256 public constant LONG_INDEX = 0;
     uint256 public constant SHORT_INDEX = 1;
 
     address public governance;
-    bool public override paused;
+    uint32 public override frontRunningInterval;
+    uint32 public override updateInterval;
+    bytes16 public fee;
+    bytes16 public override leverageAmount;
+
     address public keeper;
+    bool public override paused;
     bool public governanceTransferInProgress;
     address public feeAddress;
     address public secondaryFeeAddress;
