@@ -184,7 +184,10 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
             )) as PoolFactory__factory
 
             const factory = await (
-                await PoolFactory.deploy(generateRandomAddress())
+                await PoolFactory.deploy(
+                    generateRandomAddress(),
+                    signers[0].address
+                )
             ).deployed()
 
             const poolKeeperFactory = (await ethers.getContractFactory(

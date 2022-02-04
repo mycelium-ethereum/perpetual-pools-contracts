@@ -6,6 +6,7 @@ import "../interfaces/IPoolCommitter.sol";
 import "../interfaces/IPoolToken.sol";
 import "../interfaces/IPausable.sol";
 import "../interfaces/IInvariantCheck.sol";
+import "../interfaces/ITwoStepGovernance.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -14,7 +15,7 @@ import "./PoolSwapLibrary.sol";
 import "../interfaces/IOracleWrapper.sol";
 
 /// @title The pool contract itself
-contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
+contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGovernance {
     using SafeERC20 for IERC20;
     // #### Globals
 
@@ -28,10 +29,11 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
     uint256 public constant LONG_INDEX = 0;
     uint256 public constant SHORT_INDEX = 1;
 
-    address public governance;
+    address public override governance;
     bool public override paused;
+    address public override provisionalGovernance;
     address public keeper;
-    bool public governanceTransferInProgress;
+    bool public override governanceTransferInProgress;
     address public feeAddress;
     address public secondaryFeeAddress;
     uint256 public secondaryFeeSplitPercent; // Split to secondary fee address as a percentage.
@@ -39,7 +41,6 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
     address public override poolCommitter;
     address public override oracleWrapper;
     address public override settlementEthOracle;
-    address public provisionalGovernance;
     address public invariantCheckContract;
     IInvariantCheck public invariantCheck;
     address[2] public tokens;

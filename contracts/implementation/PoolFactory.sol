@@ -6,16 +6,16 @@ import "../interfaces/ILeveragedPool.sol";
 import "../interfaces/IPoolCommitter.sol";
 import "../interfaces/IERC20DecimalsWrapper.sol";
 import "../interfaces/IAutoClaim.sol";
+import "../interfaces/ITwoStepGovernance.sol";
 import "./LeveragedPool.sol";
 import "./PoolToken.sol";
 import "./PoolKeeper.sol";
 import "./PoolCommitter.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
 /// @title The pool factory contract
-contract PoolFactory is IPoolFactory, Ownable {
+contract PoolFactory is IPoolFactory, ITwoStepGovernance {
     // #### Globals
     address public immutable pairTokenBaseAddress;
     address public immutable poolBaseAddress;
@@ -25,6 +25,10 @@ contract PoolFactory is IPoolFactory, Ownable {
     address public autoClaim;
     address public invariantCheck;
 
+    // Contract address which has governance permissions
+    address public override governance;
+    bool public override governanceTransferInProgress;
+    address public override provisionalGovernance;
     // Contract address to receive protocol fees
     address public feeReceiver;
     // Default fee, annualised; Fee value as a decimal multiplied by 10^18. For example, 50% is represented as 0.5 * 10^18
@@ -60,9 +64,17 @@ contract PoolFactory is IPoolFactory, Ownable {
      */
     mapping(address => bool) public override isValidPoolCommitter;
 
+    // #### Modifiers
+    modifier onlyGov() {
+        require(msg.sender == governance, "msg.sender not governance");
+        _;
+    }
+
     // #### Functions
-    constructor(address _feeReceiver) {
+    constructor(address _feeReceiver, address _governance) {
         require(_feeReceiver != address(0), "Address cannot be null");
+        require(_governance != address(0), "Address cannot be null");
+        governance = _governance;
 
         // Deploy base contracts
         PoolToken pairTokenBase = new PoolToken(DEFAULT_NUM_DECIMALS);
@@ -75,7 +87,7 @@ contract PoolFactory is IPoolFactory, Ownable {
         feeReceiver = _feeReceiver;
 
         /* initialise base PoolCommitter template (with dummy values) */
-        poolCommitterBase.initialize(address(this), address(this), address(this), owner(), 0, 0);
+        poolCommitterBase.initialize(address(this), address(this), address(this), governance, 0, 0);
     }
 
     /**
@@ -117,7 +129,7 @@ contract PoolFactory is IPoolFactory, Ownable {
         PoolCommitter poolCommitter = PoolCommitter(
             Clones.cloneDeterministic(poolCommitterBaseAddress, uniquePoolHash)
         );
-        poolCommitter.initialize(address(this), invariantCheck, autoClaim, owner(), mintingFee, burningFee);
+        poolCommitter.initialize(address(this), invariantCheck, autoClaim, governance, mintingFee, burningFee);
         address poolCommitterAddress = address(poolCommitter);
         LeveragedPool pool = LeveragedPool(Clones.cloneDeterministic(poolBaseAddress, uniquePoolHash));
         address _pool = address(pool);
@@ -126,7 +138,7 @@ contract PoolFactory is IPoolFactory, Ownable {
         string memory leverage = Strings.toString(deploymentParameters.leverageAmount);
 
         ILeveragedPool.Initialization memory initialization = ILeveragedPool.Initialization({
-            _owner: owner(), // governance is the owner of pools -- if this changes, `onlyGov` breaks
+            _owner: governance, // governance is the owner of pools -- if this changes, `onlyGov` breaks
             _keeper: _poolKeeper,
             _oracleWrapper: deploymentParameters.oracleWrapper,
             _settlementEthOracle: deploymentParameters.settlementEthOracle,
@@ -199,7 +211,7 @@ contract PoolFactory is IPoolFactory, Ownable {
      * @dev Only callable by the owner
      * @dev Emits a `PoolKeeperChanged` event on success
      */
-    function setPoolKeeper(address _poolKeeper) external override onlyOwner {
+    function setPoolKeeper(address _poolKeeper) external override onlyGov {
         require(_poolKeeper != address(0), "address cannot be null");
         poolKeeper = IPoolKeeper(_poolKeeper);
         emit PoolKeeperChanged(_poolKeeper);
@@ -211,7 +223,7 @@ contract PoolFactory is IPoolFactory, Ownable {
      * @dev Throws if provided address is null
      * @dev Only callable by the owner
      */
-    function setInvariantCheck(address _invariantCheck) external override onlyOwner {
+    function setInvariantCheck(address _invariantCheck) external override onlyGov {
         require(_invariantCheck != address(0), "address cannot be null");
         invariantCheck = _invariantCheck;
     }
@@ -222,7 +234,7 @@ contract PoolFactory is IPoolFactory, Ownable {
      * @dev Throws if provided address is null
      * @dev Only callable by the owner
      */
-    function setAutoClaim(address _autoClaim) external override onlyOwner {
+    function setAutoClaim(address _autoClaim) external override onlyGov {
         require(_autoClaim != address(0), "address cannot be null");
         autoClaim = _autoClaim;
     }
@@ -234,7 +246,7 @@ contract PoolFactory is IPoolFactory, Ownable {
      * @dev Only callable by the owner
      * @dev Emits a `MaxLeverageChanged` event on success
      */
-    function setMaxLeverage(uint16 newMaxLeverage) external override onlyOwner {
+    function setMaxLeverage(uint16 newMaxLeverage) external override onlyGov {
         require(newMaxLeverage > 0, "Maximum leverage must be non-zero");
         maxLeverage = newMaxLeverage;
         emit MaxLeverageChanged(newMaxLeverage);
@@ -247,7 +259,7 @@ contract PoolFactory is IPoolFactory, Ownable {
      * @dev This fuction does not change anything for already deployed pools, only pools deployed after the change
      * @dev Emits a `FeeReceiverChanged` event on success
      */
-    function setFeeReceiver(address _feeReceiver) external override onlyOwner {
+    function setFeeReceiver(address _feeReceiver) external override onlyGov {
         require(_feeReceiver != address(0), "address cannot be null");
         feeReceiver = _feeReceiver;
         emit FeeReceiverChanged(_feeReceiver);
@@ -260,7 +272,7 @@ contract PoolFactory is IPoolFactory, Ownable {
      * @dev Throws if `newFeePercent` exceeds 100
      * @dev Emits a `SecondaryFeeSplitChanged` event on success
      */
-    function setSecondaryFeeSplitPercent(uint256 newFeePercent) external override onlyOwner {
+    function setSecondaryFeeSplitPercent(uint256 newFeePercent) external override onlyGov {
         require(newFeePercent <= 100, "Secondary fee split cannot exceed 100%");
         secondaryFeeSplitPercent = newFeePercent;
         emit SecondaryFeeSplitChanged(newFeePercent);
@@ -273,7 +285,7 @@ contract PoolFactory is IPoolFactory, Ownable {
      * @dev Throws if fee is greater than 10%
      * @dev Emits a `FeeChanged` event on success
      */
-    function setFee(uint256 _fee) external override onlyOwner {
+    function setFee(uint256 _fee) external override onlyGov {
         require(_fee <= 0.1e18, "Fee cannot be > 10%");
         fee = _fee;
         emit FeeChanged(_fee);
@@ -289,7 +301,7 @@ contract PoolFactory is IPoolFactory, Ownable {
      * @dev Throws if burning fee is greater than 10%
      * @dev Emits a `MintAndBurnFeesChanged` event on success
      */
-    function setMintAndBurnFee(uint256 _mintingFee, uint256 _burningFee) external override onlyOwner {
+    function setMintAndBurnFee(uint256 _mintingFee, uint256 _burningFee) external override onlyGov {
         require(_mintingFee <= 0.1e18, "Fee cannot be > 10%");
         require(_burningFee <= 0.1e18, "Fee cannot be > 10%");
         mintingFee = _mintingFee;
@@ -298,10 +310,39 @@ contract PoolFactory is IPoolFactory, Ownable {
     }
 
     /**
-     * @notice Override OpenZeppelin's `renounceOwnership` function to prevent it from ever being called.
-     * @notice We have no use-case for ever wanted to renounce ownership
+     * @notice Starts to transfer governance of the pool. The new governance
+     *          address must call `claimGovernance` in order for this to take
+     *          effect. Until this occurs, the existing governance address
+     *          remains in control of the pool.
+     * @param _governance New address of the governance of the pool
+     * @dev First step of the two-step governance transfer process
+     * @dev Sets the governance transfer flag to true
+     * @dev See `claimGovernance`
      */
-    function renounceOwnership() public override onlyOwner {
-        // Do nothing
+    function transferGovernance(address _governance) external override onlyGov {
+        require(_governance != governance, "New governance address cannot be same as old governance address");
+        require(_governance != address(0), "Governance address cannot be 0 address");
+        provisionalGovernance = _governance;
+        governanceTransferInProgress = true;
+        emit ProvisionalGovernanceChanged(_governance);
+    }
+
+    /**
+     * @notice Completes transfer of governance by actually changing permissions
+     *          over the pool.
+     * @dev Second and final step of the two-step governance transfer process
+     * @dev See `transferGovernance`
+     * @dev Sets the governance transfer flag to false
+     * @dev After a successful call to this function, the actual governance
+     *      address and the provisional governance address MUST be equal.
+     */
+    function claimGovernance() external override {
+        require(governanceTransferInProgress, "No governance change active");
+        address _provisionalGovernance = provisionalGovernance;
+        require(msg.sender == _provisionalGovernance, "Not provisional governor");
+        address oldGovernance = governance; /* for later event emission */
+        governance = _provisionalGovernance;
+        governanceTransferInProgress = false;
+        emit GovernanceAddressChanged(oldGovernance, _provisionalGovernance);
     }
 }
