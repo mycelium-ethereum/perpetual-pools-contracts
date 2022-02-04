@@ -45,7 +45,7 @@ contract PriceObserver is Ownable, IPriceObserver {
      * @dev Throws if index is out of bounds (i.e., `i >= length()`)
      */
     function get(uint256 i) public view override returns (int256) {
-        require(i < length(), "PO: Out of bounds");
+        require(i < capacity(), "PO: Out of bounds");
         return observations[i];
     }
 
@@ -68,11 +68,10 @@ contract PriceObserver is Ownable, IPriceObserver {
      * @dev Only callable by the associated writer for this contract
      */
     function add(int256 x) public override onlyWriter returns (bool) {
+        leftRotateWithPad(x);
         if (full()) {
-            leftRotateWithPad(x);
             return true;
         } else {
-            observations[length()] = x;
             numElems += 1;
             return false;
         }
@@ -122,7 +121,7 @@ contract PriceObserver is Ownable, IPriceObserver {
      * @param x Element to "rotate into" observations array
      */
     function leftRotateWithPad(int256 x) private {
-        uint256 n = length();
+        uint256 n = observations.length;
 
         /* linear scan over the [1, n] subsequence */
         for (uint256 i = 1; i < n; i++) {

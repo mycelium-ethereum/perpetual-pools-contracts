@@ -97,10 +97,10 @@ describe("PriceObserver", async () => {
 
     describe("get", async () => {
         context(
-            "When called with an index greater than the length of the observations array",
+            "When called with an index greater than the capacity of the observations array",
             async () => {
                 it("Reverts", async () => {
-                    let index: BigNumber = (await priceObserver.length()).add(
+                    let index: BigNumber = (await priceObserver.capacity()).add(
                         ethers.BigNumber.from(1)
                     )
 
@@ -112,10 +112,10 @@ describe("PriceObserver", async () => {
         )
 
         context(
-            "When called with an index equal to the length of the observations array",
+            "When called with an index equal to the capacity of the observations array",
             async () => {
                 it("Reverts", async () => {
-                    let index: BigNumber = await priceObserver.length()
+                    let index: BigNumber = await priceObserver.capacity()
 
                     await expect(priceObserver.get(index)).to.be.revertedWith(
                         "PO: Out of bounds"
@@ -129,14 +129,13 @@ describe("PriceObserver", async () => {
         context(
             "When called with an observations array less than capacity",
             async () => {
-                it("Updates the observations array at the next free slot", async () => {
+                it("Adds the value to the end of the array", async () => {
                     const newValue: BigNumberish = 12
-                    const previousLength: BigNumber =
-                        await priceObserver.length()
+                    const capacity: BigNumber = await priceObserver.capacity()
 
                     await priceObserver.add(newValue)
 
-                    expect(await priceObserver.get(previousLength)).to.be.eq(
+                    expect(await priceObserver.get(capacity.sub(1))).to.be.eq(
                         newValue
                     )
                 })

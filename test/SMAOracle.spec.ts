@@ -36,7 +36,7 @@ describe("SMAOracle", async () => {
     let numPeriods: BigNumberish
     let updateInterval: BigNumberish
 
-    before(async () => {
+    beforeEach(async () => {
         /* retrieve signers */
         signers = await ethers.getSigners()
         owner = signers[0]
@@ -127,7 +127,7 @@ describe("SMAOracle", async () => {
 
     describe("SMA", async () => {
         context(
-            "When called with number of periods less than the size of the dataset and with a valid dataset",
+            "When called with number of periods less than the size of the dataset and with a full dataset",
             async () => {
                 it("Returns the correct simple moving average", async () => {
                     /* xs is arbitrary (provided it's 24 elements long) */
@@ -148,7 +148,7 @@ describe("SMAOracle", async () => {
         )
 
         context(
-            "When called with number of periods equal to the size of the dataset and with a valid dataset",
+            "When called with number of periods equal to the size of the dataset and with a full dataset",
             async () => {
                 it("Returns the correct simple moving average", async () => {
                     /* xs is arbitrary (provided it's 24 elements long) */
@@ -215,14 +215,21 @@ describe("SMAOracle", async () => {
     describe("poll", async () => {
         context("When called while ramping up", async () => {
             context("When called the first time", async () => {
-                let spotPrice: BigNumberish = 12 /* arbitrary */
+                const unitPrice = 12
+                const spotPrice = ethers.utils.parseUnits(
+                    unitPrice.toString(),
+                    8
+                )
 
                 beforeEach(async () => {
                     await chainlinkOracle.setPrice(spotPrice)
                 })
 
-                it.skip("Returns spot price", async () => {
-                    const expectedPrice: BigNumberish = spotPrice
+                it("Returns spot price", async () => {
+                    const expectedPrice = ethers.utils.parseUnits(
+                        unitPrice.toString(),
+                        18
+                    )
 
                     await smaOracle.poll()
 
@@ -233,9 +240,10 @@ describe("SMAOracle", async () => {
             })
 
             context("When called the second time", async () => {
-                let spotPrices: BigNumber[] = [12, 33].map((x) =>
-                    ethers.BigNumber.from(x)
-                ) /* arbitrary */
+                const unitPrices = [12, 33] /* arbitrary */
+                let spotPrices = unitPrices.map((unitPrice) =>
+                    ethers.utils.parseUnits(unitPrice.toString(), 8)
+                )
 
                 beforeEach(async () => {
                     await chainlinkOracle.setPrice(spotPrices[0])
@@ -243,10 +251,13 @@ describe("SMAOracle", async () => {
                     await chainlinkOracle.setPrice(spotPrices[1])
                 })
 
-                it.skip("Returns price averaged over two periods", async () => {
-                    const expectedPrice: BigNumber = spotPrices[0]
-                        .add(spotPrices[1])
-                        .div(ethers.BigNumber.from(2))
+                it("Returns price averaged over two periods", async () => {
+                    const expectedUnitPrice =
+                        (unitPrices[0] + unitPrices[1]) / 2
+                    const expectedPrice = ethers.utils.parseUnits(
+                        expectedUnitPrice.toString(),
+                        18
+                    )
 
                     await smaOracle.poll()
 

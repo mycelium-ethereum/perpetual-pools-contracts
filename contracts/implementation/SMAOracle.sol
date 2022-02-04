@@ -52,10 +52,6 @@ contract SMAOracle is IOracleWrapper {
      *
      */
 
-    /// Initial value for `periods` (this is the denominator in the SMA equation
-    /// so it *must* be non-zero for SMA to be well-defined)
-    uint256 public constant INITIAL_NUM_PERIODS = 1;
-
     /// Price oracle supplying the spot price of the quote asset
     address public override oracle;
 
@@ -96,7 +92,7 @@ contract SMAOracle is IOracleWrapper {
         require(_periods > 0 && _periods <= IPriceObserver(_observer).capacity(), "SMA: Out of bounds");
         require(_spotDecimals <= MAX_DECIMALS, "SMA: Decimal precision too high");
         desiredPeriods = _periods;
-        periods = INITIAL_NUM_PERIODS;
+        periods = 0;
         oracle = _spotOracle;
         observer = _observer;
         deployer = _deployer;
@@ -119,9 +115,13 @@ contract SMAOracle is IOracleWrapper {
      * @notice Retrieves the current SMA price
      * @dev Recomputes SMA across sample size (`periods`)
      */
-    function getPrice() external view override returns (int256) {
-        /* update current reported SMA price */
-        return SMA(IPriceObserver(observer).getAll(), periods);
+    function getPrice() public view override returns (int256) {
+        /// Ensure that the sliceLength is at least 1
+        uint256 sliceLength = 1;
+        if (periods > 1) {
+            sliceLength = periods;
+        }
+        return SMA(IPriceObserver(observer).getAll(), sliceLength);
     }
 
     /**
@@ -146,7 +146,7 @@ contract SMAOracle is IOracleWrapper {
         }
 
         /* update current reported SMA price */
-        return SMA(priceObserver.getAll(), periods);
+        return getPrice();
     }
 
     /**
@@ -166,6 +166,7 @@ contract SMAOracle is IOracleWrapper {
      * @param xs Dataset
      * @param k Number of periods to use for calculation of the SMA
      * @return Simple moving average for `k` periods
+     * @dev Calculates using the last `k` elements of `xs`
      * @dev Throws if `k` is zero (due to necessary division)
      * @dev Throws if `k` is greater than or equal to the length of `xs` (due to buffer overrun potential)
      * @dev Throws if `k` is the maximum *signed* 256-bit integer (due to necessary division)
@@ -208,7 +209,7 @@ contract SMAOracle is IOracleWrapper {
      *          is no clear use case for additional data, so it's left blank
      */
     function getPriceAndMetadata() external view override returns (int256 _price, bytes memory _data) {
-        _price = SMA(IPriceObserver(observer).getAll(), periods);
+        _price = getPrice();
         _data = "";
     }
 }
