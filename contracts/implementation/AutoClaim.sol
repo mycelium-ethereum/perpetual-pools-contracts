@@ -10,8 +10,6 @@ import "@openzeppelin/contracts/utils/Address.sol";
 /// @title The contract to be used for paying to have a keeper claim your commit automatically
 /// @notice The way this works is when a user commits with `PoolCommitter::commit`, they have the option to set the `bool payForClaim` parameter to `true`.
 ///         During this function execution, `AutoClaim::payForClaim` is called, and `msg.value` is taken as the reward to whoever claims for requester (by using `AutoClaim::paidClaim`).
-/// @dev A question I had to ask was "What happens if one requests a second claim before one's pending request from a previous update interval one gets executed on?".
-///      My solution to this was to have the committer instantly claim for themself. They have signified their desire to claim their tokens, after all.
 contract AutoClaim is IAutoClaim {
     // User => PoolCommitter address => Claim Request
     mapping(address => mapping(address => ClaimRequest)) public claimRequests;
@@ -126,7 +124,7 @@ contract AutoClaim is IAutoClaim {
      * @notice Call `paidClaim` for multiple users, in a single PoolCommitter.
      * @param users All users to execute claims for.
      * @param poolCommitterAddress The PoolCommitter address within which you would like to claim for the respective user
-     * @dev The nth index in poolCommitterAddresses should be the PoolCommitter where the nth address in user requested an auto claim
+     * @dev poolCommitterAddress should be the PoolCommitter where the nth address in user requested an auto claim
      */
     function multiPaidClaimSinglePoolCommitter(address[] calldata users, address poolCommitterAddress)
         external
@@ -156,7 +154,7 @@ contract AutoClaim is IAutoClaim {
     }
 
     /**
-     * @notice When the user claims themself through poolCommitter, you want the
+     * @notice When the user claims themself through poolCommitter, you want the user to be able to withdraw their request through the poolCommitter as msg.sender
      * @param user The user who will have their claim request withdrawn.
      * @dev Only callable by the associated `PoolCommitter` contract
      */

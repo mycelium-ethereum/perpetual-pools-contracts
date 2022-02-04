@@ -286,9 +286,8 @@ library PoolSwapLibrary {
         uint256 frontRunningInterval,
         uint256 updateInterval,
         uint256 currentUpdateIntervalId
-    ) external pure returns (uint256) {
-        // Since lastPriceTimestamp <= block.timestamp, the below also confirms that timestamp >= block.timestamp
-        require(timestamp >= lastPriceTimestamp, "timestamp in the past");
+    ) external view returns (uint256) {
+        require(lastPriceTimestamp <= timestamp && timestamp <= block.timestamp, "timestamp in the past");
         if (frontRunningInterval <= updateInterval) {
             // This is the "simple" case where we either want the current update interval or the next one
             if (isBeforeFrontRunningInterval(timestamp, lastPriceTimestamp, updateInterval, frontRunningInterval)) {
@@ -381,7 +380,7 @@ library PoolSwapLibrary {
      * @param amount Amount of settlement tokens being used to mint
      * @return Quantity of pool tokens to mint
      * @dev Throws if price is zero
-     * @dev `getBurn()`
+     * @dev `getMint()`
      */
     function getMint(bytes16 price, uint256 amount) public pure returns (uint256) {
         require(price != 0, "price == 0");
@@ -391,11 +390,11 @@ library PoolSwapLibrary {
     /**
      * @notice Calculate the number of settlement tokens to burn, based on a price and an amount of pool tokens
      * @param price Price of a pool token
-     * @param amount Amount of settlement tokens being used to burn
-     * @return Quantity of pool tokens to burn
+     * @param amount Amount of pool tokens being used to burn
+     * @return Quantity of settlement tokens to return to the user after `amount` pool tokens are burnt.
      * @dev amount * price, where amount is in PoolToken and price is in USD/PoolToken
      * @dev Throws if price is zero
-     * @dev `getMint()`
+     * @dev `getBurn()`
      */
     function getBurn(bytes16 price, uint256 amount) public pure returns (uint256) {
         require(price != 0, "price == 0");

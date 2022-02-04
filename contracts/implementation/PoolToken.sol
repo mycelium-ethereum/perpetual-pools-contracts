@@ -7,10 +7,7 @@ import "../interfaces/IPoolToken.sol";
 /// @title The pool token; used for ownership/shares of the underlying tokens of the long/short pool
 /// @dev ERC_20_Cloneable contains onlyOwner code implemented for use with the cloneable setup
 contract PoolToken is ERC20_Cloneable, IPoolToken {
-    // #### Global state
-
     // #### Functions
-
     constructor(uint8 _decimals) ERC20_Cloneable("BASE_TOKEN", "BASE", _decimals) {}
 
     /**

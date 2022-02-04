@@ -4,6 +4,7 @@ import "../interfaces/IOracleWrapper.sol";
 import "../interfaces/IPriceObserver.sol";
 import "../implementation/PriceObserver.sol";
 
+/// @title The oracle management contract for SMA oracles
 contract SMAOracle is IOracleWrapper {
     /// Price oracle supplying the spot price of the quote asset
     address public override oracle;
@@ -111,8 +112,8 @@ contract SMAOracle is IOracleWrapper {
      * @param k Number of periods to use for calculation of the SMA
      * @return Simple moving average for `k` periods
      * @dev Throws if `k` is zero (due to necessary division)
-     * @dev Throws if `k` is greater than or equal to the length of `xs` (due to buffer overrun potential)
-     * @dev Throws if `k` is the maximum *signed* 256-bit integer (due to necessary division)
+     * @dev Throws if `k` is greater than the length of `xs` (due to buffer overrun potential)
+     * @dev Throws if `k` is greater than the maximum *signed* 256-bit integer (due to necessary division)
      * @dev O(k) complexity due to linear traversal of the final `k` elements of `xs`
      * @dev Note that the signedness of the return type is due to the signedness of the elements of `xs`
      * @dev It's a true tragedy that we have to stipulate a fixed-length array for `xs`, but alas, Solidity's type system cannot

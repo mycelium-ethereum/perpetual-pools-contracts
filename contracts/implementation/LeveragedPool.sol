@@ -169,8 +169,8 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
         uint256 _shortBalance = shortBalance;
         uint256 _longBalance = longBalance;
 
-        // If the rewards are more than the balances of the pool, the keeper does not get paid
-        if (amount >= _shortBalance + _longBalance) {
+        // If the rewards are greater than or equal to the balances of the pool, the keeper does not get paid
+        if (amount > _shortBalance + _longBalance) {
             return false;
         }
 
@@ -206,10 +206,10 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
     }
 
     /**
-     * @notice Transfer long tokens from pool to user
+     * @notice Transfer pool tokens from pool to user
+     * @param isLongToken True if transferring long pool token; False if transferring short pool token
      * @param to Address of account to transfer to
-     * @param isLongToken True if transferring long pool token
-     * @param amount Amount of quote tokens being transferred
+     * @param amount Amount of pool tokens being transferred
      * @dev Only callable by the associated `PoolCommitter` contract
      * @dev Only callable when the market is *not* paused
      */
@@ -326,7 +326,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
 
     /**
      * @notice Mint tokens to a user
-     * @param isLongToken True if minting short token
+     * @param isLongToken True if minting long token; False if minting short token
      * @param amount Amount of tokens to mint
      * @param minter Address of user/minter
      * @dev Only callable by the associated `PoolCommitter` contract
@@ -347,7 +347,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
     /**
      * @notice Burn tokens by a user
      * @dev Can only be called by & used by the pool committer
-     * @param isLongToken True if burning short token
+     * @param isLongToken True if burning long token; False if burning short token
      * @param amount Amount of tokens to burn
      * @param burner Address of user/burner
      * @dev Only callable by the associated `PoolCommitter` contract
@@ -487,7 +487,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
     }
 
     /**
-     * @return Quantities of pool tokens for this pool (long and short,
+     * @return Quantities of pool tokens for this pool (short and long,
      *          respectively)
      */
     function balances() external view override returns (uint256, uint256) {
@@ -496,7 +496,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
 
     /**
      * @notice Withdraws all available quote asset from the pool
-     * @dev Pool must not be paused
+     * @dev Pool must be paused
      * @dev ERC20 transfer
      * @dev Only callable by governance
      */

@@ -69,7 +69,7 @@ interface IAutoClaim {
 
     /**
      * @notice Call `paidClaim` for multiple users, in a single PoolCommitter.
-     * @dev The nth index in poolCommitterAddresses should be the PoolCommitter where the nth address in user requested an auto claim
+     * @dev The poolCommitterAddresses should be the PoolCommitter where the nth address in user requested an auto claim
      * @param users All users to execute claims for.
      * @param poolCommitterAddress The PoolCommitter address within which you would like to claim for the respective user
      */
@@ -82,7 +82,7 @@ interface IAutoClaim {
     function withdrawClaimRequest(address poolCommitter) external;
 
     /**
-     * @notice When the user claims themself through poolCommitter, you want the
+     * @notice When the user claims themself through poolCommitter, you want the user to be able to withdraw their request through the poolCommitter as msg.sender
      * @param user The user who will have their claim request withdrawn.
      */
     function withdrawUserClaimRequest(address user) external;
