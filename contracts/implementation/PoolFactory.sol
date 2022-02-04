@@ -214,6 +214,7 @@ contract PoolFactory is IPoolFactory, Ownable {
     function setInvariantCheck(address _invariantCheck) external override onlyOwner {
         require(_invariantCheck != address(0), "address cannot be null");
         invariantCheck = _invariantCheck;
+        emit InvariantCheckChanged(_invariantCheck);
     }
 
     /**
@@ -225,6 +226,7 @@ contract PoolFactory is IPoolFactory, Ownable {
     function setAutoClaim(address _autoClaim) external override onlyOwner {
         require(_autoClaim != address(0), "address cannot be null");
         autoClaim = _autoClaim;
+        emit AutoClaimChanged(_autoClaim);
     }
 
     /**
