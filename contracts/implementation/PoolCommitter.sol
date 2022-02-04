@@ -32,6 +32,8 @@ contract PoolCommitter is IPoolCommitter, Initializable {
     mapping(uint256 => bytes16) public burnFeeHistory; // updateIntervalId => burn fee. We need to store this historically because people can claim at any time after the update interval, but we want them to pay the fee from the update interval in which they committed.
     mapping(address => Balance) public userAggregateBalance;
 
+    // The total amount of collateral that has been committed to mints that are not yet executed
+    uint256 public override totalPendingMints;
     // Update interval ID => TotalCommitment
     mapping(uint256 => TotalCommitment) public totalPoolCommitments;
     // Address => Update interval ID => UserCommitment
@@ -172,6 +174,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
                 PoolSwapLibrary.convertDecimalToUInt(PoolSwapLibrary.multiplyDecimalByUInt(mintingFee, amount)) /
                 PoolSwapLibrary.WAD_PRECISION;
             amount = amount - feeAmount;
+            totalPendingMints += amount;
         }
 
         if (commitType == CommitType.LongMint) {
@@ -358,6 +361,11 @@ contract PoolCommitter is IPoolCommitter, Initializable {
      */
     function executeGivenCommitments(TotalCommitment memory _commits) internal {
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
+
+        totalPendingMints =
+            totalPendingMints -
+            totalPoolCommitments[updateIntervalId].longMintAmount -
+            totalPoolCommitments[updateIntervalId].shortMintAmount;
 
         BalancesAndSupplies memory balancesAndSupplies = BalancesAndSupplies({
             shortBalance: pool.shortBalance(),
@@ -702,13 +710,6 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         _balance.settlementTokens += update._newSettlementTokensSum;
 
         return _balance;
-    }
-
-    /**
-     * @return The pending commitments from the two current update intervals, including the one started in the frontrunning interval at the end of the last
-     */
-    function getPendingCommits() external view override returns (TotalCommitment memory, TotalCommitment memory) {
-        return (totalPoolCommitments[updateIntervalId], totalPoolCommitments[updateIntervalId + 1]);
     }
 
     /**
