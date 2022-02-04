@@ -282,7 +282,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
             /* gas spent plus our fixed gas overhead */
             uint256 gasUsed = _gasSpent + FIXED_GAS_OVERHEAD;
 
-            /* safe due to explicit bounds check above */
+            /* safe due to explicit bounds check for settlementTokenPrice above */
             /* (wei * Settlement / ETH) / fixed point (10^18) = amount in settlement */
             bytes16 _weiSpent = ABDKMathQuad.fromUInt(_gasPrice * gasUsed);
             bytes16 _settlementTokenPrice = ABDKMathQuad.fromUInt(uint256(settlementTokenPrice));

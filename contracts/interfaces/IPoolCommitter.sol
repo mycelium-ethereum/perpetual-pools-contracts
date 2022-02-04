@@ -13,6 +13,7 @@ interface IPoolCommitter {
         ShortBurnLongMint // Burn Short tokens, then instantly mint in same upkeep
     }
 
+    // Pool balances and supplies
     struct BalancesAndSupplies {
         uint256 shortBalance;
         uint256 longBalance;
@@ -52,6 +53,7 @@ interface IPoolCommitter {
         uint256 updateIntervalId;
     }
 
+    // User updated aggregate balance
     struct BalanceUpdate {
         uint256 _updateIntervalId;
         uint256 _newLongTokensSum;

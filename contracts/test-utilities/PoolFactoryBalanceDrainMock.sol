@@ -178,8 +178,6 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
         // this also stores the pool address in the committer
         // finalise pool setup
         pool.initialize(initialization);
-        // approve the quote token on the pool commiter to finalise linking
-        // this also stores the pool address in the commiter
         IPoolCommitter(poolCommitterAddress).setQuoteAndPool(deploymentParameters.quoteToken, _pool);
         poolKeeper.newPool(_pool);
         pools[numPools] = _pool;

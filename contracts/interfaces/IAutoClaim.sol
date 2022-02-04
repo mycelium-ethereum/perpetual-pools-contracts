@@ -82,7 +82,7 @@ interface IAutoClaim {
     function withdrawClaimRequest(address poolCommitter) external;
 
     /**
-     * @notice When the user claims themself through poolCommitter, you want the
+     * @notice When the user claims themself through poolCommitter, you want the user to be able to withdraw their request through the poolCommitter as msg.sender
      * @param user The user who will have their claim request withdrawn.
      */
     function withdrawUserClaimRequest(address user) external;

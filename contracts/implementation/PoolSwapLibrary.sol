@@ -286,9 +286,8 @@ library PoolSwapLibrary {
         uint256 frontRunningInterval,
         uint256 updateInterval,
         uint256 currentUpdateIntervalId
-    ) external pure returns (uint256) {
-        // Since lastPriceTimestamp <= block.timestamp, the below also confirms that timestamp >= block.timestamp
-        require(timestamp >= lastPriceTimestamp, "timestamp in the past");
+    ) external view returns (uint256) {
+        require(lastPriceTimestamp <= timestamp && timestamp <= block.timestamp, "timestamp in the past");
         if (frontRunningInterval <= updateInterval) {
             // This is the "simple" case where we either want the current update interval or the next one
             if (isBeforeFrontRunningInterval(timestamp, lastPriceTimestamp, updateInterval, frontRunningInterval)) {

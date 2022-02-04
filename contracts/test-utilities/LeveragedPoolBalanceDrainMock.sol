@@ -166,7 +166,7 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
         uint256 _longBalance = longBalance;
 
         // If the rewards are more than the balances of the pool, the keeper does not get paid
-        if (amount >= _shortBalance + _longBalance) {
+        if (amount > _shortBalance + _longBalance) {
             return false;
         }
 
