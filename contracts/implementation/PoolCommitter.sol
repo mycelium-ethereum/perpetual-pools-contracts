@@ -13,7 +13,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./PoolSwapLibrary.sol";
 
 /// @title This contract is responsible for handling commitment logic
-contract PoolCommitter is IPoolCommitter, Initializable {
+contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
     // #### Globals
     uint128 public constant LONG_INDEX = 0;
     uint128 public constant SHORT_INDEX = 1;
@@ -49,11 +49,8 @@ contract PoolCommitter is IPoolCommitter, Initializable {
     address public governance;
     address public leveragedPool;
     address public invariantCheckContract;
-    bool public paused;
+    bool public override paused;
     IInvariantCheck public invariantCheck;
-
-    event Paused();
-    event Unpaused();
 
     modifier onlyUnpaused() {
         require(!paused, "Pool is paused");
@@ -734,7 +731,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
      * @notice Pauses the pool
      * @dev Prevents all state updates until unpaused
      */
-    function pause() external onlyInvariantCheckContract {
+    function pause() external override onlyInvariantCheckContract {
         paused = true;
         emit Paused();
     }
@@ -743,7 +740,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
      * @notice Unpauses the pool
      * @dev Prevents all state updates until unpaused
      */
-    function unpause() external onlyGov {
+    function unpause() external override onlyGov {
         paused = false;
         emit Unpaused();
     }

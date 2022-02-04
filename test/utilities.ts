@@ -40,7 +40,6 @@ import {
     PoolFactoryBalanceDrainMock__factory,
     LeveragedPoolBalanceDrainMock,
     PoolFactoryBalanceDrainMock,
-    PoolCommitter__factory,
     AutoClaim,
 } from "../types"
 
@@ -172,7 +171,7 @@ export const deployPoolSetupContracts = async () => {
     })) as PoolFactory__factory
 
     const factory = await (
-        await PoolFactory.deploy(generateRandomAddress())
+        await PoolFactory.deploy(generateRandomAddress(), signers[0].address)
     ).deployed()
 
     const invariantCheckFactory = (await ethers.getContractFactory(
@@ -437,7 +436,7 @@ export const deployMockPool = async (
     )) as PoolFactoryBalanceDrainMock__factory
 
     const factory = await (
-        await PoolFactory.deploy(generateRandomAddress())
+        await PoolFactory.deploy(generateRandomAddress(), signers[0].address)
     ).deployed()
 
     const autoClaimFactory = (await ethers.getContractFactory("AutoClaim", {

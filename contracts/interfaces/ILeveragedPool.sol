@@ -70,19 +70,6 @@ interface ILeveragedPool {
     event KeeperAddressChanged(address indexed oldAddress, address indexed newAddress);
 
     /**
-     * @notice Represents proposed change in governance address
-     * @param newAddress Proposed address
-     */
-    event ProvisionalGovernanceChanged(address indexed newAddress);
-
-    /**
-     * @notice Represents change in governance address
-     * @param oldAddress Previous address
-     * @param newAddress Address after change
-     */
-    event GovernanceAddressChanged(address indexed oldAddress, address indexed newAddress);
-
-    /**
      * @notice Indicates quote assets have been withdrawn from the system
      * @param to Receipient
      * @param quantity Quantity of quote tokens withdrawn
@@ -181,10 +168,6 @@ interface ILeveragedPool {
     function balances() external view returns (uint256 _shortBalance, uint256 _longBalance);
 
     function setKeeper(address _keeper) external;
-
-    function transferGovernance(address _governance) external;
-
-    function claimGovernance() external;
 
     function updateFeeAddress(address account) external;
 

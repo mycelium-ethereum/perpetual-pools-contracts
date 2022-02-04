@@ -6,6 +6,7 @@ import "../interfaces/IPoolCommitter.sol";
 import "../interfaces/IPoolToken.sol";
 import "../interfaces/IPausable.sol";
 import "../interfaces/IInvariantCheck.sol";
+import "../interfaces/ITwoStepGovernance.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -14,7 +15,7 @@ import "../implementation/PoolSwapLibrary.sol";
 import "../interfaces/IOracleWrapper.sol";
 
 /// @title The pool contract itself
-contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausable {
+contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausable, ITwoStepGovernance {
     using SafeERC20 for IERC20;
     // #### Globals
 
@@ -28,10 +29,11 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
     uint256 public constant LONG_INDEX = 0;
     uint256 public constant SHORT_INDEX = 1;
 
-    address public governance;
+    address public override governance;
     bool public override paused;
+    address public override provisionalGovernance;
     address public keeper;
-    bool public governanceTransferInProgress;
+    bool public override governanceTransferInProgress;
     address public feeAddress;
     address public secondaryFeeAddress;
     uint256 public secondaryFeeSplitPercent; // Split to secondary fee address as a percentage.
@@ -39,7 +41,6 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
     address public override poolCommitter;
     address public override oracleWrapper;
     address public override settlementEthOracle;
-    address public provisionalGovernance;
     address public invariantCheckContract;
     IInvariantCheck public invariantCheck;
     address[2] public tokens;
@@ -99,6 +100,8 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
         require(initialization._poolCommitter != address(0), "PoolCommitter cannot be 0 address");
         require(initialization._invariantCheckContract != address(0), "InvariantCheck cannot be 0 address");
         require(initialization._fee < PoolSwapLibrary.WAD_PRECISION, "Fee >= 100%");
+        require(initialization._secondaryFeeSplitPercent <= 100, "Secondary fee split cannot exceed 100%");
+        require(initialization._updateInterval != 0, "Update interval cannot be 0");
 
         // set the owner of the pool. This is governance when deployed from the factory
         governance = initialization._owner;
@@ -114,6 +117,7 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
         leverageAmount = PoolSwapLibrary.convertUIntToDecimal(initialization._leverageAmount);
         feeAddress = initialization._feeAddress;
         secondaryFeeAddress = initialization._secondaryFeeAddress;
+        secondaryFeeSplitPercent = initialization._secondaryFeeSplitPercent;
         lastPriceTimestamp = block.timestamp;
         poolName = initialization._poolName;
         tokens[LONG_INDEX] = initialization._longToken;
@@ -289,10 +293,20 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
         if (secondaryFeeAddress == address(0)) {
             IERC20(quoteToken).safeTransfer(feeAddress, totalFeeAmount);
         } else {
-            uint256 daoFee = PoolSwapLibrary.mulFraction(totalFeeAmount, 9, 10);
-            uint256 remainder = totalFeeAmount - daoFee;
-            IERC20(quoteToken).safeTransfer(feeAddress, daoFee);
-            IERC20(quoteToken).safeTransfer(secondaryFeeAddress, remainder);
+            uint256 secondaryFee = PoolSwapLibrary.mulFraction(totalFeeAmount, secondaryFeeSplitPercent, 100);
+            uint256 remainder;
+            unchecked {
+                // secondaryFee is calculated as totalFeeAmount * secondaryFeeSplitPercent / 100
+                // secondaryFeeSplitPercent <= 100 and therefore secondaryFee <= totalFeeAmount - The following line can not underflow
+                remainder = totalFeeAmount - secondaryFee;
+            }
+            IERC20 _quoteToken = IERC20(quoteToken);
+            if (secondaryFee != 0) {
+                _quoteToken.safeTransfer(secondaryFeeAddress, secondaryFee);
+            }
+            if (remainder != 0) {
+                _quoteToken.safeTransfer(feeAddress, remainder);
+            }
         }
     }
 
@@ -302,10 +316,12 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
      * @param _shortBalance New balance of the short pool
      * @dev Only callable by the associated `PoolCommitter` contract
      * @dev Only callable when the market is *not* paused
+     * @dev Emits a `PoolBalancesChanged` event on success
      */
     function setNewPoolBalances(uint256 _longBalance, uint256 _shortBalance) external override onlyPoolCommitter {
         longBalance = _longBalance;
         shortBalance = _shortBalance;
+        emit PoolBalancesChanged(_longBalance, _shortBalance);
     }
 
     /**
@@ -367,11 +383,11 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
      * @dev Only callable when the market is *not* paused
      * @dev Emits `FeeAddressUpdated` event on success
      */
-    function updateFeeAddress(address account) external override onlyGov checkInvariantsAfterFunction {
+    function updateFeeAddress(address account) external override onlyGov {
         require(account != address(0), "Account cannot be 0 address");
         address oldFeeAddress = feeAddress;
         feeAddress = account;
-        emit FeeAddressUpdated(oldFeeAddress, feeAddress);
+        emit FeeAddressUpdated(oldFeeAddress, account);
     }
 
     /**
@@ -389,11 +405,11 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
      * @notice Updates the keeper contract of the pool
      * @param _keeper New address of the keeper contract
      */
-    function setKeeper(address _keeper) external override onlyGov checkInvariantsAfterFunction {
+    function setKeeper(address _keeper) external override onlyGov {
         require(_keeper != address(0), "Keeper address cannot be 0 address");
         address oldKeeper = keeper;
         keeper = _keeper;
-        emit KeeperAddressChanged(oldKeeper, keeper);
+        emit KeeperAddressChanged(oldKeeper, _keeper);
     }
 
     /**
@@ -406,7 +422,8 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
      * @dev Sets the governance transfer flag to true
      * @dev See `claimGovernance`
      */
-    function transferGovernance(address _governance) external override onlyGov checkInvariantsAfterFunction {
+    function transferGovernance(address _governance) external override onlyGov {
+        require(_governance != governance, "New governance address cannot be same as old governance address");
         require(_governance != address(0), "Governance address cannot be 0 address");
         provisionalGovernance = _governance;
         governanceTransferInProgress = true;
@@ -422,13 +439,14 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
      * @dev After a successful call to this function, the actual governance
      *      address and the provisional governance address MUST be equal.
      */
-    function claimGovernance() external override checkInvariantsAfterFunction {
+    function claimGovernance() external override {
         require(governanceTransferInProgress, "No governance change active");
-        require(msg.sender == provisionalGovernance, "Not provisional governor");
+        address _provisionalGovernance = provisionalGovernance;
+        require(msg.sender == _provisionalGovernance, "Not provisional governor");
         address oldGovernance = governance; /* for later event emission */
-        governance = provisionalGovernance;
+        governance = _provisionalGovernance;
         governanceTransferInProgress = false;
-        emit GovernanceAddressChanged(oldGovernance, governance);
+        emit GovernanceAddressChanged(oldGovernance, _provisionalGovernance);
     }
 
     /**
@@ -487,6 +505,7 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
         IERC20 quoteERC = IERC20(quoteToken);
         uint256 balance = quoteERC.balanceOf(address(this));
         IERC20(quoteToken).safeTransfer(msg.sender, balance);
+        emit QuoteWithdrawn(msg.sender, balance);
     }
 
     /**

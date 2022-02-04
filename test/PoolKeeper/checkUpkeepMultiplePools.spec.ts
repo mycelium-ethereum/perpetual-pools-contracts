@@ -89,7 +89,7 @@ const setupHook = async () => {
         libraries: { PoolSwapLibrary: library.address },
     })) as PoolFactory__factory
     factory = await (
-        await PoolFactory.deploy(generateRandomAddress())
+        await PoolFactory.deploy(generateRandomAddress(), signers[0].address)
     ).deployed()
 
     const autoClaimFactory = (await ethers.getContractFactory("AutoClaim", {

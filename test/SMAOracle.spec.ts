@@ -68,7 +68,10 @@ describe("SMAOracle", async () => {
                 libraries: { PoolSwapLibrary: poolSwapLibrary.address },
             }
         )) as PoolFactory__factory
-        const poolFactory = await poolFactoryFactory.deploy(feeReceiver.address)
+        const poolFactory = await poolFactoryFactory.deploy(
+            feeReceiver.address,
+            signers[0].address
+        )
         await poolFactory.deployed()
 
         /* deploy PoolKeeper */
