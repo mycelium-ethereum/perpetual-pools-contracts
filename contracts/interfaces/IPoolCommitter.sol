@@ -84,6 +84,8 @@ interface IPoolCommitter {
      * @param amount Amount of the commit
      * @param commitType Type of the commit (Short v Long, Mint v Burn)
      * @param appropriateUpdateIntervalId Id of update interval where this commit can be executed as part of upkeep
+     * @param fromAggregateBalance whether or not to commit from aggregate (unclaimed) balance
+     * @param payForClaim whether or not to request this commit to claimed automatically
      * @param mintingFee Minting fee at time of commit creation
      */
     event CreateCommit(
@@ -91,6 +93,8 @@ interface IPoolCommitter {
         uint256 indexed amount,
         CommitType indexed commitType,
         uint256 appropriateUpdateIntervalId,
+        bool fromAggregateBalance,
+        bool payForClaim,
         bytes16 mintingFee
     );
 
