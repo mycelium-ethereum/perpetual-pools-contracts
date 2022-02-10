@@ -25,8 +25,6 @@ import {
     PoolSwapLibrary,
     PoolSwapLibrary__factory,
     TestChainlinkOracle__factory,
-    PriceObserver__factory,
-    PriceObserver,
     PoolKeeper,
     PoolFactory__factory,
     PoolKeeper__factory,
@@ -182,22 +180,12 @@ export const deployPoolSetupContracts = async () => {
     const invariantCheck = await invariantCheckFactory.deploy(factory.address)
     await factory.setInvariantCheck(invariantCheck.address)
 
-    /* deploy price observer contract */
-    const priceObserverFactory = (await ethers.getContractFactory(
-        "PriceObserver",
-        signers[0]
-    )) as PriceObserver__factory
-    const priceObserver: PriceObserver = await priceObserverFactory.deploy()
-    await priceObserver.deployed()
-    await priceObserver.setWriter(oracleWrapper.address)
-
     const poolKeeperFactory = (await ethers.getContractFactory("PoolKeeper", {
         signer: signers[0],
         libraries: { PoolSwapLibrary: library.address },
     })) as PoolKeeper__factory
     let poolKeeper = await poolKeeperFactory.deploy(factory.address)
     poolKeeper = await poolKeeper.deployed()
-    await poolKeeper.setPriceObserver(priceObserver.address)
     await factory.setPoolKeeper(poolKeeper.address)
     await factory.setFee(DEFAULT_FEE)
 
@@ -216,7 +204,6 @@ export const deployPoolSetupContracts = async () => {
         settlementEthOracle,
         token,
         library,
-        priceObserver,
         invariantCheck,
         autoClaim,
     }
@@ -242,7 +229,8 @@ export const deployPoolAndTokenContracts = async (
     feeAddress?: string,
     fee?: BigNumberish,
     mintFee?: BigNumberish,
-    burnFee?: BigNumberish
+    burnFee?: BigNumberish,
+    changeInterval?: BigNumberish
 ): Promise<{
     signers: SignerWithAddress[]
     pool: LeveragedPool
@@ -257,7 +245,6 @@ export const deployPoolAndTokenContracts = async (
     oracleWrapper: ChainlinkOracleWrapper
     settlementEthOracle: ChainlinkOracleWrapper
     invariantCheck: InvariantCheck
-    priceObserver: PriceObserver
     autoClaim: AutoClaim
 }> => {
     const setupContracts = await deployPoolSetupContracts()
@@ -279,10 +266,11 @@ export const deployPoolAndTokenContracts = async (
     if (feeAddress) {
         await setupContracts.factory.setFeeReceiver(feeAddress)
     }
-    if (mintFee || burnFee) {
-        await setupContracts.factory.setMintAndBurnFee(
+    if (mintFee || burnFee || changeInterval) {
+        await setupContracts.factory.setMintAndBurnFeeAndChangeInterval(
             mintFee || 0,
-            burnFee || 0
+            burnFee || 0,
+            changeInterval || 0
         )
     }
     await setupContracts.factory.deployPool(deployParams)
@@ -495,18 +483,6 @@ export const deployMockPool = async (
     let commiter = await pool.poolCommitter()
     const poolCommitter = await ethers.getContractAt("PoolCommitter", commiter)
 
-    /* deploy price observer contract */
-    const priceObserverFactory = (await ethers.getContractFactory(
-        "PriceObserver",
-        signers[0]
-    )) as PriceObserver__factory
-    const priceObserver: PriceObserver = await priceObserverFactory.deploy()
-    await priceObserver.deployed()
-    await priceObserver.setWriter(oracleWrapper.address)
-
-    /* inform PoolKeeper of our newly-deployed PriceObserver */
-    await poolKeeper.setPriceObserver(priceObserver.address)
-
     return {
         signers,
         //@ts-ignore
@@ -525,7 +501,6 @@ export const deployMockPool = async (
         oracleWrapper,
         settlementEthOracle,
         invariantCheck,
-        priceObserver,
         autoClaim,
     }
 }

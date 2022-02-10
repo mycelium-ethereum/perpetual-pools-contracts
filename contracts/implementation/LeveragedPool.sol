@@ -268,20 +268,26 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
                 leverageAmount,
                 fee
             );
-            (uint256 newLongBalance, uint256 newShortBalance, uint256 totalFeeAmount) = PoolSwapLibrary
-                .calculatePriceChange(priceChangeData);
+            (
+                uint256 newLongBalance,
+                uint256 newShortBalance,
+                uint256 longFeeAmount,
+                uint256 shortFeeAmount
+            ) = PoolSwapLibrary.calculatePriceChange(priceChangeData);
 
             unchecked {
                 emit PoolRebalance(
                     int256(newShortBalance) - int256(_shortBalance),
-                    int256(newLongBalance) - int256(_longBalance)
+                    int256(newLongBalance) - int256(_longBalance),
+                    shortFeeAmount,
+                    longFeeAmount
                 );
             }
             // Update pool balances
             longBalance = newLongBalance;
             shortBalance = newShortBalance;
             // Pay the fee
-            feeTransfer(totalFeeAmount);
+            feeTransfer(longFeeAmount + shortFeeAmount);
         }
     }
 

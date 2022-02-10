@@ -13,7 +13,8 @@ import {
     TestClones,
     TestClones__factory,
     PoolCommitter,
-    PoolToken,
+    PriceObserver__factory,
+    SMAOracle__factory,
 } from "../../types"
 import { POOL_CODE, POOL_CODE_2, LONG_MINT, SHORT_MINT } from "../constants"
 import {
@@ -249,8 +250,8 @@ describe("PoolFactory.deployPool", () => {
         it("should deploy deterministically", async () => {
             let encoder = new ethers.utils.AbiCoder()
             let abiEncoded = encoder.encode(
-                ["uint16", "address", "address"],
-                [leverage, token.address, oracleWrapper.address]
+                ["uint16", "uint16", "address", "address"],
+                [updateInterval, leverage, token.address, oracleWrapper.address]
             )
             let uniqueIdHash = ethers.utils.keccak256(abiEncoded)
             let predictedPoolAddress =
@@ -406,6 +407,56 @@ describe("PoolFactory.deployPool", () => {
             await expect(
                 factory.setSecondaryFeeSplitPercent(200)
             ).to.revertedWith("Secondary fee split cannot exceed 100%")
+        })
+    })
+
+    context("When using a SMA Oracle", async () => {
+        it("To not be reverted", async () => {
+            /* deploy price observer contract */
+            const priceObserverFactory = (await ethers.getContractFactory(
+                "PriceObserver",
+                signers[0]
+            )) as PriceObserver__factory
+            const priceObserver = await priceObserverFactory.deploy()
+            await priceObserver.deployed()
+
+            /* deploy SMA oracle contract */
+            const smaOracleFactory = (await ethers.getContractFactory(
+                "SMAOracle",
+                signers[0]
+            )) as SMAOracle__factory
+            const smaOracle = await smaOracleFactory.deploy(
+                oracleWrapper.address,
+                8,
+                priceObserver.address,
+                5,
+                1,
+                await signers[0].getAddress()
+            )
+            await smaOracle.deployed()
+
+            /* set our SMA oracle to the writer for the price observer contract */
+            await priceObserver.setWriter(smaOracle.address)
+
+            for (let i = 0; i < 24; i++) {
+                await smaOracle.poll()
+                await timeout(1000)
+            }
+
+            const deploymentParameters = {
+                poolName: POOL_CODE,
+                frontRunningInterval: 5,
+                updateInterval: 10,
+                fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
+                leverageAmount: 5,
+                quoteToken: token.address,
+                oracleWrapper: smaOracle.address,
+                settlementEthOracle: settlementEthOracle.address,
+                invariantCheckContract: invariantCheck.address,
+            }
+
+            await expect(factory.deployPool(deploymentParameters)).to.not
+                .reverted
         })
     })
 })

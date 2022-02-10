@@ -56,6 +56,33 @@ library PoolSwapLibrary {
     }
 
     /**
+     * @notice Multiplies two numbers
+     * @param x The number to be multiplied by `y`
+     * @param y The number to be multiplied by `x`
+     */
+    function multiplyBytes(bytes16 x, bytes16 y) external pure returns (bytes16) {
+        return ABDKMathQuad.mul(x, y);
+    }
+
+    /**
+     * @notice Performs a subtraction on two bytes16 numbers
+     * @param x The number to be subtracted by `y`
+     * @param y The number to subtract from `x`
+     */
+    function subtractBytes(bytes16 x, bytes16 y) external pure returns (bytes16) {
+        return ABDKMathQuad.sub(x, y);
+    }
+
+    /**
+     * @notice Performs an addition on two bytes16 numbers
+     * @param x The number to be added with `y`
+     * @param y The number to be added with `x`
+     */
+    function addBytes(bytes16 x, bytes16 y) external pure returns (bytes16) {
+        return ABDKMathQuad.add(x, y);
+    }
+
+    /**
      * @notice Gets the short and long balances after the keeper rewards have been paid out
      *         Keeper rewards are paid proportionally to the short and long pool
      * @dev Assumes shortBalance + longBalance >= reward
@@ -201,12 +228,14 @@ library PoolSwapLibrary {
      * @param priceChange The struct containing necessary data to calculate price change
      * @return Resulting long balance
      * @return Resulting short balance
-     * @return Total fees (across both long and short sides) resulting from this price change
+     * @return Resulting fees taken from long balance
+     * @return Resulting fees taken from short balance
      */
     function calculatePriceChange(PriceChangeData calldata priceChange)
         external
         pure
         returns (
+            uint256,
             uint256,
             uint256,
             uint256
@@ -227,7 +256,6 @@ library PoolSwapLibrary {
 
         shortBalance = shortBalance - shortFeeAmount;
         longBalance = longBalance - longFeeAmount;
-        uint256 totalFeeAmount = shortFeeAmount + longFeeAmount;
 
         // Use the ratio to determine if the price increased or decreased and therefore which direction
         // the funds should be transferred towards.
@@ -249,7 +277,7 @@ library PoolSwapLibrary {
             longBalance = longBalance - lossAmount;
         }
 
-        return (longBalance, shortBalance, totalFeeAmount);
+        return (longBalance, shortBalance, longFeeAmount, shortFeeAmount);
     }
 
     /**

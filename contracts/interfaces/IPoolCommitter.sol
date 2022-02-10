@@ -85,13 +85,28 @@ interface IPoolCommitter {
      * @param user The user making the commitment
      * @param amount Amount of the commit
      * @param commitType Type of the commit (Short v Long, Mint v Burn)
+     * @param appropriateUpdateIntervalId Id of update interval where this commit can be executed as part of upkeep
+     * @param mintingFee Minting fee at time of commit creation
      */
-    event CreateCommit(address indexed user, uint256 indexed amount, CommitType indexed commitType);
+    event CreateCommit(
+        address indexed user,
+        uint256 indexed amount,
+        CommitType indexed commitType,
+        uint256 appropriateUpdateIntervalId,
+        bytes16 mintingFee
+    );
 
     /**
      * @notice Creates a notification when a user's aggregate balance is updated
      */
     event AggregateBalanceUpdated(address indexed user);
+
+    /**
+     * @notice Creates a notification when commits for a given update interval are executed
+     * @param updateIntervalId Unique identifier for the relevant update interval
+     * @param burningFee Burning fee at the time of commit execution
+     */
+    event ExecutedCommitsForInterval(uint256 indexed updateIntervalId, bytes16 burningFee);
 
     /**
      * @notice Creates a notification when a claim is made, depositing pool tokens in user's wallet
@@ -105,6 +120,21 @@ interface IPoolCommitter {
      */
     event QuoteAndPoolChanged(address indexed quote, address indexed pool);
 
+    /*
+     * @notice Creates a notification when the burningFee is updated
+     */
+    event BurningFeeSet(uint256 indexed _burningFee);
+
+    /**
+     * @notice Creates a notification when the mintingFee is updated
+     */
+    event MintingFeeSet(uint256 indexed _mintingFee);
+
+    /**
+     * @notice Creates a notification when the changeInterval is updated
+     */
+    event ChangeIntervalSet(uint256 indexed _changeInterval);
+
     // #### Functions
 
     function initialize(
@@ -113,7 +143,8 @@ interface IPoolCommitter {
         address _autoClaim,
         address _factoryOwner,
         uint256 mintingFee,
-        uint256 burningFee
+        uint256 burningFee,
+        uint256 _changeInterval
     ) external;
 
     function commit(
@@ -138,4 +169,12 @@ interface IPoolCommitter {
     function getAppropriateUpdateIntervalId() external view returns (uint128);
 
     function setQuoteAndPool(address _quoteToken, address _leveragedPool) external;
+
+    function setBurningFee(uint256 _burningFee) external;
+
+    function setMintingFee(uint256 _mintingFee) external;
+
+    function setChangeInterval(uint256 _changeInterval) external;
+
+    function getPendingCommits() external view returns (TotalCommitment memory, TotalCommitment memory);
 }

@@ -17,7 +17,7 @@ interface IPoolFactory {
     /**
      * @notice Creates a notification when a pool is deployed
      * @param pool Address of the new pool
-     * @param ticker Ticker of the neew pool
+     * @param ticker Ticker of the new pool
      */
     event DeployPool(address indexed pool, address poolCommitter, string ticker);
 
@@ -95,5 +95,9 @@ interface IPoolFactory {
 
     function setSecondaryFeeSplitPercent(uint256 newFeePercent) external;
 
-    function setMintAndBurnFee(uint256 _mintingFee, uint256 _burningFee) external;
+    function setMintAndBurnFeeAndChangeInterval(
+        uint256 _mintingFee,
+        uint256 _burningFee,
+        uint256 _changeInterval
+    ) external;
 }

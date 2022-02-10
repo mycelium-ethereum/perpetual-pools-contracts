@@ -5,7 +5,8 @@ import "../interfaces/IPoolFactory.sol";
 import "../interfaces/ILeveragedPool.sol";
 import "../interfaces/IPoolCommitter.sol";
 import "../interfaces/IERC20DecimalsWrapper.sol";
-import "../test-utilities/LeveragedPoolBalanceDrainMock.sol";
+import "../interfaces/IAutoClaim.sol";
+import "./LeveragedPoolBalanceDrainMock.sol";
 import "../implementation/PoolToken.sol";
 import "../implementation/PoolKeeper.sol";
 import "../implementation/PoolCommitter.sol";
@@ -36,6 +37,8 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
     // The fee taken for each mint and burn. Fee value as a decimal multiplied by 10^18. For example, 50% is represented as 0.5 * 10^18
     uint256 public mintingFee;
     uint256 public burningFee;
+    //The interval at which the mintingFee in a market either increases or decreases, as per the logic in `PoolCommitter::updateMintingFee`
+    uint256 public changeInterval;
 
     // This is required because we must pass along *some* value for decimal
     // precision to the base pool tokens as we use the Cloneable pattern
@@ -82,6 +85,28 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
         PoolCommitter poolCommitterBase = new PoolCommitter();
         poolCommitterBaseAddress = address(poolCommitterBase);
 
+        ILeveragedPool.Initialization memory baseInitialization = ILeveragedPool.Initialization(
+            address(this),
+            address(this),
+            address(this),
+            address(this),
+            address(this),
+            address(this),
+            address(this),
+            address(this),
+            "BASE_POOL",
+            15,
+            30,
+            0,
+            1,
+            address(this),
+            address(0),
+            address(this),
+            secondaryFeeSplitPercent
+        );
+        // Init bases
+        poolBase.initialize(baseInitialization);
+        pairTokenBase.initialize(address(this), "BASE_TOKEN", "BASE", DEFAULT_NUM_DECIMALS);
         feeReceiver = _feeReceiver;
 
         /* initialise base PoolCommitter template (with dummy values) */
@@ -118,6 +143,7 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
 
         bytes32 uniquePoolHash = keccak256(
             abi.encode(
+                deploymentParameters.updateInterval,
                 deploymentParameters.leverageAmount,
                 deploymentParameters.quoteToken,
                 deploymentParameters.oracleWrapper
@@ -127,7 +153,14 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
         PoolCommitter poolCommitter = PoolCommitter(
             Clones.cloneDeterministic(poolCommitterBaseAddress, uniquePoolHash)
         );
-        poolCommitter.initialize(address(this), invariantCheck, autoClaim, governance, mintingFee, burningFee);
+        poolCommitter.initialize(
+            address(this),
+            deploymentParameters.invariantCheckContract,
+            autoClaim,
+            mintingFee,
+            burningFee,
+            changeInterval
+        );
         address poolCommitterAddress = address(poolCommitter);
         LeveragedPoolBalanceDrainMock pool = LeveragedPoolBalanceDrainMock(
             Clones.cloneDeterministic(poolBaseAddress, uniquePoolHash)
@@ -191,6 +224,7 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
         uint8 settlementDecimals = IERC20DecimalsWrapper(deploymentParameters.quoteToken).decimals();
         bytes32 uniqueTokenHash = keccak256(
             abi.encode(
+                deploymentParameters.updateInterval,
                 deploymentParameters.leverageAmount,
                 deploymentParameters.quoteToken,
                 deploymentParameters.oracleWrapper,
@@ -295,16 +329,22 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
      * @dev This is a percentage in WAD; multiplied by 10^18 e.g. 5% is 0.05 * 10^18
      * @param _mintingFee The fee amount for mints
      * @param _burningFee The fee amount for burns
+     * @param _changeInterval The interval at which the mintingFee in a market either increases or decreases, as per the logic in `PoolCommitter::updateMintingFee`
      * @dev Only callable by the owner of this contract
      * @dev Throws if minting fee is greater than 10%
      * @dev Throws if burning fee is greater than 10%
      * @dev Emits a `MintAndBurnFeesChanged` event on success
      */
-    function setMintAndBurnFee(uint256 _mintingFee, uint256 _burningFee) external override onlyGov {
+    function setMintAndBurnFeeAndChangeInterval(
+        uint256 _mintingFee,
+        uint256 _burningFee,
+        uint256 _changeInterval
+    ) external override onlyGov {
         require(_mintingFee <= 0.1e18, "Fee cannot be > 10%");
         require(_burningFee <= 0.1e18, "Fee cannot be > 10%");
         mintingFee = _mintingFee;
         burningFee = _burningFee;
+        changeInterval = _changeInterval;
         emit MintAndBurnFeesChanged(_mintingFee, _burningFee);
     }
 

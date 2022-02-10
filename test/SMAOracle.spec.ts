@@ -240,11 +240,76 @@ describe("SMAOracle", async () => {
             /* wait for update interval to elapse again (so our assertions
              * pass) */
             await timeout(UPDATE_MILLIS)
+        }
+
+        context("When called while ramping up", async () => {
+            context("When called the first time", async () => {
+                let spotPrice: BigNumberish = 12 /* arbitrary */
+
+                beforeEach(async () => {
+                    await chainlinkOracle.setPrice(spotPrice)
+                })
+
+                it.skip("Returns spot price", async () => {
+                    const expectedPrice: BigNumberish = spotPrice
+
+                    await smaOracle.poll()
+
+                    const actualPrice: BigNumberish = await smaOracle.getPrice()
+
+                    expect(actualPrice).to.be.eq(expectedPrice)
+                })
+            })
+
+            context("When called the second time", async () => {
+                let spotPrices: BigNumber[] = [12, 33].map((x) =>
+                    ethers.BigNumber.from(x)
+                ) /* arbitrary */
+
+                beforeEach(async () => {
+                    await chainlinkOracle.setPrice(spotPrices[0])
+                    await smaOracle.poll()
+                    await chainlinkOracle.setPrice(spotPrices[1])
+                })
+
+                it.skip("Returns price averaged over two periods", async () => {
+                    const expectedPrice: BigNumber = spotPrices[0]
+                        .add(spotPrices[1])
+                        .div(ethers.BigNumber.from(2))
+
+                    await smaOracle.poll()
+
+                    const actualPrice: BigNumberish = await smaOracle.getPrice()
+
+                    expect(actualPrice).to.be.eq(expectedPrice)
+                })
+            })
         })
 
         context(
             "When called with observations array less than capacity",
             async () => {
+                beforeEach(async () => {
+                    /* size of this array needs to be less than the price observer's
+                     * capacity */
+                    const prices: BigNumberish[] = [
+                        2, 3, 4, 3, 7, 8, 12, 10, 11, 12, 14, 5, 5, 9, 10, 1, 1,
+                        0, 2, 2, 3, 4, 6,
+                    ].map((x) =>
+                        ethers.BigNumber.from(x).mul(
+                            ethers.BigNumber.from(10).pow(8)
+                        )
+                    )
+
+                    /* perform update */
+                    for (const price of prices) {
+                        await updatePrice(price, chainlinkOracle, smaOracle)
+                    }
+
+                    /* set the latest price (arbitrary) */
+                    // chainlinkOracle.setPrice(10)
+                })
+
                 it("Updates the SMA price correctly", async () => {
                     await smaOracle.poll()
 

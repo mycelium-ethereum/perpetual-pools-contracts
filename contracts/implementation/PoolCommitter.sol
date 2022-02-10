@@ -20,9 +20,15 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
 
     IAutoClaim public autoClaim;
     uint128 public override updateIntervalId = 1;
+    /// ABDKMathQuad-formatted representation of the number one
+    bytes16 public constant one = 0x3fff0000000000000000000000000000;
     // The amount that is extracted from each mint and burn, being left in the pool. Given as the decimal * 10 ^ 18. For example, 60% fee is 0.6 * 10 ^ 18
-    bytes16 mintingFee;
-    bytes16 burningFee;
+    bytes16 public mintingFee;
+    bytes16 public burningFee;
+    // The amount that the `mintingFee` will change each update interval, based on `updateMintingFee`, given as a decimal * 10 ^ 18 (same format as `_mintingFee`)
+    bytes16 public changeInterval;
+    // Set max minting fee to 100%. This is a ABDKQuad representation of 1 * 10 ** 18
+    bytes16 public constant MAX_MINTING_FEE = 0x403abc16d674ec800000000000000000;
 
     // Index 0 is the LONG token, index 1 is the SHORT token.
     // Fetched from the LeveragedPool when leveragedPool is set
@@ -112,6 +118,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
      * @param _factoryOwner Address of the owner of the `PoolFactory`
      * @param _mintingFee The percentage that is taken from each mint, given as a decimal * 10 ^ 18
      * @param _burningFee The percentage that is taken from each burn, given as a decimal * 10 ^ 18
+     * @param _changeInterval The amount that the `mintingFee` will change each update interval, based on `updateMintingFee`, given as a decimal * 10 ^ 18 (same format as `_mintingFee`)
      * @dev Throws if factory contract address is null
      * @dev Throws if autoClaim contract address is null
      * @dev Throws if invariantCheck contract address is null
@@ -119,6 +126,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
      * @dev Only callable by the associated initializer address
      * @dev Throws if minting fee is over 100%
      * @dev Throws if burning fee is over 100%
+     * @dev Emits a `ChangeIntervalSet` event on success
      */
     function initialize(
         address _factory,
@@ -126,7 +134,8 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         address _autoClaim,
         address _factoryOwner,
         uint256 _mintingFee,
-        uint256 _burningFee
+        uint256 _burningFee,
+        uint256 _changeInterval
     ) external override initializer {
         require(_factory != address(0), "Factory address cannot be 0 address");
         require(_invariantCheckContract != address(0), "InvariantCheck address cannot be 0 address");
@@ -137,6 +146,8 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         factory = _factory;
         mintingFee = PoolSwapLibrary.convertUIntToDecimal(_mintingFee);
         burningFee = PoolSwapLibrary.convertUIntToDecimal(_burningFee);
+        changeInterval = PoolSwapLibrary.convertUIntToDecimal(_changeInterval);
+        emit ChangeIntervalSet(_changeInterval);
         autoClaim = IAutoClaim(_autoClaim);
         invariantCheckContract = _invariantCheckContract;
         invariantCheck = IInvariantCheck(_invariantCheckContract);
@@ -457,6 +468,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
     /**
      * @notice Executes all commitments currently queued for the associated `LeveragedPool`
      * @dev Only callable by the associated `LeveragedPool` contract
+     * @dev Emits an `ExecutedCommitsForInterval` event for each update interval processed
      */
     function executeCommitments() external override onlyPool {
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
@@ -495,9 +507,11 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             if (block.timestamp >= lastPriceTimestamp + updateInterval * counter) {
                 // Another update interval has passed, so we have to do the nextIntervalCommit as well
                 _updateIntervalId = updateIntervalId;
-                burnFeeHistory[_updateIntervalId] = burningFee;
-                executeGivenCommitments(totalPoolCommitments[_updateIntervalId]);
-                delete totalPoolCommitments[_updateIntervalId];
+                burnFeeHistory[updateIntervalId] = burningFee;
+                executeGivenCommitments(totalPoolCommitments[updateIntervalId]);
+                emit ExecutedCommitsForInterval(updateIntervalId, burningFee);
+                delete totalPoolCommitments[updateIntervalId];
+
                 // counter overflowing would require an unrealistic number of update intervals
                 updateIntervalId += 1;
             } else {
@@ -507,6 +521,38 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             // This wouldn't fit in a block, anyway.
             unchecked {
                 counter += 1;
+            }
+        }
+
+        (uint256 shortBalance, uint256 longBalance) = pool.balances();
+
+        uint256 longTotalSupply = IERC20(tokens[LONG_INDEX]).totalSupply();
+        uint256 shortTotalSupply = IERC20(tokens[SHORT_INDEX]).totalSupply();
+
+        updateMintingFee(
+            PoolSwapLibrary.getPrice(longBalance, longTotalSupply),
+            PoolSwapLibrary.getPrice(shortBalance, shortTotalSupply)
+        );
+    }
+
+    function updateMintingFee(bytes16 longTokenPrice, bytes16 shortTokenPrice) private {
+        bytes16 multiple = PoolSwapLibrary.multiplyBytes(longTokenPrice, shortTokenPrice);
+        if (PoolSwapLibrary.compareDecimals(one, multiple) == -1) {
+            // longTokenPrice * shortTokenPrice > 1
+            if (PoolSwapLibrary.compareDecimals(mintingFee, changeInterval) == -1) {
+                // mintingFee < changeInterval. Prevent underflow by setting mintingFee to lowest possible value (0)
+                mintingFee = 0;
+            } else {
+                mintingFee = PoolSwapLibrary.subtractBytes(mintingFee, changeInterval);
+            }
+        } else {
+            // longTokenPrice * shortTokenPrice <= 1
+            mintingFee = PoolSwapLibrary.addBytes(mintingFee, changeInterval);
+
+            if (PoolSwapLibrary.compareDecimals(mintingFee, MAX_MINTING_FEE) == 1) {
+                // mintingFee is greater than 1 (100%).
+                // We want to cap this at a theoretical max of 100%
+                mintingFee = MAX_MINTING_FEE;
             }
         }
     }
@@ -725,6 +771,39 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         leveragedPool = _leveragedPool;
         tokens = ILeveragedPool(leveragedPool).poolTokens();
         emit QuoteAndPoolChanged(_quoteToken, _leveragedPool);
+    }
+
+    /**
+     * @notice Sets the burning fee to be applied to future burn commitments indefinitely
+     * @param _burningFee The new burning fee
+     * @dev Converts `_burningFee` to a `bytes16` to be compatible with arithmetic library
+     * @dev Emits a `BurningFeeSet` event on success
+     */
+    function setBurningFee(uint256 _burningFee) external override onlyGov {
+        burningFee = PoolSwapLibrary.convertUIntToDecimal(_burningFee);
+        emit BurningFeeSet(_burningFee);
+    }
+
+    /**
+     * @notice Sets the minting fee to be applied to future burn commitments indefinitely
+     * @param _mintingFee The new minting fee
+     * @dev Converts `_mintingFee` to a `bytes16` to be compatible with arithmetic library
+     * @dev Emits a `MintingFeeSet` event on success
+     */
+    function setMintingFee(uint256 _mintingFee) external override onlyGov {
+        mintingFee = PoolSwapLibrary.convertUIntToDecimal(_mintingFee);
+        emit MintingFeeSet(_mintingFee);
+    }
+
+    /**
+     * @notice Sets the change interval used to update the minting fee every update interval
+     * @param _changeInterval The new change interval
+     * @dev Converts `_changeInterval` to a `bytes16` to be compatible with arithmetic library TODO UPDATE
+     * @dev Emits a `ChangeIntervalSet` event on success
+     */
+    function setChangeInterval(uint256 _changeInterval) external override onlyGov {
+        changeInterval = PoolSwapLibrary.convertUIntToDecimal(_changeInterval);
+        emit ChangeIntervalSet(_changeInterval);
     }
 
     /**
