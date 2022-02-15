@@ -428,7 +428,6 @@ describe("PoolFactory.deployPool", () => {
             const smaOracle = await smaOracleFactory.deploy(
                 oracleWrapper.address,
                 8,
-                priceObserver.address,
                 5,
                 1,
                 await signers[0].getAddress()

@@ -75,6 +75,9 @@ contract SMAOracle is IOracleWrapper {
 
     uint8 public constant MAX_PERIODS = 24;
 
+    int256 public scaler;
+    uint256 public constant MAX_DECIMALS = 18;
+
     /**
      * @dev throws if _periods is out of bounds
      * @param _inputFeedAddress Address of the price feed to use in calculating the SMA
@@ -84,16 +87,21 @@ contract SMAOracle is IOracleWrapper {
      */
     constructor(
         address _inputFeedAddress,
+        uint256 _inputFeedDecimals,
         uint256 _numPeriods,
         uint256 _updateInterval,
         address _deployer
     ) {
         require(_inputFeedAddress != address(0), "SMA: Null address forbidden");
         require(_numPeriods > 0 && _numPeriods <= MAX_PERIODS, "SMA: Out of bounds");
+        require(_inputFeedDecimals <= MAX_DECIMALS, "SMA: Decimal precision too high");
         numPeriods = _numPeriods;
         updateInterval = _updateInterval;
         inputFeedAddress = _inputFeedAddress;
         deployer = _deployer;
+
+        /* `scaler` is always <= 10^18 and >= 1 so this cast is safe */
+        scaler = int256(10**(MAX_DECIMALS - _inputFeedDecimals));
     }
 
     function oracle() external view override returns (address) {
@@ -141,7 +149,7 @@ contract SMAOracle is IOracleWrapper {
      * @return Raw (signed) integer
      */
     function fromWad(int256 wad) external view override returns (int256) {
-        return wad;
+        return wad / scaler;
     }
 
     /**
@@ -190,5 +198,14 @@ contract SMAOracle is IOracleWrapper {
 
         /// This is safe because we know that `k` will be between 1 and MAX_PERIODS
         return sum / int256(k);
+    }
+
+    /**
+     * @notice Converts `x` to a wad value
+     * @param x Number to convert to wad value
+     * @return `x` but wad
+     */
+    function toWad(int256 x) private view returns (int256) {
+        return x * scaler;
     }
 }
