@@ -13,12 +13,12 @@ contract SMAOracle is IOracleWrapper {
     /*
      * A note on "ramping up":
      *
-     * `SMAWrapper` works by storing spot prices and calculating the average of
+     * `SMAOracle` works by storing spot prices and calculating the average of
      * the most recent k prices. Obviously, we need to handle the case of insufficient
      * data: specifically, the case where the number of actual stored observations, n,
      * is strictly less than the number of sampling periods to use for averaging, k.
      *
-     * To achieve this, `SMAWrapper` needs to "ramp up". This means that the
+     * To achieve this, `SMAOracle` needs to "ramp up". This means that the
      * number of sampling periods *actually used*, K, looks like this (w.r.t.
      * time, t):
      *
@@ -44,7 +44,7 @@ contract SMAOracle is IOracleWrapper {
      *
      *
      * Here, K is the `periods` instance variable and time, t, is an integer
-     * representing successive calls to `SMAWrapper::poll`.
+     * representing successive calls to `SMAOracle::poll`.
      *
      */
 
@@ -64,7 +64,7 @@ contract SMAOracle is IOracleWrapper {
     address public immutable override deployer;
 
     /// Number of desired sampling periods to use -- this will differ from
-    /// `periods` initially until the SMA Wrapper ramps up
+    /// the actual number of periods used until the SMAOracle ramps up.
     uint256 public immutable numPeriods;
 
     /// Duration between price updates
@@ -78,13 +78,6 @@ contract SMAOracle is IOracleWrapper {
     int256 public scaler;
     uint256 public constant MAX_DECIMALS = 18;
 
-    /**
-     * @dev throws if _periods is out of bounds
-     * @param _inputFeedAddress Address of the price feed to use in calculating the SMA
-     * @param _numPeriods Number of periods to use in calculating the SMA
-     * @param _updateInterval Time between price updates
-     * @param _deployer Address of the deployer of the contract
-     */
     constructor(
         address _inputFeedAddress,
         uint256 _inputFeedDecimals,
@@ -110,7 +103,7 @@ contract SMAOracle is IOracleWrapper {
 
     /**
      * @notice Retrieves the current SMA price
-     * @dev Recomputes SMA across sample size (`currentPeriods`)
+     * @dev Recomputes SMA across sample size
      */
     function getPrice() external view override returns (int256) {
         return _calculateSMA();
@@ -144,7 +137,7 @@ contract SMAOracle is IOracleWrapper {
 
     /**
      * @notice Converts `wad` to a raw integer
-     * @dev This is a no-op for `SMAWrapper`
+     * @dev This is a no-op for `SMAOracle`
      * @param wad wad maths value
      * @return Raw (signed) integer
      */
@@ -153,7 +146,7 @@ contract SMAOracle is IOracleWrapper {
     }
 
     /**
-     * @notice Add a new spot price observation to the SMA Wrapper
+     * @notice Add a new spot price observation to the SMA Oracle
      * @dev O(n) complexity (with n being `capacity`) due to rotation of
      *      underlying observations array and subsequent recalculation of SMA
      *      price
@@ -177,8 +170,9 @@ contract SMAOracle is IOracleWrapper {
     /**
      * @notice Calculates the simple moving average of the provided dataset for the specified number of periods
      * @return Simple moving average based on the last `k` prices
-     * @dev O(k) complexity due to linear traversal of the final `k` elements of `xs`
-     * @dev Note that the signedness of the return type is due to the signedness of the elements of `xs`
+     * @dev `k` is the lower value of `numPeriods` and `periodCount`
+     * @dev O(k) complexity due to linear traversal of the final `k` elements of `prices`
+     * @dev Note that the signedness of the return type is due to the signedness of the elements of `prices`
      */
     function _calculateSMA() internal view returns (int256) {
         uint256 k = periodCount;
