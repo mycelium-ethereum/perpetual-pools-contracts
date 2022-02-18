@@ -76,7 +76,7 @@ contract SMAOracle is IOracleWrapper {
 
     uint8 public constant MAX_PERIODS = 24;
 
-    int256 public scaler;
+    int256 public immutable scaler;
     uint256 public constant MAX_DECIMALS = 18;
 
     constructor(
