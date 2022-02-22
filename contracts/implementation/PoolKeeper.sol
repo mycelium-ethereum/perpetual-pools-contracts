@@ -47,7 +47,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         address oracleWrapper = ILeveragedPool(_poolAddress).oracleWrapper();
         int256 firstPrice = IOracleWrapper(oracleWrapper).getPrice();
         require(firstPrice > 0, "First price is non-positive");
-        int256 startingPrice = ABDKMathQuad.toInt(ABDKMathQuad.mul(ABDKMathQuad.fromInt(firstPrice), fixedPoint));
+        int256 startingPrice = firstPrice;
         emit PoolAdded(_poolAddress, firstPrice);
         executionPrice[_poolAddress] = startingPrice;
     }
