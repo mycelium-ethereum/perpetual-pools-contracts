@@ -6,6 +6,7 @@ import {
     TestChainlinkOracle,
     TestChainlinkOracle__factory,
     SMAOracle__factory,
+    ChainlinkOracleWrapper__factory,
 } from "../../types"
 
 describe("SMAOracle - getPrice", () => {
@@ -26,12 +27,22 @@ describe("SMAOracle - getPrice", () => {
         chainlinkOracle = await TestChainlinkOracleFactory.deploy()
         await chainlinkOracle.deployed()
 
+        const ChainlinkOracleWrapperFactory = (await ethers.getContractFactory(
+            "ChainlinkOracleWrapper"
+        )) as ChainlinkOracleWrapper__factory
+        const chainlinkOracleWrapper =
+            await ChainlinkOracleWrapperFactory.deploy(
+                chainlinkOracle.address,
+                owner.address
+            )
+        await chainlinkOracleWrapper.deployed()
+
         const SMAOracleFactory = (await ethers.getContractFactory(
             "SMAOracle"
         )) as SMAOracle__factory
         smaOracle = await SMAOracleFactory.deploy(
-            chainlinkOracle.address,
-            await chainlinkOracle.decimals(),
+            chainlinkOracleWrapper.address,
+            18,
             numPeriods,
             updateInterval,
             owner.address

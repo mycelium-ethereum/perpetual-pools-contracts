@@ -420,8 +420,8 @@ describe("PoolFactory.deployPool", () => {
                 signers[0]
             )) as SMAOracle__factory
             const smaOracle = await smaOracleFactory.deploy(
-                chainlinkOracle.address,
-                8,
+                oracleWrapper.address,
+                18,
                 5,
                 1,
                 await signers[0].getAddress()

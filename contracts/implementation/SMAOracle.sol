@@ -3,7 +3,6 @@ pragma solidity 0.8.7;
 import "prb-math/contracts/PRBMathSD59x18.sol";
 
 import "../interfaces/IOracleWrapper.sol";
-import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV2V3Interface.sol";
 
 /**
  * @notice Applies a simple moving average (SMA) smoothing function to the spot
@@ -59,7 +58,7 @@ contract SMAOracle is IOracleWrapper {
     uint256 public periodCount;
 
     /// Price feed to use for SMA
-    address public immutable oracleAddress;
+    address public immutable inputFeedAddress;
 
     // Deployer of the contract
     address public immutable override deployer;
@@ -80,18 +79,18 @@ contract SMAOracle is IOracleWrapper {
     uint256 public constant MAX_DECIMALS = 18;
 
     constructor(
-        address _oracleAddress,
+        address _inputFeedAddress,
         uint256 _inputFeedDecimals,
         uint256 _numPeriods,
         uint256 _updateInterval,
         address _deployer
     ) {
-        require(_oracleAddress != address(0), "SMA: Null address forbidden");
+        require(_inputFeedAddress != address(0), "SMA: Null address forbidden");
         require(_numPeriods > 0 && _numPeriods <= MAX_PERIODS, "SMA: Out of bounds");
         require(_inputFeedDecimals <= MAX_DECIMALS, "SMA: Decimal precision too high");
         numPeriods = _numPeriods;
         updateInterval = _updateInterval;
-        oracleAddress = _oracleAddress;
+        inputFeedAddress = _inputFeedAddress;
         deployer = _deployer;
 
         /* `scaler` is always <= 10^18 and >= 1 so this cast is safe */
@@ -99,7 +98,7 @@ contract SMAOracle is IOracleWrapper {
     }
 
     function oracle() external view override returns (address) {
-        return oracleAddress;
+        return inputFeedAddress;
     }
 
     /**
@@ -153,7 +152,7 @@ contract SMAOracle is IOracleWrapper {
      */
     function _update() internal {
         /* query the underlying price feed */
-        (int256 latestPrice, ) = _latestRoundData();
+        int256 latestPrice = IOracleWrapper(inputFeedAddress).getPrice();
 
         /* store the latest price */
         prices[periodCount] = latestPrice;
@@ -165,15 +164,6 @@ contract SMAOracle is IOracleWrapper {
 
         periodCount++;
         lastUpdate = block.timestamp;
-    }
-
-    function _latestRoundData() internal view returns (int256 _price, uint80 _roundID) {
-        (uint80 roundID, int256 price, , uint256 timeStamp, uint80 answeredInRound) = AggregatorV2V3Interface(
-            oracleAddress
-        ).latestRoundData();
-        require(answeredInRound >= roundID, "COA: Stale answer");
-        require(timeStamp != 0, "COA: Round incomplete");
-        return (toWad(price), roundID);
     }
 
     /**
