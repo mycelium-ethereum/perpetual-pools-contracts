@@ -250,7 +250,10 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         uint256 frontRunningInterval = pool.frontRunningInterval();
 
         if (payForClaim) {
+            require(msg.value != 0, "Must pay for claim");
             autoClaim.makePaidClaimRequest{value: msg.value}(msg.sender);
+        } else {
+            require(msg.value == 0, "user's ETH would be lost");
         }
 
         uint256 appropriateUpdateIntervalId = PoolSwapLibrary.appropriateUpdateIntervalId(
