@@ -187,7 +187,7 @@ contract SMAOracle is IOracleWrapper {
             sum += prices[i];
         }
 
-        /// This is safe because we know that `k` will be between 1 and MAX_PERIODS
+        // This is safe because we know that `k` will be between 1 and MAX_PERIODS
         return sum / int256(k);
     }
 
