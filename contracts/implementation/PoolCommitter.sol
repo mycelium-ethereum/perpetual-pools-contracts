@@ -20,15 +20,13 @@ contract PoolCommitter is IPoolCommitter, Initializable {
 
     IAutoClaim public autoClaim;
     uint128 public override updateIntervalId = 1;
-    /// ABDKMathQuad-formatted representation of the number one
-    bytes16 public constant one = 0x3fff0000000000000000000000000000;
     // The amount that is extracted from each mint and burn, being left in the pool. Given as the decimal * 10 ^ 18. For example, 60% fee is 0.6 * 10 ^ 18
     bytes16 public mintingFee;
     bytes16 public burningFee;
     // The amount that the `mintingFee` will change each update interval, based on `updateMintingFee`, given as a decimal * 10 ^ 18 (same format as `_mintingFee`)
     bytes16 public changeInterval;
     // Set max minting fee to 100%. This is a ABDKQuad representation of 1 * 10 ** 18
-    bytes16 public constant MAX_MINTING_FEE = 0x403abc16d674ec800000000000000000;
+    bytes16 public MAX_MINTING_FEE;
 
     // Index 0 is the LONG token, index 1 is the SHORT token.
     // Fetched from the LeveragedPool when leveragedPool is set
@@ -87,6 +85,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         burningFee = PoolSwapLibrary.convertUIntToDecimal(_burningFee);
         invariantCheckContract = _invariantCheckContract;
         invariantCheck = IInvariantCheck(_invariantCheckContract);
+        MAX_MINTING_FEE = PoolSwapLibrary.ABDK1E18;
     }
 
     /**
@@ -480,7 +479,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
 
     function updateMintingFee(bytes16 longTokenPrice, bytes16 shortTokenPrice) private {
         bytes16 multiple = PoolSwapLibrary.multiplyBytes(longTokenPrice, shortTokenPrice);
-        if (PoolSwapLibrary.compareDecimals(one, multiple) == -1) {
+        if (PoolSwapLibrary.compareDecimals(PoolSwapLibrary.ONE, multiple) == -1) {
             // longTokenPrice * shortTokenPrice > 1
             if (PoolSwapLibrary.compareDecimals(mintingFee, changeInterval) == -1) {
                 // mintingFee < changeInterval. Prevent underflow by setting mintingFee to lowest possible value (0)

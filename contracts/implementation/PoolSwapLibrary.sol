@@ -6,7 +6,7 @@ import "abdk-libraries-solidity/ABDKMathQuad.sol";
 /// @title Library for various useful (mostly) mathematical functions
 library PoolSwapLibrary {
     /// ABDKMathQuad-formatted representation of the number one
-    bytes16 public constant one = 0x3fff0000000000000000000000000000;
+    bytes16 public constant ONE = 0x3fff0000000000000000000000000000;
 
     /// Maximum number of decimal places supported by this contract
     /// (ABDKMathQuad defines this but it's private)
@@ -14,6 +14,9 @@ library PoolSwapLibrary {
 
     /// Maximum precision supportable via wad arithmetic (for this contract)
     uint256 public constant WAD_PRECISION = 10**18;
+
+    // This is a ABDKQuad representation of 1 * 10 ** 18
+    bytes16 public constant ABDK1E18 = 0x403abc16d674ec800000000000000000;
 
     /// Information required to update a given user's aggregated balance
     struct UpdateData {
@@ -202,7 +205,7 @@ library PoolSwapLibrary {
         //              = 2 ^ (leverage * log2([old/new]))
         return
             ABDKMathQuad.pow_2(
-                ABDKMathQuad.mul(leverage, ABDKMathQuad.log_2(direction < 0 ? ratio : ABDKMathQuad.div(one, ratio)))
+                ABDKMathQuad.mul(leverage, ABDKMathQuad.log_2(direction < 0 ? ratio : ABDKMathQuad.div(ONE, ratio)))
             );
     }
 
@@ -214,7 +217,7 @@ library PoolSwapLibrary {
     function getLossAmount(bytes16 lossMultiplier, uint256 balance) public pure returns (uint256) {
         return
             ABDKMathQuad.toUInt(
-                ABDKMathQuad.mul(ABDKMathQuad.sub(one, lossMultiplier), ABDKMathQuad.fromUInt(balance))
+                ABDKMathQuad.mul(ABDKMathQuad.sub(ONE, lossMultiplier), ABDKMathQuad.fromUInt(balance))
             );
     }
 
@@ -257,7 +260,7 @@ library PoolSwapLibrary {
         // the funds should be transferred towards.
 
         bytes16 ratio = divInt(newPrice, oldPrice);
-        int8 direction = compareDecimals(ratio, PoolSwapLibrary.one);
+        int8 direction = compareDecimals(ratio, PoolSwapLibrary.ONE);
         // Take into account the leverage
         bytes16 lossMultiplier = getLossMultiplier(ratio, direction, leverageAmount);
 
@@ -394,7 +397,7 @@ library PoolSwapLibrary {
      */
     function getPrice(uint256 sideBalance, uint256 tokenSupply) external pure returns (bytes16) {
         if (tokenSupply == 0) {
-            return one;
+            return ONE;
         }
         return ABDKMathQuad.div(ABDKMathQuad.fromUInt(sideBalance), ABDKMathQuad.fromUInt(tokenSupply));
     }
