@@ -111,11 +111,11 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         // Start a new round
         // Get price in WAD format
         int256 lastExecutionPrice = executionPrice[_pool];
-        executionPrice[_pool] = latestPrice;
 
         // This allows us to still batch multiple calls to executePriceChange, even if some are invalid
         // Without reverting the entire transaction
         try pool.poolUpkeep(lastExecutionPrice, latestPrice) {
+            executionPrice[_pool] = latestPrice;
             // If poolUpkeep is successful, refund the keeper for their gas costs
             uint256 gasSpent = startGas - gasleft();
 
