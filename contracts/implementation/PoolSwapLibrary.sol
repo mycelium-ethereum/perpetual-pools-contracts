@@ -480,7 +480,7 @@ library PoolSwapLibrary {
             uint256 _newSettlementTokens
         )
     {
-        if (data.updateIntervalId == data.currentUpdateIntervalId) {
+        if (data.updateIntervalId >= data.currentUpdateIntervalId) {
             // Update interval has not passed: No change
             return (0, 0, 0, 0, 0);
         }
