@@ -1,5 +1,6 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { expect } from "chai"
+import { BigNumberish } from "ethers"
 import { ethers } from "hardhat"
 import {
     SMAOracle,
@@ -15,8 +16,8 @@ describe("SMAOracle - getPriceAndMetadata", () => {
     let user2: SignerWithAddress
     let smaOracle: SMAOracle
     let chainlinkOracle: TestChainlinkOracle
-    const numPeriods = 10
-    const updateInterval = 0
+    const numPeriods: BigNumberish = 10
+    const updateInterval: BigNumberish = 0
 
     beforeEach(async () => {
         ;[owner, user1, user2] = await ethers.getSigners()
@@ -56,7 +57,7 @@ describe("SMAOracle - getPriceAndMetadata", () => {
     })
 
     it("should return the spot price after the first poll", async () => {
-        const unitPrice = 2
+        const unitPrice: BigNumberish = 2
         const chainlinkDecimals = await chainlinkOracle.decimals()
         const price = ethers.utils.parseUnits(
             unitPrice.toString(),
@@ -71,7 +72,7 @@ describe("SMAOracle - getPriceAndMetadata", () => {
     })
 
     it("should return the correct price with 2 entries", async () => {
-        const unitPrices = [2, 3]
+        const unitPrices: BigNumberish[] = [2, 3]
         const chainlinkDecimals = await chainlinkOracle.decimals()
         for (const unitPrice of unitPrices) {
             const price = ethers.utils.parseUnits(
@@ -91,7 +92,7 @@ describe("SMAOracle - getPriceAndMetadata", () => {
     })
 
     it("should return the correct price once fully ramped up", async () => {
-        const unitPrices = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] // 10 periods
+        const unitPrices: BigNumberish[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] // 10 periods
         const chainlinkDecimals = await chainlinkOracle.decimals()
         for (const unitPrice of unitPrices) {
             const price = ethers.utils.parseUnits(
@@ -111,7 +112,7 @@ describe("SMAOracle - getPriceAndMetadata", () => {
     })
 
     it("should return the correct price after a price is rolled off", async () => {
-        const unitPrices = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] // More than 10 periods
+        const unitPrices: BigNumberish[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] // More than 10 periods
 
         const chainlinkDecimals = await chainlinkOracle.decimals()
         for (const unitPrice of unitPrices) {
@@ -132,7 +133,7 @@ describe("SMAOracle - getPriceAndMetadata", () => {
     })
 
     it("should return the correct price after it has doubled the numPeriods", async () => {
-        const unitPrices = [
+        const unitPrices: BigNumberish[] = [
             1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
             20, 21, 22, 23, 24,
         ]
@@ -156,7 +157,7 @@ describe("SMAOracle - getPriceAndMetadata", () => {
     })
 
     it("should return the correct price with 25 prices", async () => {
-        const unitPrices = [
+        const unitPrices: BigNumberish[] = [
             1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
             20, 21, 22, 23, 24, 25,
         ]
@@ -171,7 +172,7 @@ describe("SMAOracle - getPriceAndMetadata", () => {
             await smaOracle.poll()
         }
         const [result] = await smaOracle.getPriceAndMetadata()
-        const expectedUnitPrice = 20.5
+        const expectedUnitPrice: BigNumberish = 20.5
         const expectedPrice = ethers.utils.parseUnits(
             expectedUnitPrice.toString(),
             18

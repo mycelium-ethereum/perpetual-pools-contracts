@@ -1,5 +1,6 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { expect } from "chai"
+import { BigNumberish } from "ethers"
 import { ethers } from "hardhat"
 import {
     SMAOracle,
@@ -15,8 +16,8 @@ describe("SMAOracle - getPrice", () => {
     let user2: SignerWithAddress
     let smaOracle: SMAOracle
     let chainlinkOracle: TestChainlinkOracle
-    const numPeriods = 10
-    const updateInterval = 60
+    const numPeriods: BigNumberish = 10
+    const updateInterval: BigNumberish = 60
 
     beforeEach(async () => {
         ;[owner, user1, user2] = await ethers.getSigners()
