@@ -146,9 +146,7 @@ contract SMAOracle is IOracleWrapper {
 
     /**
      * @notice Add a new spot price observation to the SMA Oracle
-     * @dev O(n) complexity (with n being `capacity`) due to rotation of
-     *      underlying observations array and subsequent recalculation of SMA
-     *      price
+     * @dev O(1) complexity due to constant arithmetic
      */
     function _update() internal {
         /* query the underlying price feed */
