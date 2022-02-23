@@ -567,7 +567,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         uint256 unAggregatedLength = currentIntervalIds.length;
         for (uint256 i = 0; i < unAggregatedLength; i++) {
             uint256 id = currentIntervalIds[i];
-            if (currentIntervalIds[i] == 0) {
+            if (id == 0) {
                 continue;
             }
             UserCommitment memory commitment = userCommitments[user][id];
@@ -665,7 +665,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         uint256 unAggregatedLength = currentIntervalIds.length;
         for (uint256 i = 0; i < unAggregatedLength; i++) {
             uint256 id = currentIntervalIds[i];
-            if (currentIntervalIds[i] == 0) {
+            if (id == 0) {
                 continue;
             }
             UserCommitment memory commitment = userCommitments[user][id];
