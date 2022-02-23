@@ -6,6 +6,7 @@ import "../interfaces/ILeveragedPool.sol";
 import "../interfaces/IPoolCommitter.sol";
 import "../interfaces/IERC20DecimalsWrapper.sol";
 import "../interfaces/IAutoClaim.sol";
+import "../interfaces/ITwoStepGovernance.sol";
 import "./LeveragedPoolBalanceDrainMock.sol";
 import "../implementation/PoolToken.sol";
 import "../implementation/PoolKeeper.sol";
@@ -85,32 +86,10 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
         PoolCommitter poolCommitterBase = new PoolCommitter();
         poolCommitterBaseAddress = address(poolCommitterBase);
 
-        ILeveragedPool.Initialization memory baseInitialization = ILeveragedPool.Initialization(
-            address(this),
-            address(this),
-            address(this),
-            address(this),
-            address(this),
-            address(this),
-            address(this),
-            address(this),
-            "BASE_POOL",
-            15,
-            30,
-            0,
-            1,
-            address(this),
-            address(0),
-            address(this),
-            secondaryFeeSplitPercent
-        );
-        // Init bases
-        poolBase.initialize(baseInitialization);
-        pairTokenBase.initialize(address(this), "BASE_TOKEN", "BASE", DEFAULT_NUM_DECIMALS);
         feeReceiver = _feeReceiver;
 
         /* initialise base PoolCommitter template (with dummy values) */
-        poolCommitterBase.initialize(address(this), address(this), address(this), governance, 0, 0);
+        poolCommitterBase.initialize(address(this), address(this), address(this), governance, 0, 0, 0);
     }
 
     /**
@@ -153,20 +132,32 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
         PoolCommitter poolCommitter = PoolCommitter(
             Clones.cloneDeterministic(poolCommitterBaseAddress, uniquePoolHash)
         );
+
+        address poolCommitterAddress = address(poolCommitter);
         poolCommitter.initialize(
             address(this),
-            deploymentParameters.invariantCheckContract,
+            invariantCheck,
             autoClaim,
+            governance,
             mintingFee,
             burningFee,
             changeInterval
         );
-        address poolCommitterAddress = address(poolCommitter);
+
+        require(
+            deploymentParameters.leverageAmount >= 1 && deploymentParameters.leverageAmount <= maxLeverage,
+            "PoolKeeper: leveraged amount invalid"
+        );
+        require(
+            IERC20DecimalsWrapper(deploymentParameters.quoteToken).decimals() <= MAX_DECIMALS,
+            "Decimal precision too high"
+        );
+
         LeveragedPoolBalanceDrainMock pool = LeveragedPoolBalanceDrainMock(
             Clones.cloneDeterministic(poolBaseAddress, uniquePoolHash)
         );
         address _pool = address(pool);
-        emit DeployPool(_pool, poolCommitterAddress, deploymentParameters.poolName);
+        emit DeployPool(_pool, address(poolCommitter), deploymentParameters.poolName);
 
         string memory leverage = Strings.toString(deploymentParameters.leverageAmount);
 
@@ -202,7 +193,7 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
             numPools++;
         }
         isValidPool[_pool] = true;
-        isValidPoolCommitter[poolCommitterAddress] = true;
+        isValidPoolCommitter[address(poolCommitter)] = true;
         return _pool;
     }
 
@@ -224,7 +215,6 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
         uint8 settlementDecimals = IERC20DecimalsWrapper(deploymentParameters.quoteToken).decimals();
         bytes32 uniqueTokenHash = keccak256(
             abi.encode(
-                deploymentParameters.updateInterval,
                 deploymentParameters.leverageAmount,
                 deploymentParameters.quoteToken,
                 deploymentParameters.oracleWrapper,
@@ -259,6 +249,7 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
     function setInvariantCheck(address _invariantCheck) external override onlyGov {
         require(_invariantCheck != address(0), "address cannot be null");
         invariantCheck = _invariantCheck;
+        emit InvariantCheckChanged(_invariantCheck);
     }
 
     /**
@@ -270,6 +261,7 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
     function setAutoClaim(address _autoClaim) external override onlyGov {
         require(_autoClaim != address(0), "address cannot be null");
         autoClaim = _autoClaim;
+        emit AutoClaimChanged(_autoClaim);
     }
 
     /**
@@ -340,8 +332,9 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
         uint256 _burningFee,
         uint256 _changeInterval
     ) external override onlyGov {
-        require(_mintingFee <= 0.1e18, "Fee cannot be > 10%");
-        require(_burningFee <= 0.1e18, "Fee cannot be > 10%");
+        require(_mintingFee <= 1e18, "Fee cannot be > 100%");
+        require(_burningFee <= 1e18, "Fee cannot be > 100%");
+        require(_changeInterval <= 1e18, "Change interval cannot be > 100%");
         mintingFee = _mintingFee;
         burningFee = _burningFee;
         changeInterval = _changeInterval;

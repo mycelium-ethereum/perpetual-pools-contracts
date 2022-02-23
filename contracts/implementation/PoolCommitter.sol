@@ -314,7 +314,15 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             autoClaim.makePaidClaimRequest{value: msg.value}(msg.sender);
         }
 
-        emit CreateCommit(msg.sender, amount, commitType);
+        emit CreateCommit(
+            msg.sender,
+            amount,
+            commitType,
+            appropriateUpdateIntervalId,
+            fromAggregateBalance,
+            payForClaim,
+            mintingFee
+        );
     }
 
     /**

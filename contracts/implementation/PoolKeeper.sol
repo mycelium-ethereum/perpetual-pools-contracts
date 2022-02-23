@@ -34,7 +34,6 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     IPoolFactory public factory;
 
     uint256 public gasPrice = 10 gwei;
-    address public observer;
 
     /**
      * @notice Ensures that the caller is the associated `PoolFactory` contract
@@ -48,18 +47,6 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     constructor(address _factory) {
         require(_factory != address(0), "Factory cannot be 0 address");
         factory = IPoolFactory(_factory);
-    }
-
-    /**
-     * @notice Sets the address of the associated `PriceObserver` contract
-     * @param _observer Address of the `PriceObserver` contract
-     * @dev Throws if provided address is null
-     * @dev Emits a `PriceObserverChanged` event on success
-     */
-    function setPriceObserver(address _observer) external onlyOwner {
-        require(_observer != address(0), "Price observer cannot be 0 address");
-        observer = _observer;
-        emit PriceObserverChanged(_observer);
     }
 
     /**
@@ -116,7 +103,6 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      */
     function performUpkeepSinglePool(address _pool) public override {
         uint256 startGas = gasleft();
-        require(observer != address(0), "Observer not initialized");
 
         // validate the pool, check that the interval time has passed
         if (!isUpkeepRequiredSinglePool(_pool)) {
@@ -125,11 +111,10 @@ contract PoolKeeper is IPoolKeeper, Ownable {
 
         ILeveragedPool pool = ILeveragedPool(_pool);
 
-        /* update SMA oracle */
-        PriceObserver priceObserver = PriceObserver(observer);
-        IOracleWrapper priceObserverWriter = IOracleWrapper(priceObserver.getWriter());
+        /* update SMA oracle, does nothing for spot oracles */
+        IOracleWrapper poolOracleWrapper = IOracleWrapper(pool.oracleWrapper());
 
-        try priceObserverWriter.poll() {} catch Error(string memory reason) {
+        try poolOracleWrapper.poll() {} catch Error(string memory reason) {
             emit PoolUpkeepError(_pool, reason);
         }
 

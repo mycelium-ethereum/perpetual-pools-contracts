@@ -39,7 +39,7 @@ describe("SMAOracle", async () => {
     let numPeriods: BigNumberish
     let updateInterval: BigNumberish
 
-    before(async () => {
+    beforeEach(async () => {
         /* retrieve signers */
         signers = await ethers.getSigners()
         owner = signers[0]
@@ -240,7 +240,7 @@ describe("SMAOracle", async () => {
             /* wait for update interval to elapse again (so our assertions
              * pass) */
             await timeout(UPDATE_MILLIS)
-        }
+        })
 
         context("When called while ramping up", async () => {
             context("When called the first time", async () => {
@@ -303,8 +303,10 @@ describe("SMAOracle", async () => {
 
                     /* perform update */
                     for (const price of prices) {
+                        await timeout(UPDATE_MILLIS)
                         await updatePrice(price, chainlinkOracle, smaOracle)
                     }
+                    await timeout(UPDATE_MILLIS)
 
                     /* set the latest price (arbitrary) */
                     // chainlinkOracle.setPrice(10)

@@ -89,7 +89,7 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
         feeReceiver = _feeReceiver;
 
         /* initialise base PoolCommitter template (with dummy values) */
-        poolCommitterBase.initialize(address(this), address(this), address(this), governance, 0, 0);
+        poolCommitterBase.initialize(address(this), address(this), address(this), governance, 0, 0, 0);
     }
 
     /**
@@ -136,8 +136,9 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
         address poolCommitterAddress = address(poolCommitter);
         poolCommitter.initialize(
             address(this),
-            deploymentParameters.invariantCheckContract,
+            invariantCheck,
             autoClaim,
+            governance,
             mintingFee,
             burningFee,
             changeInterval
@@ -328,7 +329,7 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
         uint256 _mintingFee,
         uint256 _burningFee,
         uint256 _changeInterval
-    ) external override onlyOwner {
+    ) external override onlyGov {
         require(_mintingFee <= 1e18, "Fee cannot be > 100%");
         require(_burningFee <= 1e18, "Fee cannot be > 100%");
         require(_changeInterval <= 1e18, "Change interval cannot be > 100%");
