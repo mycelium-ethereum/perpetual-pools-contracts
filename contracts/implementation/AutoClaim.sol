@@ -86,8 +86,9 @@ contract AutoClaim is IAutoClaim {
         external
         override
     {
-        require(users.length == poolCommitterAddresses.length, "Supplied arrays must be same length");
-        for (uint256 i = 0; i < users.length; i++) {
+        uint256 nrUsers = users.length;
+        require(nrUsers == poolCommitterAddresses.length, "Supplied arrays must be same length");
+        for (uint256 i = 0; i < nrUsers; i++) {
             paidClaim(users[i], poolCommitterAddresses[i]);
         }
     }
