@@ -12,9 +12,6 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "./PoolSwapLibrary.sol";
 
-import "hardhat/console.sol";
-import "abdk-libraries-solidity/ABDKMathQuad.sol";
-
 /// @title This contract is responsible for handling commitment logic
 contract PoolCommitter is IPoolCommitter, Initializable {
     // #### Globals
