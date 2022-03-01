@@ -19,9 +19,12 @@ import {
 } from "../types"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { BigNumber, BigNumberish } from "ethers"
+import { timeout } from "./utilities"
 
 chai.use(chaiAsPromised)
 const { expect } = chai
+
+const UPDATE_MILLIS: number = 5 * 10000
 
 describe("SMAOracle", async () => {
     let smaOracle: SMAOracle
@@ -36,7 +39,7 @@ describe("SMAOracle", async () => {
     let numPeriods: BigNumberish
     let updateInterval: BigNumberish
 
-    before(async () => {
+    beforeEach(async () => {
         /* retrieve signers */
         signers = await ethers.getSigners()
         owner = signers[0]
@@ -65,7 +68,10 @@ describe("SMAOracle", async () => {
                 libraries: { PoolSwapLibrary: poolSwapLibrary.address },
             }
         )) as PoolFactory__factory
-        const poolFactory = await poolFactoryFactory.deploy(feeReceiver.address)
+        const poolFactory = await poolFactoryFactory.deploy(
+            feeReceiver.address,
+            signers[0].address
+        )
         await poolFactory.deployed()
 
         /* deploy PoolKeeper */
@@ -213,6 +219,29 @@ describe("SMAOracle", async () => {
     }
 
     describe("poll", async () => {
+        beforeEach(async () => {
+            /* size of this array needs to be less than the price observer's
+             * capacity */
+            const prices: BigNumberish[] = [
+                2, 3, 4, 3, 7, 8, 12, 10, 11, 12, 14, 5, 5, 9, 10, 1, 1, 0, 2,
+                2, 3, 4, 6,
+            ].map((x) =>
+                ethers.BigNumber.from(x).mul(ethers.BigNumber.from(10).pow(8))
+            )
+
+            /* perform update */
+            for (const price of prices) {
+                /* wait for update interval to elapse */
+                await timeout(UPDATE_MILLIS)
+
+                await updatePrice(price, chainlinkOracle, smaOracle)
+            }
+
+            /* wait for update interval to elapse again (so our assertions
+             * pass) */
+            await timeout(UPDATE_MILLIS)
+        })
+
         context("When called while ramping up", async () => {
             context("When called the first time", async () => {
                 let spotPrice: BigNumberish = 12 /* arbitrary */
@@ -274,8 +303,10 @@ describe("SMAOracle", async () => {
 
                     /* perform update */
                     for (const price of prices) {
+                        await timeout(UPDATE_MILLIS)
                         await updatePrice(price, chainlinkOracle, smaOracle)
                     }
+                    await timeout(UPDATE_MILLIS)
 
                     /* set the latest price (arbitrary) */
                     // chainlinkOracle.setPrice(10)
@@ -286,6 +317,32 @@ describe("SMAOracle", async () => {
 
                     expect(await smaOracle.getPrice()).to.be.eq(
                         ethers.utils.parseEther("4.2")
+                    )
+                })
+
+                it("Updates the most recent price update timestamp correctly", async () => {
+                    let prevTimestamp = await smaOracle.lastUpdate()
+                    await smaOracle.poll()
+                    let currTimestamp = await smaOracle.lastUpdate()
+
+                    expect(currTimestamp).to.be.gt(prevTimestamp)
+                })
+            }
+        )
+
+        context(
+            "When called within an update interval since last price update",
+            async () => {
+                it("Reverts", async () => {
+                    /* perform another price update (our `beforeEach` hook waits so
+                     * our tests succeed; we need to break this condition again for
+                     * this test case) */
+                    let price: BigNumberish = 5 // arbitrary
+                    await updatePrice(price, chainlinkOracle, smaOracle)
+
+                    /* poll the SMA oracle immediately afterwards */
+                    await expect(smaOracle.poll()).to.be.revertedWith(
+                        "SMA: Too early to update"
                     )
                 })
             }

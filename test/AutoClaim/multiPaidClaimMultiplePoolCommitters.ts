@@ -93,7 +93,6 @@ describe("AutoClaim - multiPaidClaimMultiplePoolCommitters", () => {
             quoteToken: token.address,
             oracleWrapper: result.oracleWrapper.address,
             settlementEthOracle: result.settlementEthOracle.address,
-            invariantCheckContract: result.invariantCheck.address,
             feeController: signers[0].address,
             mintingFee: 0,
             burningFee: 0,

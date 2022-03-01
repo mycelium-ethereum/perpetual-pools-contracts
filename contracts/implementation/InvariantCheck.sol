@@ -27,6 +27,7 @@ contract InvariantCheck is IInvariantCheck {
      * @notice Checks all invariants, and pauses all contracts if
      *         any invariant does not hold.
      * @dev This should be called before onlyUnpaused, in case contracts are paused then pause check must happen after.
+     * @dev Emits `InvariantsHold` event if invariants hold.
      * @param poolToCheck The LeveragedPool contract to be checked.
      */
     function checkInvariants(address poolToCheck) external override {
@@ -34,21 +35,14 @@ contract InvariantCheck is IInvariantCheck {
         require(poolFactory.isValidPool(poolToCheck), "Pool is invalid");
         IPoolCommitter poolCommitter = IPoolCommitter(pool.poolCommitter());
         uint256 poolBalance = IERC20(pool.quoteToken()).balanceOf(poolToCheck);
-        (
-            IPoolCommitter.TotalCommitment memory totalCommitment,
-            IPoolCommitter.TotalCommitment memory nextTotalCommitment
-        ) = poolCommitter.getPendingCommits();
-        uint256 pendingMints;
-        pendingMints =
-            totalCommitment.longMintAmount +
-            totalCommitment.shortMintAmount +
-            nextTotalCommitment.longMintAmount +
-            nextTotalCommitment.shortMintAmount;
+        uint256 pendingMints = poolCommitter.totalPendingMints();
         uint256 longBalance = pool.longBalance();
         uint256 shortBalance = pool.shortBalance();
         if (!balanceInvariant(poolBalance, pendingMints, longBalance, shortBalance)) {
             pause(IPausable(poolToCheck), IPausable(address(poolCommitter)));
+            emit InvariantsFail("Balance invariant fails");
         }
+        emit InvariantsHold();
     }
 
     /**

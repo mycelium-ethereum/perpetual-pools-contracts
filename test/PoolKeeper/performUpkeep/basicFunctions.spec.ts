@@ -21,6 +21,15 @@ import {
     ChainlinkOracleWrapper,
     TestToken,
     TestChainlinkOracle,
+    ChainlinkOracleWrapper__factory,
+    InvariantCheck__factory,
+    PoolFactory__factory,
+    PoolKeeper__factory,
+    PoolSwapLibrary__factory,
+    PriceObserver,
+    PriceObserver__factory,
+    TestChainlinkOracle__factory,
+    TestToken__factory,
 } from "../../../types"
 import { BigNumber } from "ethers"
 import { Result } from "ethers/lib/utils"
@@ -111,105 +120,112 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
                 POOL2_ADDR,
             ])
         })
-    })
 
-    describe("Upkeep - Price execution", () => {
-        let event: Result | undefined
-        let upkeepEvent: Result | undefined
-        let lastTime: BigNumber
-        before(async () => {
-            await setupHook()
-            // process a few upkeeps
-            lastTime = await pool.lastPriceTimestamp()
-            await timeout(updateInterval * 1000 + 1000)
-            await pool.setKeeper(poolKeeper.address)
-            oldExecutionPrice = await poolKeeper.executionPrice(POOL1_ADDR)
-            const result = await (
+        describe("Upkeep - Price execution", () => {
+            let event: Result | undefined
+            let upkeepEvent: Result | undefined
+            let lastTime: BigNumber
+            beforeEach(async () => {
+                await setupHook()
+                // process a few upkeeps
+                lastTime = await pool.lastPriceTimestamp()
+                await timeout(updateInterval * 1000 + 1000)
+                await pool.setKeeper(poolKeeper.address)
+                oldExecutionPrice = await poolKeeper.executionPrice(POOL1_ADDR)
+                const result = await (
+                    await poolKeeper.performUpkeepMultiplePools([
+                        POOL1_ADDR,
+                        POOL2_ADDR,
+                    ])
+                ).wait()
+                newExecutionPrice = await poolKeeper.executionPrice(POOL1_ADDR)
+                event = getEventArgs(result, "KeeperPaid")
+                upkeepEvent = getEventArgs(result, "UpkeepSuccessful")
+            })
+            it("should emit an event with the details", async () => {
+                expect(event?.keeper).to.eq(signers[0].address)
+            })
+            it("should emit an UpkeepSuccessful event", async () => {
+                expect(upkeepEvent?.startPrice).to.eq(oldExecutionPrice)
+                expect(upkeepEvent?.endPrice).to.eq(newExecutionPrice)
+            })
+        })
+
+        describe("Upkeep - New round", () => {
+            beforeEach(async () => {
+                // Check starting conditions
+                await setupHook()
+                // process a few upkeeps
+
+                oldLastExecutionTime = await pool.lastPriceTimestamp()
+                oldExecutionPrice = await poolKeeper.executionPrice(POOL1_ADDR)
+                // delay and upkeep again
+                await timeout(updateInterval * 1000 + 1000)
+
+                newLastExecutionPrice = await poolKeeper.executionPrice(
+                    POOL1_ADDR
+                )
+                await derivativeChainlinkOracle.setPrice("90000000")
+                await pool.setKeeper(poolKeeper.address)
                 await poolKeeper.performUpkeepMultiplePools([
                     POOL1_ADDR,
                     POOL2_ADDR,
                 ])
-            ).wait()
-            newExecutionPrice = await poolKeeper.executionPrice(POOL1_ADDR)
-            event = getEventArgs(result, "KeeperPaid")
-            upkeepEvent = getEventArgs(result, "UpkeepSuccessful")
-        })
-        it("should emit an event with the details", async () => {
-            expect(event?.keeper).to.eq(signers[0].address)
-        })
-        it("should emit an UpkeepSuccessful event", async () => {
-            expect(upkeepEvent?.startPrice).to.eq(oldExecutionPrice)
-            expect(upkeepEvent?.endPrice).to.eq(newExecutionPrice)
-        })
-    })
+                newExecutionPrice = await poolKeeper.executionPrice(POOL1_ADDR)
+                newLastExecutionTime = await pool.lastPriceTimestamp()
+            })
+            it("should clear the old round data", async () => {
+                const price = await derivativeOracleWrapper.getPrice()
+                expect(newLastExecutionTime.gt(oldLastExecutionTime)).to.equal(
+                    true
+                )
+                expect(newExecutionPrice).to.be.lt(oldExecutionPrice)
+                expect(newExecutionPrice).to.equal(price)
+            })
+            it("Should update the keeper's balance", async () => {
+                await timeout(updateInterval * 1000 + 1000)
+                const balanceBefore = await token.balanceOf(signers[0].address)
+                const poolTokenBalanceBefore = await token.balanceOf(
+                    pool.address
+                )
+                const receipt = await (
+                    await poolKeeper.performUpkeepMultiplePools([
+                        POOL1_ADDR,
+                        POOL2_ADDR,
+                    ])
+                ).wait()
 
-    describe("Upkeep - New round", () => {
-        before(async () => {
-            // Check starting conditions
-            await setupHook()
-            // process a few upkeeps
+                const balanceAfter = await token.balanceOf(signers[0].address)
+                const poolTokenBalanceAfter = await token.balanceOf(
+                    pool.address
+                )
+                const tenGwei = BigNumber.from("10").pow(9).mul(10)
+                const tenToTheEighteen = BigNumber.from("10").pow(18)
+                const tenToTheTen = BigNumber.from("10").pow(10)
+                const settlementPerEth = BigNumber.from("3000").mul(
+                    BigNumber.from(10).pow(8)
+                )
 
-            oldLastExecutionTime = await pool.lastPriceTimestamp()
-            oldExecutionPrice = await poolKeeper.executionPrice(POOL1_ADDR)
-            // delay and upkeep again
-            await timeout(updateInterval * 1000 + 1000)
+                const estimatedKeeperReward = BigNumber.from(
+                    SINGLE_POOL_UPKEEP_GAS_COST
+                )
+                    .mul(tenGwei)
+                    .mul(settlementPerEth)
+                    .mul(2) // Mul by 2 because there are two pools
+                    .div(tenToTheEighteen.div(tenToTheTen))
 
-            newLastExecutionPrice = await poolKeeper.executionPrice(POOL1_ADDR)
-            await derivativeChainlinkOracle.setPrice("90000000")
-            await pool.setKeeper(poolKeeper.address)
-            await poolKeeper.performUpkeepMultiplePools([
-                POOL1_ADDR,
-                POOL2_ADDR,
-            ])
-            newExecutionPrice = await poolKeeper.executionPrice(POOL1_ADDR)
-            newLastExecutionTime = await pool.lastPriceTimestamp()
-        })
-        it("should clear the old round data", async () => {
-            const price = await derivativeOracleWrapper.getPrice()
-            expect(newLastExecutionTime.gt(oldLastExecutionTime)).to.equal(true)
-            expect(newExecutionPrice).to.be.lt(oldExecutionPrice)
-            expect(newExecutionPrice).to.equal(price)
-        })
-        it("Should update the keeper's balance", async () => {
-            await timeout(updateInterval * 1000 + 1000)
-            const balanceBefore = await token.balanceOf(signers[0].address)
-            const poolTokenBalanceBefore = await token.balanceOf(pool.address)
-            const receipt = await (
-                await poolKeeper.performUpkeepMultiplePools([
-                    POOL1_ADDR,
-                    POOL2_ADDR,
-                ])
-            ).wait()
-
-            const balanceAfter = await token.balanceOf(signers[0].address)
-            const poolTokenBalanceAfter = await token.balanceOf(pool.address)
-            const tenGwei = BigNumber.from("10").pow(9).mul(10)
-            const tenToTheEighteen = BigNumber.from("10").pow(18)
-            const tenToTheTen = BigNumber.from("10").pow(10)
-            const settlementPerEth = BigNumber.from("3000").mul(
-                BigNumber.from(10).pow(8)
-            )
-
-            const estimatedKeeperReward = BigNumber.from(
-                SINGLE_POOL_UPKEEP_GAS_COST
-            )
-                .mul(tenGwei)
-                .mul(settlementPerEth)
-                .mul(2) // Mul by 2 because there are two pools
-                .div(tenToTheEighteen.div(tenToTheTen))
-            // EstimatedKeeperReward +/- 25% since it is quite hard to estimate
-            const lowerBound: any = estimatedKeeperReward.sub(
-                estimatedKeeperReward.div(4)
-            )
-            const upperBound: any = estimatedKeeperReward.add(
-                estimatedKeeperReward.div(4)
-            )
-            expect(balanceAfter).to.be.gt(balanceBefore)
-            expect(poolTokenBalanceAfter).to.be.lt(poolTokenBalanceBefore)
-        })
-        it("should calculate a new execution price", async () => {
-            expect(newLastExecutionPrice).to.eq(oldExecutionPrice)
-            expect(newExecutionPrice).to.be.lt(oldExecutionPrice)
+                const epsilon = estimatedKeeperReward.mul(
+                    ethers.utils.parseEther("0.0000000000000001")
+                )
+                const lowerBound: any = estimatedKeeperReward.sub(epsilon)
+                const upperBound: any = estimatedKeeperReward.add(epsilon)
+                expect(balanceAfter).to.be.gt(balanceBefore)
+                expect(poolTokenBalanceAfter).to.be.lt(poolTokenBalanceBefore)
+            })
+            it("should calculate a new execution price", async () => {
+                expect(newLastExecutionPrice).to.eq(oldExecutionPrice)
+                expect(newExecutionPrice).to.be.lt(oldExecutionPrice)
+            })
         })
     })
 })

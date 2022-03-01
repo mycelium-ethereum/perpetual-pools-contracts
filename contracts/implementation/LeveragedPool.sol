@@ -6,6 +6,7 @@ import "../interfaces/IPoolCommitter.sol";
 import "../interfaces/IPoolToken.sol";
 import "../interfaces/IPausable.sol";
 import "../interfaces/IInvariantCheck.sol";
+import "../interfaces/ITwoStepGovernance.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -14,24 +15,26 @@ import "./PoolSwapLibrary.sol";
 import "../interfaces/IOracleWrapper.sol";
 
 /// @title The pool contract itself
-contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
+contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGovernance {
     using SafeERC20 for IERC20;
     // #### Globals
 
     // Each balance is the amount of quote tokens in the pair
     uint256 public override shortBalance;
     uint256 public override longBalance;
+    uint256 public constant LONG_INDEX = 0;
+    uint256 public constant SHORT_INDEX = 1;
+
+    address public override governance;
     uint32 public override frontRunningInterval;
     uint32 public override updateInterval;
     bytes16 public fee;
     bytes16 public override leverageAmount;
-    uint256 public constant LONG_INDEX = 0;
-    uint256 public constant SHORT_INDEX = 1;
 
-    address public governance;
+    address public override provisionalGovernance;
     bool public override paused;
+    bool public override governanceTransferInProgress;
     address public keeper;
-    bool public governanceTransferInProgress;
     address public feeAddress;
     address public secondaryFeeAddress;
     uint256 public secondaryFeeSplitPercent; // Split to secondary fee address as a percentage.
@@ -39,13 +42,50 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
     address public override poolCommitter;
     address public override oracleWrapper;
     address public override settlementEthOracle;
-    address public provisionalGovernance;
     address public invariantCheckContract;
     IInvariantCheck public invariantCheck;
     address[2] public tokens;
     uint256 public override lastPriceTimestamp; // The last time the pool was upkept
 
     string public override poolName;
+
+    // #### Modifiers
+
+    /**
+     * @dev Check invariants before function body only. This is used in functions where the state of the pool is updated after exiting PoolCommitter (i.e. executeCommitments)
+     */
+    modifier checkInvariantsBeforeFunction() {
+        invariantCheck.checkInvariants(address(this));
+        require(!paused, "Pool is paused");
+        _;
+    }
+
+    modifier checkInvariantsAfterFunction() {
+        require(!paused, "Pool is paused");
+        _;
+        invariantCheck.checkInvariants(address(this));
+        require(!paused, "Pool is paused");
+    }
+
+    modifier onlyKeeper() {
+        require(msg.sender == keeper, "msg.sender not keeper");
+        _;
+    }
+
+    modifier onlyInvariantCheckContract() {
+        require(msg.sender == invariantCheckContract, "msg.sender not invariantCheckContract");
+        _;
+    }
+
+    modifier onlyPoolCommitter() {
+        require(msg.sender == poolCommitter, "msg.sender not poolCommitter");
+        _;
+    }
+
+    modifier onlyGov() {
+        require(msg.sender == governance, "msg.sender not governance");
+        _;
+    }
 
     // #### Functions
 
@@ -62,6 +102,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
         require(initialization._invariantCheckContract != address(0), "InvariantCheck cannot be 0 address");
         require(initialization._fee < PoolSwapLibrary.WAD_PRECISION, "Fee >= 100%");
         require(initialization._secondaryFeeSplitPercent <= 100, "Secondary fee split cannot exceed 100%");
+        require(initialization._updateInterval != 0, "Update interval cannot be 0");
 
         // set the owner of the pool. This is governance when deployed from the factory
         governance = initialization._owner;
@@ -129,8 +170,8 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
         uint256 _shortBalance = shortBalance;
         uint256 _longBalance = longBalance;
 
-        // If the rewards are more than the balances of the pool, the keeper does not get paid
-        if (amount >= _shortBalance + _longBalance) {
+        // If the rewards are greater than or equal to the balances of the pool, the keeper does not get paid
+        if (amount > _shortBalance + _longBalance) {
             return false;
         }
 
@@ -166,10 +207,10 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
     }
 
     /**
-     * @notice Transfer long tokens from pool to user
+     * @notice Transfer pool tokens from pool to user
+     * @param isLongToken True if transferring long pool token; False if transferring short pool token
      * @param to Address of account to transfer to
-     * @param isLongToken True if transferring long pool token
-     * @param amount Amount of quote tokens being transferred
+     * @param amount Amount of pool tokens being transferred
      * @dev Only callable by the associated `PoolCommitter` contract
      * @dev Only callable when the market is *not* paused
      */
@@ -197,7 +238,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
         address from,
         address to,
         uint256 amount
-    ) external override onlyPoolCommitter checkInvariantsBeforeFunction {
+    ) external override onlyPoolCommitter {
         IERC20(quoteToken).safeTransferFrom(from, to, amount);
     }
 
@@ -259,11 +300,20 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
         if (secondaryFeeAddress == address(0)) {
             IERC20(quoteToken).safeTransfer(feeAddress, totalFeeAmount);
         } else {
-            require(secondaryFeeSplitPercent <= 100, "Secondary fee split cannot exceed 100%");
             uint256 secondaryFee = PoolSwapLibrary.mulFraction(totalFeeAmount, secondaryFeeSplitPercent, 100);
-            uint256 remainder = totalFeeAmount - secondaryFee;
-            IERC20(quoteToken).safeTransfer(secondaryFeeAddress, secondaryFee);
-            IERC20(quoteToken).safeTransfer(feeAddress, remainder);
+            uint256 remainder;
+            unchecked {
+                // secondaryFee is calculated as totalFeeAmount * secondaryFeeSplitPercent / 100
+                // secondaryFeeSplitPercent <= 100 and therefore secondaryFee <= totalFeeAmount - The following line can not underflow
+                remainder = totalFeeAmount - secondaryFee;
+            }
+            IERC20 _quoteToken = IERC20(quoteToken);
+            if (secondaryFee != 0) {
+                _quoteToken.safeTransfer(secondaryFeeAddress, secondaryFee);
+            }
+            if (remainder != 0) {
+                _quoteToken.safeTransfer(feeAddress, remainder);
+            }
         }
     }
 
@@ -273,20 +323,17 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
      * @param _shortBalance New balance of the short pool
      * @dev Only callable by the associated `PoolCommitter` contract
      * @dev Only callable when the market is *not* paused
+     * @dev Emits a `PoolBalancesChanged` event on success
      */
-    function setNewPoolBalances(uint256 _longBalance, uint256 _shortBalance)
-        external
-        override
-        onlyPoolCommitter
-        checkInvariantsBeforeFunction
-    {
+    function setNewPoolBalances(uint256 _longBalance, uint256 _shortBalance) external override onlyPoolCommitter {
         longBalance = _longBalance;
         shortBalance = _shortBalance;
+        emit PoolBalancesChanged(_longBalance, _shortBalance);
     }
 
     /**
      * @notice Mint tokens to a user
-     * @param isLongToken True if minting short token
+     * @param isLongToken True if minting long token; False if minting short token
      * @param amount Amount of tokens to mint
      * @param minter Address of user/minter
      * @dev Only callable by the associated `PoolCommitter` contract
@@ -298,16 +345,16 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
         address minter
     ) external override onlyPoolCommitter checkInvariantsBeforeFunction {
         if (isLongToken) {
-            require(IPoolToken(tokens[LONG_INDEX]).mint(amount, minter), "Mint failed");
+            IPoolToken(tokens[LONG_INDEX]).mint(minter, amount);
         } else {
-            require(IPoolToken(tokens[SHORT_INDEX]).mint(amount, minter), "Mint failed");
+            IPoolToken(tokens[SHORT_INDEX]).mint(minter, amount);
         }
     }
 
     /**
      * @notice Burn tokens by a user
      * @dev Can only be called by & used by the pool committer
-     * @param isLongToken True if burning short token
+     * @param isLongToken True if burning long token; False if burning short token
      * @param amount Amount of tokens to burn
      * @param burner Address of user/burner
      * @dev Only callable by the associated `PoolCommitter` contract
@@ -319,9 +366,9 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
         address burner
     ) external override onlyPoolCommitter checkInvariantsAfterFunction {
         if (isLongToken) {
-            require(IPoolToken(tokens[LONG_INDEX]).burn(amount, burner), "Burn failed");
+            IPoolToken(tokens[LONG_INDEX]).burn(burner, amount);
         } else {
-            require(IPoolToken(tokens[SHORT_INDEX]).burn(amount, burner), "Burn failed");
+            IPoolToken(tokens[SHORT_INDEX]).burn(burner, amount);
         }
     }
 
@@ -343,11 +390,11 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
      * @dev Only callable when the market is *not* paused
      * @dev Emits `FeeAddressUpdated` event on success
      */
-    function updateFeeAddress(address account) external override onlyGov checkInvariantsAfterFunction {
+    function updateFeeAddress(address account) external override onlyGov {
         require(account != address(0), "Account cannot be 0 address");
         address oldFeeAddress = feeAddress;
         feeAddress = account;
-        emit FeeAddressUpdated(oldFeeAddress, feeAddress);
+        emit FeeAddressUpdated(oldFeeAddress, account);
     }
 
     /**
@@ -365,11 +412,11 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
      * @notice Updates the keeper contract of the pool
      * @param _keeper New address of the keeper contract
      */
-    function setKeeper(address _keeper) external override onlyGov checkInvariantsAfterFunction {
+    function setKeeper(address _keeper) external override onlyGov {
         require(_keeper != address(0), "Keeper address cannot be 0 address");
         address oldKeeper = keeper;
         keeper = _keeper;
-        emit KeeperAddressChanged(oldKeeper, keeper);
+        emit KeeperAddressChanged(oldKeeper, _keeper);
     }
 
     /**
@@ -382,7 +429,8 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
      * @dev Sets the governance transfer flag to true
      * @dev See `claimGovernance`
      */
-    function transferGovernance(address _governance) external override onlyGov checkInvariantsAfterFunction {
+    function transferGovernance(address _governance) external override onlyGov {
+        require(_governance != governance, "New governance address cannot be same as old governance address");
         require(_governance != address(0), "Governance address cannot be 0 address");
         provisionalGovernance = _governance;
         governanceTransferInProgress = true;
@@ -398,13 +446,14 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
      * @dev After a successful call to this function, the actual governance
      *      address and the provisional governance address MUST be equal.
      */
-    function claimGovernance() external override checkInvariantsAfterFunction {
+    function claimGovernance() external override {
         require(governanceTransferInProgress, "No governance change active");
-        require(msg.sender == provisionalGovernance, "Not provisional governor");
+        address _provisionalGovernance = provisionalGovernance;
+        require(msg.sender == _provisionalGovernance, "Not provisional governor");
         address oldGovernance = governance; /* for later event emission */
-        governance = provisionalGovernance;
+        governance = _provisionalGovernance;
         governanceTransferInProgress = false;
-        emit GovernanceAddressChanged(oldGovernance, governance);
+        emit GovernanceAddressChanged(oldGovernance, _provisionalGovernance);
     }
 
     /**
@@ -445,7 +494,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
     }
 
     /**
-     * @return Quantities of pool tokens for this pool (long and short,
+     * @return Quantities of pool tokens for this pool (short and long,
      *          respectively)
      */
     function balances() external view override returns (uint256, uint256) {
@@ -454,7 +503,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
 
     /**
      * @notice Withdraws all available quote asset from the pool
-     * @dev Pool must not be paused
+     * @dev Pool must be paused
      * @dev ERC20 transfer
      * @dev Only callable by governance
      */
@@ -463,6 +512,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
         IERC20 quoteERC = IERC20(quoteToken);
         uint256 balance = quoteERC.balanceOf(address(this));
         IERC20(quoteToken).safeTransfer(msg.sender, balance);
+        emit QuoteWithdrawn(msg.sender, balance);
     }
 
     /**
@@ -481,42 +531,5 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable {
     function unpause() external override onlyGov {
         paused = false;
         emit Unpaused();
-    }
-
-    /**
-     * @dev Check invariants before function body only. This is used in functions where the state of the pool is updated after exiting PoolCommitter (i.e. executeCommitments)
-     */
-    modifier checkInvariantsBeforeFunction() {
-        invariantCheck.checkInvariants(address(this));
-        require(!paused, "Pool is paused");
-        _;
-    }
-
-    // #### Modifiers
-    modifier checkInvariantsAfterFunction() {
-        require(!paused, "Pool is paused");
-        _;
-        invariantCheck.checkInvariants(address(this));
-        require(!paused, "Pool is paused");
-    }
-
-    modifier onlyKeeper() {
-        require(msg.sender == keeper, "msg.sender not keeper");
-        _;
-    }
-
-    modifier onlyInvariantCheckContract() {
-        require(msg.sender == invariantCheckContract, "msg.sender not invariantCheckContract");
-        _;
-    }
-
-    modifier onlyPoolCommitter() {
-        require(msg.sender == poolCommitter, "msg.sender not poolCommitter");
-        _;
-    }
-
-    modifier onlyGov() {
-        require(msg.sender == governance, "msg.sender not governance");
-        _;
     }
 }
