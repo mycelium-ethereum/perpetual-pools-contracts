@@ -12,6 +12,10 @@ interface IPoolFactory {
         address oracleWrapper; // The IOracleWrapper implementation for fetching price feed data
         address settlementEthOracle; // The oracle to fetch the price of Ether in terms of the settlement token
         address invariantCheckContract; // The IInvariantCheck contract that performs invariant checking
+        address feeController;
+        uint256 mintingFee; // The fee amount for mints
+        uint256 changeInterval; // The interval at which the mintingFee in a market either increases or decreases, as per the logic in `PoolCommitter::updateMintingFee`
+        uint256 burningFee; // The fee amount for burns
     }
 
     // #### Events

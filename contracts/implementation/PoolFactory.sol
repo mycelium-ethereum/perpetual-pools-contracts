@@ -111,6 +111,7 @@ contract PoolFactory is IPoolFactory, Ownable {
     function deployPool(PoolDeployment calldata deploymentParameters) external override returns (address) {
         address _poolKeeper = address(poolKeeper);
         require(_poolKeeper != address(0), "PoolKeeper not set");
+        // require(deploymentParameters.burningFee <= address(0), "PoolKeeper not set");
         require(
             IOracleWrapper(deploymentParameters.oracleWrapper).deployer() == msg.sender,
             "Deployer must be oracle wrapper owner"

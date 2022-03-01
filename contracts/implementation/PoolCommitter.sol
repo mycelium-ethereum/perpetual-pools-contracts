@@ -12,6 +12,9 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "./PoolSwapLibrary.sol";
 
+import "hardhat/console.sol";
+import "abdk-libraries-solidity/ABDKMathQuad.sol";
+
 /// @title This contract is responsible for handling commitment logic
 contract PoolCommitter is IPoolCommitter, Initializable {
     // #### Globals
@@ -29,6 +32,8 @@ contract PoolCommitter is IPoolCommitter, Initializable {
     bytes16 public changeInterval;
     // Set max minting fee to 100%. This is a ABDKQuad representation of 1 * 10 ** 18
     bytes16 public constant MAX_MINTING_FEE = 0x403abc16d674ec800000000000000000;
+    // Set max burning fee to 10%. This is a ABDKQuad representation of 0.1 * 10 ** 18
+    bytes16 public constant MAX_BURNING_FEE = 0x40376345785d8a000000000000000000;
 
     // Index 0 is the LONG token, index 1 is the SHORT token.
     // Fetched from the LeveragedPool when leveragedPool is set
@@ -51,6 +56,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
 
     address public factory;
     address public governance;
+    address public feeController;
     address public leveragedPool;
     address public invariantCheckContract;
     bool public paused;
@@ -79,7 +85,6 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         require(_factory != address(0), "Factory address cannot be null");
         require(_autoClaim != address(0), "AutoClaim address cannot be null");
         require(_invariantCheckContract != address(0), "InvariantCheck address cannot be null");
-        require(_mintingFee < PoolSwapLibrary.WAD_PRECISION, "Minting fee >= 100%");
         require(_burningFee < PoolSwapLibrary.WAD_PRECISION, "Burning fee >= 100%");
         factory = _factory;
         autoClaim = IAutoClaim(_autoClaim);
@@ -110,6 +115,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         address _factory,
         address _invariantCheckContract,
         address _autoClaim,
+        address _feeController,
         uint256 _mintingFee,
         uint256 _burningFee,
         uint256 _changeInterval
@@ -117,14 +123,16 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         require(_factory != address(0), "Factory address cannot be 0 address");
         require(_invariantCheckContract != address(0), "InvariantCheck address cannot be 0 address");
         require(_autoClaim != address(0), "AutoClaim address cannot be null");
-        require(_mintingFee < PoolSwapLibrary.WAD_PRECISION, "Minting fee >= 100%");
-        require(_burningFee < PoolSwapLibrary.WAD_PRECISION, "Burning fee >= 100%");
+        require(_feeController != address(0), "fee controller cannot be null");
         updateIntervalId = 1;
         factory = _factory;
         mintingFee = PoolSwapLibrary.convertUIntToDecimal(_mintingFee);
         burningFee = PoolSwapLibrary.convertUIntToDecimal(_burningFee);
+        require(mintingFee < MAX_MINTING_FEE, "Minting fee >= 100%");
+        require(burningFee < MAX_BURNING_FEE, "Burning fee >= 100%");
         changeInterval = PoolSwapLibrary.convertUIntToDecimal(_changeInterval);
         emit ChangeIntervalSet(_changeInterval);
+        emit FeeControllerSet(_feeController);
         autoClaim = IAutoClaim(_autoClaim);
         governance = IPoolFactory(_factory).getOwner();
         invariantCheckContract = _invariantCheckContract;
@@ -730,7 +738,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
      * @dev Converts `_burningFee` to a `bytes16` to be compatible with arithmetic library
      * @dev Emits a `BurningFeeSet` event on success
      */
-    function setBurningFee(uint256 _burningFee) external override onlyGov {
+    function setBurningFee(uint256 _burningFee) external override onlyFeeController {
         burningFee = PoolSwapLibrary.convertUIntToDecimal(_burningFee);
         emit BurningFeeSet(_burningFee);
     }
@@ -741,7 +749,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
      * @dev Converts `_mintingFee` to a `bytes16` to be compatible with arithmetic library
      * @dev Emits a `MintingFeeSet` event on success
      */
-    function setMintingFee(uint256 _mintingFee) external override onlyGov {
+    function setMintingFee(uint256 _mintingFee) external override onlyFeeController {
         mintingFee = PoolSwapLibrary.convertUIntToDecimal(_mintingFee);
         emit MintingFeeSet(_mintingFee);
     }
@@ -752,9 +760,15 @@ contract PoolCommitter is IPoolCommitter, Initializable {
      * @dev Converts `_changeInterval` to a `bytes16` to be compatible with arithmetic library TODO UPDATE
      * @dev Emits a `ChangeIntervalSet` event on success
      */
-    function setChangeInterval(uint256 _changeInterval) external override onlyGov {
+    function setChangeInterval(uint256 _changeInterval) external override onlyFeeController {
         changeInterval = PoolSwapLibrary.convertUIntToDecimal(_changeInterval);
         emit ChangeIntervalSet(_changeInterval);
+    }
+
+    function setFeeController(address _feeController) external override {
+        require(msg.sender == governance || msg.sender == feeController, "Cannot set feeController");
+        feeController = _feeController;
+        emit FeeControllerSet(_feeController);
     }
 
     /**
@@ -788,6 +802,11 @@ contract PoolCommitter is IPoolCommitter, Initializable {
 
     modifier onlyGov() {
         require(msg.sender == governance, "msg.sender not governance");
+        _;
+    }
+
+    modifier onlyFeeController() {
+        require(msg.sender == feeController, "msg.sender not fee controller");
         _;
     }
 
