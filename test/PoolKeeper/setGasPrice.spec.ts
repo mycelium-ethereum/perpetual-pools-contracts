@@ -11,8 +11,6 @@ import { deployPoolSetupContracts, generateRandomAddress } from "../utilities"
 chai.use(chaiAsPromised)
 const { expect } = chai
 
-let deploymentData: any
-
 describe("PoolKeeper.setGasPrice", () => {
     let poolKeeper: PoolKeeper
     let factory: PoolFactory
@@ -26,24 +24,8 @@ describe("PoolKeeper.setGasPrice", () => {
         owner = signers[0]
         nonOwner = signers[1]
         const setup = await deployPoolSetupContracts()
-        const token = setup.token
-        const oracleWrapper = setup.oracleWrapper
-        const settlementEthOracle = setup.settlementEthOracle
         poolKeeper = setup.poolKeeper
         factory = setup.factory
-
-        deploymentData = {
-            owner: signers[0].address,
-            keeper: poolKeeper.address,
-            poolName: POOL_CODE,
-            frontRunningInterval: 3,
-            updateInterval: 5,
-            leverageAmount: 5,
-            feeAddress: generateRandomAddress(),
-            quoteToken: token.address,
-            oracleWrapper: oracleWrapper.address,
-            settlementEthOracle: settlementEthOracle.address,
-        }
     })
 
     context("When called by the owner", async () => {

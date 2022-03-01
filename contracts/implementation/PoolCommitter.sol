@@ -129,9 +129,10 @@ contract PoolCommitter is IPoolCommitter, Initializable {
         mintingFee = PoolSwapLibrary.convertUIntToDecimal(_mintingFee);
         burningFee = PoolSwapLibrary.convertUIntToDecimal(_burningFee);
         require(mintingFee < MAX_MINTING_FEE, "Minting fee >= 100%");
-        require(burningFee < MAX_BURNING_FEE, "Burning fee >= 100%");
+        require(burningFee < MAX_BURNING_FEE, "Burning fee >= 10%");
         changeInterval = PoolSwapLibrary.convertUIntToDecimal(_changeInterval);
         emit ChangeIntervalSet(_changeInterval);
+        feeController = _feeController;
         emit FeeControllerSet(_feeController);
         autoClaim = IAutoClaim(_autoClaim);
         governance = IPoolFactory(_factory).getOwner();
@@ -740,6 +741,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
      */
     function setBurningFee(uint256 _burningFee) external override onlyFeeController {
         burningFee = PoolSwapLibrary.convertUIntToDecimal(_burningFee);
+        require(burningFee < MAX_BURNING_FEE, "Burning fee >= 10%");
         emit BurningFeeSet(_burningFee);
     }
 
@@ -751,6 +753,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
      */
     function setMintingFee(uint256 _mintingFee) external override onlyFeeController {
         mintingFee = PoolSwapLibrary.convertUIntToDecimal(_mintingFee);
+        require(mintingFee < MAX_MINTING_FEE, "Minting fee >= 100%");
         emit MintingFeeSet(_mintingFee);
     }
 

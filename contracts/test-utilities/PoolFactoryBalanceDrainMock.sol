@@ -132,9 +132,10 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
             address(this),
             deploymentParameters.invariantCheckContract,
             autoClaim,
-            mintingFee,
-            burningFee,
-            changeInterval
+            deploymentParameters.feeController,
+            deploymentParameters.mintingFee,
+            deploymentParameters.burningFee,
+            deploymentParameters.changeInterval
         );
         address poolCommitterAddress = address(poolCommitter);
 
@@ -284,28 +285,6 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, Ownable {
     function setFee(uint256 _fee) external override onlyOwner {
         require(_fee <= 0.1e18, "Fee cannot be > 10%");
         fee = _fee;
-    }
-
-    /**
-     * @notice Set the minting and burning fee amount. The max yearly fee is 10%
-     * @dev This is a percentage in WAD; multiplied by 10^18 e.g. 5% is 0.05 * 10^18
-     * @param _mintingFee The fee amount for mints
-     * @param _burningFee The fee amount for burns
-     * @param _changeInterval The interval at which the mintingFee in a market either increases or decreases, as per the logic in `PoolCommitter::updateMintingFee`
-     * @dev Only callable by the owner of this contract
-     * @dev Throws if minting fee is greater than 10%
-     * @dev Throws if burning fee is greater than 10%
-     */
-    function setMintAndBurnFeeAndChangeInterval(
-        uint256 _mintingFee,
-        uint256 _burningFee,
-        uint256 _changeInterval
-    ) external override onlyOwner {
-        require(_mintingFee <= 0.1e18, "Fee cannot be > 10%");
-        require(_burningFee <= 0.1e18, "Fee cannot be > 10%");
-        mintingFee = _mintingFee;
-        burningFee = _burningFee;
-        changeInterval = _changeInterval;
     }
 
     /*

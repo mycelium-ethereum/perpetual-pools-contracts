@@ -15,21 +15,17 @@ import {
     POOL_CODE,
     DEFAULT_FEE,
     LONG_MINT,
-    LONG_BURN,
     SHORT_MINT,
     POOL_CODE_2,
 } from "../constants"
 import {
     deployPoolAndTokenContracts,
-    getRandomInt,
     generateRandomAddress,
     createCommit,
     CommitEventArgs,
     timeout,
-    deployMockPool,
-    getEventArgs,
 } from "../utilities"
-import { BigNumber, BigNumberish } from "ethers"
+import { BigNumberish } from "ethers"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 chai.use(chaiAsPromised)
 const { expect } = chai
@@ -37,7 +33,6 @@ const { expect } = chai
 const amountCommitted = ethers.utils.parseEther("2000")
 const amountMinted = ethers.utils.parseEther("10000")
 const feeAddress = generateRandomAddress()
-const lastPrice = ethers.utils.parseEther(getRandomInt(99999999, 1).toString())
 const updateInterval = 200
 const frontRunningInterval = 100 // seconds
 const fee = DEFAULT_FEE
@@ -60,7 +55,6 @@ describe("AutoClaim - multiPaidClaimMultiplePoolCommitters", () => {
 
     let poolCommitter2: any
     let pool2: any
-    let token2: TestToken
     let shortToken2: any
     let longToken2: any
 
@@ -100,6 +94,10 @@ describe("AutoClaim - multiPaidClaimMultiplePoolCommitters", () => {
             oracleWrapper: result.oracleWrapper.address,
             settlementEthOracle: result.settlementEthOracle.address,
             invariantCheckContract: result.invariantCheck.address,
+            feeController: signers[0].address,
+            mintingFee: 0,
+            burningFee: 0,
+            changeInterval: 0,
         }
 
         await result.factory.deployPool(deployParams)

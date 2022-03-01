@@ -118,6 +118,10 @@ const setupHook = async () => {
         oracleWrapper: oracleWrapper.address,
         settlementEthOracle: settlementEthOracle.address,
         invariantCheckContract: invariantCheck.address,
+        feeController: signers[0].address,
+        mintingFee: 0,
+        burningFee: 0,
+        changeInterval: 0,
     }
     await factory.deployPool(deploymentData)
 
@@ -130,6 +134,10 @@ const setupHook = async () => {
         oracleWrapper: oracleWrapper.address,
         settlementEthOracle: settlementEthOracle.address,
         invariantCheckContract: invariantCheck.address,
+        feeController: signers[0].address,
+        mintingFee: 0,
+        burningFee: 0,
+        changeInterval: 0,
     }
     await factory.deployPool(deploymentData2)
 }
