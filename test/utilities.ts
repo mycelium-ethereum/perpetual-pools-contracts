@@ -38,7 +38,6 @@ import {
     PoolFactoryBalanceDrainMock__factory,
     LeveragedPoolBalanceDrainMock,
     PoolFactoryBalanceDrainMock,
-    PoolCommitter__factory,
     AutoClaim,
 } from "../types"
 
@@ -116,7 +115,7 @@ export const deployPoolSetupContracts = async () => {
     )) as TestToken__factory
     const token = await testToken.deploy("TEST TOKEN", "TST1")
     await token.deployed()
-    await token.mint(amountMinted, signers[0].address)
+    await token.mint(signers[0].address, amountMinted)
 
     // Deploy tokens
     const poolTokenFactory = (await ethers.getContractFactory(
@@ -170,7 +169,7 @@ export const deployPoolSetupContracts = async () => {
     })) as PoolFactory__factory
 
     const factory = await (
-        await PoolFactory.deploy(generateRandomAddress())
+        await PoolFactory.deploy(generateRandomAddress(), signers[0].address)
     ).deployed()
 
     const invariantCheckFactory = (await ethers.getContractFactory(
@@ -179,6 +178,7 @@ export const deployPoolSetupContracts = async () => {
     )) as InvariantCheck__factory
 
     const invariantCheck = await invariantCheckFactory.deploy(factory.address)
+    await factory.setInvariantCheck(invariantCheck.address)
 
     const poolKeeperFactory = (await ethers.getContractFactory("PoolKeeper", {
         signer: signers[0],
@@ -258,7 +258,6 @@ export const deployPoolAndTokenContracts = async (
         quoteToken: setupContracts.token.address,
         oracleWrapper: setupContracts.oracleWrapper.address,
         settlementEthOracle: setupContracts.settlementEthOracle.address,
-        invariantCheckContract: setupContracts.invariantCheck.address,
     }
 
     if (fee) {
@@ -368,7 +367,7 @@ export const deployMockPool = async (
     )) as TestToken__factory
     const token = await testToken.deploy("TEST TOKEN", "TST1")
     await token.deployed()
-    await token.mint(amountMinted, signers[0].address)
+    await token.mint(signers[0].address, amountMinted)
 
     // Deploy tokens
     const poolTokenFactory = (await ethers.getContractFactory(
@@ -425,7 +424,7 @@ export const deployMockPool = async (
     )) as PoolFactoryBalanceDrainMock__factory
 
     const factory = await (
-        await PoolFactory.deploy(generateRandomAddress())
+        await PoolFactory.deploy(generateRandomAddress(), signers[0].address)
     ).deployed()
 
     const autoClaimFactory = (await ethers.getContractFactory("AutoClaim", {
@@ -441,6 +440,7 @@ export const deployMockPool = async (
     )) as InvariantCheck__factory
 
     const invariantCheck = await invariantCheckFactory.deploy(factory.address)
+    await factory.setInvariantCheck(invariantCheck.address)
 
     const poolKeeperFactory = (await ethers.getContractFactory("PoolKeeper", {
         signer: signers[0],
@@ -460,7 +460,6 @@ export const deployMockPool = async (
         quoteToken: token.address,
         oracleWrapper: oracleWrapper.address,
         settlementEthOracle: settlementEthOracle.address,
-        invariantCheckContract: invariantCheck.address,
     }
 
     if (fee) {
