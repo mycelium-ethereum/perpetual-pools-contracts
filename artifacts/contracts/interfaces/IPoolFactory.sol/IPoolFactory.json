@@ -1,0 +1,251 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "IPoolFactory",
+  "sourceName": "contracts/interfaces/IPoolFactory.sol",
+  "abi": [
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "pool",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "ticker",
+          "type": "string"
+        }
+      ],
+      "name": "DeployPool",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "_poolCommitterDeployer",
+          "type": "address"
+        }
+      ],
+      "name": "PoolCommitterDeployerChanged",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "_poolKeeper",
+          "type": "address"
+        }
+      ],
+      "name": "PoolKeeperChanged",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "string",
+              "name": "poolName",
+              "type": "string"
+            },
+            {
+              "internalType": "uint32",
+              "name": "frontRunningInterval",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "updateInterval",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint16",
+              "name": "leverageAmount",
+              "type": "uint16"
+            },
+            {
+              "internalType": "address",
+              "name": "quoteToken",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "oracleWrapper",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "settlementEthOracle",
+              "type": "address"
+            },
+            {
+              "internalType": "uint128",
+              "name": "minimumCommitSize",
+              "type": "uint128"
+            },
+            {
+              "internalType": "uint128",
+              "name": "maximumCommitQueueLength",
+              "type": "uint128"
+            }
+          ],
+          "internalType": "struct IPoolFactory.PoolDeployment",
+          "name": "deploymentParameters",
+          "type": "tuple"
+        }
+      ],
+      "name": "deployPool",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getOwner",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_pool",
+          "type": "address"
+        }
+      ],
+      "name": "isValidPool",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "numPools",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "id",
+          "type": "uint256"
+        }
+      ],
+      "name": "pools",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_fee",
+          "type": "uint256"
+        }
+      ],
+      "name": "setFee",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_feeReceiver",
+          "type": "address"
+        }
+      ],
+      "name": "setFeeReceiver",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint16",
+          "name": "newMaxLeverage",
+          "type": "uint16"
+        }
+      ],
+      "name": "setMaxLeverage",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_poolCommitterDeployer",
+          "type": "address"
+        }
+      ],
+      "name": "setPoolCommitterDeployer",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_poolKeeper",
+          "type": "address"
+        }
+      ],
+      "name": "setPoolKeeper",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}
