@@ -250,8 +250,14 @@ describe("PoolFactory.deployPool", () => {
         it("should deploy deterministically", async () => {
             let encoder = new ethers.utils.AbiCoder()
             let abiEncoded = encoder.encode(
-                ["uint16", "uint16", "address", "address"],
-                [updateInterval, leverage, token.address, oracleWrapper.address]
+                ["uint16", "uint16", "uint16", "address", "address"],
+                [
+                    frontRunningInterval,
+                    updateInterval,
+                    leverage,
+                    token.address,
+                    oracleWrapper.address,
+                ]
             )
             let uniqueIdHash = ethers.utils.keccak256(abiEncoded)
             let predictedPoolAddress =
