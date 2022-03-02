@@ -122,6 +122,7 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
 
         bytes32 uniquePoolHash = keccak256(
             abi.encode(
+                deploymentParameters.frontRunningInterval,
                 deploymentParameters.updateInterval,
                 deploymentParameters.leverageAmount,
                 deploymentParameters.quoteToken,
