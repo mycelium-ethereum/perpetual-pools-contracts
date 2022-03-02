@@ -65,8 +65,6 @@ interface IPoolKeeper {
     // #### Functions
     function newPool(address _poolAddress) external;
 
-    function setFactory(address _factory) external;
-
     function isUpkeepRequiredSinglePool(address pool) external view returns (bool);
 
     function checkUpkeepMultiplePools(address[] calldata pools) external view returns (bool);

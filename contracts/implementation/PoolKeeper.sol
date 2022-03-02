@@ -31,7 +31,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      */
     mapping(address => int256) public executionPrice;
 
-    IPoolFactory public factory;
+    IPoolFactory public immutable factory;
 
     uint256 public gasPrice = 10 gwei;
 
@@ -293,17 +293,6 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         } else {
             return keeperTipAmount;
         }
-    }
-
-    /**
-     * @notice Sets the address of the associated `PoolFactory` contract
-     * @param _factory Address of the `PoolFactory` contract
-     * @dev Only callable by the owner
-     * @dev Emits a `FactoryChanged` event on success
-     */
-    function setFactory(address _factory) external override onlyOwner {
-        factory = IPoolFactory(_factory);
-        emit FactoryChanged(_factory);
     }
 
     /**
