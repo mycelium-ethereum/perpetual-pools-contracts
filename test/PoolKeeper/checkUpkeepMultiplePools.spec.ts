@@ -37,6 +37,7 @@ const forwardTime = async (seconds: number) => {
 
 const setupHook = async () => {
     const signers = await ethers.getSigners()
+    const amount = 10000
     // Deploy quote token
     const testToken = (await ethers.getContractFactory(
         "TestToken",
@@ -44,7 +45,7 @@ const setupHook = async () => {
     )) as TestToken__factory
     const token = await testToken.deploy("TEST TOKEN", "TST1")
     await token.deployed()
-    await token.mint(10000, signers[0].address)
+    await token.mint(signers[0].address, amount)
     quoteToken = token.address
 
     // Deploy oracle. Using a test oracle for predictability
@@ -86,7 +87,7 @@ const setupHook = async () => {
         libraries: { PoolSwapLibrary: library.address },
     })) as PoolFactory__factory
     factory = await (
-        await PoolFactory.deploy(generateRandomAddress())
+        await PoolFactory.deploy(generateRandomAddress(), signers[0].address)
     ).deployed()
 
     const autoClaimFactory = (await ethers.getContractFactory("AutoClaim", {
@@ -107,6 +108,7 @@ const setupHook = async () => {
     )) as InvariantCheck__factory
 
     const invariantCheck = await invariantCheckFactory.deploy(factory.address)
+    await factory.setInvariantCheck(invariantCheck.address)
 
     // Create pool
     const deploymentData = {
@@ -118,6 +120,10 @@ const setupHook = async () => {
         oracleWrapper: oracleWrapper.address,
         settlementEthOracle: settlementEthOracle.address,
         invariantCheckContract: invariantCheck.address,
+        feeController: signers[0].address,
+        mintingFee: 0,
+        burningFee: 0,
+        changeInterval: 0,
     }
     await factory.deployPool(deploymentData)
 
@@ -130,6 +136,10 @@ const setupHook = async () => {
         oracleWrapper: oracleWrapper.address,
         settlementEthOracle: settlementEthOracle.address,
         invariantCheckContract: invariantCheck.address,
+        feeController: signers[0].address,
+        mintingFee: 0,
+        burningFee: 0,
+        changeInterval: 0,
     }
     await factory.deployPool(deploymentData2)
 }

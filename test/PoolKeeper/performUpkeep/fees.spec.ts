@@ -8,7 +8,7 @@ import {
     timeout,
 } from "../../utilities"
 
-import { DEFAULT_MINT_AMOUNT, POOL_CODE } from "../../constants"
+import { DEFAULT_MINT_AMOUNT, POOL_CODE, GAS_OVERHEAD } from "../../constants"
 import {
     PoolKeeper,
     ChainlinkOracleWrapper,
@@ -78,44 +78,6 @@ describe("Leveraged pool fees", () => {
         ).to.be.revertedWith("Fee cannot be > 10%")
     })
 
-    context("setMintAndBurnFeeAndChangeInterval", async () => {
-        let setupContracts: any
-
-        before(async () => {
-            setupContracts = await deployPoolSetupContracts()
-        })
-
-        it("Should revert if mintingFee > 100%", async () => {
-            await expect(
-                setupContracts.factory.setMintAndBurnFeeAndChangeInterval(
-                    ethers.utils.parseEther("100"),
-                    0,
-                    0
-                )
-            ).to.be.revertedWith("Fee cannot be > 100%")
-        })
-
-        it("Should revert if burningFee > 100%", async () => {
-            await expect(
-                setupContracts.factory.setMintAndBurnFeeAndChangeInterval(
-                    0,
-                    ethers.utils.parseEther("100"),
-                    0
-                )
-            ).to.be.revertedWith("Fee cannot be > 100%")
-        })
-
-        it("Should revert if changeInterval > 100%", async () => {
-            await expect(
-                setupContracts.factory.setMintAndBurnFeeAndChangeInterval(
-                    0,
-                    0,
-                    ethers.utils.parseEther("100")
-                )
-            ).to.be.revertedWith("Change interval cannot be > 100%")
-        })
-    })
-
     it("Should revert if fee above 10%", async () => {
         const setupContracts = await deployPoolSetupContracts()
 
@@ -143,18 +105,18 @@ describe("Leveraged pool fees", () => {
             await timeout(updateInterval * 1000 + 1000)
             // We are OK with small amounts of dust being left in the contract because
             // over-collateralised pools are OK
-            const approxKeeperFee = mintAmount.div(2)
+            const approxKeeperFee = mintAmount.div(2).add(GAS_OVERHEAD)
 
             let balanceBefore = await token.balanceOf(signers[0].address)
             await poolKeeper.performUpkeepSinglePool(pool.address)
             let balanceAfter = await token.balanceOf(signers[0].address)
             let feesTaken = balanceAfter.sub(balanceBefore)
 
-            const epsilon = ethers.utils
-                .parseEther("0.000001")
-                .add(approxKeeperFee)
-            const upperBound = approxKeeperFee.div(2).add(epsilon)
-            const lowerBound = approxKeeperFee.div(2).sub(epsilon)
+            const epsilon = approxKeeperFee.mul(
+                ethers.utils.parseEther("0.0000000000000001")
+            )
+            const upperBound = approxKeeperFee.add(epsilon)
+            const lowerBound = approxKeeperFee.sub(epsilon)
             //@ts-ignore
             expect(feesTaken).to.be.within(lowerBound, upperBound)
         })
