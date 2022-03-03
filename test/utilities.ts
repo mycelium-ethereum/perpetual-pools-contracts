@@ -38,7 +38,6 @@ import {
     PoolFactoryBalanceDrainMock__factory,
     LeveragedPoolBalanceDrainMock,
     PoolFactoryBalanceDrainMock,
-    PoolCommitter__factory,
     AutoClaim,
 } from "../types"
 
@@ -116,7 +115,7 @@ export const deployPoolSetupContracts = async () => {
     )) as TestToken__factory
     const token = await testToken.deploy("TEST TOKEN", "TST1")
     await token.deployed()
-    await token.mint(amountMinted, signers[0].address)
+    await token.mint(signers[0].address, amountMinted)
 
     // Deploy tokens
     const poolTokenFactory = (await ethers.getContractFactory(
@@ -170,7 +169,7 @@ export const deployPoolSetupContracts = async () => {
     })) as PoolFactory__factory
 
     const factory = await (
-        await PoolFactory.deploy(generateRandomAddress())
+        await PoolFactory.deploy(generateRandomAddress(), signers[0].address)
     ).deployed()
 
     const invariantCheckFactory = (await ethers.getContractFactory(
@@ -179,6 +178,7 @@ export const deployPoolSetupContracts = async () => {
     )) as InvariantCheck__factory
 
     const invariantCheck = await invariantCheckFactory.deploy(factory.address)
+    await factory.setInvariantCheck(invariantCheck.address)
 
     const poolKeeperFactory = (await ethers.getContractFactory("PoolKeeper", {
         signer: signers[0],
@@ -249,6 +249,8 @@ export const deployPoolAndTokenContracts = async (
 }> => {
     const setupContracts = await deployPoolSetupContracts()
 
+    const signers = await ethers.getSigners()
+
     // deploy the pool using the factory, not separately
     const deployParams = {
         poolName: POOL_CODE,
@@ -259,6 +261,10 @@ export const deployPoolAndTokenContracts = async (
         oracleWrapper: setupContracts.oracleWrapper.address,
         settlementEthOracle: setupContracts.settlementEthOracle.address,
         invariantCheckContract: setupContracts.invariantCheck.address,
+        feeController: signers[0].address,
+        mintingFee: mintFee || 0,
+        burningFee: burnFee || 0,
+        changeInterval: changeInterval || 0,
     }
 
     if (fee) {
@@ -266,13 +272,6 @@ export const deployPoolAndTokenContracts = async (
     }
     if (feeAddress) {
         await setupContracts.factory.setFeeReceiver(feeAddress)
-    }
-    if (mintFee || burnFee || changeInterval) {
-        await setupContracts.factory.setMintAndBurnFeeAndChangeInterval(
-            mintFee || 0,
-            burnFee || 0,
-            changeInterval || 0
-        )
     }
     await setupContracts.factory.deployPool(deployParams)
     const poolAddress = await setupContracts.factory.pools(0)
@@ -288,8 +287,6 @@ export const deployPoolAndTokenContracts = async (
 
     let commiter = await pool.poolCommitter()
     const poolCommitter = await ethers.getContractAt("PoolCommitter", commiter)
-
-    const signers = await ethers.getSigners()
 
     const token = setupContracts.token
     const library = setupContracts.library
@@ -368,7 +365,7 @@ export const deployMockPool = async (
     )) as TestToken__factory
     const token = await testToken.deploy("TEST TOKEN", "TST1")
     await token.deployed()
-    await token.mint(amountMinted, signers[0].address)
+    await token.mint(signers[0].address, amountMinted)
 
     // Deploy tokens
     const poolTokenFactory = (await ethers.getContractFactory(
@@ -425,7 +422,7 @@ export const deployMockPool = async (
     )) as PoolFactoryBalanceDrainMock__factory
 
     const factory = await (
-        await PoolFactory.deploy(generateRandomAddress())
+        await PoolFactory.deploy(generateRandomAddress(), signers[0].address)
     ).deployed()
 
     const autoClaimFactory = (await ethers.getContractFactory("AutoClaim", {
@@ -441,6 +438,7 @@ export const deployMockPool = async (
     )) as InvariantCheck__factory
 
     const invariantCheck = await invariantCheckFactory.deploy(factory.address)
+    await factory.setInvariantCheck(invariantCheck.address)
 
     const poolKeeperFactory = (await ethers.getContractFactory("PoolKeeper", {
         signer: signers[0],
@@ -461,6 +459,10 @@ export const deployMockPool = async (
         oracleWrapper: oracleWrapper.address,
         settlementEthOracle: settlementEthOracle.address,
         invariantCheckContract: invariantCheck.address,
+        feeController: signers[0].address,
+        mintingFee: 0,
+        burningFee: 0,
+        changeInterval: 0,
     }
 
     if (fee) {

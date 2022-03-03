@@ -285,7 +285,9 @@ Initializes a minimal clone of a pool contract. This can only be run once. Ordin
 ```
 function commit(
     CommitType commitType,
-    uint256 amount
+    uint256 amount,
+    bool fromAggregateBalance,
+    bool payForClaim
   ) external;
 ```  
 Used to create a commitment to add or remove funds from one of the pool's pairs.

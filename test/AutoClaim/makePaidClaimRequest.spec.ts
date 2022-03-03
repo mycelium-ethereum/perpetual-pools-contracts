@@ -46,10 +46,7 @@ const reward = 123123
 describe("AutoClaim - makePaidClaimRequest", () => {
     let poolCommitter: PoolCommitter
     let token: TestToken
-    let shortToken: ERC20
-    let longToken: ERC20
     let pool: LeveragedPool
-    let library: PoolSwapLibrary
     let autoClaim: AutoClaim
     let signers: SignerWithAddress[]
     let poolKeeper: PoolKeeper
@@ -65,16 +62,12 @@ describe("AutoClaim - makePaidClaimRequest", () => {
             fee
         )
         pool = result.pool
-        library = result.library
         poolCommitter = result.poolCommitter
         autoClaim = result.autoClaim
         signers = result.signers
         poolKeeper = result.poolKeeper
 
         token = result.token
-        shortToken = result.shortToken
-        longToken = result.longToken
-
         await token.approve(pool.address, amountMinted)
     })
 

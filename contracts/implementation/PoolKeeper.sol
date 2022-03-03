@@ -18,8 +18,12 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     uint256 public constant BASE_TIP = 5; // 5% base tip
     uint256 public constant TIP_DELTA_PER_BLOCK = 5; // 5% increase per block
     uint256 public constant BLOCK_TIME = 13; /* in seconds */
-    uint256 public constant MAX_DECIMALS = 18;
     uint256 public constant MAX_TIP = 100; /* maximum keeper tip */
+    bytes16 public constant FIXED_POINT = 0x403abc16d674ec800000000000000000; // 1 ether
+
+    /// Captures fixed gas overhead for performing upkeep that's unreachable
+    /// by `gasleft()` due to our approach to error handling in that code
+    uint256 public constant FIXED_GAS_OVERHEAD = 80195;
 
     // #### Global variables
     /**
@@ -27,10 +31,17 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      */
     mapping(address => int256) public executionPrice;
 
-    IPoolFactory public factory;
-    bytes16 constant fixedPoint = 0x403abc16d674ec800000000000000000; // 1 ether
+    IPoolFactory public immutable factory;
 
     uint256 public gasPrice = 10 gwei;
+
+    /**
+     * @notice Ensures that the caller is the associated `PoolFactory` contract
+     */
+    modifier onlyFactory() {
+        require(msg.sender == address(factory), "Caller not factory");
+        _;
+    }
 
     // #### Functions
     constructor(address _factory) {
@@ -44,12 +55,10 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @dev Only callable by the associated `PoolFactory` contract
      */
     function newPool(address _poolAddress) external override onlyFactory {
-        address oracleWrapper = ILeveragedPool(_poolAddress).oracleWrapper();
-        int256 firstPrice = IOracleWrapper(oracleWrapper).getPrice();
+        int256 firstPrice = ILeveragedPool(_poolAddress).getOraclePrice();
         require(firstPrice > 0, "First price is non-positive");
-        int256 startingPrice = ABDKMathQuad.toInt(ABDKMathQuad.mul(ABDKMathQuad.fromInt(firstPrice), fixedPoint));
         emit PoolAdded(_poolAddress, firstPrice);
-        executionPrice[_poolAddress] = startingPrice;
+        executionPrice[_poolAddress] = firstPrice;
     }
 
     /**
@@ -57,7 +66,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @param _pool The address of the pool to upkeep
      * @return Whether or not upkeep is needed for this single pool
      */
-    function checkUpkeepSinglePool(address _pool) public view override returns (bool) {
+    function isUpkeepRequiredSinglePool(address _pool) public view override returns (bool) {
         if (!factory.isValidPool(_pool)) {
             return false;
         }
@@ -75,7 +84,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     function checkUpkeepMultiplePools(address[] calldata _pools) external view override returns (bool) {
         uint256 poolsLength = _pools.length;
         for (uint256 i = 0; i < poolsLength; i++) {
-            if (checkUpkeepSinglePool(_pools[i])) {
+            if (isUpkeepRequiredSinglePool(_pools[i])) {
                 // One has been found that requires upkeeping
                 return true;
             }
@@ -95,7 +104,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         uint256 startGas = gasleft();
 
         // validate the pool, check that the interval time has passed
-        if (!checkUpkeepSinglePool(_pool)) {
+        if (!isUpkeepRequiredSinglePool(_pool)) {
             return;
         }
 
@@ -103,7 +112,10 @@ contract PoolKeeper is IPoolKeeper, Ownable {
 
         /* update SMA oracle, does nothing for spot oracles */
         IOracleWrapper poolOracleWrapper = IOracleWrapper(pool.oracleWrapper());
-        poolOracleWrapper.poll();
+
+        try poolOracleWrapper.poll() {} catch Error(string memory reason) {
+            emit PoolUpkeepError(_pool, reason);
+        }
 
         (int256 latestPrice, bytes memory data, uint256 savedPreviousUpdatedTimestamp, uint256 updateInterval) = pool
             .getUpkeepInformation();
@@ -112,8 +124,9 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         // Get price in WAD format
         int256 lastExecutionPrice = executionPrice[_pool];
 
-        // This allows us to still batch multiple calls to executePriceChange, even if some are invalid
-        // Without reverting the entire transaction
+        /* This allows us to still batch multiple calls to
+         * executePriceChange, even if some are invalid
+         * without reverting the entire transaction */
         try pool.poolUpkeep(lastExecutionPrice, latestPrice) {
             executionPrice[_pool] = latestPrice;
             // If poolUpkeep is successful, refund the keeper for their gas costs
@@ -211,11 +224,18 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         bytes16 _tipPercent = ABDKMathQuad.fromUInt(keeperTip(_savedPreviousUpdatedTimestamp, _poolInterval));
 
         // amount of settlement tokens to give to the keeper
-        _tipPercent = ABDKMathQuad.div(_tipPercent, ABDKMathQuad.fromUInt(100));
         int256 wadRewardValue = ABDKMathQuad.toInt(
             ABDKMathQuad.add(
                 ABDKMathQuad.fromUInt(_keeperGas),
-                ABDKMathQuad.div((ABDKMathQuad.mul(ABDKMathQuad.fromUInt(_keeperGas), _tipPercent)), fixedPoint)
+                ABDKMathQuad.div(
+                    (
+                        ABDKMathQuad.div(
+                            (ABDKMathQuad.mul(ABDKMathQuad.fromUInt(_keeperGas), _tipPercent)),
+                            ABDKMathQuad.fromUInt(100)
+                        )
+                    ),
+                    FIXED_POINT
+                )
             )
         );
         uint256 decimals = IERC20DecimalsWrapper(ILeveragedPool(_pool).quoteToken()).decimals();
@@ -230,6 +250,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @param _gasPrice Price of a single gas unit (in ETH (wei))
      * @param _gasSpent Number of gas units spent
      * @return Keeper's gas compensation
+     * @dev Adds a constant to `_gasSpent` when calculating actual gas usage
      */
     function keeperGas(
         address _pool,
@@ -241,12 +262,15 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         if (settlementTokenPrice <= 0) {
             return 0;
         } else {
-            /* safe due to explicit bounds check above */
+            /* gas spent plus our fixed gas overhead */
+            uint256 gasUsed = _gasSpent + FIXED_GAS_OVERHEAD;
+
+            /* safe due to explicit bounds check for settlementTokenPrice above */
             /* (wei * Settlement / ETH) / fixed point (10^18) = amount in settlement */
-            bytes16 _weiSpent = ABDKMathQuad.fromUInt(_gasPrice * _gasSpent);
+            bytes16 _weiSpent = ABDKMathQuad.fromUInt(_gasPrice * gasUsed);
             bytes16 _settlementTokenPrice = ABDKMathQuad.fromUInt(uint256(settlementTokenPrice));
             return
-                ABDKMathQuad.toUInt(ABDKMathQuad.div(ABDKMathQuad.mul(_weiSpent, _settlementTokenPrice), fixedPoint));
+                ABDKMathQuad.toUInt(ABDKMathQuad.div(ABDKMathQuad.mul(_weiSpent, _settlementTokenPrice), FIXED_POINT));
         }
     }
 
@@ -260,23 +284,14 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         /* the number of blocks that have elapsed since the given pool's updateInterval passed */
         uint256 elapsedBlocksNumerator = (block.timestamp - (_savedPreviousUpdatedTimestamp + _poolInterval));
 
-        uint256 keeperTip = BASE_TIP + (TIP_DELTA_PER_BLOCK * elapsedBlocksNumerator) / BLOCK_TIME;
+        uint256 keeperTipAmount = BASE_TIP + (TIP_DELTA_PER_BLOCK * elapsedBlocksNumerator) / BLOCK_TIME;
 
         // In case of network outages or otherwise, we want to cap the tip so that the keeper cost isn't unbounded
-        if (keeperTip > MAX_TIP) {
+        if (keeperTipAmount > MAX_TIP) {
             return MAX_TIP;
         } else {
-            return keeperTip;
+            return keeperTipAmount;
         }
-    }
-
-    /**
-     * @notice Sets the address of the associated `PoolFactory` contract
-     * @param _factory Address of the `PoolFactory` contract
-     * @dev Only callable by the owner
-     */
-    function setFactory(address _factory) external override onlyOwner {
-        factory = IPoolFactory(_factory);
     }
 
     /**
@@ -284,16 +299,10 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @param _price Price (in ETH) per unit gas
      * @dev Only callable by the owner
      * @dev This function is only necessary due to the L2 deployment of Pools -- in reality, it should be `BASEFEE`
+     * @dev Emits a `GasPriceChanged` event on success
      */
     function setGasPrice(uint256 _price) external onlyOwner {
         gasPrice = _price;
-    }
-
-    /**
-     * @notice Ensures that the caller is the associated `PoolFactory` contract
-     */
-    modifier onlyFactory() {
-        require(msg.sender == address(factory), "Caller not factory");
-        _;
+        emit GasPriceChanged(_price);
     }
 }
