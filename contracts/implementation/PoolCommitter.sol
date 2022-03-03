@@ -294,13 +294,6 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         uint256 lastPriceTimestamp = pool.lastPriceTimestamp();
         uint256 frontRunningInterval = pool.frontRunningInterval();
 
-        if (payForClaim) {
-            require(msg.value != 0, "Must pay for claim");
-            autoClaim.makePaidClaimRequest{value: msg.value}(msg.sender);
-        } else {
-            require(msg.value == 0, "ETH quantity must be zero for non-paid claims");
-        }
-
         uint256 appropriateUpdateIntervalId = PoolSwapLibrary.appropriateUpdateIntervalId(
             block.timestamp,
             lastPriceTimestamp,
@@ -338,7 +331,10 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         }
 
         if (payForClaim) {
+            require(msg.value != 0, "Must pay for claim");
             autoClaim.makePaidClaimRequest{value: msg.value}(msg.sender);
+        } else {
+            require(msg.value == 0, "ETH quantity must be zero for non-paid claims");
         }
 
         emit CreateCommit(
