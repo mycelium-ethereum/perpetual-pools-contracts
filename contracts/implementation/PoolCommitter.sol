@@ -253,7 +253,7 @@ contract PoolCommitter is IPoolCommitter, Initializable {
             require(msg.value != 0, "Must pay for claim");
             autoClaim.makePaidClaimRequest{value: msg.value}(msg.sender);
         } else {
-            require(msg.value == 0, "user's ETH would be lost");
+            require(msg.value == 0, "ETH quantity must be zero for non-paid claims");
         }
 
         uint256 appropriateUpdateIntervalId = PoolSwapLibrary.appropriateUpdateIntervalId(
