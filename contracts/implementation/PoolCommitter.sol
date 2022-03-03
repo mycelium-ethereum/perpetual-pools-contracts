@@ -40,6 +40,10 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
 
     // The total amount of collateral that has been committed to mints that are not yet executed
     uint256 public override totalPendingMints;
+    // The total amount of short pool tokens that have been burnt that are not yet executed on
+    uint256 public override totalPendingShortBurns;
+    // The total amount of long pool tokens that have been burnt that are not yet executed on
+    uint256 public override totalPendingLongBurns;
     // Update interval ID => TotalCommitment
     mapping(uint256 => TotalCommitment) public totalPoolCommitments;
     // Address => Update interval ID => UserCommitment
@@ -193,6 +197,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             pool.setNewPoolBalances(longBalance + feeAmount, shortBalance);
             // If we are minting from balance, this would already have thrown in `commit` if we are minting more than entitled too
         } else if (commitType == CommitType.LongBurn) {
+            totalPendingLongBurns += amount;
             userCommit.longBurnAmount += amount;
             totalCommit.longBurnAmount += amount;
             // long burning: pull in long pool tokens from committer
@@ -215,6 +220,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             pool.setNewPoolBalances(longBalance, shortBalance + feeAmount);
             // If we are minting from balance, this would already have thrown in `commit` if we are minting more than entitled too
         } else if (commitType == CommitType.ShortBurn) {
+            totalPendingShortBurns += amount;
             userCommit.shortBurnAmount += amount;
             totalCommit.shortBurnAmount += amount;
             if (fromAggregateBalance) {
@@ -229,6 +235,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
                 pool.burnTokens(false, amount, msg.sender);
             }
         } else if (commitType == CommitType.LongBurnShortMint) {
+            totalPendingLongBurns += amount;
             userCommit.longBurnShortMintAmount += amount;
             totalCommit.longBurnShortMintAmount += amount;
             if (fromAggregateBalance) {
@@ -239,6 +246,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
                 pool.burnTokens(true, amount, msg.sender);
             }
         } else if (commitType == CommitType.ShortBurnLongMint) {
+            totalPendingShortBurns += amount;
             userCommit.shortBurnLongMintAmount += amount;
             totalCommit.shortBurnLongMintAmount += amount;
             if (fromAggregateBalance) {
@@ -397,13 +405,15 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         priceHistory[updateIntervalId] = Prices({
             longPrice: PoolSwapLibrary.getPrice(
                 balancesAndSupplies.longBalance,
-                balancesAndSupplies.longTotalSupplyBefore + totalLongBurn
+                balancesAndSupplies.longTotalSupplyBefore + totalPendingLongBurns
             ),
             shortPrice: PoolSwapLibrary.getPrice(
                 balancesAndSupplies.shortBalance,
-                balancesAndSupplies.shortTotalSupplyBefore + totalShortBurn
+                balancesAndSupplies.shortTotalSupplyBefore + totalPendingShortBurns
             )
         });
+        totalPendingLongBurns -= totalLongBurn;
+        totalPendingShortBurns -= totalShortBurn;
 
         // Amount of collateral tokens that are generated from the long burn into instant mints
         uint256 longBurnInstantMintAmount = PoolSwapLibrary.getWithdrawAmountOnBurn(

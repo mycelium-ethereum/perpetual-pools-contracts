@@ -162,6 +162,10 @@ interface IPoolCommitter {
 
     function totalPendingMints() external view returns (uint256);
 
+    function totalPendingShortBurns() external view returns (uint256);
+
+    function totalPendingLongBurns() external view returns (uint256);
+
     function claim(address user) external;
 
     function executeCommitments() external;
