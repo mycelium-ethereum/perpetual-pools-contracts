@@ -45,6 +45,44 @@ describe("PoolCommitter - Mint commit with mint fee", () => {
     let poolCommitter: PoolCommitter
     let poolKeeper: PoolKeeper
 
+    context("Setting mint fee", async () => {
+        context("mint fee too high", async () => {
+            it("reverts", async () => {
+                const result = await deployPoolAndTokenContracts(
+                    POOL_CODE,
+                    frontRunningInterval,
+                    updateInterval,
+                    leverage,
+                    feeAddress,
+                    fee,
+                    0
+                )
+                const mintingFee = ethers.utils.parseEther("1.01")
+                await expect(
+                    result.poolCommitter.setMintingFee(mintingFee)
+                ).to.be.revertedWith("Minting fee >= 100%")
+            })
+        })
+        it("Updates mint fee", async () => {
+            const result = await deployPoolAndTokenContracts(
+                POOL_CODE,
+                frontRunningInterval,
+                updateInterval,
+                leverage,
+                feeAddress,
+                fee,
+                0
+            )
+            const mintingFee = ethers.utils.parseEther("0.992")
+            await result.poolCommitter.setMintingFee(mintingFee)
+            const resultantMintingFee =
+                await result.library.convertDecimalToUInt(
+                    await result.poolCommitter.mintingFee()
+                )
+            expect(resultantMintingFee).to.equal(mintingFee)
+        })
+    })
+
     context("Create SHORT_MINT commit", () => {
         let receipt: ContractReceipt
         beforeEach(async () => {

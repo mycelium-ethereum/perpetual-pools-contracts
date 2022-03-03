@@ -139,6 +139,11 @@ interface IPoolCommitter {
      */
     event ChangeIntervalSet(uint256 indexed _changeInterval);
 
+    /**
+     * @notice Creates a notification when the feeController is updated
+     */
+    event FeeControllerSet(address indexed _feeController);
+
     // #### Functions
 
     function initialize(
@@ -146,6 +151,7 @@ interface IPoolCommitter {
         address _invariantCheckContract,
         address _autoClaim,
         address _factoryOwner,
+        address _feeController,
         uint256 mintingFee,
         uint256 burningFee,
         uint256 _changeInterval
@@ -183,4 +189,6 @@ interface IPoolCommitter {
     function setMintingFee(uint256 _mintingFee) external;
 
     function setChangeInterval(uint256 _changeInterval) external;
+
+    function setFeeController(address _feeController) external;
 }
