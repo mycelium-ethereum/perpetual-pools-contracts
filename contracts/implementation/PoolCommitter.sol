@@ -219,10 +219,10 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
                 // This require statement is only needed in this branch, as `pool.burnTokens` will revert if burning too many
                 require(userCommit.balanceLongBurnAmount <= balance.longTokens, "Insufficient pool tokens");
                 // Burn from leveragedPool, because that is the official owner of the tokens before they are claimed
-                pool.burnTokens(true, amount, leveragedPool);
+                pool.burnTokens(LONG_INDEX, amount, leveragedPool);
             } else {
                 // Burning from user's wallet
-                pool.burnTokens(true, amount, msg.sender);
+                pool.burnTokens(LONG_INDEX, amount, msg.sender);
             }
         } else if (commitType == CommitType.ShortMint) {
             (uint256 shortBalance, uint256 longBalance) = pool.balances();
@@ -241,10 +241,10 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
                 // This require statement is only needed in this branch, as `pool.burnTokens` will revert if burning too many
                 require(userCommit.balanceShortBurnAmount <= balance.shortTokens, "Insufficient pool tokens");
                 // Burn from leveragedPool, because that is the official owner of the tokens before they are claimed
-                pool.burnTokens(false, amount, leveragedPool);
+                pool.burnTokens(SHORT_INDEX, amount, leveragedPool);
             } else {
                 // Burning from user's wallet
-                pool.burnTokens(false, amount, msg.sender);
+                pool.burnTokens(SHORT_INDEX, amount, msg.sender);
             }
         } else if (commitType == CommitType.LongBurnShortMint) {
             totalPendingLongBurns += amount;
@@ -253,9 +253,9 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             if (fromAggregateBalance) {
                 userCommit.balanceLongBurnMintAmount += amount;
                 require(userCommit.balanceLongBurnMintAmount <= balance.longTokens, "Insufficient pool tokens");
-                pool.burnTokens(true, amount, leveragedPool);
+                pool.burnTokens(LONG_INDEX, amount, leveragedPool);
             } else {
-                pool.burnTokens(true, amount, msg.sender);
+                pool.burnTokens(LONG_INDEX, amount, msg.sender);
             }
         } else if (commitType == CommitType.ShortBurnLongMint) {
             totalPendingShortBurns += amount;
@@ -264,9 +264,9 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             if (fromAggregateBalance) {
                 userCommit.balanceShortBurnMintAmount += amount;
                 require(userCommit.balanceShortBurnMintAmount <= balance.shortTokens, "Insufficient pool tokens");
-                pool.burnTokens(false, amount, leveragedPool);
+                pool.burnTokens(SHORT_INDEX, amount, leveragedPool);
             } else {
-                pool.burnTokens(false, amount, msg.sender);
+                pool.burnTokens(SHORT_INDEX, amount, msg.sender);
             }
         }
     }
@@ -451,7 +451,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         );
 
         if (longMintAmount > 0) {
-            pool.mintTokens(true, longMintAmount, leveragedPool);
+            pool.mintTokens(LONG_INDEX, longMintAmount, leveragedPool);
         }
 
         // Long Burns
@@ -471,7 +471,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         );
 
         if (shortMintAmount > 0) {
-            pool.mintTokens(false, shortMintAmount, leveragedPool);
+            pool.mintTokens(SHORT_INDEX, shortMintAmount, leveragedPool);
         }
 
         // Short Burns
