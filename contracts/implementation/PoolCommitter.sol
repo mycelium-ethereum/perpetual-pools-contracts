@@ -334,7 +334,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             require(msg.value != 0, "Must pay for claim");
             autoClaim.makePaidClaimRequest{value: msg.value}(msg.sender);
         } else {
-            require(msg.value == 0, "ETH quantity must be zero for non-paid claims");
+            require(msg.value == 0, "msg.value must be zero");
         }
 
         emit CreateCommit(
