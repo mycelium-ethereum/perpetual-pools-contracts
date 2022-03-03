@@ -78,44 +78,6 @@ describe("Leveraged pool fees", () => {
         ).to.be.revertedWith("Fee cannot be > 10%")
     })
 
-    context("setMintAndBurnFeeAndChangeInterval", async () => {
-        let setupContracts: any
-
-        before(async () => {
-            setupContracts = await deployPoolSetupContracts()
-        })
-
-        it("Should revert if mintingFee > 100%", async () => {
-            await expect(
-                setupContracts.factory.setMintAndBurnFeeAndChangeInterval(
-                    ethers.utils.parseEther("100"),
-                    0,
-                    0
-                )
-            ).to.be.revertedWith("Fee cannot be > 100%")
-        })
-
-        it("Should revert if burningFee > 100%", async () => {
-            await expect(
-                setupContracts.factory.setMintAndBurnFeeAndChangeInterval(
-                    0,
-                    ethers.utils.parseEther("100"),
-                    0
-                )
-            ).to.be.revertedWith("Fee cannot be > 100%")
-        })
-
-        it("Should revert if changeInterval > 100%", async () => {
-            await expect(
-                setupContracts.factory.setMintAndBurnFeeAndChangeInterval(
-                    0,
-                    0,
-                    ethers.utils.parseEther("100")
-                )
-            ).to.be.revertedWith("Change interval cannot be > 100%")
-        })
-    })
-
     it("Should revert if fee above 10%", async () => {
         const setupContracts = await deployPoolSetupContracts()
 

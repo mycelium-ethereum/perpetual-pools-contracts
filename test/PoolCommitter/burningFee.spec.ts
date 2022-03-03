@@ -13,15 +13,12 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import {
     DEFAULT_FEE,
     LONG_BURN,
-    LONG_BURN_THEN_MINT,
     LONG_MINT,
     POOL_CODE,
     SHORT_BURN,
-    SHORT_BURN_THEN_MINT,
     SHORT_MINT,
 } from "../constants"
 import {
-    getEventArgs,
     deployPoolAndTokenContracts,
     generateRandomAddress,
     timeout,
@@ -29,12 +26,10 @@ import {
     getCurrentUserCommit,
 } from "../utilities"
 
-import { ContractReceipt } from "ethers"
 chai.use(chaiAsPromised)
 const { expect } = chai
 
 const amountCommitted = ethers.utils.parseEther("2000")
-const amountMinted = ethers.utils.parseEther("10000")
 const feeAddress = generateRandomAddress()
 // Update interval and frontrunning interval are in seconds
 const updateInterval = 2000
@@ -139,7 +134,45 @@ describe("PoolCommitter - Burn commit with burn fee", () => {
         })
     })
 
-    context("Create LONG_BURN commit", () => {
+    context("Setting Burn fee", async () => {
+        context("Burn fee too high", async () => {
+            it("reverts", async () => {
+                const result = await deployPoolAndTokenContracts(
+                    POOL_CODE,
+                    frontRunningInterval,
+                    updateInterval,
+                    leverage,
+                    feeAddress,
+                    fee,
+                    0
+                )
+                const burningFee = ethers.utils.parseEther("0.11")
+                await expect(
+                    result.poolCommitter.setBurningFee(burningFee)
+                ).to.be.revertedWith("Burning fee >= 10%")
+            })
+        })
+        it("Updates burn fee", async () => {
+            const result = await deployPoolAndTokenContracts(
+                POOL_CODE,
+                frontRunningInterval,
+                updateInterval,
+                leverage,
+                feeAddress,
+                fee,
+                0
+            )
+            const burningFee = ethers.utils.parseEther("0.09")
+            await result.poolCommitter.setBurningFee(burningFee)
+            const resultantBurningFee =
+                await result.library.convertDecimalToUInt(
+                    await result.poolCommitter.burningFee()
+                )
+            expect(resultantBurningFee).to.equal(burningFee)
+        })
+    })
+
+    context("Create LONG_BURN commit", async () => {
         beforeEach(async () => {
             const result = await deployPoolAndTokenContracts(
                 POOL_CODE,

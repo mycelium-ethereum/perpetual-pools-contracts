@@ -35,11 +35,6 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
     uint256 public fee;
     // Percent of fees that go to secondary fee address if applicable.
     uint256 public secondaryFeeSplitPercent = 10;
-    // The fee taken for each mint and burn. Fee value as a decimal multiplied by 10^18. For example, 50% is represented as 0.5 * 10^18
-    uint256 public mintingFee;
-    uint256 public burningFee;
-    //The interval at which the mintingFee in a market either increases or decreases, as per the logic in `PoolCommitter::updateMintingFee`
-    uint256 public changeInterval;
 
     // This is required because we must pass along *some* value for decimal
     // precision to the base pool tokens as we use the Cloneable pattern
@@ -89,7 +84,7 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
         feeReceiver = _feeReceiver;
 
         /* initialise base PoolCommitter template (with dummy values) */
-        poolCommitterBase.initialize(address(this), address(this), address(this), governance, 0, 0, 0);
+        poolCommitterBase.initialize(address(this), address(this), address(this), governance, governance, 0, 0, 0);
     }
 
     /**
@@ -139,9 +134,10 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
             invariantCheck,
             autoClaim,
             governance,
-            mintingFee,
-            burningFee,
-            changeInterval
+            deploymentParameters.feeController,
+            deploymentParameters.mintingFee,
+            deploymentParameters.burningFee,
+            deploymentParameters.changeInterval
         );
 
         require(
@@ -312,31 +308,6 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
         require(_fee <= 0.1e18, "Fee cannot be > 10%");
         fee = _fee;
         emit FeeChanged(_fee);
-    }
-
-    /**
-     * @notice Set the minting and burning fee amount. The max yearly fee is 10%
-     * @dev This is a percentage in WAD; multiplied by 10^18 e.g. 5% is 0.05 * 10^18
-     * @param _mintingFee The fee amount for mints
-     * @param _burningFee The fee amount for burns
-     * @param _changeInterval The interval at which the mintingFee in a market either increases or decreases, as per the logic in `PoolCommitter::updateMintingFee`
-     * @dev Only callable by the owner of this contract
-     * @dev Throws if minting fee is greater than 10%
-     * @dev Throws if burning fee is greater than 10%
-     * @dev Emits a `MintAndBurnFeesChanged` event on success
-     */
-    function setMintAndBurnFeeAndChangeInterval(
-        uint256 _mintingFee,
-        uint256 _burningFee,
-        uint256 _changeInterval
-    ) external override onlyGov {
-        require(_mintingFee <= 1e18, "Fee cannot be > 100%");
-        require(_burningFee <= 1e18, "Fee cannot be > 100%");
-        require(_changeInterval <= 1e18, "Change interval cannot be > 100%");
-        mintingFee = _mintingFee;
-        burningFee = _burningFee;
-        changeInterval = _changeInterval;
-        emit MintAndBurnFeesChanged(_mintingFee, _burningFee);
     }
 
     /**
