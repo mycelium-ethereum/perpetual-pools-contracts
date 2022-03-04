@@ -46,7 +46,9 @@ contract AutoClaim is IAutoClaim {
                 uint256 reward = claimRequests[user][msg.sender].reward;
                 delete claimRequests[user][msg.sender];
                 poolCommitter.claim(user);
-                Address.sendValue(payable(user), reward);
+                if (reward > 0) {
+                    Address.sendValue(payable(user), reward);
+                }
             } else {
                 // If the claim request is pending but not yet valid (it was made in the current commit), we want to add to the value.
                 // Note that in context, the user *usually* won't need or want to increment `ClaimRequest.reward` more than once because the first call to `payForClaim` should suffice.
@@ -72,10 +74,10 @@ contract AutoClaim is IAutoClaim {
         require(poolFactory.isValidPoolCommitter(poolCommitterAddress), "Invalid PoolCommitter");
         IPoolCommitter poolCommitter = IPoolCommitter(poolCommitterAddress);
         uint256 currentUpdateIntervalId = poolCommitter.updateIntervalId();
-        Address.sendValue(
-            payable(msg.sender),
-            claim(user, poolCommitterAddress, poolCommitter, currentUpdateIntervalId)
-        );
+        uint256 reward = claim(user, poolCommitterAddress, poolCommitter, currentUpdateIntervalId);
+        if (reward > 0) {
+            Address.sendValue(payable(msg.sender), reward);
+        }
     }
 
     /**
@@ -119,7 +121,9 @@ contract AutoClaim is IAutoClaim {
             uint256 currentUpdateIntervalId = poolCommitter.updateIntervalId();
             reward += claim(users[i], poolCommitterAddresses[i], poolCommitter, currentUpdateIntervalId);
         }
-        Address.sendValue(payable(msg.sender), reward);
+        if (reward > 0) {
+            Address.sendValue(payable(msg.sender), reward);
+        }
     }
 
     /**
@@ -138,7 +142,9 @@ contract AutoClaim is IAutoClaim {
         for (uint256 i; i < users.length; i++) {
             reward += claim(users[i], poolCommitterAddress, poolCommitter, currentUpdateIntervalId);
         }
-        Address.sendValue(payable(msg.sender), reward);
+        if (reward > 0) {
+            Address.sendValue(payable(msg.sender), reward);
+        }
     }
 
     /**
@@ -150,7 +156,9 @@ contract AutoClaim is IAutoClaim {
         if (claimRequests[msg.sender][poolCommitter].updateIntervalId > 0) {
             uint256 reward = claimRequests[msg.sender][poolCommitter].reward;
             delete claimRequests[msg.sender][poolCommitter];
-            Address.sendValue(payable(msg.sender), reward);
+            if (reward > 0) {
+                Address.sendValue(payable(msg.sender), reward);
+            }
             emit RequestWithdrawn(msg.sender, poolCommitter);
         }
     }
@@ -165,7 +173,9 @@ contract AutoClaim is IAutoClaim {
         // msg.sender is the PoolCommitter
         uint256 reward = claimRequests[user][msg.sender].reward;
         delete claimRequests[user][msg.sender];
-        Address.sendValue(payable(user), reward);
+        if (reward > 0) {
+            Address.sendValue(payable(user), reward);
+        }
     }
 
     /**
