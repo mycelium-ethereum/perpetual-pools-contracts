@@ -183,22 +183,7 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
                 expect(newExecutionPrice).to.equal(price)
             })
             it("Should update the keeper's balance", async () => {
-                await timeout(updateInterval * 1000 + 1000)
-                const balanceBefore = await token.balanceOf(signers[0].address)
-                const poolTokenBalanceBefore = await token.balanceOf(
-                    pool.address
-                )
-                const receipt = await (
-                    await poolKeeper.performUpkeepMultiplePools([
-                        POOL1_ADDR,
-                        POOL2_ADDR,
-                    ])
-                ).wait()
-
-                const balanceAfter = await token.balanceOf(signers[0].address)
-                const poolTokenBalanceAfter = await token.balanceOf(
-                    pool.address
-                )
+                /* maths aliases */
                 const tenGwei = BigNumber.from("10").pow(9).mul(10)
                 const tenToTheEighteen = BigNumber.from("10").pow(18)
                 const tenToTheTen = BigNumber.from("10").pow(10)
@@ -206,7 +191,30 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
                     BigNumber.from(10).pow(8)
                 )
 
-                const estimatedKeeperReward = BigNumber.from(
+                /* wait */
+                await timeout(updateInterval * 1000 + 1000)
+
+                /* pre-upkeep balances */
+                const keeperBalanceBefore = await token.balanceOf(signers[0].address)
+                const poolBalanceBefore = await token.balanceOf(
+                    pool.address
+                )
+
+                /* perform upkeep */
+                const receipt = await (
+                    await poolKeeper.performUpkeepMultiplePools([
+                        POOL1_ADDR,
+                        POOL2_ADDR,
+                    ])
+                ).wait()
+
+                /* post-upkeep balances */
+                const actualKeeperBalanceAfter: BigNumber = await token.balanceOf(signers[0].address)
+                const actualPoolBalanceAfter: BigNumber = await token.balanceOf(pool.address)
+                const actualKeeperReward: BigNumber = actualKeeperBalanceAfter.sub(keeperBalanceBefore)
+
+                /* expected values */
+                const expectedKeeperReward = BigNumber.from(
                     SINGLE_POOL_UPKEEP_GAS_COST
                 )
                     .mul(tenGwei)
@@ -214,13 +222,20 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
                     .mul(2) // Mul by 2 because there are two pools
                     .div(tenToTheEighteen.div(tenToTheTen))
 
-                const epsilon = estimatedKeeperReward.mul(
+                const expectedKeeperBalanceAfter: BigNumber = keeperBalanceBefore.add(expectedKeeperReward)
+                const expectedPoolBalanceAfter: BigNumber = poolBalanceBefore.add(expectedKeeperReward)
+
+                const epsilon = expectedKeeperBalanceAfter.mul(
                     ethers.utils.parseEther("0.0000000000000001")
                 )
-                const lowerBound: any = estimatedKeeperReward.sub(epsilon)
-                const upperBound: any = estimatedKeeperReward.add(epsilon)
-                expect(balanceAfter).to.be.gt(balanceBefore)
-                expect(poolTokenBalanceAfter).to.be.lt(poolTokenBalanceBefore)
+                const lowerBound: any = expectedKeeperReward.sub(epsilon)
+                const upperBound: any = expectedKeeperReward.add(epsilon)
+
+                /* assertions */
+                expect(actualKeeperBalanceAfter).to.be.gt(keeperBalanceBefore)
+                expect(actualPoolBalanceAfter).to.be.lt(poolBalanceBefore)
+                expect(actualKeeperBalanceAfter).to.be.eq(expectedKeeperBalanceAfter)
+                expect(actualPoolBalanceAfter).to.be.eq(expectedPoolBalanceAfter)
             })
             it("should calculate a new execution price", async () => {
                 expect(newLastExecutionPrice).to.eq(oldExecutionPrice)
