@@ -114,7 +114,8 @@ contract AutoClaim is IAutoClaim {
     {
         require(users.length == poolCommitterAddresses.length, "Supplied arrays must be same length");
         uint256 reward;
-        for (uint256 i; i < users.length; i++) {
+        uint256 nrUsers = users.length;
+        for (uint256 i; i < nrUsers; i++) {
             IPoolCommitter poolCommitter = IPoolCommitter(poolCommitterAddresses[i]);
             uint256 currentUpdateIntervalId = poolCommitter.updateIntervalId();
             reward += claim(users[i], poolCommitterAddresses[i], poolCommitter, currentUpdateIntervalId);
