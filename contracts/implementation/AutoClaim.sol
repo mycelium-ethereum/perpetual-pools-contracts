@@ -119,7 +119,9 @@ contract AutoClaim is IAutoClaim {
             uint256 currentUpdateIntervalId = poolCommitter.updateIntervalId();
             reward += claim(users[i], poolCommitterAddresses[i], poolCommitter, currentUpdateIntervalId);
         }
-        Address.sendValue(payable(msg.sender), reward);
+        if (reward!=0){
+            Address.sendValue(payable(msg.sender), reward);
+        }
     }
 
     /**
@@ -138,7 +140,9 @@ contract AutoClaim is IAutoClaim {
         for (uint256 i; i < users.length; i++) {
             reward += claim(users[i], poolCommitterAddress, poolCommitter, currentUpdateIntervalId);
         }
+        if (reward!=0){
         Address.sendValue(payable(msg.sender), reward);
+        }
     }
 
     /**
