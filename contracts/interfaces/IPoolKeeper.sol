@@ -43,12 +43,29 @@ interface IPoolKeeper {
      */
     event PoolUpkeepError(address indexed pool, string reason);
 
+    /**
+     * @notice Indicates that the factory address has changed
+     * @param factory Address of the new factory
+     */
+    event FactoryChanged(address indexed factory);
+
+    /**
+     * @notice Indicates that the address of the associated `PriceObserver`
+     *          contract has changed
+     * @param observer Address of the new `PriceObserver` contract
+     */
+    event PriceObserverChanged(address indexed observer);
+
+    /**
+     * @notice Indicates that the gas price for keeper rewards changed
+     * @param price New gas price
+     */
+    event GasPriceChanged(uint256 indexed price);
+
     // #### Functions
     function newPool(address _poolAddress) external;
 
-    function setFactory(address _factory) external;
-
-    function checkUpkeepSinglePool(address pool) external view returns (bool);
+    function isUpkeepRequiredSinglePool(address pool) external view returns (bool);
 
     function checkUpkeepMultiplePools(address[] calldata pools) external view returns (bool);
 
