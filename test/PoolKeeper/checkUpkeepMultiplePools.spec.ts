@@ -22,7 +22,7 @@ import {
 chai.use(chaiAsPromised)
 const { expect } = chai
 
-let settlementToken: string
+let quoteToken: string
 let oracleWrapper: ChainlinkOracleWrapper
 let settlementEthOracle: ChainlinkOracleWrapper
 let oracle: TestChainlinkOracle
@@ -38,7 +38,7 @@ const forwardTime = async (seconds: number) => {
 const setupHook = async () => {
     const signers = await ethers.getSigners()
     const amount = 10000
-    // Deploy settlement token
+    // Deploy quote token
     const testToken = (await ethers.getContractFactory(
         "TestToken",
         signers[0]
@@ -46,7 +46,7 @@ const setupHook = async () => {
     const token = await testToken.deploy("TEST TOKEN", "TST1")
     await token.deployed()
     await token.mint(signers[0].address, amount)
-    settlementToken = token.address
+    quoteToken = token.address
 
     // Deploy oracle. Using a test oracle for predictability
     const oracleFactory = (await ethers.getContractFactory(
@@ -116,7 +116,7 @@ const setupHook = async () => {
         frontRunningInterval: 1,
         updateInterval: 2,
         leverageAmount: 1,
-        settlementToken: settlementToken,
+        quoteToken: quoteToken,
         oracleWrapper: oracleWrapper.address,
         settlementEthOracle: settlementEthOracle.address,
         invariantCheckContract: invariantCheck.address,
@@ -132,7 +132,7 @@ const setupHook = async () => {
         frontRunningInterval: 1,
         updateInterval: 2,
         leverageAmount: 2,
-        settlementToken: settlementToken,
+        quoteToken: quoteToken,
         oracleWrapper: oracleWrapper.address,
         settlementEthOracle: settlementEthOracle.address,
         invariantCheckContract: invariantCheck.address,

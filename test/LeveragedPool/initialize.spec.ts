@@ -47,7 +47,7 @@ const leverage = getRandomInt(DEFAULT_MAX_LEVERAGE, DEFAULT_MIN_LEVERAGE)
 
 describe("LeveragedPool - initialize", () => {
     let signers: SignerWithAddress[]
-    let settlementToken: string
+    let quoteToken: string
     let short: ERC20
     let long: ERC20
     let oracleWrapper: ChainlinkOracleWrapper
@@ -71,11 +71,11 @@ describe("LeveragedPool - initialize", () => {
             )
             leveragedPool = contracts.pool
             library = contracts.library
-            settlementToken = contracts.token.address
+            quoteToken = contracts.token.address
         })
 
-        it("should set the settlement token", async () => {
-            expect(await leveragedPool.settlementToken()).to.eq(settlementToken)
+        it("should set the quote token", async () => {
+            expect(await leveragedPool.quoteToken()).to.eq(quoteToken)
         })
 
         it("should set the last price timestamp", async () => {
@@ -158,7 +158,7 @@ describe("LeveragedPool - initialize", () => {
             library = setupContracts.library
             oracleWrapper = setupContracts.oracleWrapper
             settlementEthOracle = setupContracts.settlementEthOracle
-            settlementToken = setupContracts.token.address
+            quoteToken = setupContracts.token.address
             const pool = await leveragedPoolFactory.deploy()
             await pool.deployed()
             const poolTokenFactory = (await ethers.getContractFactory(
@@ -223,7 +223,7 @@ describe("LeveragedPool - initialize", () => {
                     _leverageAmount: leverage,
                     _feeAddress: feeAddress,
                     _secondaryFeeAddress: ethers.constants.AddressZero,
-                    _settlementToken: settlementToken,
+                    _quoteToken: quoteToken,
                     _secondaryFeeSplitPercent: 10,
                     _invariantCheckContract:
                         setupContracts.invariantCheck.address,
@@ -235,7 +235,7 @@ describe("LeveragedPool - initialize", () => {
             expect(!!event).to.eq(true)
             expect(!!event?.args?.longToken).to.eq(true)
             expect(!!event?.args?.shortToken).to.eq(true)
-            expect(event?.args?.settlementToken).to.eq(settlementToken)
+            expect(event?.args?.quoteToken).to.eq(quoteToken)
             expect(event?.args?.poolName).to.eq(POOL_CODE)
         })
     })
@@ -258,7 +258,7 @@ describe("LeveragedPool - initialize", () => {
             )
             oracleWrapper = setupContracts.oracleWrapper
             settlementEthOracle = setupContracts.settlementEthOracle
-            settlementToken = setupContracts.token.address
+            quoteToken = setupContracts.token.address
             poolCommitter = setupContracts.poolCommitter
             invariantCheck = setupContracts.invariantCheck
             long = setupContracts.longToken
@@ -303,7 +303,7 @@ describe("LeveragedPool - initialize", () => {
                 _leverageAmount: leverage,
                 _feeAddress: feeAddress,
                 _secondaryFeeAddress: ethers.constants.AddressZero,
-                _settlementToken: settlementToken,
+                _quoteToken: quoteToken,
                 _secondaryFeeSplitPercent: 10,
                 _invariantCheckContract: invariantCheck.address,
             })
@@ -323,13 +323,13 @@ describe("LeveragedPool - initialize", () => {
                     _leverageAmount: leverage,
                     _feeAddress: feeAddress,
                     _secondaryFeeAddress: ethers.constants.AddressZero,
-                    _settlementToken: settlementToken,
+                    _quoteToken: quoteToken,
                     _secondaryFeeSplitPercent: 10,
                     _invariantCheckContract: invariantCheck.address,
                 })
             ).to.rejectedWith("Initializable: contract is already initialized")
         })
-        it("should revert if settlementToken address is the zero address", async () => {
+        it("should revert if quoteToken address is the zero address", async () => {
             await expect(
                 leveragedPool.initialize({
                     _owner: signers[0].address,
@@ -346,11 +346,11 @@ describe("LeveragedPool - initialize", () => {
                     _leverageAmount: leverage,
                     _feeAddress: feeAddress,
                     _secondaryFeeAddress: ethers.constants.AddressZero,
-                    _settlementToken: ethers.constants.AddressZero,
+                    _quoteToken: ethers.constants.AddressZero,
                     _secondaryFeeSplitPercent: 10,
                     _invariantCheckContract: invariantCheck.address,
                 })
-            ).to.rejectedWith("Settlement token cannot be 0 address")
+            ).to.rejectedWith("Quote token cannot be 0 address")
         })
         it("should revert if oracleWrapper address is the zero address", async () => {
             await expect(
@@ -369,7 +369,7 @@ describe("LeveragedPool - initialize", () => {
                     _leverageAmount: leverage,
                     _feeAddress: feeAddress,
                     _secondaryFeeAddress: ethers.constants.AddressZero,
-                    _settlementToken: settlementToken,
+                    _quoteToken: quoteToken,
                     _secondaryFeeSplitPercent: 10,
                     _invariantCheckContract: invariantCheck.address,
                 })
@@ -392,7 +392,7 @@ describe("LeveragedPool - initialize", () => {
                     _leverageAmount: leverage,
                     _feeAddress: ethers.constants.AddressZero,
                     _secondaryFeeAddress: ethers.constants.AddressZero,
-                    _settlementToken: settlementToken,
+                    _quoteToken: quoteToken,
                     _secondaryFeeSplitPercent: 10,
                     _invariantCheckContract: invariantCheck.address,
                 })
@@ -415,7 +415,7 @@ describe("LeveragedPool - initialize", () => {
                     _leverageAmount: leverage,
                     _feeAddress: feeAddress,
                     _secondaryFeeAddress: ethers.constants.AddressZero,
-                    _settlementToken: settlementToken,
+                    _quoteToken: quoteToken,
                     _secondaryFeeSplitPercent: 10,
                     _invariantCheckContract: invariantCheck.address,
                 })
@@ -447,7 +447,7 @@ describe("LeveragedPool - initialize", () => {
                 _leverageAmount: leverage,
                 _feeAddress: feeAddress,
                 _secondaryFeeAddress: ethers.constants.AddressZero,
-                _settlementToken: settlementToken,
+                _quoteToken: quoteToken,
                 _secondaryFeeSplitPercent: 10,
                 _invariantCheckContract: invariantCheck.address,
             })
@@ -466,7 +466,7 @@ describe("LeveragedPool - initialize", () => {
                 _leverageAmount: leverage,
                 _feeAddress: feeAddress,
                 _secondaryFeeAddress: ethers.constants.AddressZero,
-                _settlementToken: settlementToken,
+                _quoteToken: quoteToken,
                 _secondaryFeeSplitPercent: 10,
                 _invariantCheckContract: invariantCheck.address,
             })

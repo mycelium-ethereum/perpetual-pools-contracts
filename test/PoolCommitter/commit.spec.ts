@@ -2076,7 +2076,7 @@ describe("LeveragedPool - commit", () => {
 
             await token.approve(pool.address, amountCommitted)
         })
-        it("should not require a settlement token transfer for short burn commits", async () => {
+        it("should not require a quote token transfer for short burn commits", async () => {
             await poolCommitter.commit(
                 SHORT_MINT,
                 amountCommitted,
@@ -2099,7 +2099,7 @@ describe("LeveragedPool - commit", () => {
 
             expect(await token.balanceOf(pool.address)).to.eq(amountCommitted)
         })
-        it("should not require a settlement token transfer for long burn commits", async () => {
+        it("should not require a quote token transfer for long burn commits", async () => {
             await await poolCommitter.commit(
                 LONG_MINT,
                 amountCommitted,
@@ -2162,13 +2162,13 @@ describe("LeveragedPool - commit", () => {
             await poolCommitter.commit(LONG_BURN, amountCommitted, false, false)
             expect(await longToken.balanceOf(signers[0].address)).to.eq(0)
         })
-        it("should transfer the user's settlement tokens into the pool for long mint commits", async () => {
+        it("should transfer the user's quote tokens into the pool for long mint commits", async () => {
             expect(await token.balanceOf(pool.address)).to.eq(0)
             await poolCommitter.commit(LONG_MINT, amountCommitted, false, false)
             expect(await token.balanceOf(pool.address)).to.eq(amountCommitted)
         })
 
-        it("should transfer the user's settlement tokens into the pool for short mint commits", async () => {
+        it("should transfer the user's quote tokens into the pool for short mint commits", async () => {
             expect(await token.balanceOf(pool.address)).to.eq(0)
             await poolCommitter.commit(
                 SHORT_MINT,

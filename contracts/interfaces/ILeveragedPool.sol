@@ -20,7 +20,7 @@ interface ILeveragedPool {
         uint256 _fee; // The fund movement fee. This amount is extracted from the deposited asset with every update and sent to the fee address. Given as the decimal * 10 ^ 18. For example, 60% fee is 0.6 * 10 ^ 18
         address _feeAddress; // The address that the fund movement fee is sent to
         address _secondaryFeeAddress; // The address of fee recieved by third party deployers
-        address _settlementToken; //  The digital asset that the pool accepts. Must have a decimals() function
+        address _quoteToken; //  The digital asset that the pool accepts. Must have a decimals() function
         uint256 _secondaryFeeSplitPercent; // Percent of fees that go to secondary fee address if it exists
     }
 
@@ -29,15 +29,10 @@ interface ILeveragedPool {
      * @notice Creates a notification when the pool is setup and ready for use
      * @param longToken The address of the LONG pair token
      * @param shortToken The address of the SHORT pair token
-     * @param settlementToken The address of the digital asset that the pool accepts
+     * @param quoteToken The address of the digital asset that the pool accepts
      * @param poolName The identification name of the pool
      */
-    event PoolInitialized(
-        address indexed longToken,
-        address indexed shortToken,
-        address settlementToken,
-        string poolName
-    );
+    event PoolInitialized(address indexed longToken, address indexed shortToken, address quoteToken, string poolName);
 
     /**
      * @notice Creates a notification when the pool is rebalanced
@@ -82,11 +77,11 @@ interface ILeveragedPool {
     event KeeperAddressChanged(address indexed oldAddress, address indexed newAddress);
 
     /**
-     * @notice Indicates settlement assets have been withdrawn from the system
+     * @notice Indicates quote assets have been withdrawn from the system
      * @param to Receipient
-     * @param quantity Quantity of settlement tokens withdrawn
+     * @param quantity Quantity of quote tokens withdrawn
      */
-    event SettlementWithdrawn(address indexed to, uint256 indexed quantity);
+    event QuoteWithdrawn(address indexed to, uint256 indexed quantity);
 
     /**
      * @notice Indicates that the balance of pool tokens on issue for the pool
@@ -100,7 +95,7 @@ interface ILeveragedPool {
 
     function poolCommitter() external view returns (address);
 
-    function settlementToken() external view returns (address);
+    function quoteToken() external view returns (address);
 
     function oracleWrapper() external view returns (address);
 
@@ -130,7 +125,7 @@ interface ILeveragedPool {
 
     function poolUpkeep(int256 _oldPrice, int256 _newPrice) external;
 
-    function settlementTokenTransferFrom(
+    function quoteTokenTransferFrom(
         address from,
         address to,
         uint256 amount
@@ -138,7 +133,7 @@ interface ILeveragedPool {
 
     function payKeeperFromBalances(address to, uint256 amount) external returns (bool);
 
-    function settlementTokenTransfer(address to, uint256 amount) external;
+    function quoteTokenTransfer(address to, uint256 amount) external;
 
     /**
      * @notice Transfer pool tokens from pool to user

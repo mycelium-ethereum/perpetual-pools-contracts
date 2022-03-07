@@ -19,7 +19,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
     using SafeERC20 for IERC20;
     // #### Globals
 
-    // Each balance is the amount of settlement tokens in the pair
+    // Each balance is the amount of quote tokens in the pair
     uint256 public override shortBalance;
     uint256 public override longBalance;
     uint256 public constant LONG_INDEX = 0;
@@ -38,7 +38,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
     address public feeAddress;
     address public secondaryFeeAddress;
     uint256 public secondaryFeeSplitPercent; // Split to secondary fee address as a percentage.
-    address public override settlementToken;
+    address public override quoteToken;
     address public override poolCommitter;
     address public override oracleWrapper;
     address public override settlementEthOracle;
@@ -91,7 +91,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
 
     function initialize(ILeveragedPool.Initialization calldata initialization) external override initializer {
         require(initialization._feeAddress != address(0), "Fee address cannot be 0 address");
-        require(initialization._settlementToken != address(0), "Settlement token cannot be 0 address");
+        require(initialization._quoteToken != address(0), "Quote token cannot be 0 address");
         require(initialization._oracleWrapper != address(0), "Oracle wrapper cannot be 0 address");
         require(initialization._settlementEthOracle != address(0), "Keeper oracle cannot be 0 address");
         require(initialization._owner != address(0), "Owner cannot be 0 address");
@@ -111,7 +111,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
         keeper = initialization._keeper;
         oracleWrapper = initialization._oracleWrapper;
         settlementEthOracle = initialization._settlementEthOracle;
-        settlementToken = initialization._settlementToken;
+        quoteToken = initialization._quoteToken;
         frontRunningInterval = initialization._frontRunningInterval;
         updateInterval = initialization._updateInterval;
         fee = PoolSwapLibrary.convertUIntToDecimal(initialization._fee);
@@ -129,7 +129,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
         emit PoolInitialized(
             initialization._longToken,
             initialization._shortToken,
-            initialization._settlementToken,
+            initialization._quoteToken,
             initialization._poolName
         );
     }
@@ -152,7 +152,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
     }
 
     /**
-     * @notice Pay keeper some amount in the Settlement token for the perpetual pools market
+     * @notice Pay keeper some amount in the collateral token for the perpetual pools market
      * @param to Address of the pool keeper to pay
      * @param amount Amount to pay the pool keeper
      * @return Whether the keeper is going to be paid; false if the amount exceeds the balances of the
@@ -185,7 +185,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
         longBalance = longBalanceAfterRewards;
 
         // Pay keeper
-        IERC20(settlementToken).safeTransfer(to, amount);
+        IERC20(quoteToken).safeTransfer(to, amount);
 
         return true;
     }
@@ -193,17 +193,17 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
     /**
      * @notice Transfer settlement tokens from pool to user
      * @param to Address of account to transfer to
-     * @param amount Amount of settlement tokens being transferred
+     * @param amount Amount of quote tokens being transferred
      * @dev Only callable by the associated `PoolCommitter` contract
      * @dev Only callable when the market is *not* paused
      */
-    function settlementTokenTransfer(address to, uint256 amount)
+    function quoteTokenTransfer(address to, uint256 amount)
         external
         override
         onlyPoolCommitter
         checkInvariantsBeforeFunction
     {
-        IERC20(settlementToken).safeTransfer(to, amount);
+        IERC20(quoteToken).safeTransfer(to, amount);
     }
 
     /**
@@ -228,18 +228,18 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
 
     /**
      * @notice Transfer tokens from user to account
-     * @param from The account that's transferring settlement tokens
+     * @param from The account that's transferring quote tokens
      * @param to Address of account to transfer to
-     * @param amount Amount of settlement tokens being transferred
+     * @param amount Amount of quote tokens being transferred
      * @dev Only callable by the associated `PoolCommitter` contract
      * @dev Only callable when the market is *not* paused
      */
-    function settlementTokenTransferFrom(
+    function quoteTokenTransferFrom(
         address from,
         address to,
         uint256 amount
     ) external override onlyPoolCommitter {
-        IERC20(settlementToken).safeTransferFrom(from, to, amount);
+        IERC20(quoteToken).safeTransferFrom(from, to, amount);
     }
 
     /**
@@ -298,7 +298,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
      */
     function feeTransfer(uint256 totalFeeAmount) internal {
         if (secondaryFeeAddress == address(0)) {
-            IERC20(settlementToken).safeTransfer(feeAddress, totalFeeAmount);
+            IERC20(quoteToken).safeTransfer(feeAddress, totalFeeAmount);
         } else {
             uint256 secondaryFee = PoolSwapLibrary.mulFraction(totalFeeAmount, secondaryFeeSplitPercent, 100);
             uint256 remainder;
@@ -307,12 +307,12 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
                 // secondaryFeeSplitPercent <= 100 and therefore secondaryFee <= totalFeeAmount - The following line can not underflow
                 remainder = totalFeeAmount - secondaryFee;
             }
-            IERC20 _settlementToken = IERC20(settlementToken);
+            IERC20 _quoteToken = IERC20(quoteToken);
             if (secondaryFee != 0) {
-                _settlementToken.safeTransfer(secondaryFeeAddress, secondaryFee);
+                _quoteToken.safeTransfer(secondaryFeeAddress, secondaryFee);
             }
             if (remainder != 0) {
-                _settlementToken.safeTransfer(feeAddress, remainder);
+                _quoteToken.safeTransfer(feeAddress, remainder);
             }
         }
     }
@@ -494,17 +494,17 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
     }
 
     /**
-     * @notice Withdraws all available settlement asset from the pool
+     * @notice Withdraws all available quote asset from the pool
      * @dev Pool must be paused
      * @dev ERC20 transfer
      * @dev Only callable by governance
      */
-    function withdrawSettlement() external onlyGov {
+    function withdrawQuote() external onlyGov {
         require(paused, "Pool is live");
-        IERC20 settlementERC = IERC20(settlementToken);
-        uint256 balance = settlementERC.balanceOf(address(this));
-        IERC20(settlementToken).safeTransfer(msg.sender, balance);
-        emit SettlementWithdrawn(msg.sender, balance);
+        IERC20 quoteERC = IERC20(quoteToken);
+        uint256 balance = quoteERC.balanceOf(address(this));
+        IERC20(quoteToken).safeTransfer(msg.sender, balance);
+        emit QuoteWithdrawn(msg.sender, balance);
     }
 
     /**

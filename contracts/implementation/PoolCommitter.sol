@@ -40,7 +40,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
     mapping(uint256 => bytes16) public burnFeeHistory; // updateIntervalId => burn fee. We need to store this historically because people can claim at any time after the update interval, but we want them to pay the fee from the update interval in which they committed.
     mapping(address => Balance) public userAggregateBalance;
 
-    // The total amount of settlement that has been committed to mints that are not yet executed
+    // The total amount of collateral that has been committed to mints that are not yet executed
     uint256 public override totalPendingMints;
     // The total amount of short pool tokens that have been burnt that are not yet executed on
     uint256 public override totalPendingShortBurns;
@@ -274,7 +274,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
     /**
      * @notice Commit to minting/burning long/short tokens after the next price change
      * @param commitType Type of commit you're doing (Long vs Short, Mint vs Burn)
-     * @param amount Amount of settlement tokens you want to commit to minting; OR amount of pool
+     * @param amount Amount of quote tokens you want to commit to minting; OR amount of pool
      *               tokens you want to burn
      * @param fromAggregateBalance If minting, burning, or rebalancing into a delta neutral position,
      *                             will tokens be taken from user's aggregate balance?
@@ -325,9 +325,9 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         applyCommitment(pool, commitType, amount, fromAggregateBalance, userCommit, totalCommit);
 
         if (commitType == CommitType.LongMint || (commitType == CommitType.ShortMint && !fromAggregateBalance)) {
-            // minting: pull in the settlement token from the committer
+            // minting: pull in the quote token from the committer
             // Do not need to transfer if minting using aggregate balance tokens, since the leveraged pool already owns these tokens.
-            pool.settlementTokenTransferFrom(msg.sender, leveragedPool, amount);
+            pool.quoteTokenTransferFrom(msg.sender, leveragedPool, amount);
         }
 
         if (payForClaim) {
@@ -369,7 +369,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         }
 
         if (balance.settlementTokens > 0) {
-            pool.settlementTokenTransfer(user, balance.settlementTokens);
+            pool.quoteTokenTransfer(user, balance.settlementTokens);
         }
         if (balance.longTokens > 0) {
             pool.poolTokenTransfer(true, user, balance.longTokens);
@@ -430,14 +430,14 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         totalPendingLongBurns -= totalLongBurn;
         totalPendingShortBurns -= totalShortBurn;
 
-        // Amount of settlement tokens that are generated from the long burn into instant mints
+        // Amount of collateral tokens that are generated from the long burn into instant mints
         uint256 longBurnInstantMintAmount = PoolSwapLibrary.getWithdrawAmountOnBurn(
             balancesAndSupplies.longTotalSupplyBefore,
             _commits.longBurnShortMintAmount,
             balancesAndSupplies.longBalance,
             totalLongBurn
         );
-        // Amount of settlement tokens that are generated from the short burn into instant mints
+        // Amount of collateral tokens that are generated from the short burn into instant mints
         uint256 shortBurnInstantMintAmount = PoolSwapLibrary.getWithdrawAmountOnBurn(
             balancesAndSupplies.shortTotalSupplyBefore,
             _commits.shortBurnLongMintAmount,
@@ -448,8 +448,8 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         // Long Mints
         uint256 longMintAmount = PoolSwapLibrary.getMintAmount(
             balancesAndSupplies.longTotalSupplyBefore, // long token total supply,
-            _commits.longMintAmount + shortBurnInstantMintAmount, // Add the settlement tokens that will be generated from burning shorts for instant long mint
-            balancesAndSupplies.longBalance, // total settlement tokens in the long pull
+            _commits.longMintAmount + shortBurnInstantMintAmount, // Add the collateral tokens that will be generated from burning shorts for instant long mint
+            balancesAndSupplies.longBalance, // total quote tokens in the long pull
             totalLongBurn // total pool tokens commited to be burned
         );
 
@@ -468,7 +468,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         // Short Mints
         uint256 shortMintAmount = PoolSwapLibrary.getMintAmount(
             balancesAndSupplies.shortTotalSupplyBefore, // short token total supply
-            _commits.shortMintAmount + longBurnInstantMintAmount, // Add the settlement tokens that will be generated from burning longs for instant short mint
+            _commits.shortMintAmount + longBurnInstantMintAmount, // Add the collateral tokens that will be generated from burning longs for instant short mint
             balancesAndSupplies.shortBalance,
             totalShortBurn
         );
@@ -494,7 +494,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             shortBurnAmount +
             longBurnInstantMintAmount;
 
-        // Update the settlement on each side
+        // Update the collateral on each side
         pool.setNewPoolBalances(newLongBalance, newShortBalance);
     }
 
@@ -789,25 +789,20 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
     }
 
     /**
-     * @notice Sets the settlement token address and the address of the associated `LeveragedPool` contract to the provided values
-     * @param _settlementToken Address of the settlement token to use
+     * @notice Sets the quote token address and the address of the associated `LeveragedPool` contract to the provided values
+     * @param _quoteToken Address of the quote token to use
      * @param _leveragedPool Address of the pool to use
      * @dev Only callable by the associated `PoolFactory` contract
      * @dev Throws if either address are null
-     * @dev Emits a `SettlementAndPoolChanged` event on success
+     * @dev Emits a `QuoteAndPoolChanged` event on success
      */
-    function setSettlementAndPool(address _settlementToken, address _leveragedPool)
-        external
-        override
-        onlyFactory
-        onlyUnpaused
-    {
-        require(_settlementToken != address(0), "Settlement token address cannot be 0 address");
+    function setQuoteAndPool(address _quoteToken, address _leveragedPool) external override onlyFactory onlyUnpaused {
+        require(_quoteToken != address(0), "Quote token address cannot be 0 address");
         require(_leveragedPool != address(0), "Leveraged pool address cannot be 0 address");
 
         leveragedPool = _leveragedPool;
         tokens = ILeveragedPool(leveragedPool).poolTokens();
-        emit SettlementAndPoolChanged(_settlementToken, _leveragedPool);
+        emit QuoteAndPoolChanged(_quoteToken, _leveragedPool);
     }
 
     /**

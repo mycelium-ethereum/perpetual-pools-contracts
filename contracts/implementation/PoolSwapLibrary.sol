@@ -344,7 +344,7 @@ library PoolSwapLibrary {
      * @dev Calculates as `balance * amountIn / (tokenSupply + shadowBalance)
      * @param tokenSupply Total supply of pool tokens
      * @param amountIn Commitment amount of pool tokens going into the pool
-     * @param balance Balance of the pool (no. of underlying settlement tokens in pool)
+     * @param balance Balance of the pool (no. of underlying collateral tokens in pool)
      * @param shadowBalance Balance the shadow pool at time of mint
      * @return Number of settlement tokens to be withdrawn on a burn
      */
@@ -366,8 +366,8 @@ library PoolSwapLibrary {
      * @notice Gets the number of pool tokens to be minted based on existing tokens
      * @dev Calculated as (tokenSupply + shadowBalance) * amountIn / balance
      * @param tokenSupply Total supply of pool tokens
-     * @param amountIn Commitment amount of settlement tokens going into the pool
-     * @param balance Balance of the pool (no. of underlying settlement tokens in pool)
+     * @param amountIn Commitment amount of collateral tokens going into the pool
+     * @param balance Balance of the pool (no. of underlying collateral tokens in pool)
      * @param shadowBalance Balance the shadow pool at time of mint
      * @return Number of pool tokens to be minted
      */
@@ -392,7 +392,7 @@ library PoolSwapLibrary {
     /**
      * @notice Get the Settlement/PoolToken price, in ABDK IEE754 precision
      * @dev Divide the side balance by the pool token's total supply
-     * @param sideBalance no. of underlying settlement tokens on that side of the pool
+     * @param sideBalance no. of underlying collateral tokens on that side of the pool
      * @param tokenSupply Total supply of pool tokens
      */
     function getPrice(uint256 sideBalance, uint256 tokenSupply) external pure returns (bytes16) {

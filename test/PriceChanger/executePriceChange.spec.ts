@@ -27,7 +27,7 @@ const leverage = 10
 
 let library: PoolSwapLibrary
 let pool: LeveragedPool
-let settlementToken: ERC20
+let quoteToken: ERC20
 
 /**
  * Deploys the pool
@@ -44,15 +44,15 @@ const setupHook = async () => {
     )
     library = result.library
     pool = result.pool
-    settlementToken = result.token
+    quoteToken = result.token
 
-    await settlementToken.approve(pool.address, amountMinted)
+    await quoteToken.approve(pool.address, amountMinted)
     const signers = await ethers.getSigners()
     await pool.setKeeper(signers[0].address)
 }
 
 /**
- * Adds 2000 settlement tokens to each pool
+ * Adds 2000 quote tokens to each pool
  */
 const fundPools = async () => {
     /*
@@ -90,11 +90,11 @@ describe("LeveragedPool - executePriceUpdate", () => {
             )
         })
         it("should send the fund movement fee to the fee holder", async () => {
-            expect(await settlementToken.balanceOf(feeAddress)).to.eq(0)
+            expect(await quoteToken.balanceOf(feeAddress)).to.eq(0)
             const newPrice = lastPrice * 2
 
             await pool.executePriceChange(lastPrice, newPrice)
-            expect(await settlementToken.balanceOf(feeAddress)).to.eq(
+            expect(await quoteToken.balanceOf(feeAddress)).to.eq(
                 (await calculateFee(fee, amountCommitted)).mul(2)
             )
         })

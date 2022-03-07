@@ -111,7 +111,7 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
             "PoolKeeper: leveraged amount invalid"
         );
         require(
-            IERC20DecimalsWrapper(deploymentParameters.settlementToken).decimals() <= MAX_DECIMALS,
+            IERC20DecimalsWrapper(deploymentParameters.quoteToken).decimals() <= MAX_DECIMALS,
             "Decimal precision too high"
         );
 
@@ -119,7 +119,7 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
             abi.encode(
                 deploymentParameters.updateInterval,
                 deploymentParameters.leverageAmount,
-                deploymentParameters.settlementToken,
+                deploymentParameters.quoteToken,
                 deploymentParameters.oracleWrapper
             )
         );
@@ -145,7 +145,7 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
             "PoolKeeper: leveraged amount invalid"
         );
         require(
-            IERC20DecimalsWrapper(deploymentParameters.settlementToken).decimals() <= MAX_DECIMALS,
+            IERC20DecimalsWrapper(deploymentParameters.quoteToken).decimals() <= MAX_DECIMALS,
             "Decimal precision too high"
         );
 
@@ -173,15 +173,15 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
             _leverageAmount: deploymentParameters.leverageAmount,
             _feeAddress: feeReceiver,
             _secondaryFeeAddress: msg.sender,
-            _settlementToken: deploymentParameters.settlementToken,
+            _quoteToken: deploymentParameters.quoteToken,
             _secondaryFeeSplitPercent: secondaryFeeSplitPercent
         });
 
-        // approve the settlement token on the pool committer to finalise linking
+        // approve the quote token on the pool committer to finalise linking
         // this also stores the pool address in the committer
         // finalise pool setup
         pool.initialize(initialization);
-        IPoolCommitter(poolCommitterAddress).setSettlementAndPool(deploymentParameters.settlementToken, _pool);
+        IPoolCommitter(poolCommitterAddress).setQuoteAndPool(deploymentParameters.quoteToken, _pool);
         poolKeeper.newPool(_pool);
         pools[numPools] = _pool;
         // numPools overflowing would require an unrealistic number of markets
@@ -208,11 +208,11 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
         string memory direction
     ) internal returns (address) {
         string memory poolNameAndSymbol = string(abi.encodePacked(leverage, direction, deploymentParameters.poolName));
-        uint8 settlementDecimals = IERC20DecimalsWrapper(deploymentParameters.settlementToken).decimals();
+        uint8 settlementDecimals = IERC20DecimalsWrapper(deploymentParameters.quoteToken).decimals();
         bytes32 uniqueTokenHash = keccak256(
             abi.encode(
                 deploymentParameters.leverageAmount,
-                deploymentParameters.settlementToken,
+                deploymentParameters.quoteToken,
                 deploymentParameters.oracleWrapper,
                 direction
             )

@@ -118,11 +118,11 @@ interface IPoolCommitter {
     event Claim(address indexed user);
 
     /**
-     * @notice Indicates that both the settlement and pool addresses have been modified
-     * @param settlement Address of new settlement token
+     * @notice Indicates that both the quote and pool addresses have been modified
+     * @param quote Address of new quote token
      * @param pool Address of new `LeveragedPool`
      */
-    event SettlementAndPoolChanged(address indexed settlement, address indexed pool);
+    event QuoteAndPoolChanged(address indexed quote, address indexed pool);
 
     /*
      * @notice Creates a notification when the burningFee is updated
@@ -182,7 +182,7 @@ interface IPoolCommitter {
 
     function getAppropriateUpdateIntervalId() external view returns (uint128);
 
-    function setSettlementAndPool(address _settlementToken, address _leveragedPool) external;
+    function setQuoteAndPool(address _quoteToken, address _leveragedPool) external;
 
     function setBurningFee(uint256 _burningFee) external;
 

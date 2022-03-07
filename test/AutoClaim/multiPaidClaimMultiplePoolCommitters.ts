@@ -90,7 +90,7 @@ describe("AutoClaim - multiPaidClaimMultiplePoolCommitters", () => {
             frontRunningInterval: frontRunningInterval,
             updateInterval: updateInterval,
             leverageAmount: leverage + 1, // Change to make unique
-            settlementToken: token.address,
+            quoteToken: token.address,
             oracleWrapper: result.oracleWrapper.address,
             settlementEthOracle: result.settlementEthOracle.address,
             feeController: signers[0].address,

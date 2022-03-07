@@ -20,7 +20,7 @@ chai.use(chaiAsPromised)
 const { expect } = chai
 
 let signers: any
-let settlementToken: string
+let quoteToken: string
 let oracleWrapper: ChainlinkOracleWrapper
 let settlementEthOracle: ChainlinkOracleWrapper
 let poolKeeper: PoolKeeper
@@ -35,7 +35,7 @@ const forwardTime = async (seconds: number) => {
 const setupHook = async () => {
     signers = await ethers.getSigners()
     const setup = await deployPoolSetupContracts()
-    settlementToken = setup.token.address
+    quoteToken = setup.token.address
     oracleWrapper = setup.oracleWrapper
     settlementEthOracle = setup.settlementEthOracle
     /* NOTE: settlementToken in this test is the same as the derivative oracle */
@@ -44,7 +44,7 @@ const setupHook = async () => {
         frontRunningInterval: 1,
         updateInterval: 2,
         leverageAmount: 1,
-        settlementToken: settlementToken,
+        quoteToken: quoteToken,
         oracleWrapper: oracleWrapper.address,
         settlementEthOracle: settlementEthOracle.address,
     }

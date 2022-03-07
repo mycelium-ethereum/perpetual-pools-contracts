@@ -64,20 +64,20 @@ async function main() {
     const shortMint = [0]
     const longMint = [2]
 
-    const settlementToken = await pool.settlementToken()
-    let settlementTokenInstance = new ethers.Contract(
-        settlementToken,
+    const quoteToken = await pool.quoteToken()
+    let quoteTokenInstance = new ethers.Contract(
+        quoteToken,
         TestToken__factory.abi
     ).connect(deployer) as TestToken
 
     const amount = ethers.utils.parseEther("1000")
-    await settlementTokenInstance
+    await quoteTokenInstance
         .connect(deployer)
         .transfer(accounts[0].address, amount)
-    await settlementTokenInstance
+    await quoteTokenInstance
         .connect(deployer)
         .transfer(accounts[1].address, amount)
-    await settlementTokenInstance
+    await quoteTokenInstance
         .connect(deployer)
         .transfer(accounts[2].address, amount)
 
@@ -95,27 +95,27 @@ async function main() {
 
     /* Commit to pool */
     console.log(`Account ${accounts[0].address} committing 100 short`)
-    settlementTokenInstance = settlementTokenInstance.connect(accounts[0])
+    quoteTokenInstance = quoteTokenInstance.connect(accounts[0])
     committerInstance = committerInstance.connect(accounts[0])
-    await settlementTokenInstance.approve(
+    await quoteTokenInstance.approve(
         pool.address,
         ethers.utils.parseEther("1000000")
     )
     await committerInstance.commit(longMint, ethers.utils.parseEther("100"))
 
     console.log(`Account ${accounts[1].address} committing 75 long`)
-    settlementTokenInstance = settlementTokenInstance.connect(accounts[1])
+    quoteTokenInstance = quoteTokenInstance.connect(accounts[1])
     committerInstance = committerInstance.connect(accounts[1])
-    await settlementTokenInstance.approve(
+    await quoteTokenInstance.approve(
         pool.address,
         ethers.utils.parseEther("1000000")
     )
     await committerInstance.commit(longMint, ethers.utils.parseEther("75"))
 
     console.log(`Account ${accounts[2].address} committing 50 long`)
-    settlementTokenInstance = settlementTokenInstance.connect(accounts[2])
+    quoteTokenInstance = quoteTokenInstance.connect(accounts[2])
     committerInstance = committerInstance.connect(accounts[2])
-    await settlementTokenInstance.approve(
+    await quoteTokenInstance.approve(
         pool.address,
         ethers.utils.parseEther("1000000")
     )

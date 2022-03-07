@@ -210,7 +210,7 @@ export const deployPoolSetupContracts = async () => {
 }
 
 /**
- * Deploys a new instance of a pool, as well as an ERC20 token to use as a settlement token.
+ * Deploys a new instance of a pool, as well as an ERC20 token to use as a quote token.
  * @param POOL_CODE The pool identifier
  * @param firstPrice The initial value to set the lastPrice variable to in the contract
  * @param updateInterval The update interval value
@@ -218,7 +218,7 @@ export const deployPoolSetupContracts = async () => {
  * @param fee The fund movement fee.
  * @param leverage The amount of leverage the pool will apply
  * @param feeAddress The address to transfer fees to on a fund movement
- * @param amountMinted The amount of test settlement tokens to mint
+ * @param amountMinted The amount of test quote tokens to mint
  * @returns {signers, token, pool, library, shortToken, longToken} An object containing an array of ethers signers, a Contract instance for the token, and a Contract instance for the pool.
  */
 export const deployPoolAndTokenContracts = async (
@@ -257,7 +257,7 @@ export const deployPoolAndTokenContracts = async (
         frontRunningInterval: frontRunningInterval,
         updateInterval: updateInterval,
         leverageAmount: leverage,
-        settlementToken: setupContracts.token.address,
+        quoteToken: setupContracts.token.address,
         oracleWrapper: setupContracts.oracleWrapper.address,
         settlementEthOracle: setupContracts.settlementEthOracle.address,
         invariantCheckContract: setupContracts.invariantCheck.address,
@@ -329,7 +329,7 @@ export const deployPoolAndTokenContracts = async (
  * @param fee The fund movement fee.
  * @param leverage The amount of leverage the pool will apply
  * @param feeAddress The address to transfer fees to on a fund movement
- * @param amountMinted The amount of test settlement tokens to mint
+ * @param amountMinted The amount of test quote tokens to mint
  * @returns {signers, token, pool, library, shortToken, longToken} An object containing an array of ethers signers, a Contract instance for the token, and a Contract instance for the pool.
  */
 export const deployMockPool = async (
@@ -455,7 +455,7 @@ export const deployMockPool = async (
         frontRunningInterval: frontRunningInterval,
         updateInterval: updateInterval,
         leverageAmount: leverage,
-        settlementToken: token.address,
+        quoteToken: token.address,
         oracleWrapper: oracleWrapper.address,
         settlementEthOracle: settlementEthOracle.address,
         invariantCheckContract: invariantCheck.address,

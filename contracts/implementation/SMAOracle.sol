@@ -56,7 +56,7 @@ contract SMAOracle is IOracleWrapper {
     /// so it *must* be non-zero for SMA to be well-defined)
     uint256 public constant INITIAL_NUM_PERIODS = 1;
 
-    /// Price oracle supplying the spot price of the settlement asset
+    /// Price oracle supplying the spot price of the quote asset
     address public override oracle;
 
     // Deployer of the oracle

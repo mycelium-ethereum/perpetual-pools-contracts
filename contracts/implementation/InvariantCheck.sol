@@ -34,7 +34,7 @@ contract InvariantCheck is IInvariantCheck {
         ILeveragedPool pool = ILeveragedPool(poolToCheck);
         require(poolFactory.isValidPool(poolToCheck), "Pool is invalid");
         IPoolCommitter poolCommitter = IPoolCommitter(pool.poolCommitter());
-        uint256 poolBalance = IERC20(pool.settlementToken()).balanceOf(poolToCheck);
+        uint256 poolBalance = IERC20(pool.quoteToken()).balanceOf(poolToCheck);
         uint256 pendingMints = poolCommitter.totalPendingMints();
         uint256 longBalance = pool.longBalance();
         uint256 shortBalance = pool.shortBalance();
