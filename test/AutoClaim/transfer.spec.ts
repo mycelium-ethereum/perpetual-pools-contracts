@@ -11,38 +11,24 @@ import {
     PoolKeeper,
 } from "../../types"
 
-import {
-    POOL_CODE,
-    DEFAULT_FEE,
-    LONG_MINT,
-    LONG_BURN,
-    SHORT_MINT,
-} from "../constants"
+import { POOL_CODE, DEFAULT_FEE } from "../constants"
 import {
     deployPoolAndTokenContracts,
-    getRandomInt,
     generateRandomAddress,
-    createCommit,
     CommitEventArgs,
-    timeout,
-    deployMockPool,
-    getEventArgs,
 } from "../utilities"
-import { BigNumber, BigNumberish } from "ethers"
+import { BigNumber } from "ethers"
 import { TransactionRequest } from "@ethersproject/abstract-provider"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 chai.use(chaiAsPromised)
 const { expect } = chai
 
-const amountCommitted = ethers.utils.parseEther("2000")
 const amountMinted = ethers.utils.parseEther("10000")
 const feeAddress = generateRandomAddress()
-const lastPrice = ethers.utils.parseEther(getRandomInt(99999999, 1).toString())
 const updateInterval = 200
 const frontRunningInterval = 100 // seconds
 const fee = DEFAULT_FEE
 const leverage = 1
-const reward = ethers.utils.parseEther("103")
 
 describe("AutoClaim - Ether Transfers", async () => {
     let poolCommitter: PoolCommitter

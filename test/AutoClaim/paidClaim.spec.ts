@@ -36,7 +36,6 @@ const { expect } = chai
 const amountCommitted = ethers.utils.parseEther("2000")
 const amountMinted = ethers.utils.parseEther("10000")
 const feeAddress = generateRandomAddress()
-const lastPrice = ethers.utils.parseEther(getRandomInt(99999999, 1).toString())
 const updateInterval = 200
 const frontRunningInterval = 100 // seconds
 const fee = DEFAULT_FEE
@@ -54,7 +53,6 @@ describe("AutoClaim - paidClaim", () => {
     let signers: SignerWithAddress[]
     let poolKeeper: PoolKeeper
 
-    const commits: CommitEventArgs[] | undefined = []
     beforeEach(async () => {
         const result = await deployPoolAndTokenContracts(
             POOL_CODE,

@@ -12,7 +12,7 @@ interface ILeveragedPool {
         address _longToken; // Address of the long pool token
         address _shortToken; // Address of the short pool token
         address _poolCommitter; // Address of the PoolCommitter contract
-        address _invariantCheckContract; // Address of the PoolCommitter contract
+        address _invariantCheckContract; // Address of the InvariantCheck contract
         string _poolName; // The pool identification name
         uint32 _frontRunningInterval; // The minimum number of seconds that must elapse before a commit is forced to wait until the next interval
         uint32 _updateInterval; // The minimum number of seconds that must elapse before a commit can be executed
@@ -30,7 +30,7 @@ interface ILeveragedPool {
      * @param longToken The address of the LONG pair token
      * @param shortToken The address of the SHORT pair token
      * @param quoteToken The address of the digital asset that the pool accepts
-     * @param poolName The pool code for the pool
+     * @param poolName The identification name of the pool
      */
     event PoolInitialized(address indexed longToken, address indexed shortToken, address quoteToken, string poolName);
 
@@ -77,17 +77,19 @@ interface ILeveragedPool {
     event KeeperAddressChanged(address indexed oldAddress, address indexed newAddress);
 
     /**
-     * @notice Represents proposed change in governance address
-     * @param newAddress Proposed address
+     * @notice Indicates quote assets have been withdrawn from the system
+     * @param to Receipient
+     * @param quantity Quantity of quote tokens withdrawn
      */
-    event ProvisionalGovernanceChanged(address indexed newAddress);
+    event QuoteWithdrawn(address indexed to, uint256 indexed quantity);
 
     /**
-     * @notice Represents change in governance address
-     * @param oldAddress Previous address
-     * @param newAddress Address after change
+     * @notice Indicates that the balance of pool tokens on issue for the pool
+     *          changed
+     * @param long New quantity of long pool tokens
+     * @param short New quantity of short pool tokens
      */
-    event GovernanceAddressChanged(address indexed oldAddress, address indexed newAddress);
+    event PoolBalancesChanged(uint256 indexed long, uint256 indexed short);
 
     function leverageAmount() external view returns (bytes16);
 
@@ -133,6 +135,14 @@ interface ILeveragedPool {
 
     function quoteTokenTransfer(address to, uint256 amount) external;
 
+    /**
+     * @notice Transfer pool tokens from pool to user
+     * @param isLongToken True if transferring long pool token; False if transferring short pool token
+     * @param to Address of account to transfer to
+     * @param amount Amount of pool tokens being transferred
+     * @dev Only callable by the associated `PoolCommitter` contract
+     * @dev Only callable when the market is *not* paused
+     */
     function poolTokenTransfer(
         bool isLongToken,
         address to,
@@ -166,22 +176,18 @@ interface ILeveragedPool {
 
     function setKeeper(address _keeper) external;
 
-    function transferGovernance(address _governance) external;
-
-    function claimGovernance() external;
-
     function updateFeeAddress(address account) external;
 
     function updateSecondaryFeeAddress(address account) external;
 
     function mintTokens(
-        bool isLongToken,
+        uint256 tokenType,
         uint256 amount,
         address burner
     ) external;
 
     function burnTokens(
-        bool isLongToken,
+        uint256 tokenType,
         uint256 amount,
         address burner
     ) external;

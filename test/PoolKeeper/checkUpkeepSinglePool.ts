@@ -62,7 +62,7 @@ const setupHook = async () => {
     oracleWrapper = contracts1.oracleWrapper
     pool1 = contracts1.pool
 }
-describe("PoolKeeper - checkUpkeepSinglePool", () => {
+describe("PoolKeeper - isUpkeepRequiredSinglePool", () => {
     beforeEach(async () => {
         await setupHook()
     })
@@ -80,9 +80,9 @@ describe("PoolKeeper - checkUpkeepSinglePool", () => {
             await incrementPrice(underlyingOracle)
 
             const poolAddress = pool1.address
-            expect(await poolKeeper.checkUpkeepSinglePool(poolAddress)).to.eq(
-                true
-            )
+            expect(
+                await poolKeeper.isUpkeepRequiredSinglePool(poolAddress)
+            ).to.eq(true)
         })
     })
 
@@ -100,9 +100,9 @@ describe("PoolKeeper - checkUpkeepSinglePool", () => {
 
             const poolAddress = pool1.address
             await poolKeeper.performUpkeepSinglePool(poolAddress)
-            expect(await poolKeeper.checkUpkeepSinglePool(poolAddress)).to.eq(
-                false
-            )
+            expect(
+                await poolKeeper.isUpkeepRequiredSinglePool(poolAddress)
+            ).to.eq(false)
         })
     })
 })

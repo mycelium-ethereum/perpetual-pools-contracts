@@ -65,9 +65,6 @@ contract SMAOracle is IOracleWrapper {
     /// Price observer providing the SMA oracle with historical pricing data
     address public observer;
 
-    /// Current SMA price
-    int256 public price;
-
     /// Number of periods to use in calculating the SMA (`k` in the SMA equation)
     uint256 public periods;
 
@@ -76,13 +73,15 @@ contract SMAOracle is IOracleWrapper {
     uint256 immutable desiredPeriods;
 
     /// Time of last successful price update
-    uint256 lastUpdate = 0;
+    uint256 public lastUpdate;
 
     /// Duration between price updates
-    uint256 updateInterval = 0;
+    uint256 public updateInterval;
 
     int256 public scaler;
     uint256 public constant MAX_DECIMALS = 18;
+    /// Maximum number of elements storable by the backing array
+    uint256 public constant MAX_NUM_ELEMS = 24;
 
     constructor(
         address _spotOracle,
@@ -92,9 +91,13 @@ contract SMAOracle is IOracleWrapper {
         uint256 _updateInterval,
         address _deployer
     ) {
-        require(_spotOracle != address(0) && _observer != address(0), "SMA: Null address forbidden");
+        require(
+            _spotOracle != address(0) && _observer != address(0) && _deployer != address(0),
+            "SMA: Null address forbidden"
+        );
         require(_periods > 0 && _periods <= IPriceObserver(_observer).capacity(), "SMA: Out of bounds");
         require(_spotDecimals <= MAX_DECIMALS, "SMA: Decimal precision too high");
+        require(_updateInterval != 0, "Update interval cannot be 0");
         desiredPeriods = _periods;
         periods = INITIAL_NUM_PERIODS;
         oracle = _spotOracle;
@@ -136,8 +139,11 @@ contract SMAOracle is IOracleWrapper {
         int256 latestPrice = spotOracle.getPrice();
 
         /* expire the oldest observation and load the fresh one in */
-        PriceObserver priceObserver = PriceObserver(observer);
+        IPriceObserver priceObserver = IPriceObserver(observer);
         priceObserver.add(latestPrice);
+
+        /* update time of last price update */
+        lastUpdate = block.timestamp;
 
         /* if we're ramping up still, increment the number of *actual* sampling
          * periods used */
@@ -167,21 +173,21 @@ contract SMAOracle is IOracleWrapper {
      * @param k Number of periods to use for calculation of the SMA
      * @return Simple moving average for `k` periods
      * @dev Throws if `k` is zero (due to necessary division)
-     * @dev Throws if `k` is greater than or equal to the length of `xs` (due to buffer overrun potential)
-     * @dev Throws if `k` is the maximum *signed* 256-bit integer (due to necessary division)
+     * @dev Throws if `k` is greater than the length of `xs` (due to buffer overrun potential)
+     * @dev Throws if `k` is greater than the maximum *signed* 256-bit integer (due to necessary division)
      * @dev O(k) complexity due to linear traversal of the final `k` elements of `xs`
      * @dev Note that the signedness of the return type is due to the signedness of the elements of `xs`
      * @dev It's a true tragedy that we have to stipulate a fixed-length array for `xs`, but alas, Solidity's type system cannot
      *          reason about this at all due to the value's runtime requirement
      */
-    function SMA(int256[24] memory xs, uint256 k) public pure returns (int256) {
+    function SMA(int256[MAX_NUM_ELEMS] memory xs, uint256 k) public pure returns (int256) {
         uint256 n = xs.length;
 
         /* bounds check */
         require(k > 0 && k <= n && k <= uint256(type(int256).max), "SMA: Out of bounds");
 
         /* running total */
-        int256 S = 0;
+        int256 S;
 
         /* linear scan over the [n - k, n] subsequence */
         for (uint256 i = n - k; i < n; i++) {
@@ -193,22 +199,14 @@ contract SMAOracle is IOracleWrapper {
     }
 
     /**
-     * @notice Converts `x` to a wad value
-     * @param x Number to convert to wad value
-     * @return `x` but wad
-     */
-    function toWad(int256 x) private view returns (int256) {
-        return x * scaler;
-    }
-
-    /**
      * @notice Returns the current SMA price and an empty bytes array
      * @dev Required by the `IOracleWrapper` interface. The interface leaves
      *          the metadata as implementation-defined. For the SMA oracle, there
      *          is no clear use case for additional data, so it's left blank
      */
-    function getPriceAndMetadata() external view override returns (int256 _price, bytes memory _data) {
-        _price = SMA(IPriceObserver(observer).getAll(), periods);
-        _data = "";
+    function getPriceAndMetadata() external view override returns (int256, bytes memory) {
+        int256 _price = SMA(IPriceObserver(observer).getAll(), periods);
+        bytes memory _data;
+        return (_price, _data);
     }
 }
