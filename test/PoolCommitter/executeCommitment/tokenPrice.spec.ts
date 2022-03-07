@@ -43,7 +43,7 @@ describe("PoolCommitter - executeCommitment: Token Price", () => {
     let pool: LeveragedPool
     let signers: SignerWithAddress[]
     describe("Short Burn and mint", () => {
-        it.only("Should account for burns allocated to future update intervals", async () => {
+        it("Should account for burns allocated to future update intervals", async () => {
             const result = await deployPoolAndTokenContracts(
                 POOL_CODE,
                 frontRunningInterval,
