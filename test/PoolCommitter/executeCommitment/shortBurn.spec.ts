@@ -97,7 +97,7 @@ describe("LeveragedPool - executeCommitment: Short Burn", () => {
                 (await getCurrentTotalCommit(poolCommitter)).shortBurnAmount
             ).to.eq(0)
         })
-        it("should transfer quote tokens to the commit owner", async () => {
+        it("should transfer settlement tokens to the commit owner", async () => {
             expect(await token.balanceOf(signers[0].address)).to.eq(
                 amountMinted.sub(amountCommitted)
             )
