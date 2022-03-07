@@ -797,7 +797,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
      * @dev Throws if either address are null
      * @dev Emits a `QuoteAndPoolChanged` event on success
      */
-    function setQuoteAndPool(address _quoteToken, address _leveragedPool) external override onlyFactory  {
+    function setQuoteAndPool(address _quoteToken, address _leveragedPool) external override onlyFactory {
         require(_quoteToken != address(0), "Quote token address cannot be 0 address");
         require(_leveragedPool != address(0), "Leveraged pool address cannot be 0 address");
 
