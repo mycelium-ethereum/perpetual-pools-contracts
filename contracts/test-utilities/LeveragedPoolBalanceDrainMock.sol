@@ -5,7 +5,6 @@ import "../interfaces/ILeveragedPool.sol";
 import "../interfaces/IPoolCommitter.sol";
 import "../interfaces/IPoolToken.sol";
 import "../interfaces/IPausable.sol";
-import "../interfaces/IInvariantCheck.sol";
 import "../interfaces/ITwoStepGovernance.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -22,18 +21,19 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
     // Each balance is the amount of quote tokens in the pair
     uint256 public override shortBalance;
     uint256 public override longBalance;
-    uint32 public override frontRunningInterval;
-    uint32 public override updateInterval;
-    bytes16 public fee;
-    bytes16 public override leverageAmount;
     uint256 public constant LONG_INDEX = 0;
     uint256 public constant SHORT_INDEX = 1;
 
     address public override governance;
-    bool public override paused;
+    uint32 public override frontRunningInterval;
+    uint32 public override updateInterval;
+    bytes16 public fee;
+    bytes16 public override leverageAmount;
+
     address public override provisionalGovernance;
-    address public keeper;
+    bool public override paused;
     bool public override governanceTransferInProgress;
+    address public keeper;
     address public feeAddress;
     address public secondaryFeeAddress;
     uint256 public secondaryFeeSplitPercent; // Split to secondary fee address as a percentage.
@@ -41,8 +41,6 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
     address public override poolCommitter;
     address public override oracleWrapper;
     address public override settlementEthOracle;
-    address public invariantCheckContract;
-    IInvariantCheck public invariantCheck;
     address[2] public tokens;
     uint256 public override lastPriceTimestamp; // The last time the pool was upkept
 
@@ -50,29 +48,8 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
 
     // #### Modifiers
 
-    /**
-     * @dev Check invariants before function body only. This is used in functions where the state of the pool is updated after exiting PoolCommitter (i.e. executeCommitments)
-     */
-    modifier checkInvariantsBeforeFunction() {
-        invariantCheck.checkInvariants(address(this));
-        require(!paused, "Pool is paused");
-        _;
-    }
-
-    modifier checkInvariantsAfterFunction() {
-        require(!paused, "Pool is paused");
-        _;
-        invariantCheck.checkInvariants(address(this));
-        require(!paused, "Pool is paused");
-    }
-
     modifier onlyKeeper() {
         require(msg.sender == keeper, "msg.sender not keeper");
-        _;
-    }
-
-    modifier onlyInvariantCheckContract() {
-        require(msg.sender == invariantCheckContract, "msg.sender not invariantCheckContract");
         _;
     }
 
@@ -98,7 +75,6 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
         require(initialization._longToken != address(0), "Long token cannot be 0 address");
         require(initialization._shortToken != address(0), "Short token cannot be 0 address");
         require(initialization._poolCommitter != address(0), "PoolCommitter cannot be 0 address");
-        require(initialization._invariantCheckContract != address(0), "InvariantCheck cannot be 0 address");
         require(initialization._fee < PoolSwapLibrary.WAD_PRECISION, "Fee >= 100%");
         require(initialization._secondaryFeeSplitPercent <= 100, "Secondary fee split cannot exceed 100%");
         require(initialization._updateInterval != 0, "Update interval cannot be 0");
@@ -123,8 +99,6 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
         tokens[LONG_INDEX] = initialization._longToken;
         tokens[SHORT_INDEX] = initialization._shortToken;
         poolCommitter = initialization._poolCommitter;
-        invariantCheckContract = initialization._invariantCheckContract;
-        invariantCheck = IInvariantCheck(initialization._invariantCheckContract);
         emit PoolInitialized(
             initialization._longToken,
             initialization._shortToken,
@@ -142,7 +116,7 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
      * @dev Only callable by the associated `PoolKeeper` contract
      * @dev Only callable if the market is *not* paused
      */
-    function poolUpkeep(int256 _oldPrice, int256 _newPrice) external override onlyKeeper checkInvariantsAfterFunction {
+    function poolUpkeep(int256 _oldPrice, int256 _newPrice) external override onlyKeeper {
         require(intervalPassed(), "Update interval hasn't passed");
         // perform price change and update pool balances
         executePriceChange(_oldPrice, _newPrice);
@@ -159,17 +133,11 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
      * @dev Only callable by the associated `PoolKeeper` contract
      * @dev Only callable when the market is *not* paused
      */
-    function payKeeperFromBalances(address to, uint256 amount)
-        external
-        override
-        onlyKeeper
-        checkInvariantsAfterFunction
-        returns (bool)
-    {
+    function payKeeperFromBalances(address to, uint256 amount) external override onlyKeeper returns (bool) {
         uint256 _shortBalance = shortBalance;
         uint256 _longBalance = longBalance;
 
-        // If the rewards are more than the balances of the pool, the keeper does not get paid
+        // If the rewards are greater than or equal to the balances of the pool, the keeper does not get paid
         if (amount > _shortBalance + _longBalance) {
             return false;
         }
@@ -196,12 +164,7 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
      * @dev Only callable by the associated `PoolCommitter` contract
      * @dev Only callable when the market is *not* paused
      */
-    function quoteTokenTransfer(address to, uint256 amount)
-        external
-        override
-        onlyPoolCommitter
-        checkInvariantsBeforeFunction
-    {
+    function quoteTokenTransfer(address to, uint256 amount) external override onlyPoolCommitter {
         IERC20(quoteToken).safeTransfer(to, amount);
     }
 
@@ -217,7 +180,7 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
         bool isLongToken,
         address to,
         uint256 amount
-    ) external override onlyPoolCommitter checkInvariantsBeforeFunction {
+    ) external override onlyPoolCommitter {
         if (isLongToken) {
             IERC20(tokens[LONG_INDEX]).safeTransfer(to, amount);
         } else {
@@ -251,7 +214,7 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
      * @dev Emits `PoolRebalance` if execution succeeds
      * @dev Emits `PriceChangeError` if execution does not take place
      */
-    function executePriceChange(int256 _oldPrice, int256 _newPrice) internal checkInvariantsBeforeFunction {
+    function executePriceChange(int256 _oldPrice, int256 _newPrice) internal {
         // prevent a division by 0 in computing the price change
         // prevent negative pricing
         if (_oldPrice <= 0 || _newPrice <= 0) {
@@ -332,6 +295,7 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
 
     /**
      * @notice Mint tokens to a user
+     * @param tokenType LONG_INDEX (0) or SHORT_INDEX (1) for either minting the long or short  token respectively
      * @param amount Amount of tokens to mint
      * @param minter Address of user/minter
      * @dev Only callable by the associated `PoolCommitter` contract
@@ -341,14 +305,14 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
         uint256 tokenType,
         uint256 amount,
         address minter
-    ) external override onlyPoolCommitter checkInvariantsBeforeFunction {
+    ) external override onlyPoolCommitter {
         IPoolToken(tokens[tokenType]).mint(minter, amount);
     }
 
     /**
      * @notice Burn tokens by a user
      * @dev Can only be called by & used by the pool committer
-     * @param tokenType LONG_INDEX (0) or SHORT_INDEX (1) for either minting the long or short  token respectively
+     * @param tokenType LONG_INDEX (0) or SHORT_INDEX (1) for either burning the long or short  token respectively
      * @param amount Amount of tokens to burn
      * @param burner Address of user/burner
      * @dev Only callable by the associated `PoolCommitter` contract
@@ -358,7 +322,7 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
         uint256 tokenType,
         uint256 amount,
         address burner
-    ) external override onlyPoolCommitter checkInvariantsAfterFunction {
+    ) external override onlyPoolCommitter {
         IPoolToken(tokens[tokenType]).burn(burner, amount);
     }
 
@@ -509,7 +473,7 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
      * @notice Pauses the pool
      * @dev Prevents all state updates until unpaused
      */
-    function pause() external override onlyInvariantCheckContract {
+    function pause() external override {
         paused = true;
         emit Paused();
     }

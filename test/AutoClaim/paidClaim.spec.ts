@@ -20,13 +20,9 @@ import {
 } from "../constants"
 import {
     deployPoolAndTokenContracts,
-    getRandomInt,
     generateRandomAddress,
     createCommit,
-    CommitEventArgs,
     timeout,
-    deployMockPool,
-    getEventArgs,
 } from "../utilities"
 import { BigNumber, BigNumberish } from "ethers"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"

@@ -148,7 +148,6 @@ interface IPoolCommitter {
 
     function initialize(
         address _factory,
-        address _invariantCheckContract,
         address _autoClaim,
         address _factoryOwner,
         address _feeController,

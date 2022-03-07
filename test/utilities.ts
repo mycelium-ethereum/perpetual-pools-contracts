@@ -33,8 +33,6 @@ import {
     TestChainlinkOracle,
     ChainlinkOracleWrapper,
     AutoClaim__factory,
-    InvariantCheck__factory,
-    InvariantCheck,
     PoolFactoryBalanceDrainMock__factory,
     LeveragedPoolBalanceDrainMock,
     PoolFactoryBalanceDrainMock,
@@ -172,14 +170,6 @@ export const deployPoolSetupContracts = async () => {
         await PoolFactory.deploy(generateRandomAddress(), signers[0].address)
     ).deployed()
 
-    const invariantCheckFactory = (await ethers.getContractFactory(
-        "InvariantCheck",
-        signers[0]
-    )) as InvariantCheck__factory
-
-    const invariantCheck = await invariantCheckFactory.deploy(factory.address)
-    await factory.setInvariantCheck(invariantCheck.address)
-
     const poolKeeperFactory = (await ethers.getContractFactory("PoolKeeper", {
         signer: signers[0],
         libraries: { PoolSwapLibrary: library.address },
@@ -204,7 +194,6 @@ export const deployPoolSetupContracts = async () => {
         settlementEthOracle,
         token,
         library,
-        invariantCheck,
         autoClaim,
     }
 }
@@ -244,7 +233,6 @@ export const deployPoolAndTokenContracts = async (
     factory: PoolFactory
     oracleWrapper: ChainlinkOracleWrapper
     settlementEthOracle: ChainlinkOracleWrapper
-    invariantCheck: InvariantCheck
     autoClaim: AutoClaim
 }> => {
     const setupContracts = await deployPoolSetupContracts()
@@ -260,7 +248,6 @@ export const deployPoolAndTokenContracts = async (
         quoteToken: setupContracts.token.address,
         oracleWrapper: setupContracts.oracleWrapper.address,
         settlementEthOracle: setupContracts.settlementEthOracle.address,
-        invariantCheckContract: setupContracts.invariantCheck.address,
         feeController: signers[0].address,
         mintingFee: mintFee || 0,
         burningFee: burnFee || 0,
@@ -295,7 +282,6 @@ export const deployPoolAndTokenContracts = async (
     const factory = setupContracts.factory
     const oracleWrapper = setupContracts.oracleWrapper
     const settlementEthOracle = setupContracts.settlementEthOracle
-    const invariantCheck = setupContracts.invariantCheck
     const autoClaim = setupContracts.autoClaim
 
     return {
@@ -315,195 +301,6 @@ export const deployPoolAndTokenContracts = async (
         factory,
         oracleWrapper,
         settlementEthOracle,
-        invariantCheck,
-        autoClaim,
-    }
-}
-
-/**
- * Deploys a new instance of LeveragedPoolBalanceDrainMock, As well as it's required supporting contracts
- * @param POOL_CODE The pool identifier
- * @param firstPrice The initial value to set the lastPrice variable to in the contract
- * @param updateInterval The update interval value
- * @param frontRunningInterval The front running interval value. Must be less than the update interval
- * @param fee The fund movement fee.
- * @param leverage The amount of leverage the pool will apply
- * @param feeAddress The address to transfer fees to on a fund movement
- * @param amountMinted The amount of test quote tokens to mint
- * @returns {signers, token, pool, library, shortToken, longToken} An object containing an array of ethers signers, a Contract instance for the token, and a Contract instance for the pool.
- */
-export const deployMockPool = async (
-    POOL_CODE: string,
-    frontRunningInterval: number,
-    updateInterval: number,
-    leverage: number,
-    feeAddress?: string,
-    fee?: BigNumberish
-): Promise<{
-    signers: SignerWithAddress[]
-    pool: LeveragedPoolBalanceDrainMock
-    token: TestToken
-    library: PoolSwapLibrary
-    shortToken: ERC20
-    longToken: ERC20
-    poolCommitter: PoolCommitter
-    poolKeeper: PoolKeeper
-    chainlinkOracle: TestChainlinkOracle
-    factory: PoolFactoryBalanceDrainMock
-    oracleWrapper: ChainlinkOracleWrapper
-    settlementEthOracle: ChainlinkOracleWrapper
-    invariantCheck: InvariantCheck
-    autoClaim: AutoClaim
-}> => {
-    const amountMinted = DEFAULT_MINT_AMOUNT
-
-    const signers = await ethers.getSigners()
-    // Deploy test ERC20 token
-    const testToken = (await ethers.getContractFactory(
-        "TestToken",
-        signers[0]
-    )) as TestToken__factory
-    const token = await testToken.deploy("TEST TOKEN", "TST1")
-    await token.deployed()
-    await token.mint(signers[0].address, amountMinted)
-
-    // Deploy tokens
-    const poolTokenFactory = (await ethers.getContractFactory(
-        "TestToken",
-        signers[0]
-    )) as TestToken__factory
-    const short = await poolTokenFactory.deploy("Short token", "SHORT")
-    await short.deployed()
-
-    const long = await poolTokenFactory.deploy("Long", "Long")
-    await long.deployed()
-
-    const chainlinkOracleFactory = (await ethers.getContractFactory(
-        "TestChainlinkOracle",
-        signers[0]
-    )) as TestChainlinkOracle__factory
-    const chainlinkOracle = await (
-        await chainlinkOracleFactory.deploy()
-    ).deployed()
-    const ethOracle = await (await chainlinkOracleFactory.deploy()).deployed()
-    await ethOracle.setPrice(3000 * 10 ** 8)
-
-    // Deploy tokens
-    const oracleWrapperFactory = (await ethers.getContractFactory(
-        "ChainlinkOracleWrapper",
-        signers[0]
-    )) as ChainlinkOracleWrapper__factory
-
-    const oracleWrapper = await oracleWrapperFactory.deploy(
-        chainlinkOracle.address,
-        signers[0].address
-    )
-
-    /* keeper oracle */
-    const settlementEthOracle = await oracleWrapperFactory.deploy(
-        ethOracle.address,
-        signers[0].address
-    )
-
-    // Deploy and initialise pool
-    const libraryFactory = (await ethers.getContractFactory(
-        "PoolSwapLibrary",
-        signers[0]
-    )) as PoolSwapLibrary__factory
-    const library = await libraryFactory.deploy()
-    await library.deployed()
-
-    const PoolFactory = (await ethers.getContractFactory(
-        "PoolFactoryBalanceDrainMock",
-        {
-            signer: signers[0],
-            libraries: { PoolSwapLibrary: library.address },
-        }
-    )) as PoolFactoryBalanceDrainMock__factory
-
-    const factory = await (
-        await PoolFactory.deploy(generateRandomAddress(), signers[0].address)
-    ).deployed()
-
-    const autoClaimFactory = (await ethers.getContractFactory("AutoClaim", {
-        signer: signers[0],
-    })) as AutoClaim__factory
-    let autoClaim = await autoClaimFactory.deploy(factory.address)
-    autoClaim = await autoClaim.deployed()
-    await factory.setAutoClaim(autoClaim.address)
-
-    const invariantCheckFactory = (await ethers.getContractFactory(
-        "InvariantCheck",
-        signers[0]
-    )) as InvariantCheck__factory
-
-    const invariantCheck = await invariantCheckFactory.deploy(factory.address)
-    await factory.setInvariantCheck(invariantCheck.address)
-
-    const poolKeeperFactory = (await ethers.getContractFactory("PoolKeeper", {
-        signer: signers[0],
-        libraries: { PoolSwapLibrary: library.address },
-    })) as PoolKeeper__factory
-    let poolKeeper = await poolKeeperFactory.deploy(factory.address)
-    poolKeeper = await poolKeeper.deployed()
-    await factory.setPoolKeeper(poolKeeper.address)
-    await factory.setFee(DEFAULT_FEE)
-
-    // deploy the pool using the factory, not separately
-    const deployParams = {
-        poolName: POOL_CODE,
-        frontRunningInterval: frontRunningInterval,
-        updateInterval: updateInterval,
-        leverageAmount: leverage,
-        quoteToken: token.address,
-        oracleWrapper: oracleWrapper.address,
-        settlementEthOracle: settlementEthOracle.address,
-        invariantCheckContract: invariantCheck.address,
-        feeController: signers[0].address,
-        mintingFee: 0,
-        burningFee: 0,
-        changeInterval: 0,
-    }
-
-    if (fee) {
-        await factory.setFee(fee)
-    }
-    if (feeAddress) {
-        await factory.setFeeReceiver(feeAddress)
-    }
-    await factory.deployPool(deployParams)
-    const poolAddress = await factory.pools(0)
-    const pool = await ethers.getContractAt(
-        "LeveragedPoolBalanceDrainMock",
-        poolAddress
-    )
-
-    let longTokenAddr = await pool.tokens(0)
-    let shortTokenAddr = await pool.tokens(1)
-    const longToken = await ethers.getContractAt(ERC20Abi, longTokenAddr)
-    const shortToken = await ethers.getContractAt(ERC20Abi, shortTokenAddr)
-
-    let commiter = await pool.poolCommitter()
-    const poolCommitter = await ethers.getContractAt("PoolCommitter", commiter)
-
-    return {
-        signers,
-        //@ts-ignore
-        pool,
-        token,
-        library,
-        //@ts-ignore
-        shortToken,
-        //@ts-ignore
-        longToken,
-        //@ts-ignore
-        poolCommitter,
-        poolKeeper,
-        chainlinkOracle,
-        factory,
-        oracleWrapper,
-        settlementEthOracle,
-        invariantCheck,
         autoClaim,
     }
 }

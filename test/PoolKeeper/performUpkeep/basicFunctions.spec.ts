@@ -21,15 +21,6 @@ import {
     ChainlinkOracleWrapper,
     TestToken,
     TestChainlinkOracle,
-    ChainlinkOracleWrapper__factory,
-    InvariantCheck__factory,
-    PoolFactory__factory,
-    PoolKeeper__factory,
-    PoolSwapLibrary__factory,
-    PriceObserver,
-    PriceObserver__factory,
-    TestChainlinkOracle__factory,
-    TestToken__factory,
 } from "../../../types"
 import { BigNumber } from "ethers"
 import { Result } from "ethers/lib/utils"
