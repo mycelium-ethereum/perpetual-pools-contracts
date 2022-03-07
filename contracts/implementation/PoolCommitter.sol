@@ -681,7 +681,6 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
                 update._longBurnFee += _longBurnFee;
                 update._shortBurnFee += _shortBurnFee;
                 delete userCommitments[user][id];
-                delete unAggregatedCommitments[user][i];
             } else {
                 // Clear them now that they have been accounted for in the balance
                 userCommitments[user][id].balanceLongBurnAmount = 0;
