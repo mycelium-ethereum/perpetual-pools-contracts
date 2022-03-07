@@ -1,8 +1,24 @@
 name: Slither Analysis
-on: [push]
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
 jobs:
   analyze:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
     steps:
-      - uses: actions/checkout@v2
-      - uses: crytic/slither-action@v0.1.0
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Run Slither
+      uses: crytic/slither-action@v0.1.0
+      continue-on-error: true
+      id: slither
+      with:
+        node-version: 16
