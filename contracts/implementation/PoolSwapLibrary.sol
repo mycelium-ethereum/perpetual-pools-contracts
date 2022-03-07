@@ -17,7 +17,7 @@ library PoolSwapLibrary {
 
     // Set max minting fee to 100%. This is a ABDKQuad representation of 1 * 10 ** 18
     bytes16 public constant MAX_MINTING_FEE = 0x403abc16d674ec800000000000000000;
-    
+
     // Set max burning fee to 10%. This is a ABDKQuad representation of 0.1 * 10 ** 18
     bytes16 public constant MAX_BURNING_FEE = 0x40376345785d8a000000000000000000;
 
