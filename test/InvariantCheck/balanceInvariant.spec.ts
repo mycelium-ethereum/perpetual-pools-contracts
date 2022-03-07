@@ -54,7 +54,7 @@ describe("InvariantCheck - balanceInvariant", () => {
             library = result.library
             const oracleWrapper = result.oracleWrapper
             const settlementEthOracle = result.settlementEthOracle
-            const quoteToken = result.token.address
+            const settlementToken = result.token.address
             const long = result.longToken
             const short = result.shortToken
             const invariantCheck = result.invariantCheck
@@ -85,7 +85,7 @@ describe("InvariantCheck - balanceInvariant", () => {
                 _leverageAmount: leverage,
                 _feeAddress: feeAddress,
                 _secondaryFeeAddress: feeAddress,
-                _quoteToken: quoteToken,
+                _settlementToken: settlementToken,
                 _invariantCheckContract: invariantCheck.address,
                 _secondaryFeeSplitPercent: 10,
             })

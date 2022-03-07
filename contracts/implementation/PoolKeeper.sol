@@ -238,7 +238,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
                 )
             )
         );
-        uint256 decimals = IERC20DecimalsWrapper(ILeveragedPool(_pool).quoteToken()).decimals();
+        uint256 decimals = IERC20DecimalsWrapper(ILeveragedPool(_pool).settlementToken()).decimals();
         uint256 deWadifiedReward = PoolSwapLibrary.fromWad(uint256(wadRewardValue), decimals);
         // _keeperGas + _keeperGas * percentTip
         return deWadifiedReward;
