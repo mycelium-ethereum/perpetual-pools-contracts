@@ -15,6 +15,7 @@ import {
     LONG_BURN,
     LONG_MINT,
     POOL_CODE,
+    SHORT_MINT,
 } from "../../constants"
 import {
     deployPoolAndTokenContracts,
@@ -68,6 +69,16 @@ describe("LeveragedPool - executeCommitment: Long Burn", () => {
                 [LONG_MINT],
                 amountCommitted
             )
+
+            await token.transfer(signers[1].address, amountCommitted.mul(2))
+            await token.connect(signers[1]).approve(pool.address, amountMinted)
+            await poolCommitter
+                .connect(signers[1])
+                .commit(SHORT_MINT, amountCommitted, false, false)
+            await poolCommitter
+                .connect(signers[1])
+                .commit(LONG_MINT, amountCommitted, false, false)
+
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(9, 10)
             await poolCommitter.claim(signers[0].address)
@@ -79,18 +90,18 @@ describe("LeveragedPool - executeCommitment: Long Burn", () => {
             )
         })
         it("should adjust the live long pool balance", async () => {
-            expect(await pool.longBalance()).to.eq(amountCommitted)
+            expect(await pool.longBalance()).to.eq(amountCommitted.mul(2))
             await timeout(updateInterval * 1000)
-            await pool.poolUpkeep(9, 10)
+            await pool.poolUpkeep(9, 9)
             await poolCommitter.claim(signers[0].address)
-            expect(await pool.longBalance()).to.eq(0)
+            expect(await pool.longBalance()).to.eq(amountCommitted)
         })
         it("should reduce the shadow long burn pool balance", async () => {
             expect(
                 (await getCurrentTotalCommit(poolCommitter)).longBurnAmount
             ).to.equal(amountCommitted)
             await timeout(updateInterval * 1000)
-            await pool.poolUpkeep(9, 10)
+            await pool.poolUpkeep(9, 9)
             expect(
                 await (
                     await getCurrentTotalCommit(poolCommitter)
@@ -98,15 +109,16 @@ describe("LeveragedPool - executeCommitment: Long Burn", () => {
             ).to.eq(0)
         })
         it("should transfer quote tokens to the commit owner", async () => {
-            expect(await token.balanceOf(signers[0].address)).to.eq(
-                amountMinted.sub(amountCommitted)
-            )
+            // expect(await token.balanceOf(signers[0].address)).to.eq(
+            // amountMinted.sub(amountCommitted)
+            // )
             await timeout(updateInterval * 1000)
-            await pool.poolUpkeep(9, 10)
+            await pool.poolUpkeep(9, 9)
+            const tokensBefore = await token.balanceOf(signers[0].address)
             await poolCommitter.claim(signers[0].address)
-            expect(await token.balanceOf(signers[0].address)).to.eq(
-                amountMinted
-            )
+            expect(
+                (await token.balanceOf(signers[0].address)).sub(tokensBefore)
+            ).to.eq(amountCommitted)
         })
     })
 })
