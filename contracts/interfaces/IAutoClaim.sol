@@ -30,14 +30,14 @@ interface IAutoClaim {
      * @param poolCommitter The PoolCommitter instance in which the original commit was made
      * @param reward The reward for the auto-claim
      */
-    event PaidRequestExecution(address user, address poolCommitter, uint256 reward);
+    event PaidRequestExecution(address indexed user, address indexed poolCommitter, uint256 indexed reward);
 
     /**
      * @notice Creates a notification when an auto-claim request is withdrawn
      * @param user The user whose request got withdrawn
      * @param poolCommitter The PoolCommitter instance in which the original commit was made
      */
-    event RequestWithdrawn(address user, address poolCommitter);
+    event RequestWithdrawn(address indexed user, address indexed poolCommitter);
 
     struct ClaimRequest {
         uint128 updateIntervalId; // The update interval during which a user requested a claim.
@@ -69,7 +69,7 @@ interface IAutoClaim {
 
     /**
      * @notice Call `paidClaim` for multiple users, in a single PoolCommitter.
-     * @dev The nth index in poolCommitterAddresses should be the PoolCommitter where the nth address in user requested an auto claim
+     * @dev The poolCommitterAddresses should be the PoolCommitter where the nth address in user requested an auto claim
      * @param users All users to execute claims for.
      * @param poolCommitterAddress The PoolCommitter address within which you would like to claim for the respective user
      */
@@ -82,7 +82,7 @@ interface IAutoClaim {
     function withdrawClaimRequest(address poolCommitter) external;
 
     /**
-     * @notice When the user claims themself through poolCommitter, you want the
+     * @notice When the user claims themself through poolCommitter, you want the user to be able to withdraw their request through the poolCommitter as msg.sender
      * @param user The user who will have their claim request withdrawn.
      */
     function withdrawUserClaimRequest(address user) external;

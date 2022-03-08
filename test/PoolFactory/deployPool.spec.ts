@@ -27,7 +27,7 @@ import {
 } from "../utilities"
 import { Signer, BigNumber } from "ethers"
 import LeveragedPoolInterface from "../../artifacts/contracts/implementation/LeveragedPool.sol/LeveragedPool.json"
-import { abi as ERC20Abi } from "../../artifacts/@openzeppelin/contracts/token/ERC20/ERC20.sol/ERC20.json"
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 
 const updateInterval = 100
 const frontRunningInterval = 20
@@ -47,7 +47,7 @@ describe("PoolFactory.deployPool", () => {
     let invariantCheck: InvariantCheck
     let pool: LeveragedPool
     let token: TestToken
-    let signers: Signer[]
+    let signers: SignerWithAddress[]
     let nonDAO: Signer
 
     before(async () => {
@@ -86,6 +86,10 @@ describe("PoolFactory.deployPool", () => {
                     oracleWrapper: oracleWrapper.address,
                     settlementEthOracle: settlementEthOracle.address,
                     invariantCheckContract: invariantCheck.address,
+                    feeController: signers[0].address,
+                    mintingFee: 0,
+                    burningFee: 0,
+                    changeInterval: 0,
                 }
 
                 await expect(
@@ -133,6 +137,10 @@ describe("PoolFactory.deployPool", () => {
                 oracleWrapper: oracleWrapper.address,
                 settlementEthOracle: settlementEthOracle.address,
                 invariantCheckContract: invariantCheck.address,
+                feeController: signers[0].address,
+                mintingFee: 0,
+                burningFee: 0,
+                changeInterval: 0,
             }
             await expect(factory.deployPool(deploymentData)).to.not.reverted
             deploymentData.updateInterval = 60
@@ -164,6 +172,10 @@ describe("PoolFactory.deployPool", () => {
                 oracleWrapper: oracleWrapper.address,
                 settlementEthOracle: settlementEthOracle.address,
                 invariantCheckContract: invariantCheck.address,
+                feeController: signers[0].address,
+                mintingFee: 0,
+                burningFee: 0,
+                changeInterval: 0,
             }
             const secondPool = getEventArgs(
                 await (await factory.deployPool(deploymentData)).wait(),
@@ -189,6 +201,10 @@ describe("PoolFactory.deployPool", () => {
                 oracleWrapper: oracleWrapper.address,
                 settlementEthOracle: settlementEthOracle.address,
                 invariantCheckContract: invariantCheck.address,
+                feeController: signers[0].address,
+                mintingFee: 0,
+                burningFee: 0,
+                changeInterval: 0,
             }
 
             await expect(factory.deployPool(deploymentData)).to.be.revertedWith(
@@ -205,6 +221,10 @@ describe("PoolFactory.deployPool", () => {
                 oracleWrapper: oracleWrapper.address,
                 settlementEthOracle: settlementEthOracle.address,
                 invariantCheckContract: invariantCheck.address,
+                feeController: signers[0].address,
+                mintingFee: 0,
+                burningFee: 0,
+                changeInterval: 0,
             }
 
             await expect(factory.deployPool(deploymentData)).to.be.revertedWith(
@@ -229,6 +249,10 @@ describe("PoolFactory.deployPool", () => {
                 oracleWrapper: oracleWrapper.address,
                 settlementEthOracle: settlementEthOracle.address,
                 invariantCheckContract: invariantCheck.address,
+                feeController: signers[0].address,
+                mintingFee: 0,
+                burningFee: 0,
+                changeInterval: 0,
             }
 
             await expect(factory.deployPool(deploymentData)).to.be.revertedWith(
@@ -252,8 +276,14 @@ describe("PoolFactory.deployPool", () => {
         it("should deploy deterministically", async () => {
             let encoder = new ethers.utils.AbiCoder()
             let abiEncoded = encoder.encode(
-                ["uint16", "uint16", "address", "address"],
-                [updateInterval, leverage, token.address, oracleWrapper.address]
+                ["uint16", "uint16", "uint16", "address", "address"],
+                [
+                    frontRunningInterval,
+                    updateInterval,
+                    leverage,
+                    token.address,
+                    oracleWrapper.address,
+                ]
             )
             let uniqueIdHash = ethers.utils.keccak256(abiEncoded)
             let predictedPoolAddress =
@@ -304,6 +334,10 @@ describe("PoolFactory.deployPool", () => {
                 oracleWrapper: oracleWrapper.address,
                 settlementEthOracle: settlementEthOracle.address,
                 invariantCheckContract: invariantCheck.address,
+                feeController: signers[0].address,
+                mintingFee: 0,
+                burningFee: 0,
+                changeInterval: 0,
             }
 
             const poolNumber = (await factory.numPools()).toNumber()
@@ -339,6 +373,10 @@ describe("PoolFactory.deployPool", () => {
                 oracleWrapper: oracleWrapper.address,
                 settlementEthOracle: settlementEthOracle.address,
                 invariantCheckContract: invariantCheck.address,
+                feeController: signers[0].address,
+                mintingFee: 0,
+                burningFee: 0,
+                changeInterval: 0,
             }
 
             const poolNumber = (await factory.numPools()).toNumber()
@@ -370,7 +408,6 @@ describe("PoolFactory.deployPool", () => {
                 SHORT_MINT,
                 ethers.utils.parseEther("2000")
             )
-            const signers = await ethers.getSigners()
             await newPool.setKeeper(signers[0].address)
             newPool.updateSecondaryFeeAddress(secondFeeAddress)
 
@@ -443,6 +480,10 @@ describe("PoolFactory.deployPool", () => {
                 oracleWrapper: smaOracle.address,
                 settlementEthOracle: settlementEthOracle.address,
                 invariantCheckContract: invariantCheck.address,
+                feeController: signers[0].address,
+                mintingFee: 0,
+                burningFee: 0,
+                changeInterval: 0,
             }
 
             await expect(factory.deployPool(deploymentParameters)).to.not

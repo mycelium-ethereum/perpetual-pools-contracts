@@ -77,6 +77,8 @@ contract SMAOracle is IOracleWrapper {
 
     int256 public immutable scaler;
     uint256 public constant MAX_DECIMALS = 18;
+    /// Maximum number of elements storable by the backing array
+    uint256 public constant MAX_NUM_ELEMS = 24;
 
     constructor(
         address _inputFeedAddress,

@@ -5,6 +5,8 @@ import "../interfaces/IPoolFactory.sol";
 import "../interfaces/IPoolCommitter.sol";
 import "../interfaces/IAutoClaim.sol";
 
+import "@openzeppelin/contracts/utils/Address.sol";
+
 /// @title The contract to be used for paying to have a keeper claim your commit automatically
 /// @notice The way this works is when a user commits with `PoolCommitter::commit`, they have the option to set the `bool payForClaim` parameter to `true`.
 ///         During this function execution, `AutoClaim::payForClaim` is called, and `msg.value` is taken as the reward to whoever claims for requester (by using `AutoClaim::paidClaim`).
@@ -15,13 +17,18 @@ contract AutoClaim is IAutoClaim {
     mapping(address => mapping(address => ClaimRequest)) public claimRequests;
     IPoolFactory internal poolFactory;
 
+    modifier onlyPoolCommitter() {
+        require(poolFactory.isValidPoolCommitter(msg.sender), "msg.sender not valid PoolCommitter");
+        _;
+    }
+
     constructor(address _poolFactoryAddress) {
         require(_poolFactoryAddress != address(0), "PoolFactory address == 0");
         poolFactory = IPoolFactory(_poolFactoryAddress);
     }
 
     /**
-     * @notice Pay for your commit to be claimed. This means that a willing participant can claim on `user`'s behalf when the current update interval ends.
+     * @notice Pay for your commit to be claimed. This means that a willing participant can claim on `user`'s behalf when the current update interval ends. Claims a previously pending and claimable request before creating the requested claim-request.
      * @dev Only callable by this contract's associated PoolCommitter instance. This prevents griefing. Consider a permissionless function, where a user can claim that somebody else wants to auto claim when they do not.
      * @param user The user who wants to autoclaim.
      */
@@ -36,14 +43,17 @@ contract AutoClaim is IAutoClaim {
             if (requestUpdateIntervalId < poolCommitter.updateIntervalId()) {
                 // If so, this person may as well claim for themself (if allowed). They have signified their want of claim, after all.
                 // Note that this function is only called by PoolCommitter when a user `commits` and therefore `user` will always equal the original `msg.sender`.
-                payable(user).transfer(claimRequests[user][msg.sender].reward);
+                uint256 reward = claimRequests[user][msg.sender].reward;
                 delete claimRequests[user][msg.sender];
                 poolCommitter.claim(user);
+                if (reward > 0) {
+                    Address.sendValue(payable(user), reward);
+                }
             } else {
                 // If the claim request is pending but not yet valid (it was made in the current commit), we want to add to the value.
                 // Note that in context, the user *usually* won't need or want to increment `ClaimRequest.reward` more than once because the first call to `payForClaim` should suffice.
                 request.reward += msg.value;
-                emit PaidClaimRequestUpdate(user, msg.sender, msg.value);
+                emit PaidClaimRequestUpdate(user, msg.sender, request.reward);
                 return;
             }
         }
@@ -52,28 +62,46 @@ contract AutoClaim is IAutoClaim {
         requestUpdateIntervalId = poolCommitter.getAppropriateUpdateIntervalId();
         claimRequests[user][msg.sender].updateIntervalId = requestUpdateIntervalId;
         claimRequests[user][msg.sender].reward = msg.value;
-        emit PaidClaimRequestUpdate(user, msg.sender, msg.value);
+        emit PaidClaimRequestUpdate(user, msg.sender, request.reward);
     }
 
     /**
-     * @notice Claim on the behalf of a user who has requests to have their commit automatically claimed by a keeper.
+     * @notice Claim on the behalf of a user who has requested to have their commit automatically claimed by a keeper.
      * @param user The user who requested an autoclaim.
      * @param poolCommitterAddress The PoolCommitter address within which the user's claim will be executed
      */
     function paidClaim(address user, address poolCommitterAddress) public override {
-        ClaimRequest memory request = claimRequests[user][poolCommitterAddress];
+        require(poolFactory.isValidPoolCommitter(poolCommitterAddress), "Invalid PoolCommitter");
         IPoolCommitter poolCommitter = IPoolCommitter(poolCommitterAddress);
         uint256 currentUpdateIntervalId = poolCommitter.updateIntervalId();
+        uint256 reward = claim(user, poolCommitterAddress, poolCommitter, currentUpdateIntervalId);
+        if (reward > 0) {
+            Address.sendValue(payable(msg.sender), reward);
+        }
+    }
+
+    /**
+     * @notice Claim on the behalf of a user who has requested to have their commit automatically claimed by a keeper.
+     * @dev Does not transfer the reward, but instead returns the reward amount. This is a private function and is used to batch multiple reward transfers into one.
+     */
+    function claim(
+        address user,
+        address poolCommitterAddress,
+        IPoolCommitter poolCommitter,
+        uint256 currentUpdateIntervalId
+    ) private returns (uint256) {
+        ClaimRequest memory request = claimRequests[user][poolCommitterAddress];
         // Check if a previous claim request has been made, and if it is claimable.
         if (checkClaim(request, currentUpdateIntervalId)) {
             // Send the reward to msg.sender.
-            payable(msg.sender).transfer(request.reward);
             // delete the ClaimRequest from storage
             delete claimRequests[user][poolCommitterAddress];
             // execute the claim
             poolCommitter.claim(user);
             emit PaidRequestExecution(user, poolCommitterAddress, request.reward);
+            return request.reward;
         }
+        return 0;
     }
 
     /**
@@ -87,8 +115,15 @@ contract AutoClaim is IAutoClaim {
         override
     {
         require(users.length == poolCommitterAddresses.length, "Supplied arrays must be same length");
-        for (uint256 i = 0; i < users.length; i++) {
-            paidClaim(users[i], poolCommitterAddresses[i]);
+        uint256 reward;
+        uint256 nrUsers = users.length;
+        for (uint256 i; i < nrUsers; i++) {
+            IPoolCommitter poolCommitter = IPoolCommitter(poolCommitterAddresses[i]);
+            uint256 currentUpdateIntervalId = poolCommitter.updateIntervalId();
+            reward += claim(users[i], poolCommitterAddresses[i], poolCommitter, currentUpdateIntervalId);
+        }
+        if (reward > 0) {
+            Address.sendValue(payable(msg.sender), reward);
         }
     }
 
@@ -96,14 +131,20 @@ contract AutoClaim is IAutoClaim {
      * @notice Call `paidClaim` for multiple users, in a single PoolCommitter.
      * @param users All users to execute claims for.
      * @param poolCommitterAddress The PoolCommitter address within which you would like to claim for the respective user
-     * @dev The nth index in poolCommitterAddresses should be the PoolCommitter where the nth address in user requested an auto claim
+     * @dev poolCommitterAddress should be the PoolCommitter where the nth address in user requested an auto claim
      */
     function multiPaidClaimSinglePoolCommitter(address[] calldata users, address poolCommitterAddress)
         external
         override
     {
-        for (uint256 i = 0; i < users.length; i++) {
-            paidClaim(users[i], poolCommitterAddress);
+        uint256 reward;
+        IPoolCommitter poolCommitter = IPoolCommitter(poolCommitterAddress);
+        uint256 currentUpdateIntervalId = poolCommitter.updateIntervalId();
+        for (uint256 i; i < users.length; i++) {
+            reward += claim(users[i], poolCommitterAddress, poolCommitter, currentUpdateIntervalId);
+        }
+        if (reward > 0) {
+            Address.sendValue(payable(msg.sender), reward);
         }
     }
 
@@ -114,20 +155,28 @@ contract AutoClaim is IAutoClaim {
      */
     function withdrawClaimRequest(address poolCommitter) external override {
         if (claimRequests[msg.sender][poolCommitter].updateIntervalId > 0) {
-            payable(msg.sender).transfer(claimRequests[msg.sender][poolCommitter].reward);
+            uint256 reward = claimRequests[msg.sender][poolCommitter].reward;
             delete claimRequests[msg.sender][poolCommitter];
+            if (reward > 0) {
+                Address.sendValue(payable(msg.sender), reward);
+            }
             emit RequestWithdrawn(msg.sender, poolCommitter);
         }
     }
 
     /**
-     * @notice When the user claims themself through poolCommitter, you want the
+     * @notice When the user claims themself through poolCommitter, you want the user to be able to withdraw their request through the poolCommitter as msg.sender
      * @param user The user who will have their claim request withdrawn.
      * @dev Only callable by the associated `PoolCommitter` contract
      */
+
     function withdrawUserClaimRequest(address user) public override onlyPoolCommitter {
-        payable(user).transfer(claimRequests[user][msg.sender].reward);
+        // msg.sender is the PoolCommitter
+        uint256 reward = claimRequests[user][msg.sender].reward;
         delete claimRequests[user][msg.sender];
+        if (reward > 0) {
+            Address.sendValue(payable(user), reward);
+        }
     }
 
     /**
@@ -136,7 +185,7 @@ contract AutoClaim is IAutoClaim {
      * @param user The user whose claim request will be checked.
      * @param poolCommitter The pool committer in which to look for a user's claim request.
      */
-    function checkUserClaim(address user, address poolCommitter) public view override returns (bool) {
+    function checkUserClaim(address user, address poolCommitter) external view override returns (bool) {
         return checkClaim(claimRequests[user][poolCommitter], IPoolCommitter(poolCommitter).updateIntervalId());
     }
 
@@ -161,10 +210,5 @@ contract AutoClaim is IAutoClaim {
 
     fallback() external payable {
         revert();
-    }
-
-    modifier onlyPoolCommitter() {
-        require(poolFactory.isValidPoolCommitter(msg.sender), "msg.sender not valid PoolCommitter");
-        _;
     }
 }

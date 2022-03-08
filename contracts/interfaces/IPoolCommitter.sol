@@ -13,6 +13,7 @@ interface IPoolCommitter {
         ShortBurnLongMint // Burn Short tokens, then instantly mint in same upkeep
     }
 
+    // Pool balances and supplies
     struct BalancesAndSupplies {
         uint256 shortBalance;
         uint256 longBalance;
@@ -52,6 +53,7 @@ interface IPoolCommitter {
         uint256 updateIntervalId;
     }
 
+    // User updated aggregate balance
     struct BalanceUpdate {
         uint256 _updateIntervalId;
         uint256 _newLongTokensSum;
@@ -84,6 +86,8 @@ interface IPoolCommitter {
      * @param amount Amount of the commit
      * @param commitType Type of the commit (Short v Long, Mint v Burn)
      * @param appropriateUpdateIntervalId Id of update interval where this commit can be executed as part of upkeep
+     * @param fromAggregateBalance whether or not to commit from aggregate (unclaimed) balance
+     * @param payForClaim whether or not to request this commit be claimed automatically
      * @param mintingFee Minting fee at time of commit creation
      */
     event CreateCommit(
@@ -91,6 +95,8 @@ interface IPoolCommitter {
         uint256 indexed amount,
         CommitType indexed commitType,
         uint256 appropriateUpdateIntervalId,
+        bool fromAggregateBalance,
+        bool payForClaim,
         bytes16 mintingFee
     );
 
@@ -112,6 +118,13 @@ interface IPoolCommitter {
     event Claim(address indexed user);
 
     /**
+     * @notice Indicates that both the quote and pool addresses have been modified
+     * @param quote Address of new quote token
+     * @param pool Address of new `LeveragedPool`
+     */
+    event QuoteAndPoolChanged(address indexed quote, address indexed pool);
+
+    /*
      * @notice Creates a notification when the burningFee is updated
      */
     event BurningFeeSet(uint256 indexed _burningFee);
@@ -126,12 +139,19 @@ interface IPoolCommitter {
      */
     event ChangeIntervalSet(uint256 indexed _changeInterval);
 
+    /**
+     * @notice Creates a notification when the feeController is updated
+     */
+    event FeeControllerSet(address indexed _feeController);
+
     // #### Functions
 
     function initialize(
         address _factory,
         address _invariantCheckContract,
         address _autoClaim,
+        address _factoryOwner,
+        address _feeController,
         uint256 mintingFee,
         uint256 burningFee,
         uint256 _changeInterval
@@ -145,6 +165,12 @@ interface IPoolCommitter {
     ) external payable;
 
     function updateIntervalId() external view returns (uint128);
+
+    function totalPendingMints() external view returns (uint256);
+
+    function totalPendingShortBurns() external view returns (uint256);
+
+    function totalPendingLongBurns() external view returns (uint256);
 
     function claim(address user) external;
 
@@ -164,5 +190,5 @@ interface IPoolCommitter {
 
     function setChangeInterval(uint256 _changeInterval) external;
 
-    function getPendingCommits() external view returns (TotalCommitment memory, TotalCommitment memory);
+    function setFeeController(address _feeController) external;
 }

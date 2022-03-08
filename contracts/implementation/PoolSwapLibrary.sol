@@ -6,7 +6,7 @@ import "abdk-libraries-solidity/ABDKMathQuad.sol";
 /// @title Library for various useful (mostly) mathematical functions
 library PoolSwapLibrary {
     /// ABDKMathQuad-formatted representation of the number one
-    bytes16 public constant one = 0x3fff0000000000000000000000000000;
+    bytes16 public constant ONE = 0x3fff0000000000000000000000000000;
 
     /// Maximum number of decimal places supported by this contract
     /// (ABDKMathQuad defines this but it's private)
@@ -14,6 +14,12 @@ library PoolSwapLibrary {
 
     /// Maximum precision supportable via wad arithmetic (for this contract)
     uint256 public constant WAD_PRECISION = 10**18;
+
+    // Set max minting fee to 100%. This is a ABDKQuad representation of 1 * 10 ** 18
+    bytes16 public constant MAX_MINTING_FEE = 0x403abc16d674ec800000000000000000;
+
+    // Set max burning fee to 10%. This is a ABDKQuad representation of 0.1 * 10 ** 18
+    bytes16 public constant MAX_BURNING_FEE = 0x40376345785d8a000000000000000000;
 
     /// Information required to update a given user's aggregated balance
     struct UpdateData {
@@ -168,7 +174,11 @@ library PoolSwapLibrary {
 
     /**
      * @notice Multiply an integer by a fraction
-     * @return The result as an integer
+     * @notice number * numerator / denominator
+     * @param number The number with which the fraction calculated from `numerator` and `denominator` will be multiplied
+     * @param numerator The numerator of the fraction being multipled with `number`
+     * @param denominator The denominator of the fraction being multipled with `number`
+     * @return The result of multiplying number with numerator/denominator, as an integer
      */
     function mulFraction(
         uint256 number,
@@ -202,7 +212,7 @@ library PoolSwapLibrary {
         //              = 2 ^ (leverage * log2([old/new]))
         return
             ABDKMathQuad.pow_2(
-                ABDKMathQuad.mul(leverage, ABDKMathQuad.log_2(direction < 0 ? ratio : ABDKMathQuad.div(one, ratio)))
+                ABDKMathQuad.mul(leverage, ABDKMathQuad.log_2(direction < 0 ? ratio : ABDKMathQuad.div(ONE, ratio)))
             );
     }
 
@@ -214,7 +224,7 @@ library PoolSwapLibrary {
     function getLossAmount(bytes16 lossMultiplier, uint256 balance) public pure returns (uint256) {
         return
             ABDKMathQuad.toUInt(
-                ABDKMathQuad.mul(ABDKMathQuad.sub(one, lossMultiplier), ABDKMathQuad.fromUInt(balance))
+                ABDKMathQuad.mul(ABDKMathQuad.sub(ONE, lossMultiplier), ABDKMathQuad.fromUInt(balance))
             );
     }
 
@@ -257,7 +267,7 @@ library PoolSwapLibrary {
         // the funds should be transferred towards.
 
         bytes16 ratio = divInt(newPrice, oldPrice);
-        int8 direction = compareDecimals(ratio, PoolSwapLibrary.one);
+        int8 direction = compareDecimals(ratio, PoolSwapLibrary.ONE);
         // Take into account the leverage
         bytes16 lossMultiplier = getLossMultiplier(ratio, direction, leverageAmount);
 
@@ -310,9 +320,8 @@ library PoolSwapLibrary {
         uint256 frontRunningInterval,
         uint256 updateInterval,
         uint256 currentUpdateIntervalId
-    ) external pure returns (uint256) {
-        // Since lastPriceTimestamp <= block.timestamp, the below also confirms that timestamp >= block.timestamp
-        require(timestamp >= lastPriceTimestamp, "timestamp in the past");
+    ) external view returns (uint256) {
+        require(lastPriceTimestamp <= timestamp && timestamp <= block.timestamp, "timestamp in the past");
         if (frontRunningInterval <= updateInterval) {
             // This is the "simple" case where we either want the current update interval or the next one
             if (isBeforeFrontRunningInterval(timestamp, lastPriceTimestamp, updateInterval, frontRunningInterval)) {
@@ -394,7 +403,7 @@ library PoolSwapLibrary {
      */
     function getPrice(uint256 sideBalance, uint256 tokenSupply) external pure returns (bytes16) {
         if (tokenSupply == 0) {
-            return one;
+            return ONE;
         }
         return ABDKMathQuad.div(ABDKMathQuad.fromUInt(sideBalance), ABDKMathQuad.fromUInt(tokenSupply));
     }
@@ -405,7 +414,7 @@ library PoolSwapLibrary {
      * @param amount Amount of settlement tokens being used to mint
      * @return Quantity of pool tokens to mint
      * @dev Throws if price is zero
-     * @dev `getBurn()`
+     * @dev `getMint()`
      */
     function getMint(bytes16 price, uint256 amount) public pure returns (uint256) {
         require(price != 0, "price == 0");
@@ -415,11 +424,11 @@ library PoolSwapLibrary {
     /**
      * @notice Calculate the number of settlement tokens to burn, based on a price and an amount of pool tokens
      * @param price Price of a pool token
-     * @param amount Amount of settlement tokens being used to burn
-     * @return Quantity of pool tokens to burn
+     * @param amount Amount of pool tokens being used to burn
+     * @return Quantity of settlement tokens to return to the user after `amount` pool tokens are burnt.
      * @dev amount * price, where amount is in PoolToken and price is in USD/PoolToken
      * @dev Throws if price is zero
-     * @dev `getMint()`
+     * @dev `getBurn()`
      */
     function getBurn(bytes16 price, uint256 amount) public pure returns (uint256) {
         require(price != 0, "price == 0");
@@ -480,7 +489,7 @@ library PoolSwapLibrary {
             uint256 _newSettlementTokens
         )
     {
-        if (data.updateIntervalId == data.currentUpdateIntervalId) {
+        if (data.updateIntervalId >= data.currentUpdateIntervalId) {
             // Update interval has not passed: No change
             return (0, 0, 0, 0, 0);
         }
