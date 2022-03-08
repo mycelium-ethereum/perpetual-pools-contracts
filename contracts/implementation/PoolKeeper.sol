@@ -108,10 +108,8 @@ contract PoolKeeper is IPoolKeeper, Ownable {
             return;
         }
 
-        ILeveragedPool pool = ILeveragedPool(_pool);
-
         /* update SMA oracle, does nothing for spot oracles */
-        IOracleWrapper poolOracleWrapper = IOracleWrapper(pool.oracleWrapper());
+        IOracleWrapper poolOracleWrapper = IOracleWrapper(ILeveragedPool(_pool).oracleWrapper());
 
         try poolOracleWrapper.poll() {} catch Error(string memory reason) {
             emit PoolUpkeepError(_pool, reason);
@@ -127,7 +125,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         /* This allows us to still batch multiple calls to
          * executePriceChange, even if some are invalid
          * without reverting the entire transaction */
-        try pool.poolUpkeep(lastExecutionPrice, latestPrice) {
+        try ILeveragedPool(_pool).poolUpkeep(lastExecutionPrice, latestPrice) {
             executionPrice[_pool] = latestPrice;
             // If poolUpkeep is successful, refund the keeper for their gas costs
             uint256 gasSpent = startGas - gasleft();
