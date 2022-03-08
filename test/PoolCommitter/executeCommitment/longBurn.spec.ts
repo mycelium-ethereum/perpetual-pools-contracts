@@ -109,9 +109,6 @@ describe("LeveragedPool - executeCommitment: Long Burn", () => {
             ).to.eq(0)
         })
         it("should transfer quote tokens to the commit owner", async () => {
-            // expect(await token.balanceOf(signers[0].address)).to.eq(
-            // amountMinted.sub(amountCommitted)
-            // )
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(9, 9)
             const tokensBefore = await token.balanceOf(signers[0].address)

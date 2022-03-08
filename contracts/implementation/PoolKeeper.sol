@@ -7,7 +7,6 @@ import "../interfaces/IPoolFactory.sol";
 import "../implementation/PriceObserver.sol";
 import "../interfaces/ILeveragedPool.sol";
 import "../interfaces/IERC20DecimalsWrapper.sol";
-import "./PoolSwapLibrary.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "abdk-libraries-solidity/ABDKMathQuad.sol";

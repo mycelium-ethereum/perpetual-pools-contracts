@@ -314,7 +314,7 @@ library PoolSwapLibrary {
         uint256 frontRunningInterval,
         uint256 updateInterval,
         uint256 currentUpdateIntervalId
-    ) external view returns (uint256) {
+    ) external pure returns (uint256) {
         require(lastPriceTimestamp <= timestamp && timestamp <= block.timestamp, "timestamp in the past");
         if (frontRunningInterval <= updateInterval) {
             // This is the "simple" case where we either want the current update interval or the next one
@@ -386,7 +386,6 @@ library PoolSwapLibrary {
             ABDKMathQuad.fromUInt(amountIn)
         );
         return ((tokenSupply + shadowBalance) * amountIn) / balance;
-        return ABDKMathQuad.toUInt(ABDKMathQuad.div(numerator, ABDKMathQuad.fromUInt(balance)));
     }
 
     /**
