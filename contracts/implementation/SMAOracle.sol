@@ -76,28 +76,33 @@ contract SMAOracle is IOracleWrapper {
     uint8 public constant MAX_PERIODS = 24;
 
     int256 public immutable scaler;
-    uint256 public constant MAX_DECIMALS = 18;
+    uint8 public constant MAX_DECIMALS = 18;
     /// Maximum number of elements storable by the backing array
     uint256 public constant MAX_NUM_ELEMS = 24;
 
     constructor(
         address _inputFeedAddress,
-        uint256 _inputFeedDecimals,
         uint256 _numPeriods,
         uint256 _updateInterval,
         address _deployer
     ) {
         require(_inputFeedAddress != address(0) && _deployer != address(0), "SMA: Null address forbidden");
         require(_numPeriods > 0 && _numPeriods <= MAX_PERIODS, "SMA: Out of bounds");
-        require(_inputFeedDecimals <= MAX_DECIMALS, "SMA: Decimal precision too high");
         require(_updateInterval != 0, "SMA: Update interval cannot be 0");
+
+        uint8 inputFeedDecimals = IOracleWrapper(_inputFeedAddress).decimals();
+        require(inputFeedDecimals <= MAX_DECIMALS, "SMA: Decimal precision too high");
+        /* `scaler` is always <= 10^18 and >= 1 so this cast is safe */
+        scaler = int256(10**(MAX_DECIMALS - inputFeedDecimals));
+
         numPeriods = _numPeriods;
         updateInterval = _updateInterval;
         inputFeedAddress = _inputFeedAddress;
         deployer = _deployer;
+    }
 
-        /* `scaler` is always <= 10^18 and >= 1 so this cast is safe */
-        scaler = int256(10**(MAX_DECIMALS - _inputFeedDecimals));
+    function decimals() external view override returns (uint8) {
+        return MAX_DECIMALS;
     }
 
     function oracle() external view override returns (address) {
@@ -120,7 +125,6 @@ contract SMAOracle is IOracleWrapper {
      */
     function getPriceAndMetadata() external view override returns (int256 _price, bytes memory _data) {
         _price = _calculateSMA();
-        bytes memory _data;
         return (_price, _data);
     }
 
@@ -157,7 +161,7 @@ contract SMAOracle is IOracleWrapper {
         int256 latestPrice = IOracleWrapper(inputFeedAddress).getPrice();
 
         /* store the latest price */
-        prices[periodCount] = latestPrice;
+        prices[periodCount] = toWad(latestPrice);
 
         /* if we've filled the numPeriods amount, delete the oldest price */
         if (periodCount >= numPeriods) {
