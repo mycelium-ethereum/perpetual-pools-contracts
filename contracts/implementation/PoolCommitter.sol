@@ -161,9 +161,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         require(mintingFee < MAX_MINTING_FEE, "Minting fee >= 100%");
         require(burningFee < MAX_BURNING_FEE, "Burning fee >= 10%");
         changeInterval = PoolSwapLibrary.convertUIntToDecimal(_changeInterval);
-        emit ChangeIntervalSet(_changeInterval);
         feeController = _feeController;
-        emit FeeControllerSet(_feeController);
         autoClaim = IAutoClaim(_autoClaim);
         invariantCheckContract = _invariantCheckContract;
         invariantCheck = IInvariantCheck(_invariantCheckContract);
@@ -790,19 +788,16 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
 
     /**
      * @notice Sets the quote token address and the address of the associated `LeveragedPool` contract to the provided values
-     * @param _quoteToken Address of the quote token to use
      * @param _leveragedPool Address of the pool to use
      * @dev Only callable by the associated `PoolFactory` contract
      * @dev Throws if either address are null
      * @dev Emits a `QuoteAndPoolChanged` event on success
      */
-    function setQuoteAndPool(address _quoteToken, address _leveragedPool) external override onlyFactory onlyUnpaused {
-        require(_quoteToken != address(0), "Quote token address cannot be 0 address");
+    function setPool(address _leveragedPool) external override onlyFactory {
         require(_leveragedPool != address(0), "Leveraged pool address cannot be 0 address");
 
         leveragedPool = _leveragedPool;
         tokens = ILeveragedPool(leveragedPool).poolTokens();
-        emit QuoteAndPoolChanged(_quoteToken, _leveragedPool);
     }
 
     /**

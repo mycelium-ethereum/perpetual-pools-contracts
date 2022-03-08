@@ -117,13 +117,6 @@ interface IPoolCommitter {
      */
     event Claim(address indexed user);
 
-    /**
-     * @notice Indicates that both the quote and pool addresses have been modified
-     * @param quote Address of new quote token
-     * @param pool Address of new `LeveragedPool`
-     */
-    event QuoteAndPoolChanged(address indexed quote, address indexed pool);
-
     /*
      * @notice Creates a notification when the burningFee is updated
      */
@@ -182,7 +175,7 @@ interface IPoolCommitter {
 
     function getAppropriateUpdateIntervalId() external view returns (uint128);
 
-    function setQuoteAndPool(address _quoteToken, address _leveragedPool) external;
+    function setPool(address _leveragedPool) external;
 
     function setBurningFee(uint256 _burningFee) external;
 
