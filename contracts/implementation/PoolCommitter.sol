@@ -427,22 +427,20 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
                 balancesAndSupplies.shortTotalSupplyBefore + totalPendingShortBurns
             )
         });
-        totalPendingLongBurns -= totalLongBurn;
-        totalPendingShortBurns -= totalShortBurn;
 
         // Amount of collateral tokens that are generated from the long burn into instant mints
         uint256 longBurnInstantMintAmount = PoolSwapLibrary.getWithdrawAmountOnBurn(
             balancesAndSupplies.longTotalSupplyBefore,
             _commits.longBurnShortMintAmount,
             balancesAndSupplies.longBalance,
-            totalLongBurn
+            totalPendingLongBurns
         );
         // Amount of collateral tokens that are generated from the short burn into instant mints
         uint256 shortBurnInstantMintAmount = PoolSwapLibrary.getWithdrawAmountOnBurn(
             balancesAndSupplies.shortTotalSupplyBefore,
             _commits.shortBurnLongMintAmount,
             balancesAndSupplies.shortBalance,
-            totalShortBurn
+            totalPendingShortBurns
         );
 
         // Long Mints
@@ -450,7 +448,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             balancesAndSupplies.longTotalSupplyBefore, // long token total supply,
             _commits.longMintAmount + shortBurnInstantMintAmount, // Add the collateral tokens that will be generated from burning shorts for instant long mint
             balancesAndSupplies.longBalance, // total quote tokens in the long pull
-            totalLongBurn // total pool tokens commited to be burned
+            totalPendingLongBurns // total pool tokens commited to be burned
         );
 
         if (longMintAmount > 0) {
@@ -462,7 +460,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             balancesAndSupplies.longTotalSupplyBefore,
             totalLongBurn,
             balancesAndSupplies.longBalance,
-            totalLongBurn
+            totalPendingLongBurns
         );
 
         // Short Mints
@@ -470,7 +468,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             balancesAndSupplies.shortTotalSupplyBefore, // short token total supply
             _commits.shortMintAmount + longBurnInstantMintAmount, // Add the collateral tokens that will be generated from burning longs for instant short mint
             balancesAndSupplies.shortBalance,
-            totalShortBurn
+            totalPendingShortBurns
         );
 
         if (shortMintAmount > 0) {
@@ -482,8 +480,11 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             balancesAndSupplies.shortTotalSupplyBefore,
             totalShortBurn,
             balancesAndSupplies.shortBalance,
-            totalShortBurn
+            totalPendingShortBurns
         );
+
+        totalPendingLongBurns -= totalLongBurn;
+        totalPendingShortBurns -= totalShortBurn;
 
         uint256 newLongBalance = balancesAndSupplies.longBalance +
             _commits.longMintAmount -
