@@ -17,7 +17,7 @@ describe("SMAOracle - getPrice", () => {
     let smaOracle: SMAOracle
     let chainlinkOracle: TestChainlinkOracle
     const numPeriods: BigNumberish = 10
-    const updateInterval: BigNumberish = 0
+    const updateInterval: BigNumberish = 60
 
     beforeEach(async () => {
         ;[owner, user1, user2] = await ethers.getSigners()
@@ -80,6 +80,7 @@ describe("SMAOracle - getPrice", () => {
                 chainlinkDecimals
             )
             await chainlinkOracle.setPrice(price)
+            await ethers.provider.send("evm_increaseTime", [updateInterval])
             await smaOracle.poll()
         }
         const result = await smaOracle.getPrice()
@@ -100,6 +101,7 @@ describe("SMAOracle - getPrice", () => {
                 chainlinkDecimals
             )
             await chainlinkOracle.setPrice(price)
+            await ethers.provider.send("evm_increaseTime", [updateInterval])
             await smaOracle.poll()
         }
         const result = await smaOracle.getPrice()
@@ -121,6 +123,8 @@ describe("SMAOracle - getPrice", () => {
                 chainlinkDecimals
             )
             await chainlinkOracle.setPrice(price)
+            await ethers.provider.send("evm_increaseTime", [updateInterval])
+
             await smaOracle.poll()
         }
         const result = await smaOracle.getPrice()
@@ -145,6 +149,7 @@ describe("SMAOracle - getPrice", () => {
                 chainlinkDecimals
             )
             await chainlinkOracle.setPrice(price)
+            await ethers.provider.send("evm_increaseTime", [updateInterval])
             await smaOracle.poll()
         }
         const result = await smaOracle.getPrice()
@@ -169,6 +174,7 @@ describe("SMAOracle - getPrice", () => {
                 chainlinkDecimals
             )
             await chainlinkOracle.setPrice(price)
+            await ethers.provider.send("evm_increaseTime", [updateInterval])
             await smaOracle.poll()
         }
         const result = await smaOracle.getPrice()

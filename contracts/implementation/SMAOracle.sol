@@ -85,9 +85,10 @@ contract SMAOracle is IOracleWrapper {
         uint256 _updateInterval,
         address _deployer
     ) {
-        require(_inputFeedAddress != address(0), "SMA: Null address forbidden");
+        require(_inputFeedAddress != address(0) && _deployer != address(0), "SMA: Null address forbidden");
         require(_numPeriods > 0 && _numPeriods <= MAX_PERIODS, "SMA: Out of bounds");
         require(_inputFeedDecimals <= MAX_DECIMALS, "SMA: Decimal precision too high");
+        require(_updateInterval != 0, "SMA: Update interval cannot be 0");
         numPeriods = _numPeriods;
         updateInterval = _updateInterval;
         inputFeedAddress = _inputFeedAddress;
@@ -117,7 +118,8 @@ contract SMAOracle is IOracleWrapper {
      */
     function getPriceAndMetadata() external view override returns (int256 _price, bytes memory _data) {
         _price = _calculateSMA();
-        _data = "";
+        bytes memory _data;
+        return (_price, _data);
     }
 
     /**
