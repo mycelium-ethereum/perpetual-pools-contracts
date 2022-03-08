@@ -502,13 +502,18 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
      * @notice Executes all commitments currently queued for the associated `LeveragedPool`
      * @dev Only callable by the associated `LeveragedPool` contract
      * @dev Emits an `ExecutedCommitsForInterval` event for each update interval processed
+     * @param lastPriceTimestamp The timestamp when the last price update happened
+     * @param updateInterval The number of seconds that must occur between upkeeps
+     * @param longBalance The amount of settlement tokens in the long side of the pool
+     * @param shortBalance The amount of settlement tokens in the short side of the pool
      */
-    function executeCommitments() external override onlyPool {
-        ILeveragedPool pool = ILeveragedPool(leveragedPool);
-
+    function executeCommitments(
+        uint256 lastPriceTimestamp,
+        uint256 updateInterval,
+        uint256 longBalance,
+        uint256 shortBalance
+    ) external override onlyPool {
         uint32 counter = 1;
-        uint256 lastPriceTimestamp = pool.lastPriceTimestamp();
-        uint256 updateInterval = pool.updateInterval();
 
         /*
          * (old)
@@ -556,8 +561,6 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
                 counter += 1;
             }
         }
-
-        (uint256 shortBalance, uint256 longBalance) = pool.balances();
 
         uint256 longTotalSupply = IERC20(tokens[LONG_INDEX]).totalSupply();
         uint256 shortTotalSupply = IERC20(tokens[SHORT_INDEX]).totalSupply();

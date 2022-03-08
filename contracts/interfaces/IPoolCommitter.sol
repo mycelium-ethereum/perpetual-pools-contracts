@@ -174,7 +174,12 @@ interface IPoolCommitter {
 
     function claim(address user) external;
 
-    function executeCommitments() external;
+    function executeCommitments(
+        uint256 lastPriceTimestamp,
+        uint256 updateInterval,
+        uint256 longBalance,
+        uint256 shortBalance
+    ) external;
 
     function updateAggregateBalance(address user) external;
 

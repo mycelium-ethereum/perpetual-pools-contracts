@@ -147,7 +147,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
         require(intervalPassed(), "Update interval hasn't passed");
         // perform price change and update pool balances
         executePriceChange(_oldPrice, _newPrice);
-        IPoolCommitter(poolCommitter).executeCommitments();
+        IPoolCommitter(poolCommitter).executeCommitments(lastPriceTimestamp, updateInterval, longBalance, shortBalance);
         lastPriceTimestamp = block.timestamp;
     }
 
