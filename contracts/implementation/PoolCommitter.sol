@@ -18,6 +18,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
     uint128 public constant LONG_INDEX = 0;
     uint128 public constant SHORT_INDEX = 1;
 
+    uint8 public constant MAX_ITERATIONS = type(uint8).max;
     IAutoClaim public autoClaim;
     uint128 public override updateIntervalId = 1;
     /// ABDKMathQuad-formatted representation of the number one
@@ -506,7 +507,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
     function executeCommitments() external override onlyPool {
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
 
-        uint32 counter = 1;
+        uint8 counter = 1;
         uint256 lastPriceTimestamp = pool.lastPriceTimestamp();
         uint256 updateInterval = pool.updateInterval();
 
@@ -536,7 +537,8 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
          * should never be passed without the previous one being upkept.
          */
         uint256 _updateIntervalId;
-        while (true) {
+        uint8 maxIterations = MAX_ITERATIONS; // copied from storage to save gas
+        while (counter <= maxIterations) {
             if (block.timestamp >= lastPriceTimestamp + updateInterval * counter) {
                 // Another update interval has passed, so we have to do the nextIntervalCommit as well
                 _updateIntervalId = updateIntervalId;
@@ -655,7 +657,10 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
 
         uint256[] memory currentIntervalIds = unAggregatedCommitments[user];
         uint256 unAggregatedLength = currentIntervalIds.length;
-        for (uint256 i = 0; i < unAggregatedLength; i++) {
+
+        uint8 maxIterations = unAggregatedLength < MAX_ITERATIONS ? uint8(unAggregatedLength) : MAX_ITERATIONS; // casting to uint8 is safe because we know it is less than MAX_ITERATIONS, a uint8
+
+        for (uint256 i = 0; i < maxIterations; i++) {
             uint256 id = currentIntervalIds[i];
             if (id == 0) {
                 continue;
