@@ -43,7 +43,6 @@ describe("SMAOracle - getPriceAndMetadata", () => {
         )) as SMAOracle__factory
         smaOracle = await SMAOracleFactory.deploy(
             chainlinkOracleWrapper.address,
-            18,
             numPeriods,
             updateInterval,
             owner.address
