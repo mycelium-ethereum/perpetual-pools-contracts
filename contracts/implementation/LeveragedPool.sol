@@ -152,7 +152,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
     }
 
     /**
-     * @notice Pay keeper some amount in the collateral token for the perpetual pools market
+     * @notice Pay keeper some amount in the settlement token for the perpetual pools market
      * @param to Address of the pool keeper to pay
      * @param amount Amount to pay the pool keeper
      * @return Whether the keeper is going to be paid; false if the amount exceeds the balances of the

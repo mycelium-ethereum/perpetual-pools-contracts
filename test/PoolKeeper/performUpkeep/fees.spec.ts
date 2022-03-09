@@ -104,7 +104,7 @@ describe("Leveraged pool fees", () => {
             await poolKeeper.performUpkeepSinglePool(pool.address)
             await timeout(updateInterval * 1000 + 1000)
             // We are OK with small amounts of dust being left in the contract because
-            // over-collateralised pools are OK
+            // over-settlementised pools are OK
             const approxKeeperFee = mintAmount.div(2).add(GAS_OVERHEAD)
 
             let balanceBefore = await token.balanceOf(signers[0].address)

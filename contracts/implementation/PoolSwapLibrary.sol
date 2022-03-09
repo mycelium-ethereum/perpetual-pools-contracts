@@ -21,12 +21,12 @@ library PoolSwapLibrary {
         bytes16 shortPrice;
         uint256 currentUpdateIntervalId;
         uint256 updateIntervalId;
-        uint256 longMintAmount;
-        uint256 longBurnAmount;
-        uint256 shortMintAmount;
-        uint256 shortBurnAmount;
-        uint256 longBurnShortMintAmount;
-        uint256 shortBurnLongMintAmount;
+        uint256 longMintSettlement;
+        uint256 longBurnPoolTokens;
+        uint256 shortMintSettlement;
+        uint256 shortBurnPoolTokens;
+        uint256 longBurnShortMintPoolTokens;
+        uint256 shortBurnLongMintPoolTokens;
         bytes16 burnFee;
     }
 
@@ -344,7 +344,7 @@ library PoolSwapLibrary {
      * @dev Calculates as `balance * amountIn / (tokenSupply + shadowBalance)
      * @param tokenSupply Total supply of pool tokens
      * @param amountIn Commitment amount of pool tokens going into the pool
-     * @param balance Balance of the pool (no. of underlying collateral tokens in pool)
+     * @param balance Balance of the pool (no. of underlying settlement tokens in pool)
      * @param shadowBalance Balance the shadow pool at time of mint
      * @return Number of settlement tokens to be withdrawn on a burn
      */
@@ -366,8 +366,8 @@ library PoolSwapLibrary {
      * @notice Gets the number of pool tokens to be minted based on existing tokens
      * @dev Calculated as (tokenSupply + shadowBalance) * amountIn / balance
      * @param tokenSupply Total supply of pool tokens
-     * @param amountIn Commitment amount of collateral tokens going into the pool
-     * @param balance Balance of the pool (no. of underlying collateral tokens in pool)
+     * @param amountIn Commitment amount of settlement tokens going into the pool
+     * @param balance Balance of the pool (no. of underlying settlement tokens in pool)
      * @param shadowBalance Balance the shadow pool at time of mint
      * @return Number of pool tokens to be minted
      */
@@ -392,7 +392,7 @@ library PoolSwapLibrary {
     /**
      * @notice Get the Settlement/PoolToken price, in ABDK IEE754 precision
      * @dev Divide the side balance by the pool token's total supply
-     * @param sideBalance no. of underlying collateral tokens on that side of the pool
+     * @param sideBalance no. of underlying settlement tokens on that side of the pool
      * @param tokenSupply Total supply of pool tokens
      */
     function getPrice(uint256 sideBalance, uint256 tokenSupply) external pure returns (bytes16) {
@@ -489,36 +489,36 @@ library PoolSwapLibrary {
         }
         uint256 longBurnResult; // The amount of settlement tokens to withdraw based on long token burn
         uint256 shortBurnResult; // The amount of settlement tokens to withdraw based on short token burn
-        if (data.longMintAmount > 0 || data.shortBurnLongMintAmount > 0) {
+        if (data.longMintSettlement > 0 || data.shortBurnLongMintPoolTokens > 0) {
             _newLongTokens = getMintWithBurns(
                 data.longPrice,
                 data.shortPrice,
-                data.longMintAmount,
-                data.shortBurnLongMintAmount
+                data.longMintSettlement,
+                data.shortBurnLongMintPoolTokens
             );
         }
 
-        if (data.longBurnAmount > 0) {
+        if (data.longBurnPoolTokens > 0) {
             // Calculate the amount of settlement tokens earned from burning long tokens
-            longBurnResult = getBurn(data.longPrice, data.longBurnAmount);
+            longBurnResult = getBurn(data.longPrice, data.longBurnPoolTokens);
             // Calculate the fee
             _longBurnFee = convertDecimalToUInt(multiplyDecimalByUInt(data.burnFee, longBurnResult)) / WAD_PRECISION;
             // Subtract the fee from settlement token amount
             longBurnResult -= _longBurnFee;
         }
 
-        if (data.shortMintAmount > 0 || data.longBurnShortMintAmount > 0) {
+        if (data.shortMintSettlement > 0 || data.longBurnShortMintPoolTokens > 0) {
             _newShortTokens = getMintWithBurns(
                 data.shortPrice,
                 data.longPrice,
-                data.shortMintAmount,
-                data.longBurnShortMintAmount
+                data.shortMintSettlement,
+                data.longBurnShortMintPoolTokens
             );
         }
 
-        if (data.shortBurnAmount > 0) {
+        if (data.shortBurnPoolTokens > 0) {
             // Calculate the amount of settlement tokens earned from burning short tokens
-            shortBurnResult = getBurn(data.shortPrice, data.shortBurnAmount);
+            shortBurnResult = getBurn(data.shortPrice, data.shortBurnPoolTokens);
             // Calculate the fee
             _shortBurnFee = convertDecimalToUInt(multiplyDecimalByUInt(data.burnFee, shortBurnResult)) / WAD_PRECISION;
             // Subtract the fee from settlement token amount
