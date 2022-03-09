@@ -194,14 +194,14 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
 
     /**
      * @notice Deploy a contract for pool tokens
-     * @param poolOwner Address of the owner of the pool
+     * @param pool The pool address, owner of the Pool Token
      * @param leverage Amount of leverage for pool
      * @param deploymentParameters Deployment parameters for parent function
      * @param direction Long or short token, L- or S-
      * @return Address of the pool token
      */
     function deployPairToken(
-        address poolOwner,
+        address pool,
         string memory leverage,
         PoolDeployment memory deploymentParameters,
         string memory direction
@@ -218,7 +218,7 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
         );
 
         PoolToken pairToken = PoolToken(Clones.cloneDeterministic(pairTokenBaseAddress, uniqueTokenHash));
-        pairToken.initialize(poolOwner, poolNameAndSymbol, poolNameAndSymbol, settlementDecimals);
+        pairToken.initialize(pool, poolNameAndSymbol, poolNameAndSymbol, settlementDecimals);
         return address(pairToken);
     }
 
