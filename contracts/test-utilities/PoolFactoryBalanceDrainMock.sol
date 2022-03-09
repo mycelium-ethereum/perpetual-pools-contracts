@@ -103,7 +103,7 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
             _leverageAmount: 1,
             _feeAddress: address(this),
             _secondaryFeeAddress: address(this),
-            _quoteToken: address(this),
+            _settlementToken: address(this),
             _secondaryFeeSplitPercent: 0
         });
         poolBase.initialize(dummyInitialization);

@@ -103,7 +103,7 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
             _leverageAmount: 1,
             _feeAddress: address(this),
             _secondaryFeeAddress: address(this),
-            _quoteToken: address(this),
+            _settlementToken: address(this),
             _secondaryFeeSplitPercent: 0
         });
         poolBase.initialize(dummyInitialization);
@@ -207,7 +207,7 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
         IPoolCommitter(poolCommitterAddress).setPool(_pool);
         emit DeployCommitter(
             poolCommitterAddress,
-            deploymentParameters.quoteToken,
+            deploymentParameters.settlementToken,
             _pool,
             deploymentParameters.changeInterval,
             deploymentParameters.feeController
