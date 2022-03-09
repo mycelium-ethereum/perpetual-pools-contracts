@@ -19,6 +19,8 @@ interface IPoolCommitter {
         uint256 longBalance;
         uint256 longTotalSupplyBefore;
         uint256 shortTotalSupplyBefore;
+        uint256 newShortBalance;
+        uint256 newLongBalance;
     }
 
     // User aggregate balance

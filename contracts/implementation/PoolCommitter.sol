@@ -399,20 +399,27 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
      * @notice Executes every commitment specified in the list
      * @param _commits Array of `TotalCommitment`s
      */
-    function executeGivenCommitments(TotalCommitment memory _commits) internal {
-        ILeveragedPool pool = ILeveragedPool(leveragedPool);
-
+    function executeGivenCommitments(
+        TotalCommitment memory _commits,
+        uint256 longBalance,
+        uint256 shortBalance
+    ) internal returns (uint256, uint256) {
         totalPendingMints =
             totalPendingMints -
             totalPoolCommitments[updateIntervalId].longMintAmount -
             totalPoolCommitments[updateIntervalId].shortMintAmount;
 
         BalancesAndSupplies memory balancesAndSupplies = BalancesAndSupplies({
-            shortBalance: pool.shortBalance(),
-            longBalance: pool.longBalance(),
+            shortBalance: shortBalance,
+            longBalance: longBalance,
             longTotalSupplyBefore: IERC20(tokens[LONG_INDEX]).totalSupply(),
-            shortTotalSupplyBefore: IERC20(tokens[SHORT_INDEX]).totalSupply()
+            shortTotalSupplyBefore: IERC20(tokens[SHORT_INDEX]).totalSupply(),
+            newShortBalance: _commits.shortMintAmount,
+            newLongBalance: _commits.longMintAmount
         });
+
+        balancesAndSupplies.newShortBalance += balancesAndSupplies.shortBalance;
+        balancesAndSupplies.newLongBalance += balancesAndSupplies.longBalance;
 
         uint256 totalLongBurn = _commits.longBurnAmount + _commits.longBurnShortMintAmount;
         uint256 totalShortBurn = _commits.shortBurnAmount + _commits.shortBurnLongMintAmount;
@@ -437,6 +444,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             balancesAndSupplies.longBalance,
             totalLongBurn
         );
+        balancesAndSupplies.newShortBalance += longBurnInstantMintAmount;
         // Amount of collateral tokens that are generated from the short burn into instant mints
         uint256 shortBurnInstantMintAmount = PoolSwapLibrary.getWithdrawAmountOnBurn(
             balancesAndSupplies.shortTotalSupplyBefore,
@@ -444,6 +452,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             balancesAndSupplies.shortBalance,
             totalShortBurn
         );
+        balancesAndSupplies.newLongBalance += shortBurnInstantMintAmount;
 
         // Long Mints
         uint256 longMintAmount = PoolSwapLibrary.getMintAmount(
@@ -454,11 +463,11 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         );
 
         if (longMintAmount > 0) {
-            pool.mintTokens(LONG_INDEX, longMintAmount, leveragedPool);
+            ILeveragedPool(leveragedPool).mintTokens(LONG_INDEX, longMintAmount, leveragedPool);
         }
 
         // Long Burns
-        uint256 longBurnAmount = PoolSwapLibrary.getWithdrawAmountOnBurn(
+        balancesAndSupplies.newLongBalance -= PoolSwapLibrary.getWithdrawAmountOnBurn(
             balancesAndSupplies.longTotalSupplyBefore,
             totalLongBurn,
             balancesAndSupplies.longBalance,
@@ -474,28 +483,23 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         );
 
         if (shortMintAmount > 0) {
-            pool.mintTokens(SHORT_INDEX, shortMintAmount, leveragedPool);
+            ILeveragedPool(leveragedPool).mintTokens(SHORT_INDEX, shortMintAmount, leveragedPool);
         }
 
         // Short Burns
-        uint256 shortBurnAmount = PoolSwapLibrary.getWithdrawAmountOnBurn(
+        balancesAndSupplies.newShortBalance -= PoolSwapLibrary.getWithdrawAmountOnBurn(
             balancesAndSupplies.shortTotalSupplyBefore,
             totalShortBurn,
             balancesAndSupplies.shortBalance,
             totalShortBurn
         );
 
-        uint256 newLongBalance = balancesAndSupplies.longBalance +
-            _commits.longMintAmount -
-            longBurnAmount +
-            shortBurnInstantMintAmount;
-        uint256 newShortBalance = balancesAndSupplies.shortBalance +
-            _commits.shortMintAmount -
-            shortBurnAmount +
-            longBurnInstantMintAmount;
-
         // Update the collateral on each side
-        pool.setNewPoolBalances(newLongBalance, newShortBalance);
+        ILeveragedPool(leveragedPool).setNewPoolBalances(
+            balancesAndSupplies.newLongBalance,
+            balancesAndSupplies.newShortBalance
+        );
+        return (balancesAndSupplies.newLongBalance, balancesAndSupplies.newShortBalance);
     }
 
     /**
@@ -546,7 +550,11 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
                 // Another update interval has passed, so we have to do the nextIntervalCommit as well
                 _updateIntervalId = updateIntervalId;
                 burnFeeHistory[updateIntervalId] = burningFee;
-                executeGivenCommitments(totalPoolCommitments[updateIntervalId]);
+                (longBalance, shortBalance) = executeGivenCommitments(
+                    totalPoolCommitments[updateIntervalId],
+                    longBalance,
+                    shortBalance
+                );
                 emit ExecutedCommitsForInterval(updateIntervalId, burningFee);
                 delete totalPoolCommitments[updateIntervalId];
 
