@@ -108,7 +108,6 @@ contract PoolKeeper is IPoolKeeper, Ownable {
             return;
         }
 
-
         /* update SMA oracle, does nothing for spot oracles */
         IOracleWrapper poolOracleWrapper = IOracleWrapper(ILeveragedPool(_pool).oracleWrapper());
 
@@ -116,8 +115,12 @@ contract PoolKeeper is IPoolKeeper, Ownable {
             emit PoolUpkeepError(_pool, reason);
         }
 
-        (int256 latestPrice, bytes memory data, uint256 savedPreviousUpdatedTimestamp, uint256 updateInterval) = ILeveragedPool(_pool)
-            .getUpkeepInformation();
+        (
+            int256 latestPrice,
+            bytes memory data,
+            uint256 savedPreviousUpdatedTimestamp,
+            uint256 updateInterval
+        ) = ILeveragedPool(_pool).getUpkeepInformation();
 
         // Start a new round
         // Get price in WAD format
