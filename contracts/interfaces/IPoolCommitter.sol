@@ -151,6 +151,7 @@ interface IPoolCommitter {
         address _autoClaim,
         address _factoryOwner,
         address _feeController,
+        address _invariantCheck,
         uint256 mintingFee,
         uint256 burningFee,
         uint256 _changeInterval

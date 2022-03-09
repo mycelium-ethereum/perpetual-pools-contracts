@@ -4,6 +4,7 @@ pragma solidity 0.8.7;
 import "../interfaces/ILeveragedPool.sol";
 import "../interfaces/IPoolCommitter.sol";
 import "../interfaces/IPoolToken.sol";
+import "../interfaces/IInvariantCheck.sol";
 import "../interfaces/IPausable.sol";
 import "../interfaces/ITwoStepGovernance.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
@@ -25,11 +26,12 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
     uint256 public constant SHORT_INDEX = 1;
 
     address public override governance;
+    address public invariantCheck;
     uint32 public override frontRunningInterval;
     uint32 public override updateInterval;
     bytes16 public fee;
-    bytes16 public override leverageAmount;
 
+    bytes16 public override leverageAmount;
     address public override provisionalGovernance;
     bool public override paused;
     bool public override governanceTransferInProgress;
@@ -63,6 +65,11 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
         _;
     }
 
+    modifier onlyInvariantCheckContract() {
+        require(msg.sender == invariantCheck, "msg.sender not invariantCheck");
+        _;
+    }
+
     modifier onlyUnpaused() {
         require(!paused, "Pool is paused");
         _;
@@ -80,6 +87,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
         require(initialization._longToken != address(0), "Long token cannot be 0 address");
         require(initialization._shortToken != address(0), "Short token cannot be 0 address");
         require(initialization._poolCommitter != address(0), "PoolCommitter cannot be 0 address");
+        require(initialization._invariantCheck != address(0), "InvariantCheck cannot be 0 address");
         require(initialization._fee < PoolSwapLibrary.WAD_PRECISION, "Fee >= 100%");
         require(initialization._secondaryFeeSplitPercent <= 100, "Secondary fee split cannot exceed 100%");
         require(initialization._updateInterval != 0, "Update interval cannot be 0");
@@ -92,6 +100,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
         oracleWrapper = initialization._oracleWrapper;
         settlementEthOracle = initialization._settlementEthOracle;
         quoteToken = initialization._quoteToken;
+        invariantCheck = initialization._invariantCheck;
         frontRunningInterval = initialization._frontRunningInterval;
         updateInterval = initialization._updateInterval;
         fee = PoolSwapLibrary.convertUIntToDecimal(initialization._fee);
@@ -489,7 +498,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
      * @notice Pauses the pool
      * @dev Prevents all state updates until unpaused
      */
-    function pause() external override {
+    function pause() external override onlyInvariantCheckContract {
         paused = true;
         emit Paused();
     }

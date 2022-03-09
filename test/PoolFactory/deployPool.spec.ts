@@ -109,6 +109,7 @@ describe("PoolFactory.deployPool", () => {
                 _poolName: POOL_CODE,
                 _frontRunningInterval: 3,
                 _updateInterval: 5,
+                _invariantCheck: generateRandomAddress(),
                 _fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
                 _leverageAmount: 5,
                 _feeAddress: generateRandomAddress(),

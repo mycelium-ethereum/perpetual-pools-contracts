@@ -27,6 +27,12 @@ interface IPoolFactory {
     event DeployPool(address indexed pool, address poolCommitter, string ticker);
 
     /**
+     * @notice Indicates that the InvariantCheck contract has changed
+     * @param invariantCheck New InvariantCheck contract
+     */
+    event InvariantCheckChanged(address indexed invariantCheck);
+
+    /**
      * @notice Creates a notification when the pool keeper changes
      * @param _poolKeeper Address of the new pool keeper
      */
@@ -84,6 +90,8 @@ interface IPoolFactory {
     function setPoolKeeper(address _poolKeeper) external;
 
     function setAutoClaim(address _autoClaim) external;
+
+    function setInvariantCheck(address _invariantCheck) external;
 
     function setMaxLeverage(uint16 newMaxLeverage) external;
 

@@ -16,6 +16,7 @@ import {
     TestToken__factory,
     PoolFactory,
     AutoClaim__factory,
+    InvariantCheck__factory,
 } from "../../types"
 
 chai.use(chaiAsPromised)
@@ -88,6 +89,14 @@ const setupHook = async () => {
     factory = await (
         await PoolFactory.deploy(generateRandomAddress(), signers[0].address)
     ).deployed()
+
+    const invariantCheckFactory = (await ethers.getContractFactory(
+        "InvariantCheck",
+        signers[0]
+    )) as InvariantCheck__factory
+
+    const invariantCheck = await invariantCheckFactory.deploy(factory.address)
+    await factory.setInvariantCheck(invariantCheck.address)
 
     const autoClaimFactory = (await ethers.getContractFactory("AutoClaim", {
         signer: signers[0],

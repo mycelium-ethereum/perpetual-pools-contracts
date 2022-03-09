@@ -6,6 +6,7 @@ import "../interfaces/ILeveragedPool.sol";
 import "../interfaces/IPoolFactory.sol";
 import "../interfaces/IAutoClaim.sol";
 import "../interfaces/IPausable.sol";
+import "../interfaces/IInvariantCheck.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -60,6 +61,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
     address public governance;
     address public feeController;
     address public leveragedPool;
+    address public invariantCheck;
     bool public override paused;
 
     modifier onlyFeeController() {
@@ -93,6 +95,11 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         _;
     }
 
+    modifier onlyInvariantCheckContract() {
+        require(msg.sender == invariantCheck, "msg.sender not invariantCheck");
+        _;
+    }
+
     modifier onlyAutoClaimOrCommitter(address user) {
         require(msg.sender == user || msg.sender == address(autoClaim), "msg.sender not committer or AutoClaim");
         _;
@@ -103,6 +110,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
      * @param _factory Address of the associated `PoolFactory` contract
      * @param _autoClaim Address of the associated `AutoClaim` contract
      * @param _factoryOwner Address of the owner of the `PoolFactory`
+     * @param _invariantCheck Address of the `InvariantCheck` contract
      * @param _mintingFee The percentage that is taken from each mint, given as a decimal * 10 ^ 18
      * @param _burningFee The percentage that is taken from each burn, given as a decimal * 10 ^ 18
      * @param _changeInterval The amount that the `mintingFee` will change each update interval, based on `updateMintingFee`, given as a decimal * 10 ^ 18 (same format as `_mintingFee`)
@@ -119,15 +127,18 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         address _autoClaim,
         address _factoryOwner,
         address _feeController,
+        address _invariantCheck,
         uint256 _mintingFee,
         uint256 _burningFee,
         uint256 _changeInterval
     ) external override initializer {
-        require(_factory != address(0), "Factory address cannot be 0 address");
+        require(_factory != address(0), "Factory cannot be 0 address");
         require(_autoClaim != address(0), "AutoClaim address cannot be null");
         require(_feeController != address(0), "fee controller cannot be null");
+        require(_invariantCheck != address(0), "invariantCheck cannot be null");
         updateIntervalId = 1;
         factory = _factory;
+        invariantCheck = _invariantCheck;
         mintingFee = PoolSwapLibrary.convertUIntToDecimal(_mintingFee);
         burningFee = PoolSwapLibrary.convertUIntToDecimal(_burningFee);
         require(mintingFee < MAX_MINTING_FEE, "Minting fee >= 100%");
@@ -821,7 +832,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
      * @notice Pauses the pool
      * @dev Prevents all state updates until unpaused
      */
-    function pause() external override onlyGov {
+    function pause() external override onlyInvariantCheckContract {
         paused = true;
         emit Paused();
     }

@@ -23,13 +23,12 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
     address public immutable poolCommitterBaseAddress;
 
     address public autoClaim;
+    address public invariantCheck;
 
     // Contract address which has governance permissions
     address public override governance;
     bool public override governanceTransferInProgress;
     address public override provisionalGovernance;
-    // Contract address to receive protocol fees
-    address public feeReceiver;
     // Default fee, annualised; Fee value as a decimal multiplied by 10^18. For example, 50% is represented as 0.5 * 10^18
     uint256 public fee;
     // Percent of fees that go to secondary fee address if applicable.
@@ -43,6 +42,8 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
     uint32 constant DAYS_PER_LEAP_YEAR = 365.2425 days;
     // Default max leverage of 10
     uint16 public maxLeverage = 10;
+    // Contract address to receive protocol fees
+    address public feeReceiver;
 
     /**
      * @notice Format: Pool counter => pool address
@@ -83,7 +84,7 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
         feeReceiver = _feeReceiver;
 
         /* initialise base PoolCommitter template (with dummy values) */
-        poolCommitterBase.initialize(address(this), address(this), governance, governance, 0, 0, 0);
+        poolCommitterBase.initialize(address(this), address(this), address(this), governance, governance, 0, 0, 0);
     }
 
     /**
@@ -100,6 +101,7 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
         address _poolKeeper = address(poolKeeper);
         require(_poolKeeper != address(0), "PoolKeeper not set");
         require(autoClaim != address(0), "AutoClaim not set");
+        require(invariantCheck != address(0), "InvariantCheck not set");
         require(
             IOracleWrapper(deploymentParameters.oracleWrapper).deployer() == msg.sender,
             "Deployer must be oracle wrapper owner"
@@ -133,6 +135,7 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
             autoClaim,
             governance,
             deploymentParameters.feeController,
+            invariantCheck,
             deploymentParameters.mintingFee,
             deploymentParameters.burningFee,
             deploymentParameters.changeInterval
@@ -163,6 +166,7 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
             _longToken: deployPairToken(_pool, leverage, deploymentParameters, "L-"),
             _shortToken: deployPairToken(_pool, leverage, deploymentParameters, "S-"),
             _poolCommitter: poolCommitterAddress,
+            _invariantCheck: invariantCheck,
             _poolName: string(abi.encodePacked(leverage, "-", deploymentParameters.poolName)),
             _frontRunningInterval: deploymentParameters.frontRunningInterval,
             _updateInterval: deploymentParameters.updateInterval,
@@ -243,6 +247,18 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
         require(_autoClaim != address(0), "address cannot be null");
         autoClaim = _autoClaim;
         emit AutoClaimChanged(_autoClaim);
+    }
+
+    /**
+     * @notice Sets the address of the associated `InvariantCheck` contract
+     * @param _invariantCheck Address of the `InvariantCheck`
+     * @dev Throws if provided address is null
+     * @dev Only callable by the owner
+     */
+    function setInvariantCheck(address _invariantCheck) external override onlyGov {
+        require(_invariantCheck != address(0), "address cannot be null");
+        invariantCheck = _invariantCheck;
+        emit InvariantCheckChanged(_invariantCheck);
     }
 
     /**

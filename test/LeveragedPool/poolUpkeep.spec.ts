@@ -129,25 +129,6 @@ describe("LeveragedPool - executeAllCommitments", async () => {
         })
     })
 
-    describe("paused pools", async () => {
-        it("Paused pools cannot upkeep", async () => {
-            await timeout(updateInterval * 1000)
-            const result = await deployPoolAndTokenContracts(
-                POOL_CODE,
-                frontRunningInterval,
-                updateInterval,
-                leverage,
-                feeAddress,
-                fee
-            )
-            await result.pool.pause()
-            await result.pool.setKeeper(result.signers[0].address)
-            await timeout(updateInterval * 1000)
-            await expect(
-                result.pool.poolUpkeep(lastPrice, lastPrice)
-            ).to.revertedWith("Pool is paused")
-        })
-    })
     /*
     describe("Short mint->short burn", () => {
         const commits: CommitEventArgs[] | undefined = []
