@@ -529,11 +529,9 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
          * In reality, this should never iterate more than once, since more than one update interval
          * should never be passed without the previous one being upkept.
          */
-        uint256 _updateIntervalId;
         while (true) {
             if (block.timestamp >= lastPriceTimestamp + updateInterval * counter) {
                 // Another update interval has passed, so we have to do the nextIntervalCommit as well
-                _updateIntervalId = updateIntervalId;
                 burnFeeHistory[updateIntervalId] = burningFee;
                 executeGivenCommitments(totalPoolCommitments[updateIntervalId]);
                 emit ExecutedCommitsForInterval(updateIntervalId, burningFee);
