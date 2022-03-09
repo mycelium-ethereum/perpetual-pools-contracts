@@ -27,6 +27,22 @@ interface IPoolFactory {
     event DeployPool(address indexed pool, address poolCommitter, string ticker);
 
     /**
+     * @notice Creates a notification when a PoolCommitter is deployed
+     * @param poolCommitterAddress Address of new PoolCommitter
+     * @param quoteToken Address of new quoteToken
+     * @param pool Address of the pool associated with this PoolCommitter
+     * @param changeInterval The amount that the `mintingFee` will change each update interval, based on `updateMintingFee`, given as a decimal * 10 ^ 18 (same format as `_mintingFee`)
+     * @param feeController The address that has control over fee parameters
+     */
+    event DeployCommitter(
+        address poolCommitterAddress,
+        address quoteToken,
+        address pool,
+        uint256 changeInterval,
+        address feeController
+    );
+
+    /**
      * @notice Creates a notification when the pool keeper changes
      * @param _poolKeeper Address of the new pool keeper
      */

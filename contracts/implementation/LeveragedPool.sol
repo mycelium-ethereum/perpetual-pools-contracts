@@ -42,7 +42,6 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
     address public override poolCommitter;
     address public override oracleWrapper;
     address public override settlementEthOracle;
-    address public invariantCheckContract;
     IInvariantCheck public invariantCheck;
     address[2] public tokens;
     uint256 public override lastPriceTimestamp; // The last time the pool was upkept
@@ -73,7 +72,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
     }
 
     modifier onlyInvariantCheckContract() {
-        require(msg.sender == invariantCheckContract, "msg.sender not invariantCheckContract");
+        require(msg.sender == address(invariantCheck), "msg.sender not invariantCheck");
         _;
     }
 
@@ -124,7 +123,6 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
         tokens[LONG_INDEX] = initialization._longToken;
         tokens[SHORT_INDEX] = initialization._shortToken;
         poolCommitter = initialization._poolCommitter;
-        invariantCheckContract = initialization._invariantCheckContract;
         invariantCheck = IInvariantCheck(initialization._invariantCheckContract);
         emit PoolInitialized(
             initialization._longToken,

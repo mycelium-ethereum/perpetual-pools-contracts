@@ -43,7 +43,7 @@ contract AutoClaim is IAutoClaim {
             if (requestUpdateIntervalId < poolCommitter.updateIntervalId()) {
                 // If so, this person may as well claim for themself (if allowed). They have signified their want of claim, after all.
                 // Note that this function is only called by PoolCommitter when a user `commits` and therefore `user` will always equal the original `msg.sender`.
-                uint256 reward = claimRequests[user][msg.sender].reward;
+                uint256 reward = request.reward;
                 delete claimRequests[user][msg.sender];
                 poolCommitter.claim(user);
                 if (reward > 0) {
@@ -60,8 +60,8 @@ contract AutoClaim is IAutoClaim {
 
         // If no previous claim requests are pending, we need to make a new one.
         requestUpdateIntervalId = poolCommitter.getAppropriateUpdateIntervalId();
-        claimRequests[user][msg.sender].updateIntervalId = requestUpdateIntervalId;
-        claimRequests[user][msg.sender].reward = msg.value;
+        request.updateIntervalId = requestUpdateIntervalId;
+        request.reward = msg.value;
         emit PaidClaimRequestUpdate(user, msg.sender, request.reward);
     }
 
