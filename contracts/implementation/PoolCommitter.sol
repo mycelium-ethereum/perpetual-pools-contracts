@@ -55,7 +55,6 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
     address public governance;
     address public feeController;
     address public leveragedPool;
-    address public invariantCheckContract;
     bool public override paused;
     IInvariantCheck public invariantCheck;
 
@@ -91,7 +90,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
     }
 
     modifier onlyInvariantCheckContract() {
-        require(msg.sender == invariantCheckContract, "msg.sender not invariantCheckContract");
+        require(msg.sender == address(invariantCheck), "msg.sender not invariantCheck");
         _;
     }
 
@@ -159,7 +158,6 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         feeController = _feeController;
         emit FeeControllerSet(_feeController);
         autoClaim = IAutoClaim(_autoClaim);
-        invariantCheckContract = _invariantCheckContract;
         invariantCheck = IInvariantCheck(_invariantCheckContract);
         governance = _factoryOwner;
     }
