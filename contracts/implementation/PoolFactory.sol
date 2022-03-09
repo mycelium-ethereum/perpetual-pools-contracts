@@ -121,7 +121,7 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
      * @dev Throws if leverage amount is invalid
      * @dev Throws if decimal precision is too high (i.e., greater than `MAX_DECIMALS`)
      * @dev The IOracleWrapper declares a `deployer` variable, this is used here to confirm that the pool which uses said oracle wrapper is indeed
-     *      the intended address. This is to prevent a griefing attack in which someone uses the same oracle wrapper with the same parameters.
+     *      the intended address. This is to prevent a griefing attack in which someone uses the same oracle wrapper with the same parameters *before* the genuine deployer.
      */
     function deployPool(PoolDeployment calldata deploymentParameters) external override returns (address) {
         address _poolKeeper = address(poolKeeper);
