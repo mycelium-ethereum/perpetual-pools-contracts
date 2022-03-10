@@ -44,15 +44,15 @@ describe("PoolSwapLibrary - getBalancesAfterFees", () => {
                 ).to.equal(currentUpdateIntervalId + 1)
             })
 
-            context("After next update inerval", async () => {
-                it("Returns next update interval", async () => {
-                    const time = 230
-                    const lastPriceTimestamp = 110
+            context("After next update interval", async () => {
+                it("Returns arbitrary amount in future", async () => {
+                    const time = 3001
+                    const lastPriceTimestamp = 0
                     const frontRunningInterval = 20
                     const updateInterval = 100
                     const currentUpdateIntervalId = 3
 
-                    // Since 200 is after 110 + 100 - 20 = 190, it should return next update interval
+                    // Since 330 is after 110 + (100 * 2) = 310, it should return update interval after the next
                     expect(
                         await library.appropriateUpdateIntervalId(
                             time,
@@ -61,9 +61,51 @@ describe("PoolSwapLibrary - getBalancesAfterFees", () => {
                             updateInterval,
                             currentUpdateIntervalId
                         )
-                    ).to.equal(currentUpdateIntervalId + 1)
+                    ).to.equal(currentUpdateIntervalId + 30)
+                })
+                it("Returns next update interval", async () => {
+                    const time = 330
+                    const lastPriceTimestamp = 110
+                    const frontRunningInterval = 20
+                    const updateInterval = 100
+                    const currentUpdateIntervalId = 3
+
+                    // Since 330 is after 110 + (100 * 2) = 310, it should return update interval after the next
+                    expect(
+                        await library.appropriateUpdateIntervalId(
+                            time,
+                            lastPriceTimestamp,
+                            frontRunningInterval,
+                            updateInterval,
+                            currentUpdateIntervalId
+                        )
+                    ).to.equal(currentUpdateIntervalId + 2)
                 })
             })
+
+            context(
+                "After next update interval's front running interval",
+                async () => {
+                    it("Returns next update interval", async () => {
+                        const time = 300
+                        const lastPriceTimestamp = 110
+                        const frontRunningInterval = 20
+                        const updateInterval = 100
+                        const currentUpdateIntervalId = 3
+
+                        // Since 300 is after 110 + (100 * 2) - 20 = 290, it should return update interval after the next
+                        expect(
+                            await library.appropriateUpdateIntervalId(
+                                time,
+                                lastPriceTimestamp,
+                                frontRunningInterval,
+                                updateInterval,
+                                currentUpdateIntervalId
+                            )
+                        ).to.equal(currentUpdateIntervalId + 2)
+                    })
+                }
+            )
         })
 
         context("Before frontrunning interval", async () => {
