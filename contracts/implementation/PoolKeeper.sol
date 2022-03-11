@@ -13,6 +13,11 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "abdk-libraries-solidity/ABDKMathQuad.sol";
 
 /// @title The manager contract for multiple markets and the pools in them
+/// @dev Currently, this contract estimates the best keeper rewards in a way that is best suited for Ethereum L1.
+/// @dev It assumes an approximate block time of 13 seconds, and an Ethereum-like gas system.
+/// @dev This code was also written with Arbitrum deployment in mind, meaning there exists no `block.basefee`, and no arbitrum gas price oracle.
+/// @dev It has another large drawback in that it is not possible to calculate the cost of the current transaction Arbitrum, given that the cost is largely determined by L1 calldata cost.
+/// @dev Because of this, the reward calculation is an rough "good enough" estimation.
 contract PoolKeeper is IPoolKeeper, Ownable {
     /* Constants */
     uint256 public constant BASE_TIP = 5; // 5% base tip
