@@ -11,7 +11,6 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "./PoolSwapLibrary.sol";
-import "hardhat/console.sol";
 
 /// @title This contract is responsible for handling commitment logic
 contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
@@ -399,6 +398,14 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
     /**
      * @notice Executes every commitment specified in the list
      * @param _commits Array of `TotalCommitment`s
+     * @param longTotalSupply The current running total supply of long pool tokens
+     * @param shortTotalSupply The current running total supply of short pool tokens
+     * @param longBalance The amount of settlement tokens in the long side of the pool
+     * @param shortBalance The amount of settlement tokens in the short side of the pool
+     * @return newLongTotalSupply The total supply of long pool tokens as a result of minting
+     * @return newShortTotalSupply The total supply of short pool tokens as a result of minting
+     * @return newLongBalance The amount of settlement tokens in the long side of the pool as a result of minting and burning
+     * @return newShortBalance The amount of settlement tokens in the short side of the pool as a result of minting and burning
      */
     function executeGivenCommitments(
         TotalCommitment memory _commits,
@@ -507,6 +514,10 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
      * @param updateInterval The number of seconds that must occur between upkeeps
      * @param longBalance The amount of settlement tokens in the long side of the pool
      * @param shortBalance The amount of settlement tokens in the short side of the pool
+     * @return longTotalSupplyChange The amount of long pool tokens that have been added to the supply, passed back to LeveragedPool to mint them.
+     * @return shortTotalSupplyChange The amount of short pool tokens that have been added to the supply, passed back to LeveragedPool to mint them.
+     * @return newLongBalance The updated longBalance
+     * @return newShortBalance The updated longBalance
      */
     function executeCommitments(
         uint256 lastPriceTimestamp,
