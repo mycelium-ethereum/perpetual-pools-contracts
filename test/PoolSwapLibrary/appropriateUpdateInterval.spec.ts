@@ -52,7 +52,7 @@ describe("PoolSwapLibrary - getBalancesAfterFees", () => {
                     const updateInterval = 100
                     const currentUpdateIntervalId = 3
 
-                    // Since 330 is after 110 + (100 * 2) = 310, it should return update interval after the next
+                    // Since 3001 is 10 intervals after 0, so it should return 30 update intervals ahead
                     expect(
                         await library.appropriateUpdateIntervalId(
                             time,
