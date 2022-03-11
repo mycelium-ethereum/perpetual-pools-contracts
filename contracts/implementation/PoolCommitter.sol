@@ -132,7 +132,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         uint256 _burningFee,
         uint256 _changeInterval
     ) external override initializer {
-        require(_factory != address(0), "Factory cannot be 0 address");
+        require(_factory != address(0), "Factory cannot be null");
         require(_autoClaim != address(0), "AutoClaim address cannot be null");
         require(_feeController != address(0), "fee controller cannot be null");
         require(_invariantCheck != address(0), "invariantCheck cannot be null");
