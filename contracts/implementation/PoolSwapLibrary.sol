@@ -287,13 +287,11 @@ library PoolSwapLibrary {
     }
 
     /**
-     * @notice Returns true if the given timestamp is BEFORE the frontRunningInterval starts,
-     *         which is allowed for uncommitment.
-     * @dev If you try to uncommit AFTER the frontRunningInterval, it should revert.
+     * @notice Returns true if the given timestamp is BEFORE the frontRunningInterval starts
      * @param subjectTime The timestamp for which you want to calculate if it was beforeFrontRunningInterval
      * @param lastPriceTimestamp The timestamp of the last price update
      * @param updateInterval The interval between price updates
-     * @param frontRunningInterval The window of time before a price udpate users can not uncommit or have their commit executed from
+     * @param frontRunningInterval The window of time before a price update in which users can have their commit executed from
      */
     function isBeforeFrontRunningInterval(
         uint256 subjectTime,
@@ -433,8 +431,8 @@ library PoolSwapLibrary {
     /**
      * @notice Calculate the number of pool tokens to mint, given some settlement token amount, a price, and a burn amount from other side for instant mint
      * @param price The price of a pool token
-     * @param amount The amount of settlement tokens being used to mint
      * @param oppositePrice The price of the opposite side's pool token
+     * @param amount The amount of settlement tokens being used to mint
      * @param amountBurnedInstantMint The amount of pool tokens that were burnt from the opposite side for an instant mint in this side
      * @return Quantity of pool tokens to mint
      * @dev Throws if price is zero

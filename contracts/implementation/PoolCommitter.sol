@@ -46,7 +46,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
     mapping(address => mapping(uint256 => UserCommitment)) public userCommitments;
     // The last interval ID for which a given user's balance was updated
     mapping(address => uint256) public lastUpdatedIntervalId;
-    // The most recent update interval in which a user committed
+    // An array for all update intervals in which a user committed
     mapping(address => uint256[]) public unAggregatedCommitments;
     // Used to create a dynamic array that is used to copy the new unAggregatedCommitments array into the mapping after updating balance
     uint256[] private storageArrayPlaceHolder;
