@@ -11,6 +11,7 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "./PoolSwapLibrary.sol";
+import "hardhat/console.sol";
 
 /// @title This contract is responsible for handling commitment logic
 contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
@@ -401,105 +402,101 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
      */
     function executeGivenCommitments(
         TotalCommitment memory _commits,
+        uint256 longTotalSupply,
+        uint256 shortTotalSupply,
         uint256 longBalance,
         uint256 shortBalance
-    ) internal returns (uint256, uint256) {
+    )
+        internal
+        returns (
+            uint256,
+            uint256,
+            uint256,
+            uint256
+        )
+    {
         totalPendingMints =
             totalPendingMints -
             totalPoolCommitments[updateIntervalId].longMintAmount -
             totalPoolCommitments[updateIntervalId].shortMintAmount;
 
         BalancesAndSupplies memory balancesAndSupplies = BalancesAndSupplies({
-            shortBalance: shortBalance,
-            longBalance: longBalance,
-            longTotalSupplyBefore: IERC20(tokens[LONG_INDEX]).totalSupply(),
-            shortTotalSupplyBefore: IERC20(tokens[SHORT_INDEX]).totalSupply(),
             newShortBalance: _commits.shortMintAmount,
-            newLongBalance: _commits.longMintAmount
+            newLongBalance: _commits.longMintAmount,
+            longMintPoolTokens: 0,
+            shortMintPoolTokens: 0,
+            longBurnInstantMintAmount: 0,
+            shortBurnInstantMintAmount: 0,
+            totalLongBurn: _commits.longBurnAmount + _commits.longBurnShortMintAmount,
+            totalShortBurn: _commits.shortBurnAmount + _commits.shortBurnLongMintAmount
         });
 
-        balancesAndSupplies.newShortBalance += balancesAndSupplies.shortBalance;
-        balancesAndSupplies.newLongBalance += balancesAndSupplies.longBalance;
+        balancesAndSupplies.newLongBalance += longBalance;
+        balancesAndSupplies.newShortBalance += shortBalance;
 
-        uint256 totalLongBurn = _commits.longBurnAmount + _commits.longBurnShortMintAmount;
-        uint256 totalShortBurn = _commits.shortBurnAmount + _commits.shortBurnLongMintAmount;
         // Update price before values change
         priceHistory[updateIntervalId] = Prices({
-            longPrice: PoolSwapLibrary.getPrice(
-                balancesAndSupplies.longBalance,
-                balancesAndSupplies.longTotalSupplyBefore + totalPendingLongBurns
-            ),
-            shortPrice: PoolSwapLibrary.getPrice(
-                balancesAndSupplies.shortBalance,
-                balancesAndSupplies.shortTotalSupplyBefore + totalPendingShortBurns
-            )
+            longPrice: PoolSwapLibrary.getPrice(longBalance, longTotalSupply + totalPendingLongBurns),
+            shortPrice: PoolSwapLibrary.getPrice(shortBalance, shortTotalSupply + totalPendingShortBurns)
         });
-        totalPendingLongBurns -= totalLongBurn;
-        totalPendingShortBurns -= totalShortBurn;
+        totalPendingLongBurns -= balancesAndSupplies.totalLongBurn;
+        totalPendingShortBurns -= balancesAndSupplies.totalShortBurn;
 
         // Amount of collateral tokens that are generated from the long burn into instant mints
-        uint256 longBurnInstantMintAmount = PoolSwapLibrary.getWithdrawAmountOnBurn(
-            balancesAndSupplies.longTotalSupplyBefore,
+        balancesAndSupplies.longBurnInstantMintAmount = PoolSwapLibrary.getWithdrawAmountOnBurn(
+            longTotalSupply,
             _commits.longBurnShortMintAmount,
-            balancesAndSupplies.longBalance,
-            totalLongBurn
+            longBalance,
+            balancesAndSupplies.totalLongBurn
         );
-        balancesAndSupplies.newShortBalance += longBurnInstantMintAmount;
+        balancesAndSupplies.newShortBalance += balancesAndSupplies.longBurnInstantMintAmount;
         // Amount of collateral tokens that are generated from the short burn into instant mints
-        uint256 shortBurnInstantMintAmount = PoolSwapLibrary.getWithdrawAmountOnBurn(
-            balancesAndSupplies.shortTotalSupplyBefore,
+        balancesAndSupplies.shortBurnInstantMintAmount = PoolSwapLibrary.getWithdrawAmountOnBurn(
+            shortTotalSupply,
             _commits.shortBurnLongMintAmount,
-            balancesAndSupplies.shortBalance,
-            totalShortBurn
+            shortBalance,
+            balancesAndSupplies.totalShortBurn
         );
-        balancesAndSupplies.newLongBalance += shortBurnInstantMintAmount;
+        balancesAndSupplies.newLongBalance += balancesAndSupplies.shortBurnInstantMintAmount;
 
         // Long Mints
-        uint256 longMintAmount = PoolSwapLibrary.getMintAmount(
-            balancesAndSupplies.longTotalSupplyBefore, // long token total supply,
-            _commits.longMintAmount + shortBurnInstantMintAmount, // Add the collateral tokens that will be generated from burning shorts for instant long mint
-            balancesAndSupplies.longBalance, // total quote tokens in the long pull
-            totalLongBurn // total pool tokens commited to be burned
+        balancesAndSupplies.longMintPoolTokens = PoolSwapLibrary.getMintAmount(
+            longTotalSupply, // long token total supply,
+            _commits.longMintAmount + balancesAndSupplies.shortBurnInstantMintAmount, // Add the collateral tokens that will be generated from burning shorts for instant long mint
+            longBalance, // total quote tokens in the long pull
+            balancesAndSupplies.totalLongBurn // total pool tokens commited to be burned
         );
-
-        if (longMintAmount > 0) {
-            ILeveragedPool(leveragedPool).mintTokens(LONG_INDEX, longMintAmount, leveragedPool);
-        }
 
         // Long Burns
         balancesAndSupplies.newLongBalance -= PoolSwapLibrary.getWithdrawAmountOnBurn(
-            balancesAndSupplies.longTotalSupplyBefore,
-            totalLongBurn,
-            balancesAndSupplies.longBalance,
-            totalLongBurn
+            longTotalSupply,
+            balancesAndSupplies.totalLongBurn,
+            longBalance,
+            balancesAndSupplies.totalLongBurn
         );
 
         // Short Mints
-        uint256 shortMintAmount = PoolSwapLibrary.getMintAmount(
-            balancesAndSupplies.shortTotalSupplyBefore, // short token total supply
-            _commits.shortMintAmount + longBurnInstantMintAmount, // Add the collateral tokens that will be generated from burning longs for instant short mint
-            balancesAndSupplies.shortBalance,
-            totalShortBurn
+        balancesAndSupplies.shortMintPoolTokens = PoolSwapLibrary.getMintAmount(
+            shortTotalSupply, // short token total supply
+            _commits.shortMintAmount + balancesAndSupplies.longBurnInstantMintAmount, // Add the collateral tokens that will be generated from burning longs for instant short mint
+            shortBalance,
+            balancesAndSupplies.totalShortBurn
         );
-
-        if (shortMintAmount > 0) {
-            ILeveragedPool(leveragedPool).mintTokens(SHORT_INDEX, shortMintAmount, leveragedPool);
-        }
 
         // Short Burns
         balancesAndSupplies.newShortBalance -= PoolSwapLibrary.getWithdrawAmountOnBurn(
-            balancesAndSupplies.shortTotalSupplyBefore,
-            totalShortBurn,
-            balancesAndSupplies.shortBalance,
-            totalShortBurn
+            shortTotalSupply,
+            balancesAndSupplies.totalShortBurn,
+            shortBalance,
+            balancesAndSupplies.totalShortBurn
         );
 
-        // Update the collateral on each side
-        ILeveragedPool(leveragedPool).setNewPoolBalances(
+        return (
+            longTotalSupply + balancesAndSupplies.longMintPoolTokens,
+            shortTotalSupply + balancesAndSupplies.shortMintPoolTokens,
             balancesAndSupplies.newLongBalance,
             balancesAndSupplies.newShortBalance
         );
-        return (balancesAndSupplies.newLongBalance, balancesAndSupplies.newShortBalance);
     }
 
     /**
@@ -516,7 +513,17 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         uint256 updateInterval,
         uint256 longBalance,
         uint256 shortBalance
-    ) external override onlyPool {
+    )
+        external
+        override
+        onlyPool
+        returns (
+            uint256,
+            uint256,
+            uint256,
+            uint256
+        )
+    {
         uint32 counter = 1;
 
         /*
@@ -544,14 +551,20 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
          * In reality, this should never iterate more than once, since more than one update interval
          * should never be passed without the previous one being upkept.
          */
+        uint256 longTotalSupply = IERC20(tokens[LONG_INDEX]).totalSupply();
+        uint256 shortTotalSupply = IERC20(tokens[SHORT_INDEX]).totalSupply();
+        uint256 longTotalSupplyBefore = longTotalSupply;
+        uint256 shortTotalSupplyBefore = shortTotalSupply;
         uint256 _updateIntervalId;
         while (true) {
             if (block.timestamp >= lastPriceTimestamp + updateInterval * counter) {
                 // Another update interval has passed, so we have to do the nextIntervalCommit as well
                 _updateIntervalId = updateIntervalId;
                 burnFeeHistory[updateIntervalId] = burningFee;
-                (longBalance, shortBalance) = executeGivenCommitments(
+                (longTotalSupply, shortTotalSupply, longBalance, shortBalance) = executeGivenCommitments(
                     totalPoolCommitments[updateIntervalId],
+                    longTotalSupply,
+                    shortTotalSupply,
                     longBalance,
                     shortBalance
                 );
@@ -570,12 +583,16 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             }
         }
 
-        uint256 longTotalSupply = IERC20(tokens[LONG_INDEX]).totalSupply();
-        uint256 shortTotalSupply = IERC20(tokens[SHORT_INDEX]).totalSupply();
-
         updateMintingFee(
             PoolSwapLibrary.getPrice(longBalance, longTotalSupply),
             PoolSwapLibrary.getPrice(shortBalance, shortTotalSupply)
+        );
+
+        return (
+            longTotalSupply - longTotalSupplyBefore,
+            shortTotalSupply - shortTotalSupplyBefore,
+            longBalance,
+            shortBalance
         );
     }
 

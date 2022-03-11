@@ -147,8 +147,22 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
         require(intervalPassed(), "Update interval hasn't passed");
         // perform price change and update pool balances
         executePriceChange(_oldPrice, _newPrice);
-        IPoolCommitter(poolCommitter).executeCommitments(lastPriceTimestamp, updateInterval, longBalance, shortBalance);
+        (
+            uint256 longMintAmount,
+            uint256 shortMintAmount,
+            uint256 newLongBalance,
+            uint256 newShortBalance
+        ) = IPoolCommitter(poolCommitter).executeCommitments(
+                lastPriceTimestamp,
+                updateInterval,
+                longBalance,
+                shortBalance
+            );
         lastPriceTimestamp = block.timestamp;
+        longBalance = newLongBalance;
+        shortBalance = newShortBalance;
+        IPoolToken(tokens[LONG_INDEX]).mint(address(this), longMintAmount);
+        IPoolToken(tokens[SHORT_INDEX]).mint(address(this), shortMintAmount);
     }
 
     /**
@@ -344,6 +358,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
         uint256 amount,
         address minter
     ) external override onlyPoolCommitter checkInvariantsBeforeFunction {
+        // TODO can we delete?
         IPoolToken(tokens[tokenType]).mint(minter, amount);
     }
 
