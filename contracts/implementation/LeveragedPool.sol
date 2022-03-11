@@ -346,23 +346,6 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
     }
 
     /**
-     * @notice Mint tokens to a user
-     * @param tokenType LONG_INDEX (0) or SHORT_INDEX (1) for either minting the long or short  token respectively
-     * @param amount Amount of tokens to mint
-     * @param minter Address of user/minter
-     * @dev Only callable by the associated `PoolCommitter` contract
-     * @dev Only callable when the market is *not* paused
-     */
-    function mintTokens(
-        uint256 tokenType,
-        uint256 amount,
-        address minter
-    ) external override onlyPoolCommitter checkInvariantsBeforeFunction {
-        // TODO can we delete?
-        IPoolToken(tokens[tokenType]).mint(minter, amount);
-    }
-
-    /**
      * @notice Burn tokens by a user
      * @dev Can only be called by & used by the pool committer
      * @param tokenType LONG_INDEX (0) or SHORT_INDEX (1) for either burning the long or short  token respectively
