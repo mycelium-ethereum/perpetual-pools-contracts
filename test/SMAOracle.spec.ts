@@ -79,7 +79,6 @@ describe("SMAOracle", async () => {
             "PoolKeeper",
             {
                 signer: signers[0],
-                libraries: { PoolSwapLibrary: poolSwapLibrary.address },
             }
         )) as PoolKeeper__factory
         poolKeeper = await poolKeeperFactory.deploy(feeReceiver.address)

@@ -333,7 +333,7 @@ library PoolSwapLibrary {
         } else {
             // frontRunningInterval > updateInterval
             // This is the generalised case, where it could be any number of update intervals in the future
-            uint256 factorDifference = ABDKMathQuad.toUInt(divUInt(frontRunningInterval, updateInterval));
+            uint256 factorDifference = frontRunningInterval / updateInterval;
             uint256 timeOfNextAvailableInterval = lastPriceTimestamp + (updateInterval * (factorDifference + 1));
             // frontRunningInterval is factorDifference times larger than updateInterval
             uint256 minimumUpdateIntervalId = currentUpdateIntervalId + factorDifference;
@@ -364,8 +364,7 @@ library PoolSwapLibrary {
         if ((balance == 0) || (tokenSupply + shadowBalance == 0) || (amountIn == 0)) {
             return amountIn;
         }
-        bytes16 numerator = ABDKMathQuad.mul(ABDKMathQuad.fromUInt(balance), ABDKMathQuad.fromUInt(amountIn));
-        return ABDKMathQuad.toUInt(ABDKMathQuad.div(numerator, ABDKMathQuad.fromUInt(tokenSupply + shadowBalance)));
+        return (balance * amountIn) / (tokenSupply + shadowBalance);
     }
 
     /**
@@ -388,11 +387,7 @@ library PoolSwapLibrary {
             return amountIn;
         }
 
-        bytes16 numerator = ABDKMathQuad.mul(
-            ABDKMathQuad.fromUInt(tokenSupply + shadowBalance),
-            ABDKMathQuad.fromUInt(amountIn)
-        );
-        return ABDKMathQuad.toUInt(ABDKMathQuad.div(numerator, ABDKMathQuad.fromUInt(balance)));
+        return ((tokenSupply + shadowBalance) * amountIn) / balance;
     }
 
     /**
