@@ -20,17 +20,11 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
 
     IAutoClaim public autoClaim;
     uint128 public override updateIntervalId = 1;
-    /// ABDKMathQuad-formatted representation of the number one
-    bytes16 public constant one = 0x3fff0000000000000000000000000000;
     // The amount that is extracted from each mint and burn, being left in the pool. Given as the decimal * 10 ^ 18. For example, 60% fee is 0.6 * 10 ^ 18
     bytes16 public mintingFee;
     bytes16 public burningFee;
     // The amount that the `mintingFee` will change each update interval, based on `updateMintingFee`, given as a decimal * 10 ^ 18 (same format as `_mintingFee`)
     bytes16 public changeInterval;
-    // Set max minting fee to 100%. This is a ABDKQuad representation of 1 * 10 ** 18
-    bytes16 public constant MAX_MINTING_FEE = 0x403abc16d674ec800000000000000000;
-    // Set max burning fee to 10%. This is a ABDKQuad representation of 0.1 * 10 ** 18
-    bytes16 public constant MAX_BURNING_FEE = 0x40376345785d8a000000000000000000;
 
     // Index 0 is the LONG token, index 1 is the SHORT token.
     // Fetched from the LeveragedPool when leveragedPool is set
@@ -141,12 +135,10 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         invariantCheck = _invariantCheck;
         mintingFee = PoolSwapLibrary.convertUIntToDecimal(_mintingFee);
         burningFee = PoolSwapLibrary.convertUIntToDecimal(_burningFee);
-        require(mintingFee < MAX_MINTING_FEE, "Minting fee >= 100%");
-        require(burningFee < MAX_BURNING_FEE, "Burning fee >= 10%");
+        require(mintingFee < PoolSwapLibrary.MAX_MINTING_FEE, "Minting fee >= 100%");
+        require(burningFee < PoolSwapLibrary.MAX_BURNING_FEE, "Burning fee >= 10%");
         changeInterval = PoolSwapLibrary.convertUIntToDecimal(_changeInterval);
-        emit ChangeIntervalSet(_changeInterval);
         feeController = _feeController;
-        emit FeeControllerSet(_feeController);
         autoClaim = IAutoClaim(_autoClaim);
         governance = _factoryOwner;
     }
@@ -551,7 +543,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
 
     function updateMintingFee(bytes16 longTokenPrice, bytes16 shortTokenPrice) private {
         bytes16 multiple = PoolSwapLibrary.multiplyBytes(longTokenPrice, shortTokenPrice);
-        if (PoolSwapLibrary.compareDecimals(one, multiple) == -1) {
+        if (PoolSwapLibrary.compareDecimals(PoolSwapLibrary.ONE, multiple) == -1) {
             // longTokenPrice * shortTokenPrice > 1
             if (PoolSwapLibrary.compareDecimals(mintingFee, changeInterval) == -1) {
                 // mintingFee < changeInterval. Prevent underflow by setting mintingFee to lowest possible value (0)
@@ -563,10 +555,10 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             // longTokenPrice * shortTokenPrice <= 1
             mintingFee = PoolSwapLibrary.addBytes(mintingFee, changeInterval);
 
-            if (PoolSwapLibrary.compareDecimals(mintingFee, MAX_MINTING_FEE) == 1) {
+            if (PoolSwapLibrary.compareDecimals(mintingFee, PoolSwapLibrary.MAX_MINTING_FEE) == 1) {
                 // mintingFee is greater than 1 (100%).
                 // We want to cap this at a theoretical max of 100%
-                mintingFee = MAX_MINTING_FEE;
+                mintingFee = PoolSwapLibrary.MAX_MINTING_FEE;
             }
         }
     }
@@ -662,7 +654,6 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
                 update._longBurnFee += _longBurnFee;
                 update._shortBurnFee += _shortBurnFee;
                 delete userCommitments[user][id];
-                delete unAggregatedCommitments[user][i];
             } else {
                 // Clear them now that they have been accounted for in the balance
                 userCommitments[user][id].balanceLongBurnAmount = 0;
@@ -772,19 +763,16 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
 
     /**
      * @notice Sets the quote token address and the address of the associated `LeveragedPool` contract to the provided values
-     * @param _quoteToken Address of the quote token to use
      * @param _leveragedPool Address of the pool to use
      * @dev Only callable by the associated `PoolFactory` contract
      * @dev Throws if either address are null
      * @dev Emits a `QuoteAndPoolChanged` event on success
      */
-    function setQuoteAndPool(address _quoteToken, address _leveragedPool) external override onlyFactory onlyUnpaused {
-        require(_quoteToken != address(0), "Quote token address cannot be 0 address");
+    function setPool(address _leveragedPool) external override onlyFactory {
         require(_leveragedPool != address(0), "Leveraged pool address cannot be 0 address");
 
         leveragedPool = _leveragedPool;
         tokens = ILeveragedPool(leveragedPool).poolTokens();
-        emit QuoteAndPoolChanged(_quoteToken, _leveragedPool);
     }
 
     /**
@@ -795,7 +783,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
      */
     function setBurningFee(uint256 _burningFee) external override onlyFeeController {
         burningFee = PoolSwapLibrary.convertUIntToDecimal(_burningFee);
-        require(burningFee < MAX_BURNING_FEE, "Burning fee >= 10%");
+        require(burningFee < PoolSwapLibrary.MAX_BURNING_FEE, "Burning fee >= 10%");
         emit BurningFeeSet(_burningFee);
     }
 
@@ -807,7 +795,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
      */
     function setMintingFee(uint256 _mintingFee) external override onlyFeeController {
         mintingFee = PoolSwapLibrary.convertUIntToDecimal(_mintingFee);
-        require(mintingFee < MAX_MINTING_FEE, "Minting fee >= 100%");
+        require(mintingFee < PoolSwapLibrary.MAX_MINTING_FEE, "Minting fee >= 100%");
         emit MintingFeeSet(_mintingFee);
     }
 

@@ -83,6 +83,30 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
 
         feeReceiver = _feeReceiver;
 
+        /* initialise base PoolToken template (with dummy values) */
+        pairTokenBase.initialize(address(poolBase), "base", "BASE", 8);
+
+        /* initialise base LeveragedPool template (with dummy values) */
+        ILeveragedPool.Initialization memory dummyInitialization = ILeveragedPool.Initialization({
+            _owner: address(this),
+            _keeper: address(this),
+            _oracleWrapper: address(this),
+            _settlementEthOracle: address(this),
+            _longToken: address(pairTokenBase),
+            _shortToken: address(pairTokenBase),
+            _poolCommitter: address(poolCommitterBase),
+            _invariantCheck: address(this),
+            _poolName: "base",
+            _frontRunningInterval: 0,
+            _updateInterval: 1,
+            _fee: 0,
+            _leverageAmount: 1,
+            _feeAddress: address(this),
+            _secondaryFeeAddress: address(this),
+            _quoteToken: address(this),
+            _secondaryFeeSplitPercent: 0
+        });
+        poolBase.initialize(dummyInitialization);
         /* initialise base PoolCommitter template (with dummy values) */
         poolCommitterBase.initialize(address(this), address(this), address(this), governance, governance, 0, 0, 0);
     }
@@ -96,6 +120,8 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
      * @dev Throws if deployer does not own the oracle wrapper
      * @dev Throws if leverage amount is invalid
      * @dev Throws if decimal precision is too high (i.e., greater than `MAX_DECIMALS`)
+     * @dev The IOracleWrapper declares a `deployer` variable, this is used here to confirm that the pool which uses said oracle wrapper is indeed
+     *      the intended address. This is to prevent a griefing attack in which someone uses the same oracle wrapper with the same parameters *before* the genuine deployer.
      */
     function deployPool(PoolDeployment calldata deploymentParameters) external override returns (address) {
         address _poolKeeper = address(poolKeeper);
@@ -182,7 +208,15 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
         // this also stores the pool address in the committer
         // finalise pool setup
         pool.initialize(initialization);
-        IPoolCommitter(poolCommitterAddress).setQuoteAndPool(deploymentParameters.quoteToken, _pool);
+        IPoolCommitter(poolCommitterAddress).setPool(_pool);
+        emit DeployCommitter(
+            poolCommitterAddress,
+            deploymentParameters.quoteToken,
+            _pool,
+            deploymentParameters.changeInterval,
+            deploymentParameters.feeController
+        );
+
         poolKeeper.newPool(_pool);
         pools[numPools] = _pool;
         // numPools overflowing would require an unrealistic number of markets
