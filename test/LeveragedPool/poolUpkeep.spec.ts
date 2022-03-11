@@ -61,7 +61,6 @@ describe("LeveragedPool - executeAllCommitments", async () => {
         poolCommitter = result.poolCommitter
         const signers = await ethers.getSigners()
         await pool.setKeeper(signers[0].address)
-
         token = result.token
         shortToken = result.shortToken
         longToken = result.longToken
@@ -73,8 +72,6 @@ describe("LeveragedPool - executeAllCommitments", async () => {
         // short mint commit
         await createCommit(poolCommitter, SHORT_MINT, amountCommitted)
 
-        // await shortToken.approve(pool.address, amountMinted)
-        // await longToken.approve(pool.address, await longToken.totalSupply())
         await timeout(updateInterval * 1000)
 
         // No price change so only commits are executed
