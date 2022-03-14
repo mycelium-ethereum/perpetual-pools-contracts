@@ -18,7 +18,8 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
     uint128 public constant LONG_INDEX = 0;
     uint128 public constant SHORT_INDEX = 1;
 
-    uint8 public constant MAX_ITERATIONS = type(uint8).max;
+    // 15 was chosen because it will definitely fit in a block on Arbitrum which can be tricky to ascertain definitive computation cap without trial and error, while it is also a being a reasonable number of upkeeps to get executed in one transaction
+    uint8 public constant MAX_ITERATIONS = 15;
     IAutoClaim public autoClaim;
     uint128 public override updateIntervalId = 1;
     /// ABDKMathQuad-formatted representation of the number one
@@ -507,7 +508,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
     function executeCommitments() external override onlyPool {
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
 
-        uint8 counter = 1;
+        uint4 counter = 1;
         uint256 lastPriceTimestamp = pool.lastPriceTimestamp();
         uint256 updateInterval = pool.updateInterval();
 
@@ -537,7 +538,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
          * should never be passed without the previous one being upkept.
          */
         uint256 _updateIntervalId;
-        uint8 maxIterations = MAX_ITERATIONS; // copied from storage to save gas
+        uint4 maxIterations = MAX_ITERATIONS; // copied from storage to save gas
         while (counter <= maxIterations) {
             if (block.timestamp >= lastPriceTimestamp + updateInterval * counter) {
                 // Another update interval has passed, so we have to do the nextIntervalCommit as well
