@@ -4,31 +4,18 @@ import chaiAsPromised from "chai-as-promised"
 import {
     LeveragedPool,
     TestToken,
-    ERC20,
-    PoolSwapLibrary,
     PoolCommitter,
     AutoClaim,
     PoolKeeper,
 } from "../../types"
 
-import {
-    POOL_CODE,
-    DEFAULT_FEE,
-    LONG_MINT,
-    LONG_BURN,
-    SHORT_MINT,
-} from "../constants"
+import { POOL_CODE, DEFAULT_FEE, LONG_MINT } from "../constants"
 import {
     deployPoolAndTokenContracts,
-    getRandomInt,
     generateRandomAddress,
     createCommit,
-    CommitEventArgs,
     timeout,
-    deployMockPool,
-    getEventArgs,
 } from "../utilities"
-import { BigNumber } from "ethers"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 chai.use(chaiAsPromised)
 const { expect } = chai
@@ -36,7 +23,6 @@ const { expect } = chai
 const amountCommitted = ethers.utils.parseEther("2000")
 const amountMinted = ethers.utils.parseEther("10000")
 const feeAddress = generateRandomAddress()
-const lastPrice = ethers.utils.parseEther(getRandomInt(99999999, 1).toString())
 const updateInterval = 200
 const frontRunningInterval = 100 // seconds
 const fee = DEFAULT_FEE
@@ -51,7 +37,6 @@ describe("AutoClaim - makePaidClaimRequest", () => {
     let signers: SignerWithAddress[]
     let poolKeeper: PoolKeeper
 
-    const commits: CommitEventArgs[] | undefined = []
     beforeEach(async () => {
         const result = await deployPoolAndTokenContracts(
             POOL_CODE,

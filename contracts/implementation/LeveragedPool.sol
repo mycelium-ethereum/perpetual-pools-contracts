@@ -4,8 +4,8 @@ pragma solidity 0.8.7;
 import "../interfaces/ILeveragedPool.sol";
 import "../interfaces/IPoolCommitter.sol";
 import "../interfaces/IPoolToken.sol";
-import "../interfaces/IPausable.sol";
 import "../interfaces/IInvariantCheck.sol";
+import "../interfaces/IPausable.sol";
 import "../interfaces/ITwoStepGovernance.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -26,11 +26,12 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
     uint256 public constant SHORT_INDEX = 1;
 
     address public override governance;
+    address public invariantCheck;
     uint32 public override frontRunningInterval;
     uint32 public override updateInterval;
     bytes16 public fee;
-    bytes16 public override leverageAmount;
 
+    bytes16 public override leverageAmount;
     address public override provisionalGovernance;
     bool public override paused;
     bool public override governanceTransferInProgress;
@@ -42,7 +43,6 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
     address public override poolCommitter;
     address public override oracleWrapper;
     address public override settlementEthOracle;
-    IInvariantCheck public invariantCheck;
     address[2] public tokens;
     uint256 public override lastPriceTimestamp; // The last time the pool was upkept
 
@@ -50,29 +50,8 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
 
     // #### Modifiers
 
-    /**
-     * @dev Check invariants before function body only. This is used in functions where the state of the pool is updated after exiting PoolCommitter (i.e. executeCommitments)
-     */
-    modifier checkInvariantsBeforeFunction() {
-        invariantCheck.checkInvariants(address(this));
-        require(!paused, "Pool is paused");
-        _;
-    }
-
-    modifier checkInvariantsAfterFunction() {
-        require(!paused, "Pool is paused");
-        _;
-        invariantCheck.checkInvariants(address(this));
-        require(!paused, "Pool is paused");
-    }
-
     modifier onlyKeeper() {
         require(msg.sender == keeper, "msg.sender not keeper");
-        _;
-    }
-
-    modifier onlyInvariantCheckContract() {
-        require(msg.sender == address(invariantCheck), "msg.sender not invariantCheck");
         _;
     }
 
@@ -83,6 +62,16 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
 
     modifier onlyGov() {
         require(msg.sender == governance, "msg.sender not governance");
+        _;
+    }
+
+    modifier onlyInvariantCheckContract() {
+        require(msg.sender == invariantCheck, "msg.sender not invariantCheck");
+        _;
+    }
+
+    modifier onlyUnpaused() {
+        require(!paused, "Pool is paused");
         _;
     }
 
@@ -98,7 +87,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
         require(initialization._longToken != address(0), "Long token cannot be 0 address");
         require(initialization._shortToken != address(0), "Short token cannot be 0 address");
         require(initialization._poolCommitter != address(0), "PoolCommitter cannot be 0 address");
-        require(initialization._invariantCheckContract != address(0), "InvariantCheck cannot be 0 address");
+        require(initialization._invariantCheck != address(0), "InvariantCheck cannot be 0 address");
         require(initialization._fee < PoolSwapLibrary.WAD_PRECISION, "Fee >= 100%");
         require(initialization._secondaryFeeSplitPercent <= 100, "Secondary fee split cannot exceed 100%");
         require(initialization._updateInterval != 0, "Update interval cannot be 0");
@@ -111,6 +100,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
         oracleWrapper = initialization._oracleWrapper;
         settlementEthOracle = initialization._settlementEthOracle;
         quoteToken = initialization._quoteToken;
+        invariantCheck = initialization._invariantCheck;
         frontRunningInterval = initialization._frontRunningInterval;
         updateInterval = initialization._updateInterval;
         fee = PoolSwapLibrary.convertUIntToDecimal(initialization._fee);
@@ -123,7 +113,6 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
         tokens[LONG_INDEX] = initialization._longToken;
         tokens[SHORT_INDEX] = initialization._shortToken;
         poolCommitter = initialization._poolCommitter;
-        invariantCheck = IInvariantCheck(initialization._invariantCheckContract);
         emit PoolInitialized(
             initialization._longToken,
             initialization._shortToken,
@@ -141,7 +130,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
      * @dev Only callable by the associated `PoolKeeper` contract
      * @dev Only callable if the market is *not* paused
      */
-    function poolUpkeep(int256 _oldPrice, int256 _newPrice) external override onlyKeeper checkInvariantsAfterFunction {
+    function poolUpkeep(int256 _oldPrice, int256 _newPrice) external override onlyKeeper onlyUnpaused {
         require(intervalPassed(), "Update interval hasn't passed");
         // perform price change and update pool balances
         executePriceChange(_oldPrice, _newPrice);
@@ -180,7 +169,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
         external
         override
         onlyKeeper
-        checkInvariantsAfterFunction
+        onlyUnpaused
         returns (bool)
     {
         uint256 _shortBalance = shortBalance;
@@ -213,12 +202,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
      * @dev Only callable by the associated `PoolCommitter` contract
      * @dev Only callable when the market is *not* paused
      */
-    function quoteTokenTransfer(address to, uint256 amount)
-        external
-        override
-        onlyPoolCommitter
-        checkInvariantsBeforeFunction
-    {
+    function quoteTokenTransfer(address to, uint256 amount) external override onlyPoolCommitter onlyUnpaused {
         IERC20(quoteToken).safeTransfer(to, amount);
     }
 
@@ -234,7 +218,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
         bool isLongToken,
         address to,
         uint256 amount
-    ) external override onlyPoolCommitter checkInvariantsBeforeFunction {
+    ) external override onlyPoolCommitter onlyUnpaused {
         if (isLongToken) {
             IERC20(tokens[LONG_INDEX]).safeTransfer(to, amount);
         } else {
@@ -254,7 +238,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
         address from,
         address to,
         uint256 amount
-    ) external override onlyPoolCommitter {
+    ) external override onlyPoolCommitter onlyUnpaused {
         IERC20(quoteToken).safeTransferFrom(from, to, amount);
     }
 
@@ -268,7 +252,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
      * @dev Emits `PoolRebalance` if execution succeeds
      * @dev Emits `PriceChangeError` if execution does not take place
      */
-    function executePriceChange(int256 _oldPrice, int256 _newPrice) internal checkInvariantsBeforeFunction {
+    function executePriceChange(int256 _oldPrice, int256 _newPrice) internal {
         // prevent a division by 0 in computing the price change
         // prevent negative pricing
         if (_oldPrice <= 0 || _newPrice <= 0) {
@@ -341,7 +325,12 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
      * @dev Only callable when the market is *not* paused
      * @dev Emits a `PoolBalancesChanged` event on success
      */
-    function setNewPoolBalances(uint256 _longBalance, uint256 _shortBalance) external override onlyPoolCommitter {
+    function setNewPoolBalances(uint256 _longBalance, uint256 _shortBalance)
+        external
+        override
+        onlyPoolCommitter
+        onlyUnpaused
+    {
         longBalance = _longBalance;
         shortBalance = _shortBalance;
         emit PoolBalancesChanged(_longBalance, _shortBalance);
@@ -360,7 +349,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
         uint256 tokenType,
         uint256 amount,
         address burner
-    ) external override onlyPoolCommitter checkInvariantsAfterFunction {
+    ) external override onlyPoolCommitter onlyUnpaused {
         IPoolToken(tokens[tokenType]).burn(burner, amount);
     }
 
@@ -382,7 +371,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
      * @dev Only callable when the market is *not* paused
      * @dev Emits `FeeAddressUpdated` event on success
      */
-    function updateFeeAddress(address account) external override onlyGov {
+    function updateFeeAddress(address account) external override onlyGov onlyUnpaused {
         require(account != address(0), "Account cannot be 0 address");
         address oldFeeAddress = feeAddress;
         feeAddress = account;

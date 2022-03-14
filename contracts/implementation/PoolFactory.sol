@@ -29,8 +29,6 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
     address public override governance;
     bool public override governanceTransferInProgress;
     address public override provisionalGovernance;
-    // Contract address to receive protocol fees
-    address public feeReceiver;
     // Default fee, annualised; Fee value as a decimal multiplied by 10^18. For example, 50% is represented as 0.5 * 10^18
     uint256 public fee;
     // Percent of fees that go to secondary fee address if applicable.
@@ -44,6 +42,8 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
     uint32 constant DAYS_PER_LEAP_YEAR = 365.2425 days;
     // Default max leverage of 10
     uint16 public maxLeverage = 10;
+    // Contract address to receive protocol fees
+    address public feeReceiver;
 
     /**
      * @notice Format: Pool counter => pool address
@@ -95,7 +95,7 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
             _longToken: address(pairTokenBase),
             _shortToken: address(pairTokenBase),
             _poolCommitter: address(poolCommitterBase),
-            _invariantCheckContract: address(this),
+            _invariantCheck: address(this),
             _poolName: "base",
             _frontRunningInterval: 0,
             _updateInterval: 1,
@@ -158,10 +158,10 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
         address poolCommitterAddress = address(poolCommitter);
         poolCommitter.initialize(
             address(this),
-            invariantCheck,
             autoClaim,
             governance,
             deploymentParameters.feeController,
+            invariantCheck,
             deploymentParameters.mintingFee,
             deploymentParameters.burningFee,
             deploymentParameters.changeInterval
@@ -190,7 +190,7 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
             _longToken: deployPairToken(_pool, leverage, deploymentParameters, "L-"),
             _shortToken: deployPairToken(_pool, leverage, deploymentParameters, "S-"),
             _poolCommitter: poolCommitterAddress,
-            _invariantCheckContract: invariantCheck,
+            _invariantCheck: invariantCheck,
             _poolName: string(abi.encodePacked(leverage, "-", deploymentParameters.poolName)),
             _frontRunningInterval: deploymentParameters.frontRunningInterval,
             _updateInterval: deploymentParameters.updateInterval,
@@ -270,18 +270,6 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
     }
 
     /**
-     * @notice Sets the address of the associated `InvariantCheck` contract
-     * @param _invariantCheck Address of the `InvariantCheck`
-     * @dev Throws if provided address is null
-     * @dev Only callable by the owner
-     */
-    function setInvariantCheck(address _invariantCheck) external override onlyGov {
-        require(_invariantCheck != address(0), "address cannot be null");
-        invariantCheck = _invariantCheck;
-        emit InvariantCheckChanged(_invariantCheck);
-    }
-
-    /**
      * @notice Sets the address of the associated `AutoClaim` contract
      * @param _autoClaim Address of the `AutoClaim`
      * @dev Throws if provided address is null
@@ -291,6 +279,18 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
         require(_autoClaim != address(0), "address cannot be null");
         autoClaim = _autoClaim;
         emit AutoClaimChanged(_autoClaim);
+    }
+
+    /**
+     * @notice Sets the address of the associated `InvariantCheck` contract
+     * @param _invariantCheck Address of the `InvariantCheck`
+     * @dev Throws if provided address is null
+     * @dev Only callable by the owner
+     */
+    function setInvariantCheck(address _invariantCheck) external override onlyGov {
+        require(_invariantCheck != address(0), "address cannot be null");
+        invariantCheck = _invariantCheck;
+        emit InvariantCheckChanged(_invariantCheck);
     }
 
     /**

@@ -55,8 +55,8 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
     address public governance;
     address public feeController;
     address public leveragedPool;
+    address public invariantCheck;
     bool public override paused;
-    IInvariantCheck public invariantCheck;
 
     modifier onlyFeeController() {
         require(msg.sender == feeController, "msg.sender not fee controller");
@@ -70,27 +70,6 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
 
     modifier onlyGov() {
         require(msg.sender == governance, "msg.sender not governance");
-        _;
-    }
-
-    /**
-     * @dev Check invariants before function body only. This is used in functions where the state of the pool is updated after exiting PoolCommitter (i.e. executeCommitments)
-     */
-    modifier checkInvariantsBeforeFunction() {
-        invariantCheck.checkInvariants(leveragedPool);
-        require(!paused, "Pool is paused");
-        _;
-    }
-
-    modifier checkInvariantsAfterFunction() {
-        require(!paused, "Pool is paused");
-        _;
-        invariantCheck.checkInvariants(leveragedPool);
-        require(!paused, "Pool is paused");
-    }
-
-    modifier onlyInvariantCheckContract() {
-        require(msg.sender == address(invariantCheck), "msg.sender not invariantCheck");
         _;
     }
 
@@ -110,6 +89,11 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         _;
     }
 
+    modifier onlyInvariantCheckContract() {
+        require(msg.sender == invariantCheck, "msg.sender not invariantCheck");
+        _;
+    }
+
     modifier onlyAutoClaimOrCommitter(address user) {
         require(msg.sender == user || msg.sender == address(autoClaim), "msg.sender not committer or AutoClaim");
         _;
@@ -118,15 +102,14 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
     /**
      * @notice Initialises the contract
      * @param _factory Address of the associated `PoolFactory` contract
-     * @param _invariantCheckContract Address of the associated `InvariantCheck` contract
      * @param _autoClaim Address of the associated `AutoClaim` contract
      * @param _factoryOwner Address of the owner of the `PoolFactory`
+     * @param _invariantCheck Address of the `InvariantCheck` contract
      * @param _mintingFee The percentage that is taken from each mint, given as a decimal * 10 ^ 18
      * @param _burningFee The percentage that is taken from each burn, given as a decimal * 10 ^ 18
      * @param _changeInterval The amount that the `mintingFee` will change each update interval, based on `updateMintingFee`, given as a decimal * 10 ^ 18 (same format as `_mintingFee`)
      * @dev Throws if factory contract address is null
      * @dev Throws if autoClaim contract address is null
-     * @dev Throws if invariantCheck contract address is null
      * @dev Throws if autoclaim contract address is null
      * @dev Only callable by the associated initializer address
      * @dev Throws if minting fee is over 100%
@@ -135,20 +118,21 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
      */
     function initialize(
         address _factory,
-        address _invariantCheckContract,
         address _autoClaim,
         address _factoryOwner,
         address _feeController,
+        address _invariantCheck,
         uint256 _mintingFee,
         uint256 _burningFee,
         uint256 _changeInterval
     ) external override initializer {
-        require(_factory != address(0), "Factory address cannot be 0 address");
-        require(_invariantCheckContract != address(0), "InvariantCheck address cannot be 0 address");
+        require(_factory != address(0), "Factory cannot be null");
         require(_autoClaim != address(0), "AutoClaim address cannot be null");
         require(_feeController != address(0), "fee controller cannot be null");
+        require(_invariantCheck != address(0), "invariantCheck cannot be null");
         updateIntervalId = 1;
         factory = _factory;
+        invariantCheck = _invariantCheck;
         mintingFee = PoolSwapLibrary.convertUIntToDecimal(_mintingFee);
         burningFee = PoolSwapLibrary.convertUIntToDecimal(_burningFee);
         require(mintingFee < PoolSwapLibrary.MAX_MINTING_FEE, "Minting fee >= 100%");
@@ -156,7 +140,6 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         changeInterval = PoolSwapLibrary.convertUIntToDecimal(_changeInterval);
         feeController = _feeController;
         autoClaim = IAutoClaim(_autoClaim);
-        invariantCheck = IInvariantCheck(_invariantCheckContract);
         governance = _factoryOwner;
     }
 
@@ -276,7 +259,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         uint256 amount,
         bool fromAggregateBalance,
         bool payForClaim
-    ) external payable override checkInvariantsAfterFunction {
+    ) external payable override {
         require(amount > 0, "Amount must not be zero");
         updateAggregateBalance(msg.sender);
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
@@ -344,7 +327,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
      * @dev Updates aggregate user balances
      * @dev Emits a `Claim` event on success
      */
-    function claim(address user) external override checkInvariantsAfterFunction onlyAutoClaimOrCommitter(user) {
+    function claim(address user) external override onlyAutoClaimOrCommitter(user) {
         updateAggregateBalance(user);
         Balance memory balance = userAggregateBalance[user];
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
@@ -666,7 +649,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
      * @dev Updates the `userAggregateBalance` mapping by applying `BalanceUpdate`s derived from iteration over the entirety of unaggregated commitments associated with the given user
      * @dev Emits an `AggregateBalanceUpdated` event upon successful termination
      */
-    function updateAggregateBalance(address user) public override checkInvariantsAfterFunction {
+    function updateAggregateBalance(address user) public override {
         Balance storage balance = userAggregateBalance[user];
 
         BalanceUpdate memory update = BalanceUpdate({
