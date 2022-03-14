@@ -76,7 +76,7 @@ describe("LeveragedPool - executeCommitment: Short Mint", () => {
                 (await getCurrentTotalCommit(poolCommitter)).shortMintAmount
             ).to.eq(0)
         })
-        it("should mint short pair tokens", async () => {
+        it("should mint short tokens", async () => {
             expect(await shortToken.balanceOf(signers[0].address)).to.eq(0)
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(9, 10)
