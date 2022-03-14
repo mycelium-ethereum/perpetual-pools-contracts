@@ -406,6 +406,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
 
         uint256 totalLongBurnPoolTokens = _commits.longBurnPoolTokens + _commits.longBurnShortMintPoolTokens;
         uint256 totalShortBurnPoolTokens = _commits.shortBurnPoolTokens + _commits.shortBurnLongMintPoolTokens;
+
         // Update price before values change
         priceHistory[updateIntervalId] = Prices({
             longPrice: PoolSwapLibrary.getPrice(
@@ -434,15 +435,15 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         );
 
         // Long Mints
-        uint256 longMintSettlement = PoolSwapLibrary.getMintAmount(
+        uint256 longMintPoolTokens = PoolSwapLibrary.getMintAmount(
             balancesAndSupplies.longTotalSupplyBefore, // long token total supply,
             _commits.longMintSettlement + shortBurnInstantMintSettlement, // Add the settlement tokens that will be generated from burning shorts for instant long mint
             balancesAndSupplies.longBalance, // total quote tokens in the long pull
             pendingLongBurnPoolTokens // total pool tokens commited to be burned
         );
 
-        if (longMintSettlement > 0) {
-            pool.mintTokens(LONG_INDEX, longMintSettlement, leveragedPool);
+        if (longMintPoolTokens > 0) {
+            pool.mintTokens(LONG_INDEX, longMintPoolTokens, leveragedPool);
         }
 
         // Long Burns
@@ -454,15 +455,15 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         );
 
         // Short Mints
-        uint256 shortMintSettlement = PoolSwapLibrary.getMintAmount(
+        uint256 shortMintPoolTokens = PoolSwapLibrary.getMintAmount(
             balancesAndSupplies.shortTotalSupplyBefore, // short token total supply
             _commits.shortMintSettlement + longBurnInstantMintSettlement, // Add the settlement tokens that will be generated from burning longs for instant short mint
             balancesAndSupplies.shortBalance,
             pendingShortBurnPoolTokens
         );
 
-        if (shortMintSettlement > 0) {
-            pool.mintTokens(SHORT_INDEX, shortMintSettlement, leveragedPool);
+        if (shortMintPoolTokens > 0) {
+            pool.mintTokens(SHORT_INDEX, shortMintPoolTokens, leveragedPool);
         }
 
         // Short Burns
