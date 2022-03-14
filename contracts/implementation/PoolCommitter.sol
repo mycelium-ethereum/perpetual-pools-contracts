@@ -558,20 +558,19 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         uint256 shortTotalSupplyBefore = shortTotalSupply;
         uint256 _updateIntervalId;
         while (true) {
-            _updateIntervalId = updateIntervalId;
             if (block.timestamp >= lastPriceTimestamp + updateInterval * counter) {
                 // Another update interval has passed, so we have to do the nextIntervalCommit as well
                 _updateIntervalId = updateIntervalId;
-                burnFeeHistory[updateIntervalId] = burningFee;
+                burnFeeHistory[_updateIntervalId] = burningFee;
                 (longTotalSupply, shortTotalSupply, longBalance, shortBalance) = executeGivenCommitments(
-                    totalPoolCommitments[updateIntervalId],
+                    totalPoolCommitments[_updateIntervalId],
                     longTotalSupply,
                     shortTotalSupply,
                     longBalance,
                     shortBalance
                 );
-                emit ExecutedCommitsForInterval(updateIntervalId, burningFee);
-                delete totalPoolCommitments[updateIntervalId];
+                emit ExecutedCommitsForInterval(_updateIntervalId, burningFee);
+                delete totalPoolCommitments[_updateIntervalId];
 
                 // counter overflowing would require an unrealistic number of update intervals
                 updateIntervalId += 1;
