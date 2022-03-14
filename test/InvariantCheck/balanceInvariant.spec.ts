@@ -84,7 +84,6 @@ describe("InvariantCheck - balanceInvariant", () => {
                 _feeAddress: feeAddress,
                 _secondaryFeeAddress: feeAddress,
                 _quoteToken: quoteToken,
-                _invariantCheck: invariantCheck.address,
                 _secondaryFeeSplitPercent: 10,
             })
 

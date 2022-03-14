@@ -92,11 +92,11 @@ describe("PoolCommitter - Burn commit with burn fee", () => {
 
         it("stores the amount committed", async () => {
             expect(
-                (await getCurrentTotalCommit(poolCommitter)).shortBurnAmount
+                (await getCurrentTotalCommit(poolCommitter)).shortBurnPoolTokens
             ).to.equal(amountCommitted)
             expect(
                 (await getCurrentUserCommit(signers[0].address, poolCommitter))
-                    .shortBurnAmount
+                    .shortBurnPoolTokens
             ).to.equal(amountCommitted)
         })
 
@@ -214,11 +214,11 @@ describe("PoolCommitter - Burn commit with burn fee", () => {
 
         it("stores the amount committed", async () => {
             expect(
-                (await getCurrentTotalCommit(poolCommitter)).longBurnAmount
+                (await getCurrentTotalCommit(poolCommitter)).longBurnPoolTokens
             ).to.equal(amountCommitted)
             expect(
                 (await getCurrentUserCommit(signers[0].address, poolCommitter))
-                    .longBurnAmount
+                    .longBurnPoolTokens
             ).to.equal(amountCommitted)
         })
 
