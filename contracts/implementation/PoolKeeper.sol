@@ -55,9 +55,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @dev Only callable by the associated `PoolFactory` contract
      */
     function newPool(address _poolAddress) external override onlyFactory {
-        try IOracleWrapper(ILeveragedPool(_poolAddress).oracleWrapper()).poll() {} catch Error(string memory reason) {
-            revert(reason);
-        }
+        IOracleWrapper(ILeveragedPool(_poolAddress).oracleWrapper()).poll();
         int256 firstPrice = ILeveragedPool(_poolAddress).getOraclePrice();
         require(firstPrice > 0, "First price is non-positive");
         emit PoolAdded(_poolAddress, firstPrice);
