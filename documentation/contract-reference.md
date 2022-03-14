@@ -292,12 +292,6 @@ function commit(
 ```  
 Used to create a commitment to add or remove funds from one of the pool's pairs.
 
-#### uncommit
-```
-function uncommit(uint128 commitID) external;
-```  
-Used to withdraw a commitment. This cannot be used to withdraw a commit that the user doesn't own.
-
 #### executeCommitment
 ```
 function executeCommitment(uint128[] memory _commitIDs) external;

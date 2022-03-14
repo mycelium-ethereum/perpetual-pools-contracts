@@ -81,7 +81,7 @@ describe("LeveragedPool - executeAllCommitments", () => {
             const updateIntervalId = await poolCommitter.updateIntervalId()
             expect(
                 (await poolCommitter.totalPoolCommitments(updateIntervalId))
-                    .longMintAmount
+                    .longMintSettlement
             ).to.eq(amountCommitted)
             await pool.poolUpkeep(lastPrice, lastPrice)
 
