@@ -180,12 +180,6 @@ interface ILeveragedPool {
 
     function updateSecondaryFeeAddress(address account) external;
 
-    function mintTokens(
-        uint256 tokenType,
-        uint256 amount,
-        address burner
-    ) external;
-
     function burnTokens(
         uint256 tokenType,
         uint256 amount,

@@ -80,6 +80,7 @@ describe("InvariantCheck - balanceInvariant", () => {
                 _frontRunningInterval: frontRunningInterval,
                 _updateInterval: updateInterval,
                 _fee: fee,
+                _invariantCheck: invariantCheck.address,
                 _leverageAmount: leverage,
                 _feeAddress: feeAddress,
                 _secondaryFeeAddress: feeAddress,

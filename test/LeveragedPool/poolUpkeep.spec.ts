@@ -24,7 +24,7 @@ import {
     CommitEventArgs,
     timeout,
 } from "../utilities"
-import { BigNumber } from "ethers"
+import { Bytes, BigNumber } from "ethers"
 chai.use(chaiAsPromised)
 const { expect } = chai
 
@@ -58,7 +58,8 @@ describe("LeveragedPool - executeAllCommitments", async () => {
         pool = result.pool
         library = result.library
         poolCommitter = result.poolCommitter
-
+        const signers = await ethers.getSigners()
+        await pool.setKeeper(signers[0].address)
         token = result.token
         shortToken = result.shortToken
         longToken = result.longToken
@@ -70,11 +71,7 @@ describe("LeveragedPool - executeAllCommitments", async () => {
         // short mint commit
         await createCommit(poolCommitter, SHORT_MINT, amountCommitted)
 
-        await shortToken.approve(pool.address, amountMinted)
-        await longToken.approve(pool.address, await longToken.totalSupply())
         await timeout(updateInterval * 1000)
-        const signers = await ethers.getSigners()
-        await pool.setKeeper(signers[0].address)
 
         // No price change so only commits are executed
         await pool.poolUpkeep(lastPrice, lastPrice)

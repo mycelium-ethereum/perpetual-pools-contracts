@@ -134,8 +134,22 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
         require(intervalPassed(), "Update interval hasn't passed");
         // perform price change and update pool balances
         executePriceChange(_oldPrice, _newPrice);
-        IPoolCommitter(poolCommitter).executeCommitments();
+        (
+            uint256 longMintAmount,
+            uint256 shortMintAmount,
+            uint256 newLongBalance,
+            uint256 newShortBalance
+        ) = IPoolCommitter(poolCommitter).executeCommitments(
+                lastPriceTimestamp,
+                updateInterval,
+                longBalance,
+                shortBalance
+            );
         lastPriceTimestamp = block.timestamp;
+        longBalance = newLongBalance;
+        shortBalance = newShortBalance;
+        IPoolToken(tokens[LONG_INDEX]).mint(address(this), longMintAmount);
+        IPoolToken(tokens[SHORT_INDEX]).mint(address(this), shortMintAmount);
     }
 
     /**
@@ -157,7 +171,7 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
         uint256 _shortBalance = shortBalance;
         uint256 _longBalance = longBalance;
 
-        // If the rewards are greater than or equal to the balances of the pool, the keeper does not get paid
+        // If the rewards are greater than the balances of the pool, the keeper does not get paid
         if (amount > _shortBalance + _longBalance) {
             return false;
         }
@@ -316,22 +330,6 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
         longBalance = _longBalance;
         shortBalance = _shortBalance;
         emit PoolBalancesChanged(_longBalance, _shortBalance);
-    }
-
-    /**
-     * @notice Mint tokens to a user
-     * @param tokenType LONG_INDEX (0) or SHORT_INDEX (1) for either minting the long or short  token respectively
-     * @param amount Amount of tokens to mint
-     * @param minter Address of user/minter
-     * @dev Only callable by the associated `PoolCommitter` contract
-     * @dev Only callable when the market is *not* paused
-     */
-    function mintTokens(
-        uint256 tokenType,
-        uint256 amount,
-        address minter
-    ) external override onlyPoolCommitter onlyUnpaused {
-        IPoolToken(tokens[tokenType]).mint(minter, amount);
     }
 
     /**
