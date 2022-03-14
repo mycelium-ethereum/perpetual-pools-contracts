@@ -124,11 +124,11 @@ describe("PoolCommitter - Mint commit with mint fee", () => {
 
         it("stores the amount committed minus the minting fee", async () => {
             expect(
-                (await getCurrentTotalCommit(poolCommitter)).shortMintAmount
+                (await getCurrentTotalCommit(poolCommitter)).shortMintSettlement
             ).to.equal(amountCommitted.sub(feeTaken))
             expect(
                 (await getCurrentUserCommit(signers[0].address, poolCommitter))
-                    .shortMintAmount
+                    .shortMintSettlement
             ).to.equal(amountCommitted.sub(feeTaken))
         })
 
@@ -193,11 +193,11 @@ describe("PoolCommitter - Mint commit with mint fee", () => {
 
         it("stores the amount committed minus the minting fee", async () => {
             expect(
-                (await getCurrentTotalCommit(poolCommitter)).longMintAmount
+                (await getCurrentTotalCommit(poolCommitter)).longMintSettlement
             ).to.equal(amountCommitted.sub(feeTaken))
             expect(
                 (await getCurrentUserCommit(signers[0].address, poolCommitter))
-                    .longMintAmount
+                    .longMintSettlement
             ).to.equal(amountCommitted.sub(feeTaken))
         })
 

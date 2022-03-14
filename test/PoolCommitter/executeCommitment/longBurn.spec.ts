@@ -98,14 +98,14 @@ describe("LeveragedPool - executeCommitment: Long Burn", () => {
         })
         it("should reduce the shadow long burn pool balance", async () => {
             expect(
-                (await getCurrentTotalCommit(poolCommitter)).longBurnAmount
+                (await getCurrentTotalCommit(poolCommitter)).longBurnPoolTokens
             ).to.equal(amountCommitted)
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(9, 9)
             expect(
                 await (
                     await getCurrentTotalCommit(poolCommitter)
-                ).longBurnAmount
+                ).longBurnPoolTokens
             ).to.eq(0)
         })
         it("should transfer quote tokens to the commit owner", async () => {
