@@ -20,17 +20,11 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
 
     IAutoClaim public autoClaim;
     uint128 public override updateIntervalId = 1;
-    /// ABDKMathQuad-formatted representation of the number one
-    bytes16 public constant one = 0x3fff0000000000000000000000000000;
     // The amount that is extracted from each mint and burn, being left in the pool. Given as the decimal * 10 ^ 18. For example, 60% fee is 0.6 * 10 ^ 18
     bytes16 public mintingFee;
     bytes16 public burningFee;
     // The amount that the `mintingFee` will change each update interval, based on `updateMintingFee`, given as a decimal * 10 ^ 18 (same format as `_mintingFee`)
     bytes16 public changeInterval;
-    // Set max minting fee to 100%. This is a ABDKQuad representation of 1 * 10 ** 18
-    bytes16 public constant MAX_MINTING_FEE = 0x403abc16d674ec800000000000000000;
-    // Set max burning fee to 10%. This is a ABDKQuad representation of 0.1 * 10 ** 18
-    bytes16 public constant MAX_BURNING_FEE = 0x40376345785d8a000000000000000000;
 
     // Index 0 is the LONG token, index 1 is the SHORT token.
     // Fetched from the LeveragedPool when leveragedPool is set
@@ -40,19 +34,19 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
     mapping(uint256 => bytes16) public burnFeeHistory; // updateIntervalId => burn fee. We need to store this historically because people can claim at any time after the update interval, but we want them to pay the fee from the update interval in which they committed.
     mapping(address => Balance) public userAggregateBalance;
 
-    // The total amount of collateral that has been committed to mints that are not yet executed
-    uint256 public override totalPendingMints;
+    // The total amount of settlement that has been committed to mints that are not yet executed
+    uint256 public override pendingMintSettlementAmount;
     // The total amount of short pool tokens that have been burnt that are not yet executed on
-    uint256 public override totalPendingShortBurns;
+    uint256 public override pendingShortBurnPoolTokens;
     // The total amount of long pool tokens that have been burnt that are not yet executed on
-    uint256 public override totalPendingLongBurns;
+    uint256 public override pendingLongBurnPoolTokens;
     // Update interval ID => TotalCommitment
     mapping(uint256 => TotalCommitment) public totalPoolCommitments;
     // Address => Update interval ID => UserCommitment
     mapping(address => mapping(uint256 => UserCommitment)) public userCommitments;
     // The last interval ID for which a given user's balance was updated
     mapping(address => uint256) public lastUpdatedIntervalId;
-    // The most recent update interval in which a user committed
+    // An array for all update intervals in which a user committed
     mapping(address => uint256[]) public unAggregatedCommitments;
     // Used to create a dynamic array that is used to copy the new unAggregatedCommitments array into the mapping after updating balance
     uint256[] private storageArrayPlaceHolder;
@@ -61,7 +55,6 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
     address public governance;
     address public feeController;
     address public leveragedPool;
-    address public invariantCheckContract;
     bool public override paused;
     IInvariantCheck public invariantCheck;
 
@@ -97,7 +90,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
     }
 
     modifier onlyInvariantCheckContract() {
-        require(msg.sender == invariantCheckContract, "msg.sender not invariantCheckContract");
+        require(msg.sender == address(invariantCheck), "msg.sender not invariantCheck");
         _;
     }
 
@@ -158,14 +151,11 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         factory = _factory;
         mintingFee = PoolSwapLibrary.convertUIntToDecimal(_mintingFee);
         burningFee = PoolSwapLibrary.convertUIntToDecimal(_burningFee);
-        require(mintingFee < MAX_MINTING_FEE, "Minting fee >= 100%");
-        require(burningFee < MAX_BURNING_FEE, "Burning fee >= 10%");
+        require(mintingFee < PoolSwapLibrary.MAX_MINTING_FEE, "Minting fee >= 100%");
+        require(burningFee < PoolSwapLibrary.MAX_BURNING_FEE, "Burning fee >= 10%");
         changeInterval = PoolSwapLibrary.convertUIntToDecimal(_changeInterval);
-        emit ChangeIntervalSet(_changeInterval);
         feeController = _feeController;
-        emit FeeControllerSet(_feeController);
         autoClaim = IAutoClaim(_autoClaim);
-        invariantCheckContract = _invariantCheckContract;
         invariantCheck = IInvariantCheck(_invariantCheckContract);
         governance = _factoryOwner;
     }
@@ -198,26 +188,26 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
                 PoolSwapLibrary.convertDecimalToUInt(PoolSwapLibrary.multiplyDecimalByUInt(mintingFee, amount)) /
                 PoolSwapLibrary.WAD_PRECISION;
             amount = amount - feeAmount;
-            totalPendingMints += amount;
+            pendingMintSettlementAmount += amount;
         }
 
         if (commitType == CommitType.LongMint) {
             (uint256 shortBalance, uint256 longBalance) = pool.balances();
-            userCommit.longMintAmount += amount;
-            totalCommit.longMintAmount += amount;
+            userCommit.longMintSettlement += amount;
+            totalCommit.longMintSettlement += amount;
             // Add the fee to long side. This has been taken from the commit amount.
             pool.setNewPoolBalances(longBalance + feeAmount, shortBalance);
             // If we are minting from balance, this would already have thrown in `commit` if we are minting more than entitled too
         } else if (commitType == CommitType.LongBurn) {
-            totalPendingLongBurns += amount;
-            userCommit.longBurnAmount += amount;
-            totalCommit.longBurnAmount += amount;
+            pendingLongBurnPoolTokens += amount;
+            userCommit.longBurnPoolTokens += amount;
+            totalCommit.longBurnPoolTokens += amount;
             // long burning: pull in long pool tokens from committer
             if (fromAggregateBalance) {
                 // Burning from user's aggregate balance
-                userCommit.balanceLongBurnAmount += amount;
+                userCommit.balanceLongBurnPoolTokens += amount;
                 // This require statement is only needed in this branch, as `pool.burnTokens` will revert if burning too many
-                require(userCommit.balanceLongBurnAmount <= balance.longTokens, "Insufficient pool tokens");
+                require(userCommit.balanceLongBurnPoolTokens <= balance.longTokens, "Insufficient pool tokens");
                 // Burn from leveragedPool, because that is the official owner of the tokens before they are claimed
                 pool.burnTokens(LONG_INDEX, amount, leveragedPool);
             } else {
@@ -226,20 +216,20 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             }
         } else if (commitType == CommitType.ShortMint) {
             (uint256 shortBalance, uint256 longBalance) = pool.balances();
-            userCommit.shortMintAmount += amount;
-            totalCommit.shortMintAmount += amount;
+            userCommit.shortMintSettlement += amount;
+            totalCommit.shortMintSettlement += amount;
             // Add the fee to short side. This has been taken from the commit amount.
             pool.setNewPoolBalances(longBalance, shortBalance + feeAmount);
             // If we are minting from balance, this would already have thrown in `commit` if we are minting more than entitled too
         } else if (commitType == CommitType.ShortBurn) {
-            totalPendingShortBurns += amount;
-            userCommit.shortBurnAmount += amount;
-            totalCommit.shortBurnAmount += amount;
+            pendingShortBurnPoolTokens += amount;
+            userCommit.shortBurnPoolTokens += amount;
+            totalCommit.shortBurnPoolTokens += amount;
             if (fromAggregateBalance) {
                 // Burning from user's aggregate balance
-                userCommit.balanceShortBurnAmount += amount;
+                userCommit.balanceShortBurnPoolTokens += amount;
                 // This require statement is only needed in this branch, as `pool.burnTokens` will revert if burning too many
-                require(userCommit.balanceShortBurnAmount <= balance.shortTokens, "Insufficient pool tokens");
+                require(userCommit.balanceShortBurnPoolTokens <= balance.shortTokens, "Insufficient pool tokens");
                 // Burn from leveragedPool, because that is the official owner of the tokens before they are claimed
                 pool.burnTokens(SHORT_INDEX, amount, leveragedPool);
             } else {
@@ -247,23 +237,23 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
                 pool.burnTokens(SHORT_INDEX, amount, msg.sender);
             }
         } else if (commitType == CommitType.LongBurnShortMint) {
-            totalPendingLongBurns += amount;
-            userCommit.longBurnShortMintAmount += amount;
-            totalCommit.longBurnShortMintAmount += amount;
+            pendingLongBurnPoolTokens += amount;
+            userCommit.longBurnShortMintPoolTokens += amount;
+            totalCommit.longBurnShortMintPoolTokens += amount;
             if (fromAggregateBalance) {
-                userCommit.balanceLongBurnMintAmount += amount;
-                require(userCommit.balanceLongBurnMintAmount <= balance.longTokens, "Insufficient pool tokens");
+                userCommit.balanceLongBurnMintPoolTokens += amount;
+                require(userCommit.balanceLongBurnMintPoolTokens <= balance.longTokens, "Insufficient pool tokens");
                 pool.burnTokens(LONG_INDEX, amount, leveragedPool);
             } else {
                 pool.burnTokens(LONG_INDEX, amount, msg.sender);
             }
         } else if (commitType == CommitType.ShortBurnLongMint) {
-            totalPendingShortBurns += amount;
-            userCommit.shortBurnLongMintAmount += amount;
-            totalCommit.shortBurnLongMintAmount += amount;
+            pendingShortBurnPoolTokens += amount;
+            userCommit.shortBurnLongMintPoolTokens += amount;
+            totalCommit.shortBurnLongMintPoolTokens += amount;
             if (fromAggregateBalance) {
-                userCommit.balanceShortBurnMintAmount += amount;
-                require(userCommit.balanceShortBurnMintAmount <= balance.shortTokens, "Insufficient pool tokens");
+                userCommit.balanceShortBurnMintPoolTokens += amount;
+                require(userCommit.balanceShortBurnMintPoolTokens <= balance.shortTokens, "Insufficient pool tokens");
                 pool.burnTokens(SHORT_INDEX, amount, leveragedPool);
             } else {
                 pool.burnTokens(SHORT_INDEX, amount, msg.sender);
@@ -422,20 +412,20 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             uint256
         )
     {
-        totalPendingMints =
-            totalPendingMints -
-            totalPoolCommitments[updateIntervalId].longMintAmount -
-            totalPoolCommitments[updateIntervalId].shortMintAmount;
+        pendingMintSettlementAmount =
+            pendingMintSettlementAmount -
+            totalPoolCommitments[updateIntervalId].longMintSettlement -
+            totalPoolCommitments[updateIntervalId].shortMintSettlement;
 
         BalancesAndSupplies memory balancesAndSupplies = BalancesAndSupplies({
-            newShortBalance: _commits.shortMintAmount,
-            newLongBalance: _commits.longMintAmount,
+            newShortBalance: _commits.shortMintSettlement,
+            newLongBalance: _commits.longMintSettlement,
             longMintPoolTokens: 0,
             shortMintPoolTokens: 0,
             longBurnInstantMintAmount: 0,
             shortBurnInstantMintAmount: 0,
-            totalLongBurn: _commits.longBurnAmount + _commits.longBurnShortMintAmount,
-            totalShortBurn: _commits.shortBurnAmount + _commits.shortBurnLongMintAmount
+            totalLongBurn: _commits.longBurnPoolTokens + _commits.longBurnShortMintPoolTokens,
+            totalShortBurn: _commits.shortBurnPoolTokens + _commits.shortBurnLongMintPoolTokens
         });
 
         balancesAndSupplies.newLongBalance += longBalance;
@@ -443,16 +433,16 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
 
         // Update price before values change
         priceHistory[updateIntervalId] = Prices({
-            longPrice: PoolSwapLibrary.getPrice(longBalance, longTotalSupply + totalPendingLongBurns),
-            shortPrice: PoolSwapLibrary.getPrice(shortBalance, shortTotalSupply + totalPendingShortBurns)
+            longPrice: PoolSwapLibrary.getPrice(longBalance, longTotalSupply + pendingLongBurnPoolTokens),
+            shortPrice: PoolSwapLibrary.getPrice(shortBalance, shortTotalSupply + pendingShortBurnPoolTokens)
         });
-        totalPendingLongBurns -= balancesAndSupplies.totalLongBurn;
-        totalPendingShortBurns -= balancesAndSupplies.totalShortBurn;
+        pendingLongBurnPoolTokens -= balancesAndSupplies.totalLongBurn;
+        pendingShortBurnPoolTokens -= balancesAndSupplies.totalShortBurn;
 
         // Amount of collateral tokens that are generated from the long burn into instant mints
         balancesAndSupplies.longBurnInstantMintAmount = PoolSwapLibrary.getWithdrawAmountOnBurn(
             longTotalSupply,
-            _commits.longBurnShortMintAmount,
+            _commits.longBurnShortMintPoolTokens,
             longBalance,
             balancesAndSupplies.totalLongBurn
         );
@@ -460,7 +450,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         // Amount of collateral tokens that are generated from the short burn into instant mints
         balancesAndSupplies.shortBurnInstantMintAmount = PoolSwapLibrary.getWithdrawAmountOnBurn(
             shortTotalSupply,
-            _commits.shortBurnLongMintAmount,
+            _commits.shortBurnLongMintPoolTokens,
             shortBalance,
             balancesAndSupplies.totalShortBurn
         );
@@ -469,7 +459,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         // Long Mints
         balancesAndSupplies.longMintPoolTokens = PoolSwapLibrary.getMintAmount(
             longTotalSupply, // long token total supply,
-            _commits.longMintAmount + balancesAndSupplies.shortBurnInstantMintAmount, // Add the collateral tokens that will be generated from burning shorts for instant long mint
+            _commits.longMintSettlement + balancesAndSupplies.shortBurnInstantMintAmount, // Add the collateral tokens that will be generated from burning shorts for instant long mint
             longBalance, // total quote tokens in the long pull
             balancesAndSupplies.totalLongBurn // total pool tokens commited to be burned
         );
@@ -485,7 +475,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         // Short Mints
         balancesAndSupplies.shortMintPoolTokens = PoolSwapLibrary.getMintAmount(
             shortTotalSupply, // short token total supply
-            _commits.shortMintAmount + balancesAndSupplies.longBurnInstantMintAmount, // Add the collateral tokens that will be generated from burning longs for instant short mint
+            _commits.shortMintSettlement + balancesAndSupplies.longBurnInstantMintAmount, // Add the collateral tokens that will be generated from burning longs for instant short mint
             shortBalance,
             balancesAndSupplies.totalShortBurn
         );
@@ -609,7 +599,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
 
     function updateMintingFee(bytes16 longTokenPrice, bytes16 shortTokenPrice) private {
         bytes16 multiple = PoolSwapLibrary.multiplyBytes(longTokenPrice, shortTokenPrice);
-        if (PoolSwapLibrary.compareDecimals(one, multiple) == -1) {
+        if (PoolSwapLibrary.compareDecimals(PoolSwapLibrary.ONE, multiple) == -1) {
             // longTokenPrice * shortTokenPrice > 1
             if (PoolSwapLibrary.compareDecimals(mintingFee, changeInterval) == -1) {
                 // mintingFee < changeInterval. Prevent underflow by setting mintingFee to lowest possible value (0)
@@ -621,10 +611,10 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             // longTokenPrice * shortTokenPrice <= 1
             mintingFee = PoolSwapLibrary.addBytes(mintingFee, changeInterval);
 
-            if (PoolSwapLibrary.compareDecimals(mintingFee, MAX_MINTING_FEE) == 1) {
+            if (PoolSwapLibrary.compareDecimals(mintingFee, PoolSwapLibrary.MAX_MINTING_FEE) == 1) {
                 // mintingFee is greater than 1 (100%).
                 // We want to cap this at a theoretical max of 100%
-                mintingFee = MAX_MINTING_FEE;
+                mintingFee = PoolSwapLibrary.MAX_MINTING_FEE;
             }
         }
     }
@@ -657,12 +647,12 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             shortPrice: priceHistory[_commit.updateIntervalId].shortPrice,
             currentUpdateIntervalId: updateIntervalId,
             updateIntervalId: _commit.updateIntervalId,
-            longMintAmount: _commit.longMintAmount,
-            longBurnAmount: _commit.longBurnAmount,
-            shortMintAmount: _commit.shortMintAmount,
-            shortBurnAmount: _commit.shortBurnAmount,
-            longBurnShortMintAmount: _commit.longBurnShortMintAmount,
-            shortBurnLongMintAmount: _commit.shortBurnLongMintAmount,
+            longMintSettlement: _commit.longMintSettlement,
+            longBurnPoolTokens: _commit.longBurnPoolTokens,
+            shortMintSettlement: _commit.shortMintSettlement,
+            shortBurnPoolTokens: _commit.shortBurnPoolTokens,
+            longBurnShortMintPoolTokens: _commit.longBurnShortMintPoolTokens,
+            shortBurnLongMintPoolTokens: _commit.shortBurnLongMintPoolTokens,
             burnFee: burnFeeHistory[_commit.updateIntervalId]
         });
 
@@ -684,8 +674,8 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             _newLongTokensSum: 0,
             _newShortTokensSum: 0,
             _newSettlementTokensSum: 0,
-            _balanceLongBurnAmount: 0,
-            _balanceShortBurnAmount: 0,
+            _balanceLongBurnPoolTokens: 0,
+            _balanceShortBurnPoolTokens: 0,
             _longBurnFee: 0,
             _shortBurnFee: 0
         });
@@ -704,8 +694,12 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             /* If the update interval of commitment has not yet passed, we still
             want to deduct burns from the balance from a user's balance.
             Therefore, this should happen outside of the if block below.*/
-            update._balanceLongBurnAmount += commitment.balanceLongBurnAmount + commitment.balanceLongBurnMintAmount;
-            update._balanceShortBurnAmount += commitment.balanceShortBurnAmount + commitment.balanceShortBurnMintAmount;
+            update._balanceLongBurnPoolTokens +=
+                commitment.balanceLongBurnPoolTokens +
+                commitment.balanceLongBurnMintPoolTokens;
+            update._balanceShortBurnPoolTokens +=
+                commitment.balanceShortBurnPoolTokens +
+                commitment.balanceShortBurnMintPoolTokens;
             if (commitment.updateIntervalId < updateIntervalId) {
                 (
                     uint256 _newLongTokens,
@@ -722,10 +716,10 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
                 delete userCommitments[user][id];
             } else {
                 // Clear them now that they have been accounted for in the balance
-                userCommitments[user][id].balanceLongBurnAmount = 0;
-                userCommitments[user][id].balanceShortBurnAmount = 0;
-                userCommitments[user][id].balanceLongBurnMintAmount = 0;
-                userCommitments[user][id].balanceShortBurnMintAmount = 0;
+                userCommitments[user][id].balanceLongBurnPoolTokens = 0;
+                userCommitments[user][id].balanceShortBurnPoolTokens = 0;
+                userCommitments[user][id].balanceLongBurnMintPoolTokens = 0;
+                userCommitments[user][id].balanceShortBurnMintPoolTokens = 0;
                 // This commitment wasn't ready to be completely added to the balance, so copy it over into the new ID array
                 storageArrayPlaceHolder.push(currentIntervalIds[i]);
             }
@@ -738,9 +732,9 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
 
         // Add new tokens minted, and remove the ones that were burnt from this balance
         balance.longTokens += update._newLongTokensSum;
-        balance.longTokens -= update._balanceLongBurnAmount;
+        balance.longTokens -= update._balanceLongBurnPoolTokens;
         balance.shortTokens += update._newShortTokensSum;
-        balance.shortTokens -= update._balanceShortBurnAmount;
+        balance.shortTokens -= update._balanceShortBurnPoolTokens;
         balance.settlementTokens += update._newSettlementTokensSum;
 
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
@@ -781,8 +775,8 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             _newLongTokensSum: 0,
             _newShortTokensSum: 0,
             _newSettlementTokensSum: 0,
-            _balanceLongBurnAmount: 0,
-            _balanceShortBurnAmount: 0,
+            _balanceLongBurnPoolTokens: 0,
+            _balanceShortBurnPoolTokens: 0,
             _longBurnFee: 0,
             _shortBurnFee: 0
         });
@@ -801,8 +795,12 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             /* If the update interval of commitment has not yet passed, we still
             want to deduct burns from the balance from a user's balance.
             Therefore, this should happen outside of the if block below.*/
-            update._balanceLongBurnAmount += commitment.balanceLongBurnAmount + commitment.balanceLongBurnMintAmount;
-            update._balanceShortBurnAmount += commitment.balanceShortBurnAmount + commitment.balanceShortBurnMintAmount;
+            update._balanceLongBurnPoolTokens +=
+                commitment.balanceLongBurnPoolTokens +
+                commitment.balanceLongBurnMintPoolTokens;
+            update._balanceShortBurnPoolTokens +=
+                commitment.balanceShortBurnPoolTokens +
+                commitment.balanceShortBurnMintPoolTokens;
             if (commitment.updateIntervalId < updateIntervalId) {
                 (
                     uint256 _newLongTokens,
@@ -819,9 +817,9 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
 
         // Add new tokens minted, and remove the ones that were burnt from this balance
         _balance.longTokens += update._newLongTokensSum;
-        _balance.longTokens -= update._balanceLongBurnAmount;
+        _balance.longTokens -= update._balanceLongBurnPoolTokens;
         _balance.shortTokens += update._newShortTokensSum;
-        _balance.shortTokens -= update._balanceShortBurnAmount;
+        _balance.shortTokens -= update._balanceShortBurnPoolTokens;
         _balance.settlementTokens += update._newSettlementTokensSum;
 
         return _balance;
@@ -829,19 +827,16 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
 
     /**
      * @notice Sets the quote token address and the address of the associated `LeveragedPool` contract to the provided values
-     * @param _quoteToken Address of the quote token to use
      * @param _leveragedPool Address of the pool to use
      * @dev Only callable by the associated `PoolFactory` contract
      * @dev Throws if either address are null
      * @dev Emits a `QuoteAndPoolChanged` event on success
      */
-    function setQuoteAndPool(address _quoteToken, address _leveragedPool) external override onlyFactory onlyUnpaused {
-        require(_quoteToken != address(0), "Quote token address cannot be 0 address");
+    function setPool(address _leveragedPool) external override onlyFactory {
         require(_leveragedPool != address(0), "Leveraged pool address cannot be 0 address");
 
         leveragedPool = _leveragedPool;
         tokens = ILeveragedPool(leveragedPool).poolTokens();
-        emit QuoteAndPoolChanged(_quoteToken, _leveragedPool);
     }
 
     /**
@@ -852,7 +847,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
      */
     function setBurningFee(uint256 _burningFee) external override onlyFeeController {
         burningFee = PoolSwapLibrary.convertUIntToDecimal(_burningFee);
-        require(burningFee < MAX_BURNING_FEE, "Burning fee >= 10%");
+        require(burningFee < PoolSwapLibrary.MAX_BURNING_FEE, "Burning fee >= 10%");
         emit BurningFeeSet(_burningFee);
     }
 
@@ -864,7 +859,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
      */
     function setMintingFee(uint256 _mintingFee) external override onlyFeeController {
         mintingFee = PoolSwapLibrary.convertUIntToDecimal(_mintingFee);
-        require(mintingFee < MAX_MINTING_FEE, "Minting fee >= 100%");
+        require(mintingFee < PoolSwapLibrary.MAX_MINTING_FEE, "Minting fee >= 100%");
         emit MintingFeeSet(_mintingFee);
     }
 

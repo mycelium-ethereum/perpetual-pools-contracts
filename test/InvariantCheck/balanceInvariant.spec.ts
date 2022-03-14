@@ -149,7 +149,8 @@ describe("InvariantCheck - balanceInvariant", () => {
 
             it("Pauses contracts", async () => {
                 await pool.drainPool(1)
-                let pendingMintsBefore = await poolCommitter.totalPendingMints()
+                let pendingMintsBefore =
+                    await poolCommitter.pendingMintSettlementAmount()
                 const balanceBefore = await token.balanceOf(pool.address)
 
                 // Creating a commit reverts, since pools is drained
@@ -160,7 +161,8 @@ describe("InvariantCheck - balanceInvariant", () => {
                 // Performing upkeep does not work
                 await timeout(updateInterval * 2000)
                 await poolKeeper.performUpkeepSinglePool(pool.address)
-                let pendingMintsAfter = await poolCommitter.totalPendingMints()
+                let pendingMintsAfter =
+                    await poolCommitter.pendingMintSettlementAmount()
                 const balanceAfter = await token.balanceOf(pool.address)
                 expect(pendingMintsBefore).to.equal(pendingMintsAfter)
                 expect(balanceAfter).to.equal(balanceBefore)
@@ -198,7 +200,8 @@ describe("InvariantCheck - balanceInvariant", () => {
 
         it("Pauses contracts", async () => {
             await pool.drainPool(1)
-            let pendingMintsBefore = await poolCommitter.totalPendingMints()
+            let pendingMintsBefore =
+                await poolCommitter.pendingMintSettlementAmount()
             const balanceBefore = await token.balanceOf(pool.address)
 
             // Creating a commit reverts, since pools is drained
@@ -209,7 +212,8 @@ describe("InvariantCheck - balanceInvariant", () => {
             // Performing upkeep does not work
             await timeout(updateInterval * 2000)
             await poolKeeper.performUpkeepSinglePool(pool.address)
-            let pendingMintsAfter = await poolCommitter.totalPendingMints()
+            let pendingMintsAfter =
+                await poolCommitter.pendingMintSettlementAmount()
             const balanceAfter = await token.balanceOf(pool.address)
             expect(pendingMintsBefore).to.equal(pendingMintsAfter)
             expect(balanceAfter).to.equal(balanceBefore)

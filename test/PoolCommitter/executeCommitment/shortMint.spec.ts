@@ -68,12 +68,12 @@ describe("LeveragedPool - executeCommitment: Short Mint", () => {
         })
         it("should reduce the shadow short mint pool balance", async () => {
             expect(
-                (await getCurrentTotalCommit(poolCommitter)).shortMintAmount
+                (await getCurrentTotalCommit(poolCommitter)).shortMintSettlement
             ).to.eq(amountCommitted)
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(9, 10)
             expect(
-                (await getCurrentTotalCommit(poolCommitter)).shortMintAmount
+                (await getCurrentTotalCommit(poolCommitter)).shortMintSettlement
             ).to.eq(0)
         })
         it("should mint short tokens", async () => {
