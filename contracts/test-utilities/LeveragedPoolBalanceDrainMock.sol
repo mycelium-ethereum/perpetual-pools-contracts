@@ -22,18 +22,19 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
     // Each balance is the amount of quote tokens in the pair
     uint256 public override shortBalance;
     uint256 public override longBalance;
-    uint32 public override frontRunningInterval;
-    uint32 public override updateInterval;
-    bytes16 public fee;
-    bytes16 public override leverageAmount;
     uint256 public constant LONG_INDEX = 0;
     uint256 public constant SHORT_INDEX = 1;
 
     address public override governance;
-    bool public override paused;
+    uint32 public override frontRunningInterval;
+    uint32 public override updateInterval;
+    bytes16 public fee;
+    bytes16 public override leverageAmount;
+
     address public override provisionalGovernance;
-    address public keeper;
+    bool public override paused;
     bool public override governanceTransferInProgress;
+    address public keeper;
     address public feeAddress;
     address public secondaryFeeAddress;
     uint256 public secondaryFeeSplitPercent; // Split to secondary fee address as a percentage.
@@ -146,8 +147,22 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
         require(intervalPassed(), "Update interval hasn't passed");
         // perform price change and update pool balances
         executePriceChange(_oldPrice, _newPrice);
-        IPoolCommitter(poolCommitter).executeCommitments();
+        (
+            uint256 longMintAmount,
+            uint256 shortMintAmount,
+            uint256 newLongBalance,
+            uint256 newShortBalance
+        ) = IPoolCommitter(poolCommitter).executeCommitments(
+                lastPriceTimestamp,
+                updateInterval,
+                longBalance,
+                shortBalance
+            );
         lastPriceTimestamp = block.timestamp;
+        longBalance = newLongBalance;
+        shortBalance = newShortBalance;
+        IPoolToken(tokens[LONG_INDEX]).mint(address(this), longMintAmount);
+        IPoolToken(tokens[SHORT_INDEX]).mint(address(this), shortMintAmount);
     }
 
     /**
@@ -169,7 +184,7 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
         uint256 _shortBalance = shortBalance;
         uint256 _longBalance = longBalance;
 
-        // If the rewards are more than the balances of the pool, the keeper does not get paid
+        // If the rewards are greater than the balances of the pool, the keeper does not get paid
         if (amount > _shortBalance + _longBalance) {
             return false;
         }
@@ -331,24 +346,9 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
     }
 
     /**
-     * @notice Mint tokens to a user
-     * @param amount Amount of tokens to mint
-     * @param minter Address of user/minter
-     * @dev Only callable by the associated `PoolCommitter` contract
-     * @dev Only callable when the market is *not* paused
-     */
-    function mintTokens(
-        uint256 tokenType,
-        uint256 amount,
-        address minter
-    ) external override onlyPoolCommitter checkInvariantsBeforeFunction {
-        IPoolToken(tokens[tokenType]).mint(minter, amount);
-    }
-
-    /**
      * @notice Burn tokens by a user
      * @dev Can only be called by & used by the pool committer
-     * @param tokenType LONG_INDEX (0) or SHORT_INDEX (1) for either minting the long or short  token respectively
+     * @param tokenType LONG_INDEX (0) or SHORT_INDEX (1) for either burning the long or short  token respectively
      * @param amount Amount of tokens to burn
      * @param burner Address of user/burner
      * @dev Only callable by the associated `PoolCommitter` contract

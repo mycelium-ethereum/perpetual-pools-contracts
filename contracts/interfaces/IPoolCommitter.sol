@@ -15,10 +15,14 @@ interface IPoolCommitter {
 
     // Pool balances and supplies
     struct BalancesAndSupplies {
-        uint256 shortBalance;
-        uint256 longBalance;
-        uint256 longTotalSupplyBefore;
-        uint256 shortTotalSupplyBefore;
+        uint256 newShortBalance;
+        uint256 newLongBalance;
+        uint256 longMintPoolTokens;
+        uint256 shortMintPoolTokens;
+        uint256 longBurnInstantMintSettlement;
+        uint256 shortBurnInstantMintSettlement;
+        uint256 totalLongBurnPoolTokens;
+        uint256 totalShortBurnPoolTokens;
     }
 
     // User aggregate balance
@@ -167,7 +171,19 @@ interface IPoolCommitter {
 
     function claim(address user) external;
 
-    function executeCommitments() external;
+    function executeCommitments(
+        uint256 lastPriceTimestamp,
+        uint256 updateInterval,
+        uint256 longBalance,
+        uint256 shortBalance
+    )
+        external
+        returns (
+            uint256,
+            uint256,
+            uint256,
+            uint256
+        );
 
     function updateAggregateBalance(address user) external;
 
