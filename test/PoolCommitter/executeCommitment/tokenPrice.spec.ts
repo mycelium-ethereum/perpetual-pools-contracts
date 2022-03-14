@@ -36,13 +36,13 @@ const frontRunningInterval = 50 // seconds
 const fee = DEFAULT_FEE
 const leverage = 2
 
-describe("PoolCommitter - executeCommitment: Token Price", () => {
+describe("PoolCommitter - executeCommitment: Token Price", async () => {
     let token: TestToken
 
     let poolCommitter: PoolCommitter
     let pool: LeveragedPool
     let signers: SignerWithAddress[]
-    describe("Short burn and mint", () => {
+    describe("Short burn and mint", async () => {
         it("Should account for burns allocated to future update intervals", async () => {
             const result = await deployPoolAndTokenContracts(
                 POOL_CODE,
@@ -87,7 +87,7 @@ describe("PoolCommitter - executeCommitment: Token Price", () => {
             expect(balAfter).to.equal(balBefore.add(amountCommitted.div(4)))
         })
     })
-    describe("Long Burn and mint", () => {
+    describe("Long burn and mint", async () => {
         it("Should account for burns allocated to future update intervals", async () => {
             const result = await deployPoolAndTokenContracts(
                 POOL_CODE,
@@ -114,7 +114,7 @@ describe("PoolCommitter - executeCommitment: Token Price", () => {
                 true
             )
 
-            // After FR interval
+            // After FR interval. Increase by the the update interval minus a little by to get right in the middle of the frontrunning interval.
             await timeout((updateInterval - frontRunningInterval / 2) * 1000)
             await createCommit(
                 poolCommitter,
