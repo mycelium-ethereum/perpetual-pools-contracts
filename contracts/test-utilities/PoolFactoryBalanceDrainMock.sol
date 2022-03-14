@@ -83,6 +83,30 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
 
         feeReceiver = _feeReceiver;
 
+        /* initialise base PoolToken template (with dummy values) */
+        pairTokenBase.initialize(address(poolBase), "base", "BASE", 8);
+
+        /* initialise base LeveragedPool template (with dummy values) */
+        ILeveragedPool.Initialization memory dummyInitialization = ILeveragedPool.Initialization({
+            _owner: address(this),
+            _keeper: address(this),
+            _oracleWrapper: address(this),
+            _settlementEthOracle: address(this),
+            _longToken: address(pairTokenBase),
+            _shortToken: address(pairTokenBase),
+            _poolCommitter: address(poolCommitterBase),
+            _invariantCheckContract: address(this),
+            _poolName: "base",
+            _frontRunningInterval: 0,
+            _updateInterval: 1,
+            _fee: 0,
+            _leverageAmount: 1,
+            _feeAddress: address(this),
+            _secondaryFeeAddress: address(this),
+            _quoteToken: address(this),
+            _secondaryFeeSplitPercent: 0
+        });
+        poolBase.initialize(dummyInitialization);
         /* initialise base PoolCommitter template (with dummy values) */
         poolCommitterBase.initialize(address(this), address(this), address(this), governance, governance, 0, 0, 0);
     }
@@ -181,7 +205,7 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
         // this also stores the pool address in the committer
         // finalise pool setup
         pool.initialize(initialization);
-        IPoolCommitter(poolCommitterAddress).setQuoteAndPool(deploymentParameters.quoteToken, _pool);
+        IPoolCommitter(poolCommitterAddress).setPool(_pool);
         poolKeeper.newPool(_pool);
         pools[numPools] = _pool;
         // numPools overflowing would require an unrealistic number of markets

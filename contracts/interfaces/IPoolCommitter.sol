@@ -44,12 +44,12 @@ interface IPoolCommitter {
 
     // Commit information
     struct TotalCommitment {
-        uint256 longMintAmount;
-        uint256 longBurnAmount;
-        uint256 shortMintAmount;
-        uint256 shortBurnAmount;
-        uint256 shortBurnLongMintAmount;
-        uint256 longBurnShortMintAmount;
+        uint256 longMintSettlement;
+        uint256 longBurnPoolTokens;
+        uint256 shortMintSettlement;
+        uint256 shortBurnPoolTokens;
+        uint256 shortBurnLongMintPoolTokens;
+        uint256 longBurnShortMintPoolTokens;
         uint256 updateIntervalId;
     }
 
@@ -59,24 +59,24 @@ interface IPoolCommitter {
         uint256 _newLongTokensSum;
         uint256 _newShortTokensSum;
         uint256 _newSettlementTokensSum;
-        uint256 _balanceLongBurnAmount;
-        uint256 _balanceShortBurnAmount;
+        uint256 _balanceLongBurnPoolTokens;
+        uint256 _balanceShortBurnPoolTokens;
         uint256 _longBurnFee;
         uint256 _shortBurnFee;
     }
 
     // Track how much of a user's commitments are being done from their aggregate balance
     struct UserCommitment {
-        uint256 longMintAmount;
-        uint256 longBurnAmount;
-        uint256 balanceLongBurnAmount;
-        uint256 shortMintAmount;
-        uint256 shortBurnAmount;
-        uint256 balanceShortBurnAmount;
-        uint256 shortBurnLongMintAmount;
-        uint256 balanceShortBurnMintAmount;
-        uint256 longBurnShortMintAmount;
-        uint256 balanceLongBurnMintAmount;
+        uint256 longMintSettlement;
+        uint256 longBurnPoolTokens;
+        uint256 balanceLongBurnPoolTokens;
+        uint256 shortMintSettlement;
+        uint256 shortBurnPoolTokens;
+        uint256 balanceShortBurnPoolTokens;
+        uint256 shortBurnLongMintPoolTokens;
+        uint256 balanceShortBurnMintPoolTokens;
+        uint256 longBurnShortMintPoolTokens;
+        uint256 balanceLongBurnMintPoolTokens;
         uint256 updateIntervalId;
     }
 
@@ -116,13 +116,6 @@ interface IPoolCommitter {
      * @notice Creates a notification when a claim is made, depositing pool tokens in user's wallet
      */
     event Claim(address indexed user);
-
-    /**
-     * @notice Indicates that both the quote and pool addresses have been modified
-     * @param quote Address of new quote token
-     * @param pool Address of new `LeveragedPool`
-     */
-    event QuoteAndPoolChanged(address indexed quote, address indexed pool);
 
     /*
      * @notice Creates a notification when the burningFee is updated
@@ -166,11 +159,11 @@ interface IPoolCommitter {
 
     function updateIntervalId() external view returns (uint128);
 
-    function totalPendingMints() external view returns (uint256);
+    function pendingMintSettlementAmount() external view returns (uint256);
 
-    function totalPendingShortBurns() external view returns (uint256);
+    function pendingShortBurnPoolTokens() external view returns (uint256);
 
-    function totalPendingLongBurns() external view returns (uint256);
+    function pendingLongBurnPoolTokens() external view returns (uint256);
 
     function claim(address user) external;
 
@@ -182,7 +175,7 @@ interface IPoolCommitter {
 
     function getAppropriateUpdateIntervalId() external view returns (uint128);
 
-    function setQuoteAndPool(address _quoteToken, address _leveragedPool) external;
+    function setPool(address _leveragedPool) external;
 
     function setBurningFee(uint256 _burningFee) external;
 

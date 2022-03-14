@@ -43,7 +43,7 @@ contract AutoClaim is IAutoClaim {
             if (requestUpdateIntervalId < poolCommitter.updateIntervalId()) {
                 // If so, this person may as well claim for themself (if allowed). They have signified their want of claim, after all.
                 // Note that this function is only called by PoolCommitter when a user `commits` and therefore `user` will always equal the original `msg.sender`.
-                uint256 reward = claimRequests[user][msg.sender].reward;
+                uint256 reward = request.reward;
                 delete claimRequests[user][msg.sender];
                 poolCommitter.claim(user);
                 if (reward > 0) {
@@ -60,8 +60,8 @@ contract AutoClaim is IAutoClaim {
 
         // If no previous claim requests are pending, we need to make a new one.
         requestUpdateIntervalId = poolCommitter.getAppropriateUpdateIntervalId();
-        claimRequests[user][msg.sender].updateIntervalId = requestUpdateIntervalId;
-        claimRequests[user][msg.sender].reward = msg.value;
+        request.updateIntervalId = requestUpdateIntervalId;
+        request.reward = msg.value;
         emit PaidClaimRequestUpdate(user, msg.sender, request.reward);
     }
 
@@ -118,6 +118,7 @@ contract AutoClaim is IAutoClaim {
         uint256 reward;
         uint256 nrUsers = users.length;
         for (uint256 i; i < nrUsers; i++) {
+            require(poolFactory.isValidPoolCommitter(poolCommitterAddresses[i]), "Invalid pool committer contract");
             IPoolCommitter poolCommitter = IPoolCommitter(poolCommitterAddresses[i]);
             uint256 currentUpdateIntervalId = poolCommitter.updateIntervalId();
             reward += claim(users[i], poolCommitterAddresses[i], poolCommitter, currentUpdateIntervalId);
@@ -138,6 +139,7 @@ contract AutoClaim is IAutoClaim {
         override
     {
         uint256 reward;
+        require(poolFactory.isValidPoolCommitter(poolCommitterAddress), "Invalid pool committer contract");
         IPoolCommitter poolCommitter = IPoolCommitter(poolCommitterAddress);
         uint256 currentUpdateIntervalId = poolCommitter.updateIntervalId();
         for (uint256 i; i < users.length; i++) {
@@ -154,6 +156,7 @@ contract AutoClaim is IAutoClaim {
      * @dev Emits a `RequestWithdrawn` event on success
      */
     function withdrawClaimRequest(address poolCommitter) external override {
+        require(poolFactory.isValidPoolCommitter(poolCommitter), "Invalid pool committer contract");
         if (claimRequests[msg.sender][poolCommitter].updateIntervalId > 0) {
             uint256 reward = claimRequests[msg.sender][poolCommitter].reward;
             delete claimRequests[msg.sender][poolCommitter];

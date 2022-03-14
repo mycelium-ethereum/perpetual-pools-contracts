@@ -137,12 +137,12 @@ describe("poolCommitter - executeCommitment: Basic test cases", () => {
 
         it("should remove the commitment after execution", async () => {
             expect(
-                (await getCurrentTotalCommit(poolCommitter)).longMintAmount
+                (await getCurrentTotalCommit(poolCommitter)).longMintSettlement
             ).to.eq(amountCommitted)
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(9, 10)
             expect(
-                (await getCurrentTotalCommit(poolCommitter)).longMintAmount
+                (await getCurrentTotalCommit(poolCommitter)).longMintSettlement
             ).to.eq(0)
         })
 
