@@ -508,7 +508,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
     function executeCommitments() external override onlyPool {
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
 
-        uint4 counter = 1;
+        uint8 counter = 1;
         uint256 lastPriceTimestamp = pool.lastPriceTimestamp();
         uint256 updateInterval = pool.updateInterval();
 
@@ -538,7 +538,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
          * should never be passed without the previous one being upkept.
          */
         uint256 _updateIntervalId;
-        uint4 maxIterations = MAX_ITERATIONS; // copied from storage to save gas
+        uint8 maxIterations = MAX_ITERATIONS; // copied from storage to save gas
         while (counter <= maxIterations) {
             if (block.timestamp >= lastPriceTimestamp + updateInterval * counter) {
                 // Another update interval has passed, so we have to do the nextIntervalCommit as well
