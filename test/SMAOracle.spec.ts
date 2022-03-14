@@ -79,7 +79,6 @@ describe("SMAOracle", async () => {
             "PoolKeeper",
             {
                 signer: signers[0],
-                libraries: { PoolSwapLibrary: poolSwapLibrary.address },
             }
         )) as PoolKeeper__factory
         poolKeeper = await poolKeeperFactory.deploy(feeReceiver.address)
@@ -111,6 +110,16 @@ describe("SMAOracle", async () => {
         )) as PriceObserver__factory
         priceObserver = await priceObserverFactory.deploy()
         await priceObserver.deployed()
+
+        /* populate the price observer with the same number of observations as
+         * our sampling period */
+        await priceObserver.setWriter(owner.address)
+        const initialPrices = [1, 2, 3, 4]
+        await Promise.all(
+            initialPrices
+                .map((x) => ethers.BigNumber.from(x))
+                .map(async (x) => priceObserver.add(x))
+        )
 
         /* deploy SMA oracle contract */
         const smaOracleFactory = (await ethers.getContractFactory(
@@ -235,6 +244,12 @@ describe("SMAOracle", async () => {
                 await timeout(UPDATE_MILLIS)
 
                 await updatePrice(price, chainlinkOracle, smaOracle)
+                /* wait for update interval to elapse */
+                timeout(UPDATE_MILLIS)
+                /* wait for update interval to elapse */
+                await timeout(UPDATE_MILLIS)
+
+                await updatePrice(price, chainlinkOracle, smaOracle)
             }
 
             /* wait for update interval to elapse again (so our assertions
@@ -284,6 +299,24 @@ describe("SMAOracle", async () => {
                     expect(actualPrice).to.be.eq(expectedPrice)
                 })
             })
+
+            context(
+                "When called within an update interval since last price update",
+                async () => {
+                    it("Reverts", async () => {
+                        /* perform another price update (our `beforeEach` hook waits so
+                         * our tests succeed; we need to break this condition again for
+                         * this test case) */
+                        let price: BigNumberish = 5 // arbitrary
+                        await updatePrice(price, chainlinkOracle, smaOracle)
+
+                        /* poll the SMA oracle immediately afterwards */
+                        await expect(smaOracle.poll()).to.be.revertedWith(
+                            "SMA: Too early to update"
+                        )
+                    })
+                }
+            )
         })
 
         context(
