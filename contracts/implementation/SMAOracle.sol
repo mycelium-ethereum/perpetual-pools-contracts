@@ -75,8 +75,8 @@ contract SMAOracle is IOracleWrapper {
 
     uint8 public constant MAX_PERIODS = 24;
 
-    int256 public immutable scaler;
     uint8 public constant MAX_DECIMALS = 18;
+    int256 public immutable scaler;
     /// Maximum number of elements storable by the backing array
     uint256 public constant MAX_NUM_ELEMS = 24;
 
