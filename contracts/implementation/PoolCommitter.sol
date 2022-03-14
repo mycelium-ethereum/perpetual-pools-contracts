@@ -18,7 +18,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
     uint128 public constant LONG_INDEX = 0;
     uint128 public constant SHORT_INDEX = 1;
 
-    // 15 was chosen because it will definitely fit in a block on Arbitrum which can be tricky to ascertain definitive computation cap without trial and error, while it is also a being a reasonable number of upkeeps to get executed in one transaction
+    // 15 was chosen because it will definitely fit in a block on Arbitrum which can be tricky to ascertain definitive computation cap without trial and error, while it is also a reasonable number of upkeeps to get executed in one transaction
     uint8 public constant MAX_ITERATIONS = 15;
     IAutoClaim public autoClaim;
     uint128 public override updateIntervalId = 1;
