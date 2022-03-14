@@ -161,8 +161,12 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
         lastPriceTimestamp = block.timestamp;
         longBalance = newLongBalance;
         shortBalance = newShortBalance;
-        IPoolToken(tokens[LONG_INDEX]).mint(address(this), longMintAmount);
-        IPoolToken(tokens[SHORT_INDEX]).mint(address(this), shortMintAmount);
+        if (longMintAmount > 0) {
+            IPoolToken(tokens[LONG_INDEX]).mint(address(this), longMintAmount);
+        }
+        if (shortMintAmount > 0) {
+            IPoolToken(tokens[SHORT_INDEX]).mint(address(this), shortMintAmount);
+        }
     }
 
     /**
