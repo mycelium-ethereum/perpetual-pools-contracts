@@ -423,14 +423,14 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             balancesAndSupplies.longTotalSupplyBefore,
             _commits.longBurnShortMintPoolTokens,
             balancesAndSupplies.longBalance,
-            totalLongBurnPoolTokens
+            pendingLongBurnPoolTokens
         );
         // Amount of settlement tokens that are generated from the short burn into instant mints
         uint256 shortBurnInstantMintSettlement = PoolSwapLibrary.getWithdrawAmountOnBurn(
             balancesAndSupplies.shortTotalSupplyBefore,
             _commits.shortBurnLongMintPoolTokens,
             balancesAndSupplies.shortBalance,
-            totalShortBurnPoolTokens
+            pendingShortBurnPoolTokens
         );
 
         // Long Mints
@@ -438,7 +438,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             balancesAndSupplies.longTotalSupplyBefore, // long token total supply,
             _commits.longMintSettlement + shortBurnInstantMintSettlement, // Add the settlement tokens that will be generated from burning shorts for instant long mint
             balancesAndSupplies.longBalance, // total quote tokens in the long pull
-            totalLongBurnPoolTokens // total pool tokens commited to be burned
+            pendingLongBurnPoolTokens // total pool tokens commited to be burned
         );
 
         if (longMintSettlement > 0) {
@@ -450,7 +450,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             balancesAndSupplies.longTotalSupplyBefore,
             totalLongBurnPoolTokens,
             balancesAndSupplies.longBalance,
-            totalLongBurnPoolTokens
+            pendingLongBurnPoolTokens
         );
 
         // Short Mints
@@ -458,7 +458,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             balancesAndSupplies.shortTotalSupplyBefore, // short token total supply
             _commits.shortMintSettlement + longBurnInstantMintSettlement, // Add the settlement tokens that will be generated from burning longs for instant short mint
             balancesAndSupplies.shortBalance,
-            totalShortBurnPoolTokens
+            pendingShortBurnPoolTokens
         );
 
         if (shortMintSettlement > 0) {
@@ -470,7 +470,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             balancesAndSupplies.shortTotalSupplyBefore,
             totalShortBurnPoolTokens,
             balancesAndSupplies.shortBalance,
-            totalShortBurnPoolTokens
+            pendingShortBurnPoolTokens
         );
 
         pendingLongBurnPoolTokens -= totalLongBurnPoolTokens;
