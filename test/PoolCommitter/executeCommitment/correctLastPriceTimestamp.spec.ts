@@ -1,4 +1,3 @@
-
 import { ethers } from "hardhat"
 import chai from "chai"
 import chaiAsPromised from "chai-as-promised"
@@ -69,23 +68,23 @@ describe("PoolCommitter - executeCommitments: setting lastPriceTimestamp", () =>
             await token.approve(pool.address, amountMinted)
 
             for (let i = 0; i < maxIterations + 6; i++) {
-                commit = await createCommit(
-                    poolCommitter,
-                    [LONG_MINT],
-                    1
-                )
+                commit = await createCommit(poolCommitter, [LONG_MINT], 1)
                 await timeout(updateInterval * 1000)
             }
         })
 
         it("should set lastPriceTimestamp to the last upkept update interval", async () => {
             const lastPriceTimestamp = await pool.lastPriceTimestamp()
-            const expectedLastPriceTimestamp = lastPriceTimestamp.add(updateInterval * maxIterations)
+            const expectedLastPriceTimestamp = lastPriceTimestamp.add(
+                updateInterval * maxIterations
+            )
             await pool.poolUpkeep(9, 10)
 
             const resultantLastPriceTimestamp = await pool.lastPriceTimestamp()
             expect(await pool.longBalance()).to.equal(maxIterations)
-            expect(resultantLastPriceTimestamp).to.equal(expectedLastPriceTimestamp)
+            expect(resultantLastPriceTimestamp).to.equal(
+                expectedLastPriceTimestamp
+            )
         })
 
         it("should allow instant subsequent upkeep", async () => {
