@@ -78,16 +78,16 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
     // #### Functions
 
     function initialize(ILeveragedPool.Initialization calldata initialization) external override initializer {
-        require(initialization._feeAddress != address(0), "Fee address cannot be 0 address");
-        require(initialization._quoteToken != address(0), "Quote token cannot be 0 address");
-        require(initialization._oracleWrapper != address(0), "Oracle wrapper cannot be 0 address");
-        require(initialization._settlementEthOracle != address(0), "Keeper oracle cannot be 0 address");
-        require(initialization._owner != address(0), "Owner cannot be 0 address");
-        require(initialization._keeper != address(0), "Keeper cannot be 0 address");
-        require(initialization._longToken != address(0), "Long token cannot be 0 address");
-        require(initialization._shortToken != address(0), "Short token cannot be 0 address");
-        require(initialization._poolCommitter != address(0), "PoolCommitter cannot be 0 address");
-        require(initialization._invariantCheck != address(0), "InvariantCheck cannot be 0 address");
+        require(initialization._feeAddress != address(0), "Fee cannot be null");
+        require(initialization._quoteToken != address(0), "Quote token cannot be null");
+        require(initialization._oracleWrapper != address(0), "Oracle wrapper cannot be null");
+        require(initialization._settlementEthOracle != address(0), "Keeper oracle cannot be null");
+        require(initialization._owner != address(0), "Owner cannot be null");
+        require(initialization._keeper != address(0), "Keeper cannot be null");
+        require(initialization._longToken != address(0), "Long token cannot be null");
+        require(initialization._shortToken != address(0), "Short token cannot be null");
+        require(initialization._poolCommitter != address(0), "PoolCommitter cannot be null");
+        require(initialization._invariantCheck != address(0), "InvariantCheck cannot be null");
         require(initialization._fee < PoolSwapLibrary.WAD_PRECISION, "Fee >= 100%");
         require(initialization._secondaryFeeSplitPercent <= 100, "Secondary fee split cannot exceed 100%");
         require(initialization._updateInterval != 0, "Update interval cannot be 0");
@@ -372,7 +372,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
      * @dev Emits `FeeAddressUpdated` event on success
      */
     function updateFeeAddress(address account) external override onlyGov onlyUnpaused {
-        require(account != address(0), "Account cannot be 0 address");
+        require(account != address(0), "Account cannot be null");
         address oldFeeAddress = feeAddress;
         feeAddress = account;
         emit FeeAddressUpdated(oldFeeAddress, account);
@@ -394,7 +394,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
      * @param _keeper New address of the keeper contract
      */
     function setKeeper(address _keeper) external override onlyGov {
-        require(_keeper != address(0), "Keeper address cannot be 0 address");
+        require(_keeper != address(0), "Keeper cannot be null");
         address oldKeeper = keeper;
         keeper = _keeper;
         emit KeeperAddressChanged(oldKeeper, _keeper);
@@ -412,7 +412,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
      */
     function transferGovernance(address _governance) external override onlyGov {
         require(_governance != governance, "New governance address cannot be same as old governance address");
-        require(_governance != address(0), "Governance address cannot be 0 address");
+        require(_governance != address(0), "Governance cannot be null");
         provisionalGovernance = _governance;
         governanceTransferInProgress = true;
         emit ProvisionalGovernanceChanged(_governance);

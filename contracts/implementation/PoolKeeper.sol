@@ -49,7 +49,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
 
     // #### Functions
     constructor(address _factory) {
-        require(_factory != address(0), "Factory cannot be 0 address");
+        require(_factory != address(0), "Factory cannot be null");
         factory = IPoolFactory(_factory);
     }
 

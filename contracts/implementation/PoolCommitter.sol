@@ -129,7 +129,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         uint256 _changeInterval
     ) external override initializer {
         require(_factory != address(0), "Factory cannot be null");
-        require(_autoClaim != address(0), "AutoClaim address cannot be null");
+        require(_autoClaim != address(0), "AutoClaim cannot be null");
         require(_feeController != address(0), "fee controller cannot be null");
         require(_invariantCheck != address(0), "invariantCheck cannot be null");
         updateIntervalId = 1;
@@ -821,7 +821,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
      * @dev Emits a `QuoteAndPoolChanged` event on success
      */
     function setPool(address _leveragedPool) external override onlyFactory {
-        require(_leveragedPool != address(0), "Leveraged pool address cannot be 0 address");
+        require(_leveragedPool != address(0), "Leveraged pool cannot be null");
 
         leveragedPool = _leveragedPool;
         tokens = ILeveragedPool(leveragedPool).poolTokens();

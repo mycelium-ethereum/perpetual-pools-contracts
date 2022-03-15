@@ -19,7 +19,7 @@ contract InvariantCheck is IInvariantCheck {
      * @dev Throws if factory address is null
      */
     constructor(address _factory) {
-        require(_factory != address(0), "Factory address cannot be null");
+        require(_factory != address(0), "Factory cannot be null");
         poolFactory = IPoolFactory(_factory);
     }
 
