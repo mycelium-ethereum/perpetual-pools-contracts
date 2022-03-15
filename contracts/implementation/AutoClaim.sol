@@ -30,6 +30,7 @@ contract AutoClaim is IAutoClaim {
     /**
      * @notice Pay for your commit to be claimed. This means that a willing participant can claim on `user`'s behalf when the current update interval ends. Claims a previously pending and claimable request before creating the requested claim-request.
      * @dev Only callable by this contract's associated PoolCommitter instance. This prevents griefing. Consider a permissionless function, where a user can claim that somebody else wants to auto claim when they do not.
+     * @dev Emits a `PaidRequestExecution` event on successful claim for pending commit.
      * @param user The user who wants to autoclaim.
      */
     function makePaidClaimRequest(address user) external payable override onlyPoolCommitter {
@@ -49,6 +50,7 @@ contract AutoClaim is IAutoClaim {
                 if (reward > 0) {
                     Address.sendValue(payable(user), reward);
                 }
+                emit PaidRequestExecution(user, msg.sender, request.reward);
             } else {
                 // If the claim request is pending but not yet valid (it was made in the current commit), we want to add to the value.
                 // Note that in context, the user *usually* won't need or want to increment `ClaimRequest.reward` more than once because the first call to `payForClaim` should suffice.
