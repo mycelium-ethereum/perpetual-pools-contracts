@@ -138,14 +138,15 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
             uint256 longMintAmount,
             uint256 shortMintAmount,
             uint256 newLongBalance,
-            uint256 newShortBalance
+            uint256 newShortBalance,
+            uint256 newLastPriceTimestamp
         ) = IPoolCommitter(poolCommitter).executeCommitments(
                 lastPriceTimestamp,
                 updateInterval,
                 longBalance,
                 shortBalance
             );
-        lastPriceTimestamp = block.timestamp;
+        lastPriceTimestamp = newLastPriceTimestamp;
         longBalance = newLongBalance;
         shortBalance = newShortBalance;
         IPoolToken(tokens[LONG_INDEX]).mint(address(this), longMintAmount);

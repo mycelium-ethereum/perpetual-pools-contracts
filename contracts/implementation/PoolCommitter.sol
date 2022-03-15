@@ -491,6 +491,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
      * @return shortTotalSupplyChange The amount of short pool tokens that have been added to the supply, passed back to LeveragedPool to mint them.
      * @return newLongBalance The updated longBalance
      * @return newShortBalance The updated longBalance
+     * @return lastPriceTimestamp The correct price timestamp for LeveragedPool to set. This is in case not all update intervals get upkept, we can track the time of the most recent upkept one.
      */
     function executeCommitments(
         uint256 lastPriceTimestamp,
@@ -502,6 +503,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         override
         onlyPool
         returns (
+            uint256,
             uint256,
             uint256,
             uint256,
@@ -535,25 +537,37 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
          * In reality, this should never iterate more than once, since more than one update interval
          * should never be passed without the previous one being upkept.
          */
-        uint256 longTotalSupply = IERC20(tokens[LONG_INDEX]).totalSupply();
-        uint256 shortTotalSupply = IERC20(tokens[SHORT_INDEX]).totalSupply();
-        uint256 longTotalSupplyBefore = longTotalSupply;
-        uint256 shortTotalSupplyBefore = shortTotalSupply;
-        uint256 _updateIntervalId;
+
+        CommitmentExecutionTracking memory executionTracking = CommitmentExecutionTracking({
+            longTotalSupply: IERC20(tokens[LONG_INDEX]).totalSupply(),
+            shortTotalSupply: IERC20(tokens[SHORT_INDEX]).totalSupply(),
+            longTotalSupplyBefore: 0,
+            shortTotalSupplyBefore: 0,
+            _updateIntervalId: 0
+        });
+
+        executionTracking.longTotalSupplyBefore = executionTracking.longTotalSupply;
+        executionTracking.shortTotalSupplyBefore = executionTracking.shortTotalSupply;
+
         while (true) {
             if (block.timestamp >= lastPriceTimestamp + updateInterval * counter) {
                 // Another update interval has passed, so we have to do the nextIntervalCommit as well
-                _updateIntervalId = updateIntervalId;
-                burnFeeHistory[_updateIntervalId] = burningFee;
-                (longTotalSupply, shortTotalSupply, longBalance, shortBalance) = executeGivenCommitments(
-                    totalPoolCommitments[_updateIntervalId],
-                    longTotalSupply,
-                    shortTotalSupply,
+                executionTracking._updateIntervalId = updateIntervalId;
+                burnFeeHistory[executionTracking._updateIntervalId] = burningFee;
+                (
+                    executionTracking.longTotalSupply,
+                    executionTracking.shortTotalSupply,
+                    longBalance,
+                    shortBalance
+                ) = executeGivenCommitments(
+                    totalPoolCommitments[executionTracking._updateIntervalId],
+                    executionTracking.longTotalSupply,
+                    executionTracking.shortTotalSupply,
                     longBalance,
                     shortBalance
                 );
-                emit ExecutedCommitsForInterval(_updateIntervalId, burningFee);
-                delete totalPoolCommitments[_updateIntervalId];
+                emit ExecutedCommitsForInterval(executionTracking._updateIntervalId, burningFee);
+                delete totalPoolCommitments[executionTracking._updateIntervalId];
 
                 // counter overflowing would require an unrealistic number of update intervals
                 updateIntervalId += 1;
@@ -568,15 +582,24 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         }
 
         updateMintingFee(
-            PoolSwapLibrary.getPrice(longBalance, longTotalSupply),
-            PoolSwapLibrary.getPrice(shortBalance, shortTotalSupply)
+            PoolSwapLibrary.getPrice(longBalance, executionTracking.longTotalSupply),
+            PoolSwapLibrary.getPrice(shortBalance, executionTracking.shortTotalSupply)
         );
 
+        if (block.timestamp >= lastPriceTimestamp + updateInterval * counter) {
+            // check if finished
+            // shift lastPriceTimestamp so next time the executeCommitments() will continue where it left off
+            lastPriceTimestamp = lastPriceTimestamp + updateInterval * counter;
+        } else {
+            // Set to current time if finished every update interval
+            lastPriceTimestamp = block.timestamp;
+        }
         return (
-            longTotalSupply - longTotalSupplyBefore,
-            shortTotalSupply - shortTotalSupplyBefore,
+            executionTracking.longTotalSupply - executionTracking.longTotalSupplyBefore,
+            executionTracking.shortTotalSupply - executionTracking.shortTotalSupplyBefore,
             longBalance,
-            shortBalance
+            shortBalance,
+            lastPriceTimestamp
         );
     }
 
