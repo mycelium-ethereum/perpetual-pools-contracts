@@ -180,7 +180,7 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
         // this also stores the pool address in the committer
         // finalise pool setup
         pool.initialize(initialization);
-        IPoolCommitter(poolCommitterAddress).setQuoteAndPool(deploymentParameters.quoteToken, _pool);
+        IPoolCommitter(poolCommitterAddress).setPool(_pool);
         poolKeeper.newPool(_pool);
         pools[numPools] = _pool;
         // numPools overflowing would require an unrealistic number of markets

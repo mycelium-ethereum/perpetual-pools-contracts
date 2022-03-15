@@ -791,7 +791,6 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
 
     /**
      * @notice Sets the quote token address and the address of the associated `LeveragedPool` contract to the provided values
-     * @param _quoteToken Address of the quote token to use
      * @param _leveragedPool Address of the pool to use
      * @dev Only callable by the associated `PoolFactory` contract
      * @dev Throws if either address are null
