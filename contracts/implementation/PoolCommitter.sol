@@ -672,7 +672,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
 
         uint8 maxIterations = unAggregatedLength < MAX_ITERATIONS ? uint8(unAggregatedLength) : MAX_ITERATIONS; // casting to uint8 is safe because we know it is less than MAX_ITERATIONS, a uint8
 
-        for (uint256 i = 0; i < maxIterations; i++) {
+        for (uint256 i = 0; i < maxIterations; i = unchecked_inc(i)) {
             uint256 id = currentIntervalIds[i];
             if (id == 0) {
                 continue;
@@ -773,7 +773,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
 
         uint256[] memory currentIntervalIds = unAggregatedCommitments[user];
         uint256 unAggregatedLength = currentIntervalIds.length;
-        for (uint256 i = 0; i < unAggregatedLength; i++) {
+        for (uint256 i = 0; i < unAggregatedLength; i = unchecked_inc(i)) {
             uint256 id = currentIntervalIds[i];
             if (id == 0) {
                 continue;
@@ -884,5 +884,11 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
     function unpause() external override onlyGov {
         paused = false;
         emit Unpaused();
+    }
+
+    function unchecked_inc(uint256 i) private pure returns (uint256) {
+        unchecked {
+            return i + 1;
+        }
     }
 }

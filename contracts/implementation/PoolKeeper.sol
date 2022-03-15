@@ -88,7 +88,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      */
     function checkUpkeepMultiplePools(address[] calldata _pools) external view override returns (bool) {
         uint256 poolsLength = _pools.length;
-        for (uint256 i = 0; i < poolsLength; i++) {
+        for (uint256 i = 0; i < poolsLength; i = unchecked_inc(i)) {
             if (isUpkeepRequiredSinglePool(_pools[i])) {
                 // One has been found that requires upkeeping
                 return true;
@@ -159,7 +159,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      */
     function performUpkeepMultiplePools(address[] calldata pools) external override {
         uint256 poolsLength = pools.length;
-        for (uint256 i = 0; i < poolsLength; i++) {
+        for (uint256 i = 0; i < poolsLength; i = unchecked_inc(i)) {
             performUpkeepSinglePool(pools[i]);
         }
     }
@@ -301,5 +301,11 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     function setGasPrice(uint256 _price) external onlyOwner {
         gasPrice = _price;
         emit GasPriceChanged(_price);
+    }
+
+    function unchecked_inc(uint256 i) private pure returns (uint256) {
+        unchecked {
+            return i + 1;
+        }
     }
 }

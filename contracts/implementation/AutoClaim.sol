@@ -119,7 +119,7 @@ contract AutoClaim is IAutoClaim {
         uint256 nrUsers = users.length;
         require(nrUsers == poolCommitterAddresses.length, "Supplied arrays must be same length");
         uint256 reward;
-        for (uint256 i; i < nrUsers; i++) {
+        for (uint256 i; i < nrUsers; i = unchecked_inc(i)) {
             require(poolFactory.isValidPoolCommitter(poolCommitterAddresses[i]), "Invalid pool committer contract");
             IPoolCommitter poolCommitter = IPoolCommitter(poolCommitterAddresses[i]);
             uint256 currentUpdateIntervalId = poolCommitter.updateIntervalId();
@@ -144,7 +144,7 @@ contract AutoClaim is IAutoClaim {
         require(poolFactory.isValidPoolCommitter(poolCommitterAddress), "Invalid pool committer contract");
         IPoolCommitter poolCommitter = IPoolCommitter(poolCommitterAddress);
         uint256 currentUpdateIntervalId = poolCommitter.updateIntervalId();
-        for (uint256 i; i < users.length; i++) {
+        for (uint256 i; i < users.length; i = unchecked_inc(i)) {
             reward += claim(users[i], poolCommitterAddress, poolCommitter, currentUpdateIntervalId);
         }
         if (reward > 0) {
@@ -207,6 +207,12 @@ contract AutoClaim is IAutoClaim {
         returns (bool)
     {
         return request.updateIntervalId > 0 && request.updateIntervalId < currentUpdateIntervalId;
+    }
+
+    function unchecked_inc(uint256 i) private pure returns (uint256) {
+        unchecked {
+            return i + 1;
+        }
     }
 
     receive() external payable {

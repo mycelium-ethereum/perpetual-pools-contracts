@@ -192,7 +192,7 @@ contract SMAOracle is IOracleWrapper {
         int256 S;
 
         /* linear scan over the [n - k, n] subsequence */
-        for (uint256 i = n - k; i < n; i++) {
+        for (uint256 i = n - k; i < n; i = unchecked_inc(i)) {
             S += xs[i];
         }
 
@@ -210,5 +210,11 @@ contract SMAOracle is IOracleWrapper {
         int256 _price = SMA(IPriceObserver(observer).getAll(), periods);
         bytes memory _data;
         return (_price, _data);
+    }
+
+    function unchecked_inc(uint256 i) private pure returns (uint256) {
+        unchecked {
+            return i + 1;
+        }
     }
 }

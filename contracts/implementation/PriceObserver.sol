@@ -136,12 +136,18 @@ contract PriceObserver is Ownable, IPriceObserver {
         uint256 n = length();
 
         /* linear scan over the [1, n] subsequence */
-        for (uint256 i = 1; i < n; i++) {
+        for (uint256 i = 1; i < n; i = unchecked_inc(i)) {
             observations[i - 1] = observations[i];
         }
 
         /* rotate `x` into `observations` from the right (remember, we're
          * **left** rotating -- with padding!) */
         observations[n - 1] = x;
+    }
+
+    function unchecked_inc(uint256 i) private pure returns (uint256) {
+        unchecked {
+            return i + 1;
+        }
     }
 }
