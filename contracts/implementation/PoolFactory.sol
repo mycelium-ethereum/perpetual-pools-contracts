@@ -103,7 +103,7 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
             _leverageAmount: 1,
             _feeAddress: address(this),
             _secondaryFeeAddress: address(this),
-            _quoteToken: address(this),
+            _settlementToken: address(this),
             _secondaryFeeSplitPercent: 0
         });
         poolBase.initialize(dummyInitialization);
@@ -137,7 +137,7 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
             "PoolKeeper: leveraged amount invalid"
         );
         require(
-            IERC20DecimalsWrapper(deploymentParameters.quoteToken).decimals() <= MAX_DECIMALS,
+            IERC20DecimalsWrapper(deploymentParameters.settlementToken).decimals() <= MAX_DECIMALS,
             "Decimal precision too high"
         );
 
@@ -146,7 +146,7 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
                 deploymentParameters.frontRunningInterval,
                 deploymentParameters.updateInterval,
                 deploymentParameters.leverageAmount,
-                deploymentParameters.quoteToken,
+                deploymentParameters.settlementToken,
                 deploymentParameters.oracleWrapper
             )
         );
@@ -172,7 +172,7 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
             "PoolKeeper: leveraged amount invalid"
         );
         require(
-            IERC20DecimalsWrapper(deploymentParameters.quoteToken).decimals() <= MAX_DECIMALS,
+            IERC20DecimalsWrapper(deploymentParameters.settlementToken).decimals() <= MAX_DECIMALS,
             "Decimal precision too high"
         );
 
@@ -198,18 +198,18 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
             _leverageAmount: deploymentParameters.leverageAmount,
             _feeAddress: feeReceiver,
             _secondaryFeeAddress: msg.sender,
-            _quoteToken: deploymentParameters.quoteToken,
+            _settlementToken: deploymentParameters.settlementToken,
             _secondaryFeeSplitPercent: secondaryFeeSplitPercent
         });
 
-        // approve the quote token on the pool committer to finalise linking
+        // approve the settlement token on the pool committer to finalise linking
         // this also stores the pool address in the committer
         // finalise pool setup
         pool.initialize(initialization);
         IPoolCommitter(poolCommitterAddress).setPool(_pool);
         emit DeployCommitter(
             poolCommitterAddress,
-            deploymentParameters.quoteToken,
+            deploymentParameters.settlementToken,
             _pool,
             deploymentParameters.changeInterval,
             deploymentParameters.feeController
@@ -241,11 +241,11 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
         string memory direction
     ) internal returns (address) {
         string memory poolNameAndSymbol = string(abi.encodePacked(leverage, direction, deploymentParameters.poolName));
-        uint8 settlementDecimals = IERC20DecimalsWrapper(deploymentParameters.quoteToken).decimals();
+        uint8 settlementDecimals = IERC20DecimalsWrapper(deploymentParameters.settlementToken).decimals();
         bytes32 uniqueTokenHash = keccak256(
             abi.encode(
                 deploymentParameters.leverageAmount,
-                deploymentParameters.quoteToken,
+                deploymentParameters.settlementToken,
                 deploymentParameters.oracleWrapper,
                 direction
             )
