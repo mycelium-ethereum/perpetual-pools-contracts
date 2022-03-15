@@ -116,9 +116,9 @@ contract AutoClaim is IAutoClaim {
         external
         override
     {
-        require(users.length == poolCommitterAddresses.length, "Supplied arrays must be same length");
-        uint256 reward;
         uint256 nrUsers = users.length;
+        require(nrUsers == poolCommitterAddresses.length, "Supplied arrays must be same length");
+        uint256 reward;
         for (uint256 i; i < nrUsers; i++) {
             require(poolFactory.isValidPoolCommitter(poolCommitterAddresses[i]), "Invalid pool committer contract");
             IPoolCommitter poolCommitter = IPoolCommitter(poolCommitterAddresses[i]);
