@@ -85,7 +85,7 @@ describe("LeveragedPool - executeCommitment: Long Burn", () => {
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(9, 9)
             await poolCommitter.claim(signers[0].address)
-            expect(await pool.longBalance()).to.eq(amountCommitted)
+            expect(await pool.longBalance()).to.eq(0)
         })
         it("should reduce the shadow long burn pool balance", async () => {
             expect(
