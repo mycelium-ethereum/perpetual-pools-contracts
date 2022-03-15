@@ -588,10 +588,11 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             PoolSwapLibrary.getPrice(shortBalance, executionTracking.shortTotalSupply)
         );
 
-        if (block.timestamp >= lastPriceTimestamp + updateInterval * counter) {
+        // Subtract counter by 1 to accurately reflect how many update intervals were executed
+        if (block.timestamp >= lastPriceTimestamp + updateInterval * (counter - 1)) {
             // check if finished
             // shift lastPriceTimestamp so next time the executeCommitments() will continue where it left off
-            lastPriceTimestamp = lastPriceTimestamp + updateInterval * counter;
+            lastPriceTimestamp = lastPriceTimestamp + updateInterval * (counter - 1);
         } else {
             // Set to current time if finished every update interval
             lastPriceTimestamp = block.timestamp;
