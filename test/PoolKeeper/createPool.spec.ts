@@ -37,7 +37,6 @@ describe("PoolKeeper - createPool", () => {
             quoteToken: token.address,
             oracleWrapper: oracleWrapper.address,
             settlementEthOracle: settlementEthOracle.address,
-            invariantCheckContract: setup.invariantCheck.address,
             feeController: signers[0].address,
             mintingFee: 0,
             burningFee: 0,

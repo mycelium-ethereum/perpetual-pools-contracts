@@ -123,8 +123,10 @@ contract SMAOracle is IOracleWrapper {
      * @dev Recomputes SMA across sample size (`periods`)
      */
     function getPrice() external view override returns (int256) {
+        IPriceObserver priceObserver = IPriceObserver(observer);
+
         /* update current reported SMA price */
-        return SMA(IPriceObserver(observer).getAll(), periods);
+        return SMA(priceObserver.getAll(), periods);
     }
 
     /**
