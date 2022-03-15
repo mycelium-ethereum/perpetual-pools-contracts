@@ -75,10 +75,8 @@ contract SMAOracle is IOracleWrapper {
 
     uint8 public constant MAX_PERIODS = 24;
 
-    uint8 public constant MAX_DECIMALS = 18;
+    uint8 public constant override decimals = 18;
     int256 public immutable scaler;
-    /// Maximum number of elements storable by the backing array
-    uint256 public constant MAX_NUM_ELEMS = 24;
 
     constructor(
         address _inputFeedAddress,
@@ -91,18 +89,14 @@ contract SMAOracle is IOracleWrapper {
         require(_updateInterval != 0, "SMA: Update interval cannot be 0");
 
         uint8 inputFeedDecimals = IOracleWrapper(_inputFeedAddress).decimals();
-        require(inputFeedDecimals <= MAX_DECIMALS, "SMA: Decimal precision too high");
+        require(inputFeedDecimals <= decimals, "SMA: Decimal precision too high");
         /* `scaler` is always <= 10^18 and >= 1 so this cast is safe */
-        scaler = int256(10**(MAX_DECIMALS - inputFeedDecimals));
+        scaler = int256(10**(decimals - inputFeedDecimals));
 
         numPeriods = _numPeriods;
         updateInterval = _updateInterval;
         inputFeedAddress = _inputFeedAddress;
         deployer = _deployer;
-    }
-
-    function decimals() external view override returns (uint8) {
-        return MAX_DECIMALS;
     }
 
     function oracle() external view override returns (address) {
