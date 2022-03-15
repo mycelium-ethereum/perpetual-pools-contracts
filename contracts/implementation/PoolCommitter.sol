@@ -18,6 +18,8 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
     uint128 public constant LONG_INDEX = 0;
     uint128 public constant SHORT_INDEX = 1;
 
+    // 15 was chosen because it will definitely fit in a block on Arbitrum which can be tricky to ascertain definitive computation cap without trial and error, while it is also a reasonable number of upkeeps to get executed in one transaction
+    uint8 public constant MAX_ITERATIONS = 15;
     IAutoClaim public autoClaim;
     uint128 public override updateIntervalId = 1;
     // The amount that is extracted from each mint and burn, being left in the pool. Given as the decimal * 10 ^ 18. For example, 60% fee is 0.6 * 10 ^ 18
@@ -508,7 +510,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             uint256
         )
     {
-        uint32 counter = 1;
+        uint8 counter = 1;
 
         /*
          * (old)
@@ -540,7 +542,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         uint256 longTotalSupplyBefore = longTotalSupply;
         uint256 shortTotalSupplyBefore = shortTotalSupply;
         uint256 _updateIntervalId;
-        while (true) {
+        while (counter <= MAX_ITERATIONS) {
             if (block.timestamp >= lastPriceTimestamp + updateInterval * counter) {
                 // Another update interval has passed, so we have to do the nextIntervalCommit as well
                 _updateIntervalId = updateIntervalId;
@@ -667,7 +669,10 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
 
         uint256[] memory currentIntervalIds = unAggregatedCommitments[user];
         uint256 unAggregatedLength = currentIntervalIds.length;
-        for (uint256 i = 0; i < unAggregatedLength; i++) {
+
+        uint8 maxIterations = unAggregatedLength < MAX_ITERATIONS ? uint8(unAggregatedLength) : MAX_ITERATIONS; // casting to uint8 is safe because we know it is less than MAX_ITERATIONS, a uint8
+
+        for (uint256 i = 0; i < maxIterations; i++) {
             uint256 id = currentIntervalIds[i];
             if (id == 0) {
                 continue;
