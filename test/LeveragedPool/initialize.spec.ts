@@ -349,7 +349,7 @@ describe("LeveragedPool - initialize", () => {
                     _quoteToken: ethers.constants.AddressZero,
                     _secondaryFeeSplitPercent: 10,
                 })
-            ).to.rejectedWith("Quote token cannot be 0 address")
+            ).to.rejectedWith("Quote token cannot be null")
         })
         it("should revert if oracleWrapper address is the zero address", async () => {
             await expect(
@@ -372,7 +372,7 @@ describe("LeveragedPool - initialize", () => {
                     _quoteToken: quoteToken,
                     _secondaryFeeSplitPercent: 10,
                 })
-            ).to.rejectedWith("Oracle wrapper cannot be 0 address")
+            ).to.rejectedWith("Oracle wrapper cannot be null")
         })
         it("should revert if the fee address is the zero address", async () => {
             await expect(
@@ -395,7 +395,7 @@ describe("LeveragedPool - initialize", () => {
                     _quoteToken: quoteToken,
                     _secondaryFeeSplitPercent: 10,
                 })
-            ).to.rejectedWith("Fee address cannot be 0 address")
+            ).to.rejectedWith("Fee cannot be null")
         })
         it("should revert if the update interval is zero", async () => {
             await expect(
