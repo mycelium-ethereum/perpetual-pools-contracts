@@ -68,7 +68,7 @@ describe("LeveragedPool - executeCommitment: Long Mint", () => {
             await pool.poolUpkeep(9, 10)
             expect(await pool.longBalance()).to.eq(amountCommitted)
         })
-        it("should mint long pair tokens", async () => {
+        it("should add long pool tokens to aggregate balance", async () => {
             expect(await longToken.balanceOf(signers[0].address)).to.eq(0)
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(9, 10)
@@ -76,6 +76,15 @@ describe("LeveragedPool - executeCommitment: Long Mint", () => {
                 (await poolCommitter.getAggregateBalance(signers[0].address))
                     .longTokens
             ).to.eq(amountCommitted)
+        })
+        it("should mint short tokens", async () => {
+            expect(await longToken.balanceOf(signers[0].address)).to.eq(0)
+            await timeout(updateInterval * 1000)
+            await pool.poolUpkeep(9, 10)
+            await poolCommitter.claim(signers[0].address)
+            expect(await longToken.balanceOf(signers[0].address)).to.eq(
+                amountCommitted
+            )
         })
     })
 })

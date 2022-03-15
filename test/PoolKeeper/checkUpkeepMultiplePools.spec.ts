@@ -80,7 +80,6 @@ const setupHook = async () => {
     await library.deployed()
     const poolKeeperFactory = (await ethers.getContractFactory("PoolKeeper", {
         signer: signers[0],
-        libraries: { PoolSwapLibrary: library.address },
     })) as PoolKeeper__factory
     const PoolFactory = (await ethers.getContractFactory("PoolFactory", {
         signer: signers[0],
@@ -89,6 +88,14 @@ const setupHook = async () => {
     factory = await (
         await PoolFactory.deploy(generateRandomAddress(), signers[0].address)
     ).deployed()
+
+    const invariantCheckFactory = (await ethers.getContractFactory(
+        "InvariantCheck",
+        signers[0]
+    )) as InvariantCheck__factory
+
+    const invariantCheck = await invariantCheckFactory.deploy(factory.address)
+    await factory.setInvariantCheck(invariantCheck.address)
 
     const autoClaimFactory = (await ethers.getContractFactory("AutoClaim", {
         signer: signers[0],
@@ -102,14 +109,6 @@ const setupHook = async () => {
 
     await factory.connect(signers[0]).setPoolKeeper(poolKeeper.address)
 
-    const invariantCheckFactory = (await ethers.getContractFactory(
-        "InvariantCheck",
-        signers[0]
-    )) as InvariantCheck__factory
-
-    const invariantCheck = await invariantCheckFactory.deploy(factory.address)
-    await factory.setInvariantCheck(invariantCheck.address)
-
     // Create pool
     const deploymentData = {
         poolName: POOL_CODE,
@@ -119,7 +118,6 @@ const setupHook = async () => {
         settlementToken: settlementToken,
         oracleWrapper: oracleWrapper.address,
         settlementEthOracle: settlementEthOracle.address,
-        invariantCheckContract: invariantCheck.address,
         feeController: signers[0].address,
         mintingFee: 0,
         burningFee: 0,
@@ -135,7 +133,6 @@ const setupHook = async () => {
         settlementToken: settlementToken,
         oracleWrapper: oracleWrapper.address,
         settlementEthOracle: settlementEthOracle.address,
-        invariantCheckContract: invariantCheck.address,
         feeController: signers[0].address,
         mintingFee: 0,
         burningFee: 0,

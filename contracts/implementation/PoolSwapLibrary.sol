@@ -27,12 +27,12 @@ library PoolSwapLibrary {
         bytes16 shortPrice;
         uint256 currentUpdateIntervalId;
         uint256 updateIntervalId;
-        uint256 longMintAmount;
-        uint256 longBurnAmount;
-        uint256 shortMintAmount;
-        uint256 shortBurnAmount;
-        uint256 longBurnShortMintAmount;
-        uint256 shortBurnLongMintAmount;
+        uint256 longMintSettlement;
+        uint256 longBurnPoolTokens;
+        uint256 shortMintSettlement;
+        uint256 shortBurnPoolTokens;
+        uint256 longBurnShortMintPoolTokens;
+        uint256 shortBurnLongMintPoolTokens;
         bytes16 burnFee;
     }
 
@@ -287,13 +287,11 @@ library PoolSwapLibrary {
     }
 
     /**
-     * @notice Returns true if the given timestamp is BEFORE the frontRunningInterval starts,
-     *         which is allowed for uncommitment.
-     * @dev If you try to uncommit AFTER the frontRunningInterval, it should revert.
+     * @notice Returns true if the given timestamp is BEFORE the frontRunningInterval starts
      * @param subjectTime The timestamp for which you want to calculate if it was beforeFrontRunningInterval
      * @param lastPriceTimestamp The timestamp of the last price update
      * @param updateInterval The interval between price updates
-     * @param frontRunningInterval The window of time before a price udpate users can not uncommit or have their commit executed from
+     * @param frontRunningInterval The window of time before a price update in which users can have their commit executed from
      */
     function isBeforeFrontRunningInterval(
         uint256 subjectTime,
@@ -333,7 +331,7 @@ library PoolSwapLibrary {
         } else {
             // frontRunningInterval > updateInterval
             // This is the generalised case, where it could be any number of update intervals in the future
-            uint256 factorDifference = ABDKMathQuad.toUInt(divUInt(frontRunningInterval, updateInterval));
+            uint256 factorDifference = frontRunningInterval / updateInterval;
             uint256 timeOfNextAvailableInterval = lastPriceTimestamp + (updateInterval * (factorDifference + 1));
             // frontRunningInterval is factorDifference times larger than updateInterval
             uint256 minimumUpdateIntervalId = currentUpdateIntervalId + factorDifference;
@@ -364,8 +362,7 @@ library PoolSwapLibrary {
         if ((balance == 0) || (tokenSupply + shadowBalance == 0) || (amountIn == 0)) {
             return amountIn;
         }
-        bytes16 numerator = ABDKMathQuad.mul(ABDKMathQuad.fromUInt(balance), ABDKMathQuad.fromUInt(amountIn));
-        return ABDKMathQuad.toUInt(ABDKMathQuad.div(numerator, ABDKMathQuad.fromUInt(tokenSupply + shadowBalance)));
+        return (balance * amountIn) / (tokenSupply + shadowBalance);
     }
 
     /**
@@ -388,11 +385,7 @@ library PoolSwapLibrary {
             return amountIn;
         }
 
-        bytes16 numerator = ABDKMathQuad.mul(
-            ABDKMathQuad.fromUInt(tokenSupply + shadowBalance),
-            ABDKMathQuad.fromUInt(amountIn)
-        );
-        return ABDKMathQuad.toUInt(ABDKMathQuad.div(numerator, ABDKMathQuad.fromUInt(balance)));
+        return ((tokenSupply + shadowBalance) * amountIn) / balance;
     }
 
     /**
@@ -438,8 +431,8 @@ library PoolSwapLibrary {
     /**
      * @notice Calculate the number of pool tokens to mint, given some settlement token amount, a price, and a burn amount from other side for instant mint
      * @param price The price of a pool token
-     * @param amount The amount of settlement tokens being used to mint
      * @param oppositePrice The price of the opposite side's pool token
+     * @param amount The amount of settlement tokens being used to mint
      * @param amountBurnedInstantMint The amount of pool tokens that were burnt from the opposite side for an instant mint in this side
      * @return Quantity of pool tokens to mint
      * @dev Throws if price is zero
@@ -495,36 +488,36 @@ library PoolSwapLibrary {
         }
         uint256 longBurnResult; // The amount of settlement tokens to withdraw based on long token burn
         uint256 shortBurnResult; // The amount of settlement tokens to withdraw based on short token burn
-        if (data.longMintAmount > 0 || data.shortBurnLongMintAmount > 0) {
+        if (data.longMintSettlement > 0 || data.shortBurnLongMintPoolTokens > 0) {
             _newLongTokens = getMintWithBurns(
                 data.longPrice,
                 data.shortPrice,
-                data.longMintAmount,
-                data.shortBurnLongMintAmount
+                data.longMintSettlement,
+                data.shortBurnLongMintPoolTokens
             );
         }
 
-        if (data.longBurnAmount > 0) {
+        if (data.longBurnPoolTokens > 0) {
             // Calculate the amount of settlement tokens earned from burning long tokens
-            longBurnResult = getBurn(data.longPrice, data.longBurnAmount);
+            longBurnResult = getBurn(data.longPrice, data.longBurnPoolTokens);
             // Calculate the fee
             _longBurnFee = convertDecimalToUInt(multiplyDecimalByUInt(data.burnFee, longBurnResult)) / WAD_PRECISION;
             // Subtract the fee from settlement token amount
             longBurnResult -= _longBurnFee;
         }
 
-        if (data.shortMintAmount > 0 || data.longBurnShortMintAmount > 0) {
+        if (data.shortMintSettlement > 0 || data.longBurnShortMintPoolTokens > 0) {
             _newShortTokens = getMintWithBurns(
                 data.shortPrice,
                 data.longPrice,
-                data.shortMintAmount,
-                data.longBurnShortMintAmount
+                data.shortMintSettlement,
+                data.longBurnShortMintPoolTokens
             );
         }
 
-        if (data.shortBurnAmount > 0) {
+        if (data.shortBurnPoolTokens > 0) {
             // Calculate the amount of settlement tokens earned from burning short tokens
-            shortBurnResult = getBurn(data.shortPrice, data.shortBurnAmount);
+            shortBurnResult = getBurn(data.shortPrice, data.shortBurnPoolTokens);
             // Calculate the fee
             _shortBurnFee = convertDecimalToUInt(multiplyDecimalByUInt(data.burnFee, shortBurnResult)) / WAD_PRECISION;
             // Subtract the fee from settlement token amount

@@ -96,12 +96,12 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
             expect(
                 await (
                     await getCurrentTotalCommit(poolCommitter)
-                ).longMintAmount
+                ).longMintSettlement
             ).to.eq(amountCommitted)
             expect(
                 await (
                     await getCurrentTotalCommit(poolCommitter)
-                ).longBurnAmount
+                ).longBurnPoolTokens
             ).to.eq(amountCommitted.div(2))
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(lastPrice, lastPrice + 10)
@@ -109,12 +109,12 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
             expect(
                 await (
                     await getCurrentTotalCommit(poolCommitter)
-                ).longBurnAmount
+                ).longBurnPoolTokens
             ).to.eq(0)
             expect(
                 await (
                     await getCurrentTotalCommit(poolCommitter)
-                ).longMintAmount
+                ).longMintSettlement
             ).to.eq(0)
         })
         it("should adjust the balances of the live pools involved", async () => {
@@ -169,19 +169,19 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
         it("should reduce the balances of the shadows pools involved", async () => {
             // Short mint and burn pools
             expect(
-                (await getCurrentTotalCommit(poolCommitter)).shortMintAmount
+                (await getCurrentTotalCommit(poolCommitter)).shortMintSettlement
             ).to.eq(amountCommitted)
             expect(
-                (await getCurrentTotalCommit(poolCommitter)).shortBurnAmount
+                (await getCurrentTotalCommit(poolCommitter)).shortBurnPoolTokens
             ).to.eq(amountCommitted.div(2))
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(lastPrice, 10)
 
             expect(
-                (await getCurrentTotalCommit(poolCommitter)).shortMintAmount
+                (await getCurrentTotalCommit(poolCommitter)).shortMintSettlement
             ).to.eq(0)
             expect(
-                (await getCurrentTotalCommit(poolCommitter)).shortBurnAmount
+                (await getCurrentTotalCommit(poolCommitter)).shortBurnPoolTokens
             ).to.eq(0)
         })
         it("should adjust the balances of the live pools involved", async () => {
@@ -236,18 +236,18 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
                 poolCommitter
             )
 
-            expect(totalMostRecentCommit.shortMintAmount).to.equal(
+            expect(totalMostRecentCommit.shortMintSettlement).to.equal(
                 amountCommitted
             )
-            expect(totalMostRecentCommit.longMintAmount).to.equal(0)
-            expect(userMostRecentCommit.shortMintAmount).to.equal(
+            expect(totalMostRecentCommit.longMintSettlement).to.equal(0)
+            expect(userMostRecentCommit.shortMintSettlement).to.equal(
                 amountCommitted
             )
-            expect(userMostRecentCommit.longMintAmount).to.equal(0)
-            expect(totalNextIntervalCommit.shortMintAmount).to.equal(0)
-            expect(totalNextIntervalCommit.longMintAmount).to.equal(0)
-            expect(userNextIntervalCommit.shortMintAmount).to.equal(0)
-            expect(userNextIntervalCommit.longMintAmount).to.equal(0)
+            expect(userMostRecentCommit.longMintSettlement).to.equal(0)
+            expect(totalNextIntervalCommit.shortMintSettlement).to.equal(0)
+            expect(totalNextIntervalCommit.longMintSettlement).to.equal(0)
+            expect(userNextIntervalCommit.shortMintSettlement).to.equal(0)
+            expect(userNextIntervalCommit.longMintSettlement).to.equal(0)
 
             await timeout((updateInterval - frontRunningInterval / 2) * 1000)
 
@@ -267,21 +267,21 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
                 poolCommitter
             )
 
-            expect(totalMostRecentCommit.shortMintAmount).to.equal(
+            expect(totalMostRecentCommit.shortMintSettlement).to.equal(
                 amountCommitted
             )
-            expect(totalMostRecentCommit.longMintAmount).to.equal(0)
-            expect(userMostRecentCommit.shortMintAmount).to.equal(
+            expect(totalMostRecentCommit.longMintSettlement).to.equal(0)
+            expect(userMostRecentCommit.shortMintSettlement).to.equal(
                 amountCommitted
             )
-            expect(userMostRecentCommit.longMintAmount).to.equal(0)
+            expect(userMostRecentCommit.longMintSettlement).to.equal(0)
 
-            expect(totalNextIntervalCommit.shortMintAmount).to.equal(0)
-            expect(totalNextIntervalCommit.longMintAmount).to.equal(
+            expect(totalNextIntervalCommit.shortMintSettlement).to.equal(0)
+            expect(totalNextIntervalCommit.longMintSettlement).to.equal(
                 amountCommitted.div(2)
             )
-            expect(userNextIntervalCommit.shortMintAmount).to.equal(0)
-            expect(userNextIntervalCommit.longMintAmount).to.equal(
+            expect(userNextIntervalCommit.shortMintSettlement).to.equal(0)
+            expect(userNextIntervalCommit.longMintSettlement).to.equal(
                 amountCommitted.div(2)
             )
 
@@ -309,15 +309,15 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
                 result.signers[0].address
             )
 
-            expect(totalMostRecentCommit.shortMintAmount).to.equal(0)
-            expect(totalMostRecentCommit.longMintAmount).to.equal(0)
-            expect(userMostRecentCommit.shortMintAmount).to.equal(0)
-            expect(userMostRecentCommit.longMintAmount).to.equal(0)
+            expect(totalMostRecentCommit.shortMintSettlement).to.equal(0)
+            expect(totalMostRecentCommit.longMintSettlement).to.equal(0)
+            expect(userMostRecentCommit.shortMintSettlement).to.equal(0)
+            expect(userMostRecentCommit.longMintSettlement).to.equal(0)
 
-            expect(totalNextIntervalCommit.shortMintAmount).to.equal(0)
-            expect(totalNextIntervalCommit.longMintAmount).to.equal(0)
-            expect(userNextIntervalCommit.shortMintAmount).to.equal(0)
-            expect(userNextIntervalCommit.longMintAmount).to.equal(0)
+            expect(totalNextIntervalCommit.shortMintSettlement).to.equal(0)
+            expect(totalNextIntervalCommit.longMintSettlement).to.equal(0)
+            expect(userNextIntervalCommit.shortMintSettlement).to.equal(0)
+            expect(userNextIntervalCommit.longMintSettlement).to.equal(0)
 
             expect(userBalance.longTokens).to.equal(amountCommitted.div(2))
             expect(userBalance.shortTokens).to.equal(amountCommitted)
@@ -387,18 +387,18 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
                 poolCommitter
             )
 
-            expect(totalMostRecentCommit.shortMintAmount).to.equal(
+            expect(totalMostRecentCommit.shortMintSettlement).to.equal(
                 amountCommitted
             )
-            expect(totalMostRecentCommit.longMintAmount).to.equal(0)
-            expect(userMostRecentCommit.shortMintAmount).to.equal(
+            expect(totalMostRecentCommit.longMintSettlement).to.equal(0)
+            expect(userMostRecentCommit.shortMintSettlement).to.equal(
                 amountCommitted
             )
-            expect(userMostRecentCommit.longMintAmount).to.equal(0)
-            expect(totalNextIntervalCommit.shortMintAmount).to.equal(0)
-            expect(totalNextIntervalCommit.longMintAmount).to.equal(0)
-            expect(userNextIntervalCommit.shortMintAmount).to.equal(0)
-            expect(userNextIntervalCommit.longMintAmount).to.equal(0)
+            expect(userMostRecentCommit.longMintSettlement).to.equal(0)
+            expect(totalNextIntervalCommit.shortMintSettlement).to.equal(0)
+            expect(totalNextIntervalCommit.longMintSettlement).to.equal(0)
+            expect(userNextIntervalCommit.shortMintSettlement).to.equal(0)
+            expect(userNextIntervalCommit.longMintSettlement).to.equal(0)
 
             await timeout((updateInterval - frontRunningInterval / 2) * 1000)
 
@@ -417,21 +417,21 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
                 poolCommitter
             )
 
-            expect(totalMostRecentCommit.shortMintAmount).to.equal(
+            expect(totalMostRecentCommit.shortMintSettlement).to.equal(
                 amountCommitted
             )
-            expect(totalMostRecentCommit.longMintAmount).to.equal(0)
-            expect(userMostRecentCommit.shortMintAmount).to.equal(
+            expect(totalMostRecentCommit.longMintSettlement).to.equal(0)
+            expect(userMostRecentCommit.shortMintSettlement).to.equal(
                 amountCommitted
             )
-            expect(userMostRecentCommit.longMintAmount).to.equal(0)
+            expect(userMostRecentCommit.longMintSettlement).to.equal(0)
 
-            expect(totalNextIntervalCommit.shortMintAmount).to.equal(0)
-            expect(totalNextIntervalCommit.longMintAmount).to.equal(
+            expect(totalNextIntervalCommit.shortMintSettlement).to.equal(0)
+            expect(totalNextIntervalCommit.longMintSettlement).to.equal(
                 amountCommitted.div(2)
             )
-            expect(userNextIntervalCommit.shortMintAmount).to.equal(0)
-            expect(userNextIntervalCommit.longMintAmount).to.equal(
+            expect(userNextIntervalCommit.shortMintSettlement).to.equal(0)
+            expect(userNextIntervalCommit.longMintSettlement).to.equal(
                 amountCommitted.div(2)
             )
 
@@ -459,19 +459,19 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
                 result.signers[0].address
             )
 
-            expect(totalMostRecentCommit.shortMintAmount).to.equal(0)
-            expect(totalMostRecentCommit.longMintAmount).to.equal(
+            expect(totalMostRecentCommit.shortMintSettlement).to.equal(0)
+            expect(totalMostRecentCommit.longMintSettlement).to.equal(
                 amountCommitted.div(2)
             )
-            expect(userMostRecentCommit.shortMintAmount).to.equal(0)
-            expect(userMostRecentCommit.longMintAmount).to.equal(
+            expect(userMostRecentCommit.shortMintSettlement).to.equal(0)
+            expect(userMostRecentCommit.longMintSettlement).to.equal(
                 amountCommitted.div(2)
             )
 
-            expect(totalNextIntervalCommit.shortMintAmount).to.equal(0)
-            expect(totalNextIntervalCommit.longMintAmount).to.equal(0)
-            expect(userNextIntervalCommit.shortMintAmount).to.equal(0)
-            expect(userNextIntervalCommit.longMintAmount).to.equal(0)
+            expect(totalNextIntervalCommit.shortMintSettlement).to.equal(0)
+            expect(totalNextIntervalCommit.longMintSettlement).to.equal(0)
+            expect(userNextIntervalCommit.shortMintSettlement).to.equal(0)
+            expect(userNextIntervalCommit.longMintSettlement).to.equal(0)
 
             expect(userBalance.longTokens).to.equal(0)
             expect(userBalance.shortTokens).to.equal(amountCommitted)

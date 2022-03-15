@@ -29,8 +29,6 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
     address public override governance;
     bool public override governanceTransferInProgress;
     address public override provisionalGovernance;
-    // Contract address to receive protocol fees
-    address public feeReceiver;
     // Default fee, annualised; Fee value as a decimal multiplied by 10^18. For example, 50% is represented as 0.5 * 10^18
     uint256 public fee;
     // Percent of fees that go to secondary fee address if applicable.
@@ -44,6 +42,8 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
     uint32 constant DAYS_PER_LEAP_YEAR = 365.2425 days;
     // Default max leverage of 10
     uint16 public maxLeverage = 10;
+    // Contract address to receive protocol fees
+    address public feeReceiver;
 
     /**
      * @notice Format: Pool counter => pool address
@@ -95,7 +95,7 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
             _longToken: address(pairTokenBase),
             _shortToken: address(pairTokenBase),
             _poolCommitter: address(poolCommitterBase),
-            _invariantCheckContract: address(this),
+            _invariantCheck: address(this),
             _poolName: "base",
             _frontRunningInterval: 0,
             _updateInterval: 1,
@@ -120,6 +120,8 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
      * @dev Throws if deployer does not own the oracle wrapper
      * @dev Throws if leverage amount is invalid
      * @dev Throws if decimal precision is too high (i.e., greater than `MAX_DECIMALS`)
+     * @dev The IOracleWrapper declares a `deployer` variable, this is used here to confirm that the pool which uses said oracle wrapper is indeed
+     *      the intended address. This is to prevent a griefing attack in which someone uses the same oracle wrapper with the same parameters *before* the genuine deployer.
      */
     function deployPool(PoolDeployment calldata deploymentParameters) external override returns (address) {
         address _poolKeeper = address(poolKeeper);
@@ -141,6 +143,7 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
 
         bytes32 uniquePoolHash = keccak256(
             abi.encode(
+                deploymentParameters.frontRunningInterval,
                 deploymentParameters.updateInterval,
                 deploymentParameters.leverageAmount,
                 deploymentParameters.settlementToken,
@@ -155,10 +158,10 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
         address poolCommitterAddress = address(poolCommitter);
         poolCommitter.initialize(
             address(this),
-            invariantCheck,
             autoClaim,
             governance,
             deploymentParameters.feeController,
+            invariantCheck,
             deploymentParameters.mintingFee,
             deploymentParameters.burningFee,
             deploymentParameters.changeInterval
@@ -189,7 +192,7 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
             _longToken: deployPairToken(_pool, leverage, deploymentParameters, "L-"),
             _shortToken: deployPairToken(_pool, leverage, deploymentParameters, "S-"),
             _poolCommitter: poolCommitterAddress,
-            _invariantCheckContract: invariantCheck,
+            _invariantCheck: invariantCheck,
             _poolName: string(abi.encodePacked(leverage, "-", deploymentParameters.poolName)),
             _frontRunningInterval: deploymentParameters.frontRunningInterval,
             _updateInterval: deploymentParameters.updateInterval,
@@ -206,6 +209,14 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
         // finalise pool setup
         pool.initialize(initialization);
         IPoolCommitter(poolCommitterAddress).setPool(_pool);
+        emit DeployCommitter(
+            poolCommitterAddress,
+            deploymentParameters.settlementToken,
+            _pool,
+            deploymentParameters.changeInterval,
+            deploymentParameters.feeController
+        );
+
         poolKeeper.newPool(_pool);
         pools[numPools] = _pool;
         // numPools overflowing would require an unrealistic number of markets
@@ -261,18 +272,6 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
     }
 
     /**
-     * @notice Sets the address of the associated `InvariantCheck` contract
-     * @param _invariantCheck Address of the `InvariantCheck`
-     * @dev Throws if provided address is null
-     * @dev Only callable by the owner
-     */
-    function setInvariantCheck(address _invariantCheck) external override onlyGov {
-        require(_invariantCheck != address(0), "address cannot be null");
-        invariantCheck = _invariantCheck;
-        emit InvariantCheckChanged(_invariantCheck);
-    }
-
-    /**
      * @notice Sets the address of the associated `AutoClaim` contract
      * @param _autoClaim Address of the `AutoClaim`
      * @dev Throws if provided address is null
@@ -282,6 +281,18 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
         require(_autoClaim != address(0), "address cannot be null");
         autoClaim = _autoClaim;
         emit AutoClaimChanged(_autoClaim);
+    }
+
+    /**
+     * @notice Sets the address of the associated `InvariantCheck` contract
+     * @param _invariantCheck Address of the `InvariantCheck`
+     * @dev Throws if provided address is null
+     * @dev Only callable by the owner
+     */
+    function setInvariantCheck(address _invariantCheck) external override onlyGov {
+        require(_invariantCheck != address(0), "address cannot be null");
+        invariantCheck = _invariantCheck;
+        emit InvariantCheckChanged(_invariantCheck);
     }
 
     /**

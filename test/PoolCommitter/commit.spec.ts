@@ -81,7 +81,7 @@ describe("LeveragedPool - commit", () => {
         })
         it("should update the total commit amount", async () => {
             expect(
-                (await getCurrentTotalCommit(poolCommitter)).shortMintAmount
+                (await getCurrentTotalCommit(poolCommitter)).shortMintSettlement
             ).to.equal(amountCommitted)
         })
 
@@ -114,11 +114,11 @@ describe("LeveragedPool - commit", () => {
         })
         it("should update the pending short mint balance for short mint commits", async () => {
             expect(
-                (await getCurrentTotalCommit(poolCommitter)).shortMintAmount
+                (await getCurrentTotalCommit(poolCommitter)).shortMintSettlement
             ).to.eq(0)
             await poolCommitter.commit([0], amountCommitted, false, false)
             expect(
-                (await getCurrentTotalCommit(poolCommitter)).shortMintAmount
+                (await getCurrentTotalCommit(poolCommitter)).shortMintSettlement
             ).to.eq(amountCommitted)
         })
 
@@ -136,7 +136,7 @@ describe("LeveragedPool - commit", () => {
             await poolCommitter.claim(signers[0].address)
 
             expect(
-                (await getCurrentTotalCommit(poolCommitter)).shortBurnAmount
+                (await getCurrentTotalCommit(poolCommitter)).shortBurnPoolTokens
             ).to.eq(0)
             await poolCommitter.commit(
                 SHORT_BURN,
@@ -145,18 +145,18 @@ describe("LeveragedPool - commit", () => {
                 false
             )
             expect(
-                (await getCurrentTotalCommit(poolCommitter)).shortBurnAmount
+                (await getCurrentTotalCommit(poolCommitter)).shortBurnPoolTokens
             ).to.eq(amountCommitted)
         })
 
         it("should update the shadow long mint balance for long mint commits", async () => {
             expect(
-                (await getCurrentTotalCommit(poolCommitter)).longMintAmount
+                (await getCurrentTotalCommit(poolCommitter)).longMintSettlement
             ).to.eq(0)
             await poolCommitter.commit(LONG_MINT, amountCommitted, false, false)
 
             expect(
-                (await getCurrentTotalCommit(poolCommitter)).longMintAmount
+                (await getCurrentTotalCommit(poolCommitter)).longMintSettlement
             ).to.eq(amountCommitted)
         })
 
@@ -169,11 +169,11 @@ describe("LeveragedPool - commit", () => {
             await poolCommitter.claim(signers[0].address)
 
             expect(
-                (await getCurrentTotalCommit(poolCommitter)).longBurnAmount
+                (await getCurrentTotalCommit(poolCommitter)).longBurnPoolTokens
             ).to.eq(0)
             await poolCommitter.commit(LONG_BURN, amountCommitted, false, false)
             expect(
-                (await getCurrentTotalCommit(poolCommitter)).longBurnAmount
+                (await getCurrentTotalCommit(poolCommitter)).longBurnPoolTokens
             ).to.eq(amountCommitted)
         })
     })
@@ -226,13 +226,13 @@ describe("LeveragedPool - commit", () => {
                 shortTokenSupplyBefore.sub(amountCommitted)
             ) // Supply decreases
             // Commitment storage updates
-            expect(userMostRecentCommit.balanceShortBurnAmount).to.equal(
+            expect(userMostRecentCommit.balanceShortBurnPoolTokens).to.equal(
                 amountCommitted
             )
-            expect(userMostRecentCommit.shortBurnAmount).to.equal(
+            expect(userMostRecentCommit.shortBurnPoolTokens).to.equal(
                 amountCommitted
             )
-            expect(totalMostRecentCommit.shortBurnAmount).to.equal(
+            expect(totalMostRecentCommit.shortBurnPoolTokens).to.equal(
                 amountCommitted
             )
         })
@@ -279,8 +279,10 @@ describe("LeveragedPool - commit", () => {
                 poolCommitter
             )
 
-            // balanceShortBurnAmount is updated
-            expect(userCommit.balanceShortBurnAmount).to.equal(amountCommitted)
+            // balanceShortBurnPoolTokens is updated
+            expect(userCommit.balanceShortBurnPoolTokens).to.equal(
+                amountCommitted
+            )
             /* SHORT_BURN COMMIT */
             await poolCommitter.commit(
                 SHORT_BURN,
@@ -304,12 +306,12 @@ describe("LeveragedPool - commit", () => {
                 shortTokenSupplyBefore.sub(amountCommitted).sub(amountCommitted)
             )
 
-            // balanceShortBurnAmount gets cleared, because on the update from the second `commit`, it is used and can then be cleared
-            expect(userMostRecentCommit.balanceShortBurnAmount).to.equal(0)
-            expect(userMostRecentCommit.shortBurnAmount).to.equal(
+            // balanceShortBurnPoolTokens gets cleared, because on the update from the second `commit`, it is used and can then be cleared
+            expect(userMostRecentCommit.balanceShortBurnPoolTokens).to.equal(0)
+            expect(userMostRecentCommit.shortBurnPoolTokens).to.equal(
                 amountCommitted.mul(2)
             )
-            expect(totalMostRecentCommit.shortBurnAmount).to.equal(
+            expect(totalMostRecentCommit.shortBurnPoolTokens).to.equal(
                 amountCommitted.mul(2)
             )
 
@@ -389,10 +391,10 @@ describe("LeveragedPool - commit", () => {
             ).settlementTokens
             expect(settlementTokens).to.equal(0)
 
-            expect(userMostRecentCommit.shortMintAmount).to.equal(
+            expect(userMostRecentCommit.shortMintSettlement).to.equal(
                 amountCommitted
             )
-            expect(totalMostRecentCommit.shortMintAmount).to.equal(
+            expect(totalMostRecentCommit.shortMintSettlement).to.equal(
                 amountCommitted
             )
         })
@@ -443,10 +445,10 @@ describe("LeveragedPool - commit", () => {
             ).settlementTokens
             expect(settlementTokens).to.equal(0)
 
-            expect(userMostRecentCommit.shortMintAmount).to.equal(
+            expect(userMostRecentCommit.shortMintSettlement).to.equal(
                 amountCommitted.mul(2)
             )
-            expect(totalMostRecentCommit.shortMintAmount).to.equal(
+            expect(totalMostRecentCommit.shortMintSettlement).to.equal(
                 amountCommitted.mul(2)
             )
 
@@ -506,13 +508,13 @@ describe("LeveragedPool - commit", () => {
                 longTokenSupplyBefore.sub(amountCommitted)
             ) // Supply decreases
             // Commitment storage updates
-            expect(userMostRecentCommit.balanceLongBurnAmount).to.equal(
+            expect(userMostRecentCommit.balanceLongBurnPoolTokens).to.equal(
                 amountCommitted
             )
-            expect(userMostRecentCommit.longBurnAmount).to.equal(
+            expect(userMostRecentCommit.longBurnPoolTokens).to.equal(
                 amountCommitted
             )
-            expect(totalMostRecentCommit.longBurnAmount).to.equal(
+            expect(totalMostRecentCommit.longBurnPoolTokens).to.equal(
                 amountCommitted
             )
         })
@@ -551,8 +553,10 @@ describe("LeveragedPool - commit", () => {
                 poolCommitter
             )
 
-            // balanceLongBurnAmount is updated
-            expect(userCommit.balanceLongBurnAmount).to.equal(amountCommitted)
+            // balanceLongBurnPoolTokens is updated
+            expect(userCommit.balanceLongBurnPoolTokens).to.equal(
+                amountCommitted
+            )
             await poolCommitter.commit(LONG_BURN, amountCommitted, false, false)
 
             const longTokenSupplyAfter = await longToken.totalSupply()
@@ -570,12 +574,12 @@ describe("LeveragedPool - commit", () => {
                 poolCommitter
             )
 
-            // balanceLongBurnAmount gets cleared, because on the update from the second `commit`, it is used and can then be cleared
-            expect(userMostRecentCommit.balanceLongBurnAmount).to.equal(0)
-            expect(userMostRecentCommit.longBurnAmount).to.equal(
+            // balanceLongBurnPoolTokens gets cleared, because on the update from the second `commit`, it is used and can then be cleared
+            expect(userMostRecentCommit.balanceLongBurnPoolTokens).to.equal(0)
+            expect(userMostRecentCommit.longBurnPoolTokens).to.equal(
                 amountCommitted.mul(2)
             )
-            expect(totalMostRecentCommit.longBurnAmount).to.equal(
+            expect(totalMostRecentCommit.longBurnPoolTokens).to.equal(
                 amountCommitted.mul(2)
             )
 
@@ -642,10 +646,10 @@ describe("LeveragedPool - commit", () => {
                 await poolCommitter.getAggregateBalance(signers[0].address)
             ).settlementTokens
             expect(settlementTokens).to.equal(0)
-            expect(userMostRecentCommit.longMintAmount).to.equal(
+            expect(userMostRecentCommit.longMintSettlement).to.equal(
                 amountCommitted
             )
-            expect(totalMostRecentCommit.longMintAmount).to.equal(
+            expect(totalMostRecentCommit.longMintSettlement).to.equal(
                 amountCommitted
             )
         })
@@ -691,10 +695,10 @@ describe("LeveragedPool - commit", () => {
             )
 
             expect(longTokenSupplyAfter).to.equal(longTokenSupplyBefore) // Supply decreases
-            expect(userMostRecentCommit.longMintAmount).to.equal(
+            expect(userMostRecentCommit.longMintSettlement).to.equal(
                 amountCommitted.mul(2)
             )
-            expect(totalMostRecentCommit.longMintAmount).to.equal(
+            expect(totalMostRecentCommit.longMintSettlement).to.equal(
                 amountCommitted.mul(2)
             )
 
@@ -738,10 +742,10 @@ describe("LeveragedPool - commit", () => {
             )
 
             expect(longTokenSupplyAfter).to.equal(longTokenSupplyBefore) // Supply decreases
-            expect(userMostRecentCommit.longMintAmount).to.equal(
+            expect(userMostRecentCommit.longMintSettlement).to.equal(
                 amountCommitted.mul(2)
             )
-            expect(totalMostRecentCommit.longMintAmount).to.equal(
+            expect(totalMostRecentCommit.longMintSettlement).to.equal(
                 amountCommitted.mul(2)
             )
 
@@ -817,17 +821,17 @@ describe("LeveragedPool - commit", () => {
                 await poolCommitter.getAggregateBalance(signers[0].address)
             ).settlementTokens
             expect(settlementTokens).to.equal(0)
-            expect(userMostRecentCommit.longMintAmount).to.equal(
+            expect(userMostRecentCommit.longMintSettlement).to.equal(
                 amountCommitted.mul(2)
             )
-            expect(totalMostRecentCommit.longMintAmount).to.equal(
+            expect(totalMostRecentCommit.longMintSettlement).to.equal(
                 amountCommitted.mul(2)
             )
 
-            expect(userMostRecentCommit.shortMintAmount).to.equal(
+            expect(userMostRecentCommit.shortMintSettlement).to.equal(
                 amountCommitted
             )
-            expect(totalMostRecentCommit.shortMintAmount).to.equal(
+            expect(totalMostRecentCommit.shortMintSettlement).to.equal(
                 amountCommitted
             )
 
@@ -929,16 +933,16 @@ describe("LeveragedPool - commit", () => {
                     longTokenSupplyBefore.sub(amountCommitted)
                 )
                 // Commitment storage updates
-                expect(userMostRecentCommit.balanceLongBurnMintAmount).to.equal(
-                    amountCommitted
-                )
-                expect(userMostRecentCommit.longBurnShortMintAmount).to.equal(
-                    amountCommitted
-                )
-                expect(totalMostRecentCommit.longBurnAmount).to.equal(0)
-                expect(totalMostRecentCommit.longBurnShortMintAmount).to.equal(
-                    amountCommitted
-                )
+                expect(
+                    userMostRecentCommit.balanceLongBurnMintPoolTokens
+                ).to.equal(amountCommitted)
+                expect(
+                    userMostRecentCommit.longBurnShortMintPoolTokens
+                ).to.equal(amountCommitted)
+                expect(totalMostRecentCommit.longBurnPoolTokens).to.equal(0)
+                expect(
+                    totalMostRecentCommit.longBurnShortMintPoolTokens
+                ).to.equal(amountCommitted)
             })
 
             context("Invalid commitments", () => {
@@ -1124,7 +1128,7 @@ describe("LeveragedPool - commit", () => {
                                 signers[0].address,
                                 poolCommitter
                             )
-                        ).balanceLongBurnMintAmount
+                        ).balanceLongBurnMintPoolTokens
                     ).to.equal(amountCommitted)
                     expect(
                         (
@@ -1132,7 +1136,7 @@ describe("LeveragedPool - commit", () => {
                                 signers[0].address,
                                 poolCommitter
                             )
-                        ).longBurnShortMintAmount
+                        ).longBurnShortMintPoolTokens
                     ).to.equal(amountCommitted)
 
                     await timeout(updateInterval * 1000)
@@ -1220,12 +1224,14 @@ describe("LeveragedPool - commit", () => {
                 longTokenSupplyBefore.sub(amountCommitted)
             )
             // Commitment storage updates
-            expect(userMostRecentCommit.balanceLongBurnMintAmount).to.equal(0)
-            expect(userMostRecentCommit.longBurnShortMintAmount).to.equal(
+            expect(userMostRecentCommit.balanceLongBurnMintPoolTokens).to.equal(
+                0
+            )
+            expect(userMostRecentCommit.longBurnShortMintPoolTokens).to.equal(
                 amountCommitted
             )
-            expect(totalMostRecentCommit.longBurnAmount).to.equal(0)
-            expect(totalMostRecentCommit.longBurnShortMintAmount).to.equal(
+            expect(totalMostRecentCommit.longBurnPoolTokens).to.equal(0)
+            expect(totalMostRecentCommit.longBurnShortMintPoolTokens).to.equal(
                 amountCommitted
             )
         })
@@ -1495,12 +1501,14 @@ describe("LeveragedPool - commit", () => {
                 shortTokenSupplyBefore.sub(amountCommitted)
             )
             // Commitment storage updates
-            expect(userMostRecentCommit.balanceShortBurnMintAmount).to.equal(0)
-            expect(userMostRecentCommit.shortBurnLongMintAmount).to.equal(
+            expect(
+                userMostRecentCommit.balanceShortBurnMintPoolTokens
+            ).to.equal(0)
+            expect(userMostRecentCommit.shortBurnLongMintPoolTokens).to.equal(
                 amountCommitted
             )
-            expect(totalMostRecentCommit.shortBurnAmount).to.equal(0)
-            expect(totalMostRecentCommit.shortBurnLongMintAmount).to.equal(
+            expect(totalMostRecentCommit.shortBurnPoolTokens).to.equal(0)
+            expect(totalMostRecentCommit.shortBurnLongMintPoolTokens).to.equal(
                 amountCommitted
             )
         })
@@ -1758,8 +1766,8 @@ describe("LeveragedPool - commit", () => {
                     const totalCommitment = await getCurrentTotalCommit(
                         poolCommitter
                     )
-                    expect(currentCommitment.shortMintAmount).to.equal(0)
-                    expect(totalCommitment.shortMintAmount).to.equal(0)
+                    expect(currentCommitment.shortMintSettlement).to.equal(0)
+                    expect(totalCommitment.shortMintSettlement).to.equal(0)
 
                     const fiveInFutureUser =
                         await poolCommitter.userCommitments(
@@ -1771,10 +1779,10 @@ describe("LeveragedPool - commit", () => {
                             updateIntervalId.add(5)
                         )
 
-                    expect(fiveInFutureUser.shortMintAmount).to.equal(
+                    expect(fiveInFutureUser.shortMintSettlement).to.equal(
                         amountCommitted
                     )
-                    expect(fiveInFutureTotal.shortMintAmount).to.equal(
+                    expect(fiveInFutureTotal.shortMintSettlement).to.equal(
                         amountCommitted
                     )
                 })
@@ -1798,8 +1806,8 @@ describe("LeveragedPool - commit", () => {
                     const totalCommitment = await getCurrentTotalCommit(
                         poolCommitter
                     )
-                    expect(currentCommitment.shortMintAmount).to.equal(0)
-                    expect(totalCommitment.shortMintAmount).to.equal(0)
+                    expect(currentCommitment.shortMintSettlement).to.equal(0)
+                    expect(totalCommitment.shortMintSettlement).to.equal(0)
 
                     const fiveInFutureUser =
                         await poolCommitter.userCommitments(
@@ -1811,10 +1819,10 @@ describe("LeveragedPool - commit", () => {
                             updateIntervalId.add(5)
                         )
 
-                    expect(fiveInFutureUser.shortMintAmount).to.equal(
+                    expect(fiveInFutureUser.shortMintSettlement).to.equal(
                         amountCommitted
                     )
-                    expect(fiveInFutureTotal.shortMintAmount).to.equal(
+                    expect(fiveInFutureTotal.shortMintSettlement).to.equal(
                         amountCommitted
                     )
 
@@ -1937,12 +1945,12 @@ describe("LeveragedPool - commit", () => {
                                 updateIntervalId.add(10)
                             )
 
-                        expect(futureUser.shortMintAmount).to.equal(0)
-                        expect(futureTotal.shortMintAmount).to.equal(0)
-                        expect(futureUser.longMintAmount).to.equal(
+                        expect(futureUser.shortMintSettlement).to.equal(0)
+                        expect(futureTotal.shortMintSettlement).to.equal(0)
+                        expect(futureUser.longMintSettlement).to.equal(
                             amountCommitted
                         )
-                        expect(futureTotal.longMintAmount).to.equal(
+                        expect(futureTotal.longMintSettlement).to.equal(
                             amountCommitted
                         )
 
@@ -2036,10 +2044,10 @@ describe("LeveragedPool - commit", () => {
                     let futureUser = await poolCommitter.userCommitments(signers[0].address, updateIntervalId.add(10))
                     let futureTotal = await poolCommitter.totalPoolCommitments(updateIntervalId.add(10))
 
-                    expect(futureUser.shortMintAmount).to.equal(0);
-                    expect(futureTotal.shortMintAmount).to.equal(0);
-                    expect(futureUser.longMintAmount).to.equal(amountCommitted);
-                    expect(futureTotal.longMintAmount).to.equal(amountCommitted);
+                    expect(futureUser.shortMintSettlement).to.equal(0);
+                    expect(futureTotal.shortMintSettlement).to.equal(0);
+                    expect(futureUser.longMintSettlement).to.equal(amountCommitted);
+                    expect(futureTotal.longMintSettlement).to.equal(amountCommitted);
 
                     await timeout(updateInterval * 10 * 1000)
                     await pool.poolUpkeep(1, 1)

@@ -12,7 +12,6 @@ import {
     ChainlinkOracleWrapper,
     PoolCommitter__factory,
     PoolCommitter,
-    AutoClaim__factory,
     InvariantCheck,
 } from "../../types"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
@@ -52,6 +51,7 @@ describe("LeveragedPool - initialize", () => {
     let long: ERC20
     let oracleWrapper: ChainlinkOracleWrapper
     let settlementEthOracle: ChainlinkOracleWrapper
+    let invariantCheck: InvariantCheck
 
     before(async () => {
         signers = await ethers.getSigners()
@@ -159,6 +159,7 @@ describe("LeveragedPool - initialize", () => {
             oracleWrapper = setupContracts.oracleWrapper
             settlementEthOracle = setupContracts.settlementEthOracle
             settlementToken = setupContracts.token.address
+            invariantCheck = setupContracts.invariantCheck
             const pool = await leveragedPoolFactory.deploy()
             await pool.deployed()
             const poolTokenFactory = (await ethers.getContractFactory(
@@ -217,6 +218,7 @@ describe("LeveragedPool - initialize", () => {
                     _shortToken: short.address,
                     _poolCommitter: poolCommitter.address,
                     _poolName: POOL_CODE,
+                    _invariantCheck: invariantCheck.address,
                     _frontRunningInterval: frontRunningInterval,
                     _updateInterval: updateInterval,
                     _fee: fee,
@@ -225,8 +227,6 @@ describe("LeveragedPool - initialize", () => {
                     _secondaryFeeAddress: ethers.constants.AddressZero,
                     _settlementToken: settlementToken,
                     _secondaryFeeSplitPercent: 10,
-                    _invariantCheckContract:
-                        setupContracts.invariantCheck.address,
                 })
             ).wait()
             const event: Event | undefined = receipt?.events?.find(
@@ -244,7 +244,6 @@ describe("LeveragedPool - initialize", () => {
         let leveragedPool: LeveragedPool
         let testFactoryActual: TestPoolFactory
         let poolCommitter: PoolCommitter
-        let invariantCheck: InvariantCheck
         let long: Contract
         let short: Contract
         beforeEach(async () => {
@@ -260,9 +259,9 @@ describe("LeveragedPool - initialize", () => {
             settlementEthOracle = setupContracts.settlementEthOracle
             settlementToken = setupContracts.token.address
             poolCommitter = setupContracts.poolCommitter
-            invariantCheck = setupContracts.invariantCheck
             long = setupContracts.longToken
             short = setupContracts.shortToken
+            invariantCheck = setupContracts.invariantCheck
 
             const testFactory = (await ethers.getContractFactory(
                 "TestPoolFactory",
@@ -296,6 +295,7 @@ describe("LeveragedPool - initialize", () => {
                 _longToken: long.address,
                 _shortToken: short.address,
                 _poolCommitter: poolCommitter.address,
+                _invariantCheck: invariantCheck.address,
                 _poolName: POOL_CODE,
                 _frontRunningInterval: frontRunningInterval,
                 _updateInterval: updateInterval,
@@ -305,7 +305,6 @@ describe("LeveragedPool - initialize", () => {
                 _secondaryFeeAddress: ethers.constants.AddressZero,
                 _settlementToken: settlementToken,
                 _secondaryFeeSplitPercent: 10,
-                _invariantCheckContract: invariantCheck.address,
             })
             await expect(
                 leveragedPool.initialize({
@@ -316,6 +315,7 @@ describe("LeveragedPool - initialize", () => {
                     _longToken: long.address,
                     _shortToken: short.address,
                     _poolCommitter: poolCommitter.address,
+                    _invariantCheck: invariantCheck.address,
                     _poolName: POOL_CODE,
                     _frontRunningInterval: frontRunningInterval,
                     _updateInterval: updateInterval,
@@ -325,7 +325,6 @@ describe("LeveragedPool - initialize", () => {
                     _secondaryFeeAddress: ethers.constants.AddressZero,
                     _settlementToken: settlementToken,
                     _secondaryFeeSplitPercent: 10,
-                    _invariantCheckContract: invariantCheck.address,
                 })
             ).to.rejectedWith("Initializable: contract is already initialized")
         })
@@ -339,6 +338,7 @@ describe("LeveragedPool - initialize", () => {
                     _longToken: long.address,
                     _shortToken: short.address,
                     _poolCommitter: poolCommitter.address,
+                    _invariantCheck: invariantCheck.address,
                     _poolName: POOL_CODE,
                     _frontRunningInterval: frontRunningInterval,
                     _updateInterval: updateInterval,
@@ -348,7 +348,6 @@ describe("LeveragedPool - initialize", () => {
                     _secondaryFeeAddress: ethers.constants.AddressZero,
                     _settlementToken: ethers.constants.AddressZero,
                     _secondaryFeeSplitPercent: 10,
-                    _invariantCheckContract: invariantCheck.address,
                 })
             ).to.rejectedWith("Settlement token cannot be 0 address")
         })
@@ -361,6 +360,7 @@ describe("LeveragedPool - initialize", () => {
                     _settlementEthOracle: ethers.constants.AddressZero,
                     _longToken: long.address,
                     _shortToken: short.address,
+                    _invariantCheck: invariantCheck.address,
                     _poolCommitter: poolCommitter.address,
                     _poolName: POOL_CODE,
                     _frontRunningInterval: frontRunningInterval,
@@ -371,7 +371,6 @@ describe("LeveragedPool - initialize", () => {
                     _secondaryFeeAddress: ethers.constants.AddressZero,
                     _settlementToken: settlementToken,
                     _secondaryFeeSplitPercent: 10,
-                    _invariantCheckContract: invariantCheck.address,
                 })
             ).to.rejectedWith("Oracle wrapper cannot be 0 address")
         })
@@ -386,6 +385,7 @@ describe("LeveragedPool - initialize", () => {
                     _shortToken: short.address,
                     _poolCommitter: poolCommitter.address,
                     _poolName: POOL_CODE,
+                    _invariantCheck: invariantCheck.address,
                     _frontRunningInterval: frontRunningInterval,
                     _updateInterval: updateInterval,
                     _fee: fee,
@@ -394,7 +394,6 @@ describe("LeveragedPool - initialize", () => {
                     _secondaryFeeAddress: ethers.constants.AddressZero,
                     _settlementToken: settlementToken,
                     _secondaryFeeSplitPercent: 10,
-                    _invariantCheckContract: invariantCheck.address,
                 })
             ).to.rejectedWith("Fee address cannot be 0 address")
         })
@@ -409,6 +408,7 @@ describe("LeveragedPool - initialize", () => {
                     _shortToken: short.address,
                     _poolCommitter: poolCommitter.address,
                     _poolName: POOL_CODE,
+                    _invariantCheck: invariantCheck.address,
                     _frontRunningInterval: frontRunningInterval,
                     _updateInterval: 0,
                     _fee: fee,
@@ -417,7 +417,6 @@ describe("LeveragedPool - initialize", () => {
                     _secondaryFeeAddress: ethers.constants.AddressZero,
                     _settlementToken: settlementToken,
                     _secondaryFeeSplitPercent: 10,
-                    _invariantCheckContract: invariantCheck.address,
                 })
             ).to.rejectedWith("Update interval cannot be 0")
         })
@@ -442,6 +441,7 @@ describe("LeveragedPool - initialize", () => {
                 _poolCommitter: poolCommitter.address,
                 _poolName: POOL_CODE_2,
                 _frontRunningInterval: frontRunningInterval,
+                _invariantCheck: invariantCheck.address,
                 _updateInterval: updateInterval,
                 _fee: fee,
                 _leverageAmount: leverage,
@@ -449,7 +449,6 @@ describe("LeveragedPool - initialize", () => {
                 _secondaryFeeAddress: ethers.constants.AddressZero,
                 _settlementToken: settlementToken,
                 _secondaryFeeSplitPercent: 10,
-                _invariantCheckContract: invariantCheck.address,
             })
             await leveragedPool.initialize({
                 _owner: signers[0].address,
@@ -461,6 +460,7 @@ describe("LeveragedPool - initialize", () => {
                 _poolCommitter: poolCommitter.address,
                 _poolName: POOL_CODE,
                 _frontRunningInterval: frontRunningInterval,
+                _invariantCheck: invariantCheck.address,
                 _updateInterval: updateInterval,
                 _fee: fee,
                 _leverageAmount: leverage,
@@ -468,7 +468,6 @@ describe("LeveragedPool - initialize", () => {
                 _secondaryFeeAddress: ethers.constants.AddressZero,
                 _settlementToken: settlementToken,
                 _secondaryFeeSplitPercent: 10,
-                _invariantCheckContract: invariantCheck.address,
             })
 
             expect(await secondPool.poolName()).to.eq(POOL_CODE_2)

@@ -15,6 +15,7 @@ import {
     LONG_BURN,
     LONG_MINT,
     POOL_CODE,
+    SHORT_MINT,
 } from "../../constants"
 import {
     deployPoolAndTokenContracts,
@@ -68,6 +69,7 @@ describe("LeveragedPool - executeCommitment: Long Burn", () => {
                 [LONG_MINT],
                 amountCommitted
             )
+
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(9, 10)
             await poolCommitter.claim(signers[0].address)
@@ -79,22 +81,22 @@ describe("LeveragedPool - executeCommitment: Long Burn", () => {
             )
         })
         it("should adjust the live long pool balance", async () => {
-            expect(await pool.longBalance()).to.eq(amountCommitted)
+            expect(await pool.longBalance()).to.eq(amountCommitted.mul(2))
             await timeout(updateInterval * 1000)
-            await pool.poolUpkeep(9, 10)
+            await pool.poolUpkeep(9, 9)
             await poolCommitter.claim(signers[0].address)
-            expect(await pool.longBalance()).to.eq(0)
+            expect(await pool.longBalance()).to.eq(amountCommitted)
         })
         it("should reduce the shadow long burn pool balance", async () => {
             expect(
-                (await getCurrentTotalCommit(poolCommitter)).longBurnAmount
+                (await getCurrentTotalCommit(poolCommitter)).longBurnPoolTokens
             ).to.equal(amountCommitted)
             await timeout(updateInterval * 1000)
-            await pool.poolUpkeep(9, 10)
+            await pool.poolUpkeep(9, 9)
             expect(
                 await (
                     await getCurrentTotalCommit(poolCommitter)
-                ).longBurnAmount
+                ).longBurnPoolTokens
             ).to.eq(0)
         })
         it("should transfer settlement tokens to the commit owner", async () => {
@@ -102,11 +104,12 @@ describe("LeveragedPool - executeCommitment: Long Burn", () => {
                 amountMinted.sub(amountCommitted)
             )
             await timeout(updateInterval * 1000)
-            await pool.poolUpkeep(9, 10)
+            await pool.poolUpkeep(9, 9)
+            const tokensBefore = await token.balanceOf(signers[0].address)
             await poolCommitter.claim(signers[0].address)
-            expect(await token.balanceOf(signers[0].address)).to.eq(
-                amountMinted
-            )
+            expect(
+                (await token.balanceOf(signers[0].address)).sub(tokensBefore)
+            ).to.eq(amountCommitted)
         })
     })
 })
