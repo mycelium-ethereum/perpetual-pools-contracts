@@ -79,7 +79,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
 
     function initialize(ILeveragedPool.Initialization calldata initialization) external override initializer {
         require(initialization._feeAddress != address(0), "Fee cannot be null");
-        require(initialization._quoteToken != address(0), "Quote token cannot be null");
+        require(initialization._settlementToken != address(0), "Settlement token cannot be null");
         require(initialization._oracleWrapper != address(0), "Oracle wrapper cannot be null");
         require(initialization._settlementEthOracle != address(0), "Keeper oracle cannot be null");
         require(initialization._owner != address(0), "Owner cannot be null");

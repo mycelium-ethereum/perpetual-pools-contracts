@@ -349,7 +349,7 @@ describe("LeveragedPool - initialize", () => {
                     _settlementToken: ethers.constants.AddressZero,
                     _secondaryFeeSplitPercent: 10,
                 })
-            ).to.rejectedWith("Quote token cannot be null")
+            ).to.rejectedWith("Settlement token cannot be null")
         })
         it("should revert if oracleWrapper address is the zero address", async () => {
             await expect(
