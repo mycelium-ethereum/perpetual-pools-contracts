@@ -34,7 +34,7 @@ describe("PoolKeeper - createPool", () => {
             updateInterval: 5,
             leverageAmount: 5,
             feeAddress: generateRandomAddress(),
-            quoteToken: token.address,
+            settlementToken: token.address,
             oracleWrapper: oracleWrapper.address,
             settlementEthOracle: settlementEthOracle.address,
             feeController: signers[0].address,
