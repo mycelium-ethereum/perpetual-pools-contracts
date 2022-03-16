@@ -84,6 +84,15 @@ interface IPoolCommitter {
         uint256 updateIntervalId;
     }
 
+    // Track the relevant data when executing a range of update interval's commitments (stack too deep)
+    struct CommitmentExecutionTracking {
+        uint256 longTotalSupply;
+        uint256 shortTotalSupply;
+        uint256 longTotalSupplyBefore;
+        uint256 shortTotalSupplyBefore;
+        uint256 _updateIntervalId;
+    }
+
     /**
      * @notice Creates a notification when a commit is created
      * @param user The user making the commitment
@@ -179,6 +188,7 @@ interface IPoolCommitter {
     )
         external
         returns (
+            uint256,
             uint256,
             uint256,
             uint256,
