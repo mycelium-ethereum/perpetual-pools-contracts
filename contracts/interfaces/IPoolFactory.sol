@@ -8,7 +8,7 @@ interface IPoolFactory {
         uint32 frontRunningInterval; // The minimum number of seconds that must elapse before a commit can be executed. Must be smaller than or equal to the update interval to prevent deadlock
         uint32 updateInterval; // The minimum number of seconds that must elapse before a price change
         uint16 leverageAmount; // The amount of exposure to price movements for the pool
-        address quoteToken; // The digital asset that the pool accepts
+        address settlementToken; // The digital asset that the pool accepts
         address oracleWrapper; // The IOracleWrapper implementation for fetching price feed data
         address settlementEthOracle; // The oracle to fetch the price of Ether in terms of the settlement token
         address feeController;
@@ -25,6 +25,12 @@ interface IPoolFactory {
      * @param ticker Ticker of the new pool
      */
     event DeployPool(address indexed pool, address poolCommitter, string ticker);
+
+    /**
+     * @notice Indicates that the InvariantCheck contract has changed
+     * @param invariantCheck New InvariantCheck contract
+     */
+    event InvariantCheckChanged(address indexed invariantCheck);
 
     /**
      * @notice Creates a notification when a PoolCommitter is deployed
@@ -73,11 +79,6 @@ interface IPoolFactory {
     event FeeChanged(uint256 indexed fee);
 
     /**
-     * @notice Indicates that the InvariantCheck contract has changed
-     * @param invariantCheck New InvariantCheck contract
-     */
-    event InvariantCheckChanged(address indexed invariantCheck);
-    /**
      * @notice Indicates that the AutoClaim contract has changed
      * @param autoClaim New AutoClaim contract
      */
@@ -104,9 +105,9 @@ interface IPoolFactory {
 
     function setPoolKeeper(address _poolKeeper) external;
 
-    function setInvariantCheck(address _invariantCheck) external;
-
     function setAutoClaim(address _autoClaim) external;
+
+    function setInvariantCheck(address _invariantCheck) external;
 
     function setMaxLeverage(uint16 newMaxLeverage) external;
 

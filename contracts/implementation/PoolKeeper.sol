@@ -58,6 +58,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @dev Only callable by the associated `PoolFactory` contract
      */
     function newPool(address _poolAddress) external override onlyFactory {
+        IOracleWrapper(ILeveragedPool(_poolAddress).oracleWrapper()).poll();
         int256 firstPrice = ILeveragedPool(_poolAddress).getOraclePrice();
         require(firstPrice > 0, "First price is non-positive");
         emit PoolAdded(_poolAddress, firstPrice);
@@ -135,7 +136,11 @@ contract PoolKeeper is IPoolKeeper, Ownable {
             executionPrice[_pool] = latestPrice;
             // If poolUpkeep is successful, refund the keeper for their gas costs
             uint256 gasSpent = startGas - gasleft();
-
+            try IOracleWrapper(ILeveragedPool(_pool).settlementEthOracle()).poll() {} catch Error(
+                string memory reason
+            ) {
+                emit PoolUpkeepError(_pool, reason);
+            }
             payKeeper(_pool, gasPrice, gasSpent, savedPreviousUpdatedTimestamp, updateInterval);
             emit UpkeepSuccessful(_pool, data, lastExecutionPrice, latestPrice);
         } catch Error(string memory reason) {

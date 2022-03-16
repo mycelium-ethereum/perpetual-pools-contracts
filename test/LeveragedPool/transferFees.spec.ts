@@ -10,13 +10,7 @@ import {
     PoolKeeper,
 } from "../../types"
 
-import {
-    POOL_CODE,
-    DEFAULT_FEE,
-    LONG_MINT,
-    LONG_BURN,
-    SHORT_MINT,
-} from "../constants"
+import { POOL_CODE, LONG_MINT, LONG_BURN, SHORT_MINT } from "../constants"
 import {
     deployPoolAndTokenContracts,
     getRandomInt,
@@ -24,7 +18,6 @@ import {
     createCommit,
     CommitEventArgs,
     timeout,
-    deployMockPool,
 } from "../utilities"
 import { BigNumber } from "ethers"
 chai.use(chaiAsPromised)
@@ -127,7 +120,7 @@ describe("LeveragedPool - feeTransfer", async () => {
     context.skip("Test Paused Pools cannot transfer tokens", async () => {
         beforeEach(async () => {
             await timeout(updateInterval * 1000)
-            const result = await deployMockPool(
+            const result = await deployPoolAndTokenContracts(
                 POOL_CODE,
                 frontRunningInterval,
                 updateInterval,
@@ -139,8 +132,7 @@ describe("LeveragedPool - feeTransfer", async () => {
             poolCommitter = result.poolCommitter
             await result.token.approve(result.pool.address, 10000)
             await result.poolCommitter.commit(LONG_MINT, 1000, false, false)
-            await result.pool.drainPool(10)
-            await result.invariantCheck.checkInvariants(result.pool.address)
+            await result.pool.pause()
         })
         it("Commit should be paused", async () => {
             await expect(

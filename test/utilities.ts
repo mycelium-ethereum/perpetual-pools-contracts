@@ -1,6 +1,5 @@
-import { ethers, network, deployments } from "hardhat"
+import { ethers, network } from "hardhat"
 import {
-    BigNumber,
     BigNumberish,
     ContractReceipt,
     ContractTransaction,
@@ -8,10 +7,8 @@ import {
 } from "ethers"
 import { BytesLike, Result } from "ethers/lib/utils"
 import {
-    LONG_MINT,
     LONG_BURN,
     SHORT_BURN,
-    SHORT_MINT,
     DEFAULT_FEE,
     DEFAULT_MINT_AMOUNT,
     MARKET,
@@ -33,12 +30,12 @@ import {
     TestChainlinkOracle,
     ChainlinkOracleWrapper,
     AutoClaim__factory,
+    AutoClaim,
     InvariantCheck__factory,
     InvariantCheck,
-    PoolFactoryBalanceDrainMock__factory,
     LeveragedPoolBalanceDrainMock,
     PoolFactoryBalanceDrainMock,
-    AutoClaim,
+    PoolFactoryBalanceDrainMock__factory,
 } from "../types"
 
 import { abi as ERC20Abi } from "../artifacts/@openzeppelin/contracts/token/ERC20/ERC20.sol/ERC20.json"
@@ -201,15 +198,15 @@ export const deployPoolSetupContracts = async () => {
         chainlinkOracle,
         oracleWrapper,
         settlementEthOracle,
+        invariantCheck,
         token,
         library,
-        invariantCheck,
         autoClaim,
     }
 }
 
 /**
- * Deploys a new instance of a pool, as well as an ERC20 token to use as a quote token.
+ * Deploys a new instance of a pool, as well as an ERC20 token to use as a settlement token.
  * @param POOL_CODE The pool identifier
  * @param firstPrice The initial value to set the lastPrice variable to in the contract
  * @param updateInterval The update interval value
@@ -217,7 +214,7 @@ export const deployPoolSetupContracts = async () => {
  * @param fee The fund movement fee.
  * @param leverage The amount of leverage the pool will apply
  * @param feeAddress The address to transfer fees to on a fund movement
- * @param amountMinted The amount of test quote tokens to mint
+ * @param amountMinted The amount of test settlement tokens to mint
  * @returns {signers, token, pool, library, shortToken, longToken} An object containing an array of ethers signers, a Contract instance for the token, and a Contract instance for the pool.
  */
 export const deployPoolAndTokenContracts = async (
@@ -242,8 +239,8 @@ export const deployPoolAndTokenContracts = async (
     chainlinkOracle: TestChainlinkOracle
     factory: PoolFactory
     oracleWrapper: ChainlinkOracleWrapper
-    settlementEthOracle: ChainlinkOracleWrapper
     invariantCheck: InvariantCheck
+    settlementEthOracle: ChainlinkOracleWrapper
     autoClaim: AutoClaim
 }> => {
     const setupContracts = await deployPoolSetupContracts()
@@ -256,10 +253,9 @@ export const deployPoolAndTokenContracts = async (
         frontRunningInterval: frontRunningInterval,
         updateInterval: updateInterval,
         leverageAmount: leverage,
-        quoteToken: setupContracts.token.address,
+        settlementToken: setupContracts.token.address,
         oracleWrapper: setupContracts.oracleWrapper.address,
         settlementEthOracle: setupContracts.settlementEthOracle.address,
-        invariantCheckContract: setupContracts.invariantCheck.address,
         feeController: signers[0].address,
         mintingFee: mintFee || 0,
         burningFee: burnFee || 0,
@@ -294,8 +290,8 @@ export const deployPoolAndTokenContracts = async (
     const factory = setupContracts.factory
     const oracleWrapper = setupContracts.oracleWrapper
     const settlementEthOracle = setupContracts.settlementEthOracle
-    const invariantCheck = setupContracts.invariantCheck
     const autoClaim = setupContracts.autoClaim
+    const invariantCheck = setupContracts.invariantCheck
 
     return {
         signers,
@@ -309,13 +305,100 @@ export const deployPoolAndTokenContracts = async (
         longToken,
         //@ts-ignore
         poolCommitter,
+        invariantCheck,
         poolKeeper,
         chainlinkOracle,
         factory,
         oracleWrapper,
         settlementEthOracle,
-        invariantCheck,
         autoClaim,
+    }
+}
+
+export interface CommitEventArgs {
+    commitID: BigNumberish
+    amount: BigNumberish
+    commitType: BigNumberish
+}
+/**
+ * Creates a commit and returns the event arguments for it
+ * @param pool The pool contract instance
+ * @param commitType The type of commit
+ * @param amount The amount to commit to
+ */
+export const createCommit = async (
+    poolCommitter: PoolCommitter,
+    commitType: BigNumberish,
+    amount: BigNumberish,
+    fromAggregateBalance?: boolean,
+    payForClaim?: boolean,
+    rewardAmount?: BigNumberish
+): Promise<any> /*Promise<CommitEventArgs>*/ => {
+    const fromAggBal = fromAggregateBalance ? fromAggregateBalance : false
+    const isPayingForClaim = payForClaim ? payForClaim : false
+    const receipt = await (
+        await poolCommitter.commit(
+            commitType,
+            amount,
+            fromAggBal,
+            isPayingForClaim,
+            { value: rewardAmount }
+        )
+    ).wait()
+    return {
+        commitID: getEventArgs(receipt, "CreateCommit")?.commitID,
+        amount: getEventArgs(receipt, "CreateCommit")?.amount,
+        commitType: getEventArgs(receipt, "CreateCommit")?.commitType,
+        receipt: receipt,
+    }
+}
+
+/**
+ * Delays execution of a function by the amount specified
+ * @param milliseconds the number of milliseconds to wait
+ * @returns nothing
+ */
+export const timeout = async (milliseconds: number): Promise<void> => {
+    await network.provider.send("evm_increaseTime", [milliseconds / 1000])
+    await network.provider.send("evm_mine", [])
+}
+
+export function callData(
+    factory: PoolFactory,
+    poolNumbers: number[]
+): BytesLike {
+    return ethers.utils.defaultAbiCoder.encode(
+        [
+            ethers.utils.ParamType.from("uint32"),
+            ethers.utils.ParamType.from("string"),
+            ethers.utils.ParamType.from("address[]"),
+        ],
+        [2, MARKET, poolNumbers.map((x) => factory.pools(x))]
+    )
+}
+
+export async function incrementPrice(
+    oracle: TestChainlinkOracle
+): Promise<ContractTransaction> {
+    let oldPrice = await oracle.price()
+    let newPrice = oldPrice.add("100000000") // 1 * 10^18 (for default chainlink oracle decimals)
+    return oracle.setPrice(newPrice)
+}
+
+/*
+ * Returns 0 if given LONG_BURN, 1 if given SHORT_BURN, -1 otherwise
+ */
+export function commitTypeToShadowPoolIndex(commitType: number): number {
+    switch (commitType) {
+        case LONG_BURN: {
+            return 0
+        }
+        case SHORT_BURN: {
+            return 1
+        }
+        default: {
+            return -1
+        }
     }
 }
 
@@ -328,7 +411,7 @@ export const deployPoolAndTokenContracts = async (
  * @param fee The fund movement fee.
  * @param leverage The amount of leverage the pool will apply
  * @param feeAddress The address to transfer fees to on a fund movement
- * @param amountMinted The amount of test quote tokens to mint
+ * @param amountMinted The amount of test settlement tokens to mint
  * @returns {signers, token, pool, library, shortToken, longToken} An object containing an array of ethers signers, a Contract instance for the token, and a Contract instance for the pool.
  */
 export const deployMockPool = async (
@@ -453,10 +536,9 @@ export const deployMockPool = async (
         frontRunningInterval: frontRunningInterval,
         updateInterval: updateInterval,
         leverageAmount: leverage,
-        quoteToken: token.address,
+        settlementToken: token.address,
         oracleWrapper: oracleWrapper.address,
         settlementEthOracle: settlementEthOracle.address,
-        invariantCheckContract: invariantCheck.address,
         feeController: signers[0].address,
         mintingFee: 0,
         burningFee: 0,
@@ -503,92 +585,5 @@ export const deployMockPool = async (
         settlementEthOracle,
         invariantCheck,
         autoClaim,
-    }
-}
-
-export interface CommitEventArgs {
-    commitID: BigNumberish
-    amount: BigNumberish
-    commitType: BigNumberish
-}
-/**
- * Creates a commit and returns the event arguments for it
- * @param pool The pool contract instance
- * @param commitType The type of commit
- * @param amount The amount to commit to
- */
-export const createCommit = async (
-    poolCommitter: PoolCommitter,
-    commitType: BigNumberish,
-    amount: BigNumberish,
-    fromAggregateBalance?: boolean,
-    payForClaim?: boolean,
-    rewardAmount?: BigNumberish
-): Promise<any> /*Promise<CommitEventArgs>*/ => {
-    const fromAggBal = fromAggregateBalance ? fromAggregateBalance : false
-    const isPayingForClaim = payForClaim ? payForClaim : false
-    const receipt = await (
-        await poolCommitter.commit(
-            commitType,
-            amount,
-            fromAggBal,
-            isPayingForClaim,
-            { value: rewardAmount }
-        )
-    ).wait()
-    return {
-        commitID: getEventArgs(receipt, "CreateCommit")?.commitID,
-        amount: getEventArgs(receipt, "CreateCommit")?.amount,
-        commitType: getEventArgs(receipt, "CreateCommit")?.commitType,
-        receipt: receipt,
-    }
-}
-
-/**
- * Delays execution of a function by the amount specified
- * @param milliseconds the number of milliseconds to wait
- * @returns nothing
- */
-export const timeout = async (milliseconds: number): Promise<void> => {
-    await network.provider.send("evm_increaseTime", [milliseconds / 1000])
-    await network.provider.send("evm_mine", [])
-}
-
-export function callData(
-    factory: PoolFactory,
-    poolNumbers: number[]
-): BytesLike {
-    return ethers.utils.defaultAbiCoder.encode(
-        [
-            ethers.utils.ParamType.from("uint32"),
-            ethers.utils.ParamType.from("string"),
-            ethers.utils.ParamType.from("address[]"),
-        ],
-        [2, MARKET, poolNumbers.map((x) => factory.pools(x))]
-    )
-}
-
-export async function incrementPrice(
-    oracle: TestChainlinkOracle
-): Promise<ContractTransaction> {
-    let oldPrice = await oracle.price()
-    let newPrice = oldPrice.add("100000000") // 1 * 10^18 (for default chainlink oracle decimals)
-    return oracle.setPrice(newPrice)
-}
-
-/*
- * Returns 0 if given LONG_BURN, 1 if given SHORT_BURN, -1 otherwise
- */
-export function commitTypeToShadowPoolIndex(commitType: number): number {
-    switch (commitType) {
-        case LONG_BURN: {
-            return 0
-        }
-        case SHORT_BURN: {
-            return 1
-        }
-        default: {
-            return -1
-        }
     }
 }
