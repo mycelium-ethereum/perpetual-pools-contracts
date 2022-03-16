@@ -89,15 +89,15 @@ describe("LeveragedPool - executeCommitment: Short Burn", () => {
         })
         it("should reduce the shadow short burn pool balance", async () => {
             expect(
-                (await getCurrentTotalCommit(poolCommitter)).shortBurnAmount
+                (await getCurrentTotalCommit(poolCommitter)).shortBurnPoolTokens
             ).to.eq(amountCommitted)
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(lastPrice, 10)
             expect(
-                (await getCurrentTotalCommit(poolCommitter)).shortBurnAmount
+                (await getCurrentTotalCommit(poolCommitter)).shortBurnPoolTokens
             ).to.eq(0)
         })
-        it("should transfer quote tokens to the commit owner", async () => {
+        it("should transfer settlement tokens to the commit owner", async () => {
             expect(await token.balanceOf(signers[0].address)).to.eq(
                 amountMinted.sub(amountCommitted)
             )

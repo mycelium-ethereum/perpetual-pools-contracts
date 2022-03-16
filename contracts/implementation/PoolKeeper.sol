@@ -7,12 +7,16 @@ import "../interfaces/IPoolFactory.sol";
 import "../implementation/PriceObserver.sol";
 import "../interfaces/ILeveragedPool.sol";
 import "../interfaces/IERC20DecimalsWrapper.sol";
-import "./PoolSwapLibrary.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "abdk-libraries-solidity/ABDKMathQuad.sol";
 
 /// @title The manager contract for multiple markets and the pools in them
+/// @dev Currently, this contract estimates the best keeper rewards in a way that is best suited for Ethereum L1.
+/// @dev It assumes an approximate block time of 13 seconds, and an Ethereum-like gas system.
+/// @dev This code was also written with Arbitrum deployment in mind, meaning there exists no `block.basefee`, and no arbitrum gas price oracle.
+/// @dev It has another large drawback in that it is not possible to calculate the cost of the current transaction Arbitrum, given that the cost is largely determined by L1 calldata cost.
+/// @dev Because of this, the reward calculation is an rough "good enough" estimation.
 contract PoolKeeper is IPoolKeeper, Ownable {
     /* Constants */
     uint256 public constant BASE_TIP = 5; // 5% base tip
@@ -55,6 +59,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @dev Only callable by the associated `PoolFactory` contract
      */
     function newPool(address _poolAddress) external override onlyFactory {
+        IOracleWrapper(ILeveragedPool(_poolAddress).oracleWrapper()).poll();
         int256 firstPrice = ILeveragedPool(_poolAddress).getOraclePrice();
         require(firstPrice > 0, "First price is non-positive");
         emit PoolAdded(_poolAddress, firstPrice);
@@ -108,17 +113,19 @@ contract PoolKeeper is IPoolKeeper, Ownable {
             return;
         }
 
-        ILeveragedPool pool = ILeveragedPool(_pool);
-
         /* update SMA oracle, does nothing for spot oracles */
-        IOracleWrapper poolOracleWrapper = IOracleWrapper(pool.oracleWrapper());
+        IOracleWrapper poolOracleWrapper = IOracleWrapper(ILeveragedPool(_pool).oracleWrapper());
 
         try poolOracleWrapper.poll() {} catch Error(string memory reason) {
             emit PoolUpkeepError(_pool, reason);
         }
 
-        (int256 latestPrice, bytes memory data, uint256 savedPreviousUpdatedTimestamp, uint256 updateInterval) = pool
-            .getUpkeepInformation();
+        (
+            int256 latestPrice,
+            bytes memory data,
+            uint256 savedPreviousUpdatedTimestamp,
+            uint256 updateInterval
+        ) = ILeveragedPool(_pool).getUpkeepInformation();
 
         // Start a new round
         // Get price in WAD format
@@ -127,11 +134,15 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         /* This allows us to still batch multiple calls to
          * executePriceChange, even if some are invalid
          * without reverting the entire transaction */
-        try pool.poolUpkeep(lastExecutionPrice, latestPrice) {
+        try ILeveragedPool(_pool).poolUpkeep(lastExecutionPrice, latestPrice) {
             executionPrice[_pool] = latestPrice;
             // If poolUpkeep is successful, refund the keeper for their gas costs
             uint256 gasSpent = startGas - gasleft();
-
+            try IOracleWrapper(ILeveragedPool(_pool).settlementEthOracle()).poll() {} catch Error(
+                string memory reason
+            ) {
+                emit PoolUpkeepError(_pool, reason);
+            }
             payKeeper(_pool, gasPrice, gasSpent, savedPreviousUpdatedTimestamp, updateInterval);
             emit UpkeepSuccessful(_pool, data, lastExecutionPrice, latestPrice);
         } catch Error(string memory reason) {
@@ -220,28 +231,14 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         // keeper gas cost in wei. WAD formatted
         uint256 _keeperGas = keeperGas(_pool, _gasPrice, _gasSpent);
 
-        // tip percent in wad units
-        bytes16 _tipPercent = ABDKMathQuad.fromUInt(keeperTip(_savedPreviousUpdatedTimestamp, _poolInterval));
+        // tip percent
+        uint256 _tipPercent = keeperTip(_savedPreviousUpdatedTimestamp, _poolInterval);
 
         // amount of settlement tokens to give to the keeper
-        int256 wadRewardValue = ABDKMathQuad.toInt(
-            ABDKMathQuad.add(
-                ABDKMathQuad.fromUInt(_keeperGas),
-                ABDKMathQuad.div(
-                    (
-                        ABDKMathQuad.div(
-                            (ABDKMathQuad.mul(ABDKMathQuad.fromUInt(_keeperGas), _tipPercent)),
-                            ABDKMathQuad.fromUInt(100)
-                        )
-                    ),
-                    FIXED_POINT
-                )
-            )
-        );
-        uint256 decimals = IERC20DecimalsWrapper(ILeveragedPool(_pool).quoteToken()).decimals();
-        uint256 deWadifiedReward = PoolSwapLibrary.fromWad(uint256(wadRewardValue), decimals);
         // _keeperGas + _keeperGas * percentTip
-        return deWadifiedReward;
+        uint256 wadRewardValue = _keeperGas + ((_keeperGas * _tipPercent) / 100);
+
+        return wadRewardValue;
     }
 
     /**

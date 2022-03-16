@@ -30,6 +30,7 @@ contract AutoClaim is IAutoClaim {
     /**
      * @notice Pay for your commit to be claimed. This means that a willing participant can claim on `user`'s behalf when the current update interval ends. Claims a previously pending and claimable request before creating the requested claim-request.
      * @dev Only callable by this contract's associated PoolCommitter instance. This prevents griefing. Consider a permissionless function, where a user can claim that somebody else wants to auto claim when they do not.
+     * @dev Emits a `PaidRequestExecution` event on successful claim for pending commit.
      * @param user The user who wants to autoclaim.
      */
     function makePaidClaimRequest(address user) external payable override onlyPoolCommitter {
@@ -43,12 +44,13 @@ contract AutoClaim is IAutoClaim {
             if (requestUpdateIntervalId < poolCommitter.updateIntervalId()) {
                 // If so, this person may as well claim for themself (if allowed). They have signified their want of claim, after all.
                 // Note that this function is only called by PoolCommitter when a user `commits` and therefore `user` will always equal the original `msg.sender`.
-                uint256 reward = claimRequests[user][msg.sender].reward;
+                uint256 reward = request.reward;
                 delete claimRequests[user][msg.sender];
                 poolCommitter.claim(user);
                 if (reward > 0) {
                     Address.sendValue(payable(user), reward);
                 }
+                emit PaidRequestExecution(user, msg.sender, request.reward);
             } else {
                 // If the claim request is pending but not yet valid (it was made in the current commit), we want to add to the value.
                 // Note that in context, the user *usually* won't need or want to increment `ClaimRequest.reward` more than once because the first call to `payForClaim` should suffice.
@@ -60,8 +62,8 @@ contract AutoClaim is IAutoClaim {
 
         // If no previous claim requests are pending, we need to make a new one.
         requestUpdateIntervalId = poolCommitter.getAppropriateUpdateIntervalId();
-        claimRequests[user][msg.sender].updateIntervalId = requestUpdateIntervalId;
-        claimRequests[user][msg.sender].reward = msg.value;
+        request.updateIntervalId = requestUpdateIntervalId;
+        request.reward = msg.value;
         emit PaidClaimRequestUpdate(user, msg.sender, request.reward);
     }
 
@@ -118,6 +120,7 @@ contract AutoClaim is IAutoClaim {
         uint256 reward;
         uint256 nrUsers = users.length;
         for (uint256 i; i < nrUsers; i++) {
+            require(poolFactory.isValidPoolCommitter(poolCommitterAddresses[i]), "Invalid pool committer contract");
             IPoolCommitter poolCommitter = IPoolCommitter(poolCommitterAddresses[i]);
             uint256 currentUpdateIntervalId = poolCommitter.updateIntervalId();
             reward += claim(users[i], poolCommitterAddresses[i], poolCommitter, currentUpdateIntervalId);
@@ -138,6 +141,7 @@ contract AutoClaim is IAutoClaim {
         override
     {
         uint256 reward;
+        require(poolFactory.isValidPoolCommitter(poolCommitterAddress), "Invalid pool committer contract");
         IPoolCommitter poolCommitter = IPoolCommitter(poolCommitterAddress);
         uint256 currentUpdateIntervalId = poolCommitter.updateIntervalId();
         for (uint256 i; i < users.length; i++) {
@@ -154,6 +158,7 @@ contract AutoClaim is IAutoClaim {
      * @dev Emits a `RequestWithdrawn` event on success
      */
     function withdrawClaimRequest(address poolCommitter) external override {
+        require(poolFactory.isValidPoolCommitter(poolCommitter), "Invalid pool committer contract");
         if (claimRequests[msg.sender][poolCommitter].updateIntervalId > 0) {
             uint256 reward = claimRequests[msg.sender][poolCommitter].reward;
             delete claimRequests[msg.sender][poolCommitter];

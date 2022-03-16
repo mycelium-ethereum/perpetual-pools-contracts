@@ -8,7 +8,6 @@ import {
     PoolKeeper,
     ChainlinkOracleWrapper,
     PoolToken__factory,
-    InvariantCheck,
     TestToken__factory,
     TestClones,
     TestClones__factory,
@@ -43,7 +42,6 @@ describe("PoolFactory.deployPool", () => {
     let poolKeeper: PoolKeeper
     let oracleWrapper: ChainlinkOracleWrapper
     let settlementEthOracle: ChainlinkOracleWrapper
-    let invariantCheck: InvariantCheck
     let pool: LeveragedPool
     let token: TestToken
     let signers: SignerWithAddress[]
@@ -67,7 +65,6 @@ describe("PoolFactory.deployPool", () => {
         settlementEthOracle = contracts.settlementEthOracle
         pool = contracts.pool
         token = contracts.token
-        invariantCheck = contracts.invariantCheck
     })
 
     context(
@@ -80,10 +77,9 @@ describe("PoolFactory.deployPool", () => {
                     updateInterval: 10,
                     fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
                     leverageAmount: 5,
-                    quoteToken: token.address,
+                    settlementToken: token.address,
                     oracleWrapper: oracleWrapper.address,
                     settlementEthOracle: settlementEthOracle.address,
-                    invariantCheckContract: invariantCheck.address,
                     feeController: signers[0].address,
                     mintingFee: 0,
                     burningFee: 0,
@@ -113,28 +109,27 @@ describe("PoolFactory.deployPool", () => {
                 _poolName: POOL_CODE,
                 _frontRunningInterval: 3,
                 _updateInterval: 5,
+                _invariantCheck: generateRandomAddress(),
                 _fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
                 _leverageAmount: 5,
                 _feeAddress: generateRandomAddress(),
                 _secondaryFeeAddress: ethers.constants.AddressZero,
-                _quoteToken: token.address,
+                _settlementToken: token.address,
                 _secondaryFeeSplitPercent: 10,
-                _invariantCheckContract: invariantCheck.address,
             }
             await expect(pool.initialize(initialization)).to.be.rejectedWith(
                 Error
             )
         })
-        it("should not allow multiple clones to exist with the same leverageAmount, quoteToken, oracleWrapper", async () => {
+        it("should not allow multiple clones to exist with the same leverageAmount, settlementToken, oracleWrapper", async () => {
             const deploymentData = {
                 poolName: POOL_CODE_2,
                 frontRunningInterval: 3,
                 updateInterval: 5,
                 leverageAmount: 5,
-                quoteToken: token.address,
+                settlementToken: token.address,
                 oracleWrapper: oracleWrapper.address,
                 settlementEthOracle: settlementEthOracle.address,
-                invariantCheckContract: invariantCheck.address,
                 feeController: signers[0].address,
                 mintingFee: 0,
                 burningFee: 0,
@@ -166,10 +161,9 @@ describe("PoolFactory.deployPool", () => {
                 frontRunningInterval: 2,
                 updateInterval: 5,
                 leverageAmount: 3,
-                quoteToken: token.address,
+                settlementToken: token.address,
                 oracleWrapper: oracleWrapper.address,
                 settlementEthOracle: settlementEthOracle.address,
-                invariantCheckContract: invariantCheck.address,
                 feeController: signers[0].address,
                 mintingFee: 0,
                 burningFee: 0,
@@ -195,10 +189,9 @@ describe("PoolFactory.deployPool", () => {
                 frontRunningInterval: 5,
                 updateInterval: 3,
                 leverageAmount: 0,
-                quoteToken: token.address,
+                settlementToken: token.address,
                 oracleWrapper: oracleWrapper.address,
                 settlementEthOracle: settlementEthOracle.address,
-                invariantCheckContract: invariantCheck.address,
                 feeController: signers[0].address,
                 mintingFee: 0,
                 burningFee: 0,
@@ -215,10 +208,9 @@ describe("PoolFactory.deployPool", () => {
                 frontRunningInterval: 5,
                 updateInterval: 3,
                 leverageAmount: 100, // default max leverage is 10
-                quoteToken: generateRandomAddress(),
+                settlementToken: generateRandomAddress(),
                 oracleWrapper: oracleWrapper.address,
                 settlementEthOracle: settlementEthOracle.address,
-                invariantCheckContract: invariantCheck.address,
                 feeController: signers[0].address,
                 mintingFee: 0,
                 burningFee: 0,
@@ -243,10 +235,9 @@ describe("PoolFactory.deployPool", () => {
                 frontRunningInterval: 5,
                 updateInterval: 3,
                 leverageAmount: 1,
-                quoteToken: token.address,
+                settlementToken: token.address,
                 oracleWrapper: oracleWrapper.address,
                 settlementEthOracle: settlementEthOracle.address,
-                invariantCheckContract: invariantCheck.address,
                 feeController: signers[0].address,
                 mintingFee: 0,
                 burningFee: 0,
@@ -328,10 +319,9 @@ describe("PoolFactory.deployPool", () => {
                 frontRunningInterval: 3,
                 updateInterval: 5,
                 leverageAmount: 4,
-                quoteToken: token.address,
+                settlementToken: token.address,
                 oracleWrapper: oracleWrapper.address,
                 settlementEthOracle: settlementEthOracle.address,
-                invariantCheckContract: invariantCheck.address,
                 feeController: signers[0].address,
                 mintingFee: 0,
                 burningFee: 0,
@@ -367,10 +357,9 @@ describe("PoolFactory.deployPool", () => {
                 frontRunningInterval: 3,
                 updateInterval: 5,
                 leverageAmount: 2,
-                quoteToken: token.address,
+                settlementToken: token.address,
                 oracleWrapper: oracleWrapper.address,
                 settlementEthOracle: settlementEthOracle.address,
-                invariantCheckContract: invariantCheck.address,
                 feeController: signers[0].address,
                 mintingFee: 0,
                 burningFee: 0,
@@ -486,10 +475,9 @@ describe("PoolFactory.deployPool", () => {
                 updateInterval: 10,
                 fee: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
                 leverageAmount: 5,
-                quoteToken: token.address,
+                settlementToken: token.address,
                 oracleWrapper: smaOracle.address,
                 settlementEthOracle: settlementEthOracle.address,
-                invariantCheckContract: invariantCheck.address,
                 feeController: signers[0].address,
                 mintingFee: 0,
                 burningFee: 0,
