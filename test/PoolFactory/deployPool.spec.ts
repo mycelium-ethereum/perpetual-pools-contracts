@@ -458,7 +458,6 @@ describe("PoolFactory.deployPool", () => {
             )) as SMAOracle__factory
             const smaOracle = await smaOracleFactory.deploy(
                 oracleWrapper.address,
-                18,
                 5,
                 1,
                 await signers[0].getAddress()
