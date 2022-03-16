@@ -343,10 +343,14 @@ library PoolSwapLibrary {
             // frontRunningInterval > updateInterval
             // This is the generalised case, where it could be any number of update intervals in the future
             uint256 factorDifference = frontRunningInterval / updateInterval;
-            uint256 timeOfNextAvailableInterval = lastPriceTimestamp + (updateInterval * (factorDifference + 1));
+            uint256 timeOfNextAvailableInterval = lastPriceTimestamp + (updateInterval * (factorDifference));
             // frontRunningInterval is factorDifference times larger than updateInterval
-            uint256 minimumUpdateIntervalId = currentUpdateIntervalId + factorDifference;
+            // uint256 minimumUpdateIntervalId = currentUpdateIntervalId + factorDifference;
             // but, if timestamp is still within minimumUpdateInterval's frontRunningInterval we need to go to the next one
+
+            uint256 updateIntervalsPassed = (timestamp - lastPriceTimestamp) / updateInterval;
+            uint256 minimumUpdateIntervalId = currentUpdateIntervalId + updateIntervalsPassed + factorDifference;
+
             return
                 timestamp + frontRunningInterval > timeOfNextAvailableInterval
                     ? minimumUpdateIntervalId + 1

@@ -11,6 +11,7 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "./PoolSwapLibrary.sol";
+import "hardhat/console.sol";
 
 /// @title This contract is responsible for handling commitment logic
 contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
@@ -283,8 +284,12 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
 
         uint256 length = unAggregatedCommitments[msg.sender].length;
         if (length == 0 || unAggregatedCommitments[msg.sender][length - 1] < appropriateUpdateIntervalId) {
+            // Push to the array if the most recent commitment was done in a prior update interval
             unAggregatedCommitments[msg.sender].push(appropriateUpdateIntervalId);
         }
+        // console.log("appropriateUpdateIntervalId");
+        // console.log(appropriateUpdateIntervalId);
+        // console.log(updateIntervalId);
 
         /*
          * Below, we want to follow the "Checks, Effects, Interactions" pattern.
@@ -558,7 +563,11 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
                 delete totalPoolCommitments[_updateIntervalId];
 
                 // counter overflowing would require an unrealistic number of update intervals
-                updateIntervalId += 1;
+                unchecked {
+                    console.log("incrementing update interval ID");
+                    console.log(updateIntervalId);
+                    updateIntervalId += 1;
+                }
             } else {
                 break;
             }
@@ -662,17 +671,20 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             _balanceLongBurnPoolTokens: 0,
             _balanceShortBurnPoolTokens: 0,
             _longBurnFee: 0,
-            _shortBurnFee: 0
+            _shortBurnFee: 0,
+            _maxIterations: 0
         });
-
-        // Iterate from the most recent up until the current update interval
 
         uint256[] memory currentIntervalIds = unAggregatedCommitments[user];
         uint256 unAggregatedLength = currentIntervalIds.length;
 
-        uint8 maxIterations = unAggregatedLength < MAX_ITERATIONS ? uint8(unAggregatedLength) : MAX_ITERATIONS; // casting to uint8 is safe because we know it is less than MAX_ITERATIONS, a uint8
+        update._maxIterations = unAggregatedLength < MAX_ITERATIONS ? uint8(unAggregatedLength) : MAX_ITERATIONS; // casting to uint8 is safe because we know it is less than MAX_ITERATIONS, a uint8
 
-        for (uint256 i = 0; i < maxIterations; i++) {
+        // Iterate from the most recent up until the current update interval
+        console.log("unAggregatedLength");
+        console.log(unAggregatedLength);
+        console.log(updateIntervalId);
+        for (uint256 i = 0; i < update._maxIterations; i++) {
             uint256 id = currentIntervalIds[i];
             if (id == 0) {
                 continue;
@@ -702,6 +714,17 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
                 update._longBurnFee += _longBurnFee;
                 update._shortBurnFee += _shortBurnFee;
                 delete userCommitments[user][id];
+                console.log("i");
+                console.log(i);
+                console.log(unAggregatedLength);
+                if (i < unAggregatedLength) {
+                    console.log("unAggregatedCommitments[user][i]");
+                    console.log(unAggregatedCommitments[user][i]);
+                    unAggregatedCommitments[user][i] = unAggregatedCommitments[user][i + 1];
+                    console.log(unAggregatedCommitments[user][i]);
+                } else {
+                    delete unAggregatedCommitments[user][i];
+                }
             } else {
                 // Clear them now that they have been accounted for in the balance
                 userCommitments[user][id].balanceLongBurnPoolTokens = 0;
@@ -713,10 +736,12 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             }
         }
 
+        // if (unAggregatedLength <= MAX_ITERATIONS) {
+        // We got through all update intervals, so we can replace all unaggregated update interval IDs
         delete unAggregatedCommitments[user];
         unAggregatedCommitments[user] = storageArrayPlaceHolder;
-
         delete storageArrayPlaceHolder;
+        // }
 
         // Add new tokens minted, and remove the ones that were burnt from this balance
         balance.longTokens += update._newLongTokensSum;
@@ -766,14 +791,17 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             _balanceLongBurnPoolTokens: 0,
             _balanceShortBurnPoolTokens: 0,
             _longBurnFee: 0,
-            _shortBurnFee: 0
+            _shortBurnFee: 0,
+            _maxIterations: 0
         });
-
-        // Iterate from the most recent up until the current update interval
 
         uint256[] memory currentIntervalIds = unAggregatedCommitments[user];
         uint256 unAggregatedLength = currentIntervalIds.length;
-        for (uint256 i = 0; i < unAggregatedLength; i++) {
+
+        update._maxIterations = unAggregatedLength < MAX_ITERATIONS ? uint8(unAggregatedLength) : MAX_ITERATIONS; // casting to uint8 is safe because we know it is less than MAX_ITERATIONS, a uint8
+
+        // Iterate from the most recent up until the current update interval
+        for (uint256 i = 0; i < update._maxIterations; i++) {
             uint256 id = currentIntervalIds[i];
             if (id == 0) {
                 continue;
