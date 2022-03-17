@@ -745,7 +745,9 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
                 userCommitments[user][id].balanceLongBurnMintPoolTokens = 0;
                 userCommitments[user][id].balanceShortBurnMintPoolTokens = 0;
                 // This commitment wasn't ready to be completely added to the balance, so copy it over into the new ID array
-                storageArrayPlaceHolder.push(currentIntervalIds[i]);
+                if (unAggregatedLength <= MAX_ITERATIONS) {
+                    storageArrayPlaceHolder.push(currentIntervalIds[i]);
+                }
             }
         }
 
