@@ -30,13 +30,13 @@ const frontRunningInterval = 100 // seconds
 const fee = DEFAULT_FEE
 const leverage = 2
 
-describe("PoolCommitter - Upkeeping with multiple update intervals pending", () => {
+describe("PoolCommitter - Upkeeping with multiple update intervals pending", async () => {
     let token: TestToken
 
     let poolCommitter: PoolCommitter
     let pool: LeveragedPool
     let signers: SignerWithAddress[]
-    describe("Short Burn when there are multiple update intervals waiting to be upkept", () => {
+    describe("Short Burn when there are multiple update intervals waiting to be upkept", async () => {
         beforeEach(async () => {
             const result = await deployPoolAndTokenContracts(
                 POOL_CODE,
@@ -100,7 +100,7 @@ describe("PoolCommitter - Upkeeping with multiple update intervals pending", () 
             expect(diff0).to.equal(diff1)
         })
     })
-    describe("Long Burn when there are multiple update intervals waiting to be upkept", () => {
+    describe("Long Burn when there are multiple update intervals waiting to be upkept", async () => {
         beforeEach(async () => {
             const result = await deployPoolAndTokenContracts(
                 POOL_CODE,
