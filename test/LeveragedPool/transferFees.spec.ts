@@ -83,7 +83,7 @@ describe("LeveragedPool - feeTransfer", async () => {
     })
 
     context("Happy Path", async () => {
-        it("Transfers fee to correct address and correct amount", async () => {
+        it("Allows for the claiming of fees to correct address and correct amount", async () => {
             pool.updateSecondaryFeeAddress(
                 "0x0000000000000000000000000000000000000000"
             )
@@ -92,6 +92,7 @@ describe("LeveragedPool - feeTransfer", async () => {
             let feesPercentPerPeriod =
                 (0.1 * updateInterval) / (365 * 24 * 60 * 60)
             let feesPaidExpected = feesPercentPerPeriod * 4000
+            await pool.claimPrimaryFees()
             let feesPaid = await token.balanceOf(feeAddress)
             expect(parseFloat(ethers.utils.formatEther(feesPaid))).closeTo(
                 feesPaidExpected,
@@ -99,15 +100,25 @@ describe("LeveragedPool - feeTransfer", async () => {
             )
         })
 
-        it("Transfers fee to secondary address as well", async () => {
+        it("claim fees to secondary address as well", async () => {
             pool.updateSecondaryFeeAddress(secondFeeAddress)
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(lastPrice, BigNumber.from("2").mul(lastPrice))
+            const primaryBalanceBefore = await token.balanceOf(feeAddress)
+            const secondaryBalanceBefore = await token.balanceOf(
+                secondFeeAddress
+            )
             let feesPercentPerPeriod =
                 (0.1 * updateInterval) / (365 * 24 * 60 * 60)
             let feesPaidExpected = feesPercentPerPeriod * 4000
-            let feesPaidPrimary = await token.balanceOf(feeAddress)
-            let feesPaidSecondary = await token.balanceOf(secondFeeAddress)
+            await pool.claimPrimaryFees()
+            await pool.claimSecondaryFees()
+            let feesPaidPrimary = (await token.balanceOf(feeAddress)).sub(
+                primaryBalanceBefore
+            )
+            let feesPaidSecondary = (
+                await token.balanceOf(secondFeeAddress)
+            ).sub(secondaryBalanceBefore)
             expect(
                 parseFloat(ethers.utils.formatEther(feesPaidPrimary))
             ).closeTo(feesPaidExpected * 0.9, 0.00001)
