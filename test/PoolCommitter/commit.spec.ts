@@ -42,7 +42,7 @@ const frontRunningInterval = 1000
 const fee = DEFAULT_FEE
 const leverage = 1
 
-describe("LeveragedPool - commit", () => {
+describe("PoolCommitter - commit", () => {
     let pool: LeveragedPool
     let signers: SignerWithAddress[]
     let token: TestToken
@@ -241,7 +241,7 @@ describe("LeveragedPool - commit", () => {
             await poolCommitter.commit(SHORT_BURN, amountCommitted, true, false)
             await expect(
                 poolCommitter.commit(SHORT_BURN, amountCommitted, true, false)
-            ).to.be.revertedWith("Insufficient pool tokens")
+            ).to.be.reverted
         })
 
         it("Should not allow commits that are too large", async () => {
@@ -252,7 +252,7 @@ describe("LeveragedPool - commit", () => {
                     true,
                     false
                 )
-            ).to.be.revertedWith("Insufficient pool tokens")
+            ).to.be.reverted
         })
 
         it("Should allow for a combination of short_burn commits from wallet and aggregate balance", async () => {
@@ -403,7 +403,7 @@ describe("LeveragedPool - commit", () => {
             await poolCommitter.commit(SHORT_MINT, amountCommitted, true, false)
             await expect(
                 poolCommitter.commit(SHORT_MINT, amountCommitted, true, false)
-            ).be.rejected // Can't figure out how to get the "overflow" error message to be used in chai assertins
+            ).be.rejected // Can't figure out how to get the "overflow" error message to be used in chai assertions
         })
 
         it("Should not allow commits that are too large", async () => {
@@ -414,7 +414,7 @@ describe("LeveragedPool - commit", () => {
                     true,
                     false
                 )
-            ).be.rejected // Can't figure out how to get the "overflow" error message to be used in chai assertins
+            ).be.rejected // Can't figure out how to get the "overflow" error message to be used in chai assertions
         })
 
         it("Should allow for a combination of short_mint commits from wallet and aggregate balance", async () => {
@@ -523,7 +523,7 @@ describe("LeveragedPool - commit", () => {
             await poolCommitter.commit(LONG_BURN, amountCommitted, true, false)
             await expect(
                 poolCommitter.commit(LONG_BURN, amountCommitted, true, false)
-            ).to.be.revertedWith("Insufficient pool tokens")
+            ).to.be.reverted
         })
 
         it("Should not allow commits that are too large", async () => {
@@ -534,7 +534,7 @@ describe("LeveragedPool - commit", () => {
                     true,
                     false
                 )
-            ).to.be.revertedWith("Insufficient pool tokens")
+            ).to.be.reverted
         })
 
         it("Should allow for a combination of long_burn commits from wallet and aggregate balance", async () => {
@@ -658,7 +658,7 @@ describe("LeveragedPool - commit", () => {
             await poolCommitter.commit(LONG_MINT, amountCommitted, true, false)
             await expect(
                 poolCommitter.commit(LONG_MINT, amountCommitted, true, false)
-            ).be.rejected // Can't figure out how to get the "overflow" error message to be used in chai assertins
+            ).be.rejected // Can't figure out how to get the "overflow" error message to be used in chai assertions
         })
 
         it("Should not allow commits that are too large", async () => {
@@ -669,7 +669,7 @@ describe("LeveragedPool - commit", () => {
                     true,
                     false
                 )
-            ).be.rejected // Can't figure out how to get the "overflow" error message to be used in chai assertins
+            ).be.rejected // Can't figure out how to get the "overflow" error message to be used in chai assertions
         })
 
         it("Long mint from aggregate balance reduces settlement token amount in balance", async () => {
@@ -863,7 +863,7 @@ describe("LeveragedPool - commit", () => {
                     true,
                     false
                 )
-            ).to.be.revertedWith("Insufficient pool tokens")
+            ).to.be.reverted
 
             const longBalance = await longToken.balanceOf(signers[0].address)
             const shortBalance = await shortToken.balanceOf(signers[0].address)
@@ -961,7 +961,7 @@ describe("LeveragedPool - commit", () => {
                             true,
                             false
                         )
-                    ).to.be.revertedWith("Insufficient pool tokens")
+                    ).to.be.reverted
                 })
 
                 it("Should revert if you are attempting to LONG_BURN_THEN_MINT duplicate times (from aggregate balance)", async () => {
@@ -979,7 +979,7 @@ describe("LeveragedPool - commit", () => {
                             true,
                             false
                         )
-                    ).to.be.revertedWith("Insufficient pool tokens")
+                    ).to.be.reverted
                 })
 
                 it("Should revert if you are attempting to LONG_BURN_THEN_MINT too many tokens (from wallet)", async () => {
@@ -991,7 +991,7 @@ describe("LeveragedPool - commit", () => {
                             true,
                             false
                         )
-                    ).to.be.revertedWith("Insufficient pool tokens")
+                    ).to.be.reverted
                 })
 
                 it("Should revert if you are attempting to LONG_BURN_THEN_MINT too many tokens (from aggregate balance)", async () => {
@@ -1003,7 +1003,7 @@ describe("LeveragedPool - commit", () => {
                             true,
                             false
                         )
-                    ).to.be.revertedWith("Insufficient pool tokens") // The error here is different from burning from wallet, because it does not burn from user's wallet and thus needs to manually check
+                    ).to.be.reverted
                 })
             })
 
@@ -1271,7 +1271,7 @@ describe("LeveragedPool - commit", () => {
                         true,
                         false
                     )
-                ).to.be.revertedWith("Insufficient pool tokens")
+                ).to.be.reverted
             })
 
             it("Should revert if you are attempting to LONG_BURN_THEN_MINT too many tokens (from wallet)", async () => {
@@ -1296,7 +1296,7 @@ describe("LeveragedPool - commit", () => {
                         true,
                         false
                     )
-                ).to.be.revertedWith("Insufficient pool tokens") // The error here is different from burning from wallet, because it does not burn from user's wallet and thus needs to manually check
+                ).to.be.reverted
             })
         })
 
@@ -1548,7 +1548,7 @@ describe("LeveragedPool - commit", () => {
                         true,
                         false
                     )
-                ).to.be.revertedWith("Insufficient pool tokens")
+                ).to.be.reverted
             })
 
             it("Should revert if you are attempting to SHORT_BURN_THEN_MINT too many tokens (from wallet)", async () => {
@@ -1573,7 +1573,7 @@ describe("LeveragedPool - commit", () => {
                         true,
                         false
                     )
-                ).to.be.revertedWith("Insufficient pool tokens") // The error here is different from burning from wallet, because it does not burn from user's wallet and thus needs to manually check
+                ).to.be.reverted
             })
         })
 
