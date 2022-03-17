@@ -360,20 +360,20 @@ library PoolSwapLibrary {
      * @param tokenSupply Total supply of pool tokens
      * @param amountIn Commitment amount of pool tokens going into the pool
      * @param balance Balance of the pool (no. of underlying settlement tokens in pool)
-     * @param shadowBalance Balance the shadow pool at time of mint
+     * @param pendingBurnPoolTokens Amount of pool tokens being burnt during this update interval
      * @return Number of settlement tokens to be withdrawn on a burn
      */
     function getWithdrawAmountOnBurn(
         uint256 tokenSupply,
         uint256 amountIn,
         uint256 balance,
-        uint256 shadowBalance
+        uint256 pendingBurnPoolTokens
     ) external pure returns (uint256) {
         // Catch the divide by zero error, or return 0 if amountIn is 0
-        if ((balance == 0) || (tokenSupply + shadowBalance == 0) || (amountIn == 0)) {
+        if ((balance == 0) || (tokenSupply + pendingBurnPoolTokens == 0) || (amountIn == 0)) {
             return amountIn;
         }
-        return (balance * amountIn) / (tokenSupply + shadowBalance);
+        return (balance * amountIn) / (tokenSupply + pendingBurnPoolTokens);
     }
 
     /**
@@ -382,21 +382,21 @@ library PoolSwapLibrary {
      * @param tokenSupply Total supply of pool tokens
      * @param amountIn Commitment amount of settlement tokens going into the pool
      * @param balance Balance of the pool (no. of underlying settlement tokens in pool)
-     * @param shadowBalance Balance the shadow pool at time of mint
+     * @param pendingBurnPoolTokens Amount of pool tokens being burnt during this update interval
      * @return Number of pool tokens to be minted
      */
     function getMintAmount(
         uint256 tokenSupply,
         uint256 amountIn,
         uint256 balance,
-        uint256 shadowBalance
+        uint256 pendingBurnPoolTokens
     ) external pure returns (uint256) {
         // Catch the divide by zero error, or return 0 if amountIn is 0
-        if (balance == 0 || tokenSupply + shadowBalance == 0 || amountIn == 0) {
+        if (balance == 0 || tokenSupply + pendingBurnPoolTokens == 0 || amountIn == 0) {
             return amountIn;
         }
 
-        return ((tokenSupply + shadowBalance) * amountIn) / balance;
+        return ((tokenSupply + pendingBurnPoolTokens) * amountIn) / balance;
     }
 
     /**

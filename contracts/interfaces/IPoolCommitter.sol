@@ -19,10 +19,10 @@ interface IPoolCommitter {
         uint256 newLongBalance;
         uint256 longMintPoolTokens;
         uint256 shortMintPoolTokens;
-        uint256 longBurnInstantMintAmount;
-        uint256 shortBurnInstantMintAmount;
-        uint256 totalLongBurn;
-        uint256 totalShortBurn;
+        uint256 longBurnInstantMintSettlement;
+        uint256 shortBurnInstantMintSettlement;
+        uint256 totalLongBurnPoolTokens;
+        uint256 totalShortBurnPoolTokens;
     }
 
     // User aggregate balance

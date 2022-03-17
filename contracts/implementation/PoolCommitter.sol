@@ -403,75 +403,73 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             totalPoolCommitments[updateIntervalId].shortMintSettlement;
 
         BalancesAndSupplies memory balancesAndSupplies = BalancesAndSupplies({
-            newShortBalance: _commits.shortMintSettlement,
-            newLongBalance: _commits.longMintSettlement,
+            newShortBalance: _commits.shortMintSettlement + shortBalance,
+            newLongBalance: _commits.longMintSettlement + longBalance,
             longMintPoolTokens: 0,
             shortMintPoolTokens: 0,
-            longBurnInstantMintAmount: 0,
-            shortBurnInstantMintAmount: 0,
-            totalLongBurn: _commits.longBurnPoolTokens + _commits.longBurnShortMintPoolTokens,
-            totalShortBurn: _commits.shortBurnPoolTokens + _commits.shortBurnLongMintPoolTokens
+            longBurnInstantMintSettlement: 0,
+            shortBurnInstantMintSettlement: 0,
+            totalLongBurnPoolTokens: _commits.longBurnPoolTokens + _commits.longBurnShortMintPoolTokens,
+            totalShortBurnPoolTokens: _commits.shortBurnPoolTokens + _commits.shortBurnLongMintPoolTokens
         });
-
-        balancesAndSupplies.newLongBalance += longBalance;
-        balancesAndSupplies.newShortBalance += shortBalance;
 
         // Update price before values change
         priceHistory[updateIntervalId] = Prices({
             longPrice: PoolSwapLibrary.getPrice(longBalance, longTotalSupply + pendingLongBurnPoolTokens),
             shortPrice: PoolSwapLibrary.getPrice(shortBalance, shortTotalSupply + pendingShortBurnPoolTokens)
         });
-        pendingLongBurnPoolTokens -= balancesAndSupplies.totalLongBurn;
-        pendingShortBurnPoolTokens -= balancesAndSupplies.totalShortBurn;
 
-        // Amount of settlement tokens that are generated from the long burn into instant mints
-        balancesAndSupplies.longBurnInstantMintAmount = PoolSwapLibrary.getWithdrawAmountOnBurn(
+        // Amount of collateral tokens that are generated from the long burn into instant mints
+        balancesAndSupplies.longBurnInstantMintSettlement = PoolSwapLibrary.getWithdrawAmountOnBurn(
             longTotalSupply,
             _commits.longBurnShortMintPoolTokens,
             longBalance,
-            balancesAndSupplies.totalLongBurn
+            pendingLongBurnPoolTokens
         );
-        balancesAndSupplies.newShortBalance += balancesAndSupplies.longBurnInstantMintAmount;
-        // Amount of settlement tokens that are generated from the short burn into instant mints
-        balancesAndSupplies.shortBurnInstantMintAmount = PoolSwapLibrary.getWithdrawAmountOnBurn(
+        balancesAndSupplies.newShortBalance += balancesAndSupplies.longBurnInstantMintSettlement;
+        // Amount of collateral tokens that are generated from the short burn into instant mints
+        balancesAndSupplies.shortBurnInstantMintSettlement = PoolSwapLibrary.getWithdrawAmountOnBurn(
             shortTotalSupply,
             _commits.shortBurnLongMintPoolTokens,
             shortBalance,
-            balancesAndSupplies.totalShortBurn
+            pendingShortBurnPoolTokens
         );
-        balancesAndSupplies.newLongBalance += balancesAndSupplies.shortBurnInstantMintAmount;
+        balancesAndSupplies.newLongBalance += balancesAndSupplies.shortBurnInstantMintSettlement;
 
         // Long Mints
         balancesAndSupplies.longMintPoolTokens = PoolSwapLibrary.getMintAmount(
             longTotalSupply, // long token total supply,
-            _commits.longMintSettlement + balancesAndSupplies.shortBurnInstantMintAmount, // Add the collateral tokens that will be generated from burning shorts for instant long mint
-            longBalance, // total quote tokens in the long pull
-            balancesAndSupplies.totalLongBurn // total pool tokens commited to be burned
+            _commits.longMintSettlement + balancesAndSupplies.shortBurnInstantMintSettlement, // Add the settlement tokens that will be generated from burning shorts for instant long mint
+            longBalance, // total quote tokens in the long pool
+            pendingLongBurnPoolTokens // total pool tokens commited to be burned
         );
 
         // Long Burns
         balancesAndSupplies.newLongBalance -= PoolSwapLibrary.getWithdrawAmountOnBurn(
             longTotalSupply,
-            balancesAndSupplies.totalLongBurn,
+            balancesAndSupplies.totalLongBurnPoolTokens,
             longBalance,
-            balancesAndSupplies.totalLongBurn
+            pendingLongBurnPoolTokens
         );
 
         // Short Mints
         balancesAndSupplies.shortMintPoolTokens = PoolSwapLibrary.getMintAmount(
             shortTotalSupply, // short token total supply
-            _commits.shortMintSettlement + balancesAndSupplies.longBurnInstantMintAmount, // Add the collateral tokens that will be generated from burning longs for instant short mint
+            _commits.shortMintSettlement + balancesAndSupplies.longBurnInstantMintSettlement, // Add the settlement tokens that will be generated from burning longs for instant short mint
             shortBalance,
-            balancesAndSupplies.totalShortBurn
+            pendingShortBurnPoolTokens
         );
 
         // Short Burns
         balancesAndSupplies.newShortBalance -= PoolSwapLibrary.getWithdrawAmountOnBurn(
             shortTotalSupply,
-            balancesAndSupplies.totalShortBurn,
+            balancesAndSupplies.totalShortBurnPoolTokens,
             shortBalance,
-            balancesAndSupplies.totalShortBurn
+            pendingShortBurnPoolTokens
         );
+
+        pendingLongBurnPoolTokens -= balancesAndSupplies.totalLongBurnPoolTokens;
+        pendingShortBurnPoolTokens -= balancesAndSupplies.totalShortBurnPoolTokens;
 
         return (
             longTotalSupply + balancesAndSupplies.longMintPoolTokens,
