@@ -12,7 +12,6 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import {
     DEFAULT_FEE,
     DEFAULT_MINT_AMOUNT,
-    LONG_BURN,
     LONG_MINT,
     POOL_CODE,
 } from "../constants"
@@ -38,6 +37,8 @@ const leverage = 2
 describe("PoolCommitter - updateAggregateBalance", () => {
     let token: TestToken
 
+    let maxIterations: number
+    let lastCommitUpdateInterval: number
     let longToken: ERC20
     let poolCommitter: PoolCommitter
     let pool: LeveragedPool
@@ -63,30 +64,52 @@ describe("PoolCommitter - updateAggregateBalance", () => {
             await pool.setKeeper(signers[0].address)
             await token.approve(pool.address, amountMinted)
 
-            const maxIterations = await poolCommitter.MAX_ITERATIONS();
+            maxIterations = await poolCommitter.MAX_ITERATIONS()
 
-            for (let i = 0; i < maxIterations + 1; i++) {
-                await createCommit(
-                    poolCommitter,
-                    [LONG_MINT],
-                    amountCommitted
-                )
+            for (let i = 0; i < maxIterations; i++) {
+                await createCommit(poolCommitter, [LONG_MINT], amountCommitted)
                 await timeout(updateInterval * 1000)
+                await pool.poolUpkeep(9, 9)
             }
 
+            const lastCommit = await createCommit(
+                poolCommitter,
+                [LONG_MINT],
+                amountCommitted
+            )
+            lastCommitUpdateInterval = lastCommit.appropriateUpdateIntervalId
+            await timeout(updateInterval * 1000)
+            await pool.poolUpkeep(9, 9)
+
             // Will only execute MAX_ITERATIONS commitments, leaving 1 unexecuted
+            await timeout(updateInterval * 1000)
             await pool.poolUpkeep(9, 9)
-            console.log((await poolCommitter.unAggregatedCommitments(signers[0].address, 0)).toString())
+            await timeout(frontRunningInterval * 1000)
             await pool.poolUpkeep(9, 9)
-            console.log("WAHU")
-            await poolCommitter.updateAggregateBalance(signers[0].address)
+            await poolCommitter.claim(signers[0].address)
         })
-        it.only("should not delete all unaggregated update interval IDs", async () => {
-            const unaggregated = await poolCommitter.unAggregatedCommitments(signers[0].address, 0)
-            console.log(unaggregated.toString())
-            console.log((await poolCommitter.unAggregatedCommitments(signers[0].address, 1)).toString())
-            console.log((await poolCommitter.unAggregatedCommitments(signers[0].address, 2)).toString())
-            console.log((await poolCommitter.unAggregatedCommitments(signers[0].address, 3)).toString())
+        it("Should add long token balance as user's commitment results get aggregated", async () => {
+            expect(await longToken.balanceOf(signers[0].address)).to.equal(
+                amountCommitted.mul(maxIterations)
+            )
+            await timeout(updateInterval * 1000)
+            await pool.poolUpkeep(9, 9)
+            await poolCommitter.claim(signers[0].address)
+            // Get the last one
+            expect(await longToken.balanceOf(signers[0].address)).to.equal(
+                amountCommitted.mul(maxIterations + 1)
+            )
+        })
+        it("should not delete all unaggregated update interval IDs, but instead leave only the leftover ones in", async () => {
+            const unaggregated = await poolCommitter.unAggregatedCommitments(
+                signers[0].address,
+                0
+            )
+            expect(unaggregated).to.equal(lastCommitUpdateInterval)
+            // No reason string when accessing out of bounds in storage array
+            await expect(
+                poolCommitter.unAggregatedCommitments(signers[0].address, 1)
+            ).to.be.reverted
         })
     })
 })

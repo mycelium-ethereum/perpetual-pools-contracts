@@ -11,7 +11,6 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "./PoolSwapLibrary.sol";
-import "hardhat/console.sol";
 
 /// @title This contract is responsible for handling commitment logic
 contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
@@ -287,9 +286,6 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             // Push to the array if the most recent commitment was done in a prior update interval
             unAggregatedCommitments[msg.sender].push(appropriateUpdateIntervalId);
         }
-        // console.log("appropriateUpdateIntervalId");
-        // console.log(appropriateUpdateIntervalId);
-        // console.log(updateIntervalId);
 
         /*
          * Below, we want to follow the "Checks, Effects, Interactions" pattern.
@@ -578,8 +574,6 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
 
                 // counter overflowing would require an unrealistic number of update intervals
                 unchecked {
-                    console.log("incrementing update interval ID");
-                    console.log(updateIntervalId);
                     updateIntervalId += 1;
                 }
             } else {
@@ -705,9 +699,6 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         update._maxIterations = unAggregatedLength < MAX_ITERATIONS ? uint8(unAggregatedLength) : MAX_ITERATIONS; // casting to uint8 is safe because we know it is less than MAX_ITERATIONS, a uint8
 
         // Iterate from the most recent up until the current update interval
-        console.log("unAggregatedLength");
-        console.log(unAggregatedLength);
-        console.log(updateIntervalId);
         for (uint256 i = 0; i < update._maxIterations; i++) {
             uint256 id = currentIntervalIds[i];
             if (id == 0) {
@@ -738,16 +729,14 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
                 update._longBurnFee += _longBurnFee;
                 update._shortBurnFee += _shortBurnFee;
                 delete userCommitments[user][id];
-                console.log("i");
-                console.log(i);
-                console.log(unAggregatedLength);
-                if (i < unAggregatedLength) {
-                    console.log("unAggregatedCommitments[user][i]");
-                    console.log(unAggregatedCommitments[user][i]);
-                    unAggregatedCommitments[user][i] = unAggregatedCommitments[user][i + 1];
-                    console.log(unAggregatedCommitments[user][i]);
+                uint256[] storage commitmentIds = unAggregatedCommitments[user];
+                if (i < commitmentIds.length - 1 && commitmentIds.length > 1) {
+                    // Order doesn't actually matter in this array, so we can just put the last element into this index
+                    commitmentIds[i] = commitmentIds[commitmentIds.length - 1];
+                    commitmentIds.pop();
                 } else {
-                    delete unAggregatedCommitments[user][i];
+                    // delete commitmentIds[i - 1];
+                    commitmentIds.pop();
                 }
             } else {
                 // Clear them now that they have been accounted for in the balance
@@ -760,12 +749,12 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             }
         }
 
-        // if (unAggregatedLength <= MAX_ITERATIONS) {
-        // We got through all update intervals, so we can replace all unaggregated update interval IDs
-        delete unAggregatedCommitments[user];
-        unAggregatedCommitments[user] = storageArrayPlaceHolder;
-        delete storageArrayPlaceHolder;
-        // }
+        if (unAggregatedLength <= MAX_ITERATIONS) {
+            // We got through all update intervals, so we can replace all unaggregated update interval IDs
+            delete unAggregatedCommitments[user];
+            unAggregatedCommitments[user] = storageArrayPlaceHolder;
+            delete storageArrayPlaceHolder;
+        }
 
         // Add new tokens minted, and remove the ones that were burnt from this balance
         balance.longTokens += update._newLongTokensSum;
