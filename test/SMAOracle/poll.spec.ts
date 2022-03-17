@@ -20,7 +20,7 @@ describe("SMAOracle - getPrice", () => {
     const updateInterval: BigNumberish = 60
 
     beforeEach(async () => {
-        [owner, user1, user2] = await ethers.getSigners()
+        ;[owner, user1, user2] = await ethers.getSigners()
 
         const TestChainlinkOracleFactory = (await ethers.getContractFactory(
             "TestChainlinkOracle"
