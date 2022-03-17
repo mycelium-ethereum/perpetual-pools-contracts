@@ -23,7 +23,6 @@ import {
     createCommit,
     CommitEventArgs,
     timeout,
-    deployMockPool,
 } from "../utilities"
 import { Bytes, BigNumber } from "ethers"
 chai.use(chaiAsPromised)
@@ -127,27 +126,6 @@ describe("LeveragedPool - executeAllCommitments", async () => {
         })
     })
 
-    describe("paused pools", async () => {
-        it("Paused pools cannot upkeep", async () => {
-            await timeout(updateInterval * 1000)
-            const result = await deployMockPool(
-                POOL_CODE,
-                frontRunningInterval,
-                updateInterval,
-                leverage,
-                feeAddress,
-                fee
-            )
-            await result.pool.setKeeper(result.signers[0].address)
-            await result.token.approve(result.pool.address, 10000)
-            await result.poolCommitter.commit(LONG_MINT, 1000, false, false)
-            await result.pool.drainPool(10)
-            await result.invariantCheck.checkInvariants(result.pool.address)
-            await expect(
-                result.pool.poolUpkeep(lastPrice, lastPrice)
-            ).to.revertedWith("Pool is paused")
-        })
-    })
     /*
     describe("Short mint->short burn", () => {
         const commits: CommitEventArgs[] | undefined = []

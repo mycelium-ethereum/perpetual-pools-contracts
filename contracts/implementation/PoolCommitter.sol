@@ -18,6 +18,8 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
     uint128 public constant LONG_INDEX = 0;
     uint128 public constant SHORT_INDEX = 1;
 
+    // 15 was chosen because it will definitely fit in a block on Arbitrum which can be tricky to ascertain definitive computation cap without trial and error, while it is also a reasonable number of upkeeps to get executed in one transaction
+    uint8 public constant MAX_ITERATIONS = 15;
     IAutoClaim public autoClaim;
     uint128 public override updateIntervalId = 1;
     // The amount that is extracted from each mint and burn, being left in the pool. Given as the decimal * 10 ^ 18. For example, 60% fee is 0.6 * 10 ^ 18
@@ -55,8 +57,8 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
     address public governance;
     address public feeController;
     address public leveragedPool;
+    address public invariantCheck;
     bool public override paused;
-    IInvariantCheck public invariantCheck;
 
     modifier onlyFeeController() {
         require(msg.sender == feeController, "msg.sender not fee controller");
@@ -70,27 +72,6 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
 
     modifier onlyGov() {
         require(msg.sender == governance, "msg.sender not governance");
-        _;
-    }
-
-    /**
-     * @dev Check invariants before function body only. This is used in functions where the state of the pool is updated after exiting PoolCommitter (i.e. executeCommitments)
-     */
-    modifier checkInvariantsBeforeFunction() {
-        invariantCheck.checkInvariants(leveragedPool);
-        require(!paused, "Pool is paused");
-        _;
-    }
-
-    modifier checkInvariantsAfterFunction() {
-        require(!paused, "Pool is paused");
-        _;
-        invariantCheck.checkInvariants(leveragedPool);
-        require(!paused, "Pool is paused");
-    }
-
-    modifier onlyInvariantCheckContract() {
-        require(msg.sender == address(invariantCheck), "msg.sender not invariantCheck");
         _;
     }
 
@@ -110,6 +91,11 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         _;
     }
 
+    modifier onlyInvariantCheckContract() {
+        require(msg.sender == invariantCheck, "msg.sender not invariantCheck");
+        _;
+    }
+
     modifier onlyAutoClaimOrCommitter(address user) {
         require(msg.sender == user || msg.sender == address(autoClaim), "msg.sender not committer or AutoClaim");
         _;
@@ -118,15 +104,14 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
     /**
      * @notice Initialises the contract
      * @param _factory Address of the associated `PoolFactory` contract
-     * @param _invariantCheckContract Address of the associated `InvariantCheck` contract
      * @param _autoClaim Address of the associated `AutoClaim` contract
      * @param _factoryOwner Address of the owner of the `PoolFactory`
+     * @param _invariantCheck Address of the `InvariantCheck` contract
      * @param _mintingFee The percentage that is taken from each mint, given as a decimal * 10 ^ 18
      * @param _burningFee The percentage that is taken from each burn, given as a decimal * 10 ^ 18
      * @param _changeInterval The amount that the `mintingFee` will change each update interval, based on `updateMintingFee`, given as a decimal * 10 ^ 18 (same format as `_mintingFee`)
      * @dev Throws if factory contract address is null
      * @dev Throws if autoClaim contract address is null
-     * @dev Throws if invariantCheck contract address is null
      * @dev Throws if autoclaim contract address is null
      * @dev Only callable by the associated initializer address
      * @dev Throws if minting fee is over 100%
@@ -135,20 +120,21 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
      */
     function initialize(
         address _factory,
-        address _invariantCheckContract,
         address _autoClaim,
         address _factoryOwner,
         address _feeController,
+        address _invariantCheck,
         uint256 _mintingFee,
         uint256 _burningFee,
         uint256 _changeInterval
     ) external override initializer {
-        require(_factory != address(0), "Factory address cannot be 0 address");
-        require(_invariantCheckContract != address(0), "InvariantCheck address cannot be 0 address");
+        require(_factory != address(0), "Factory cannot be null");
         require(_autoClaim != address(0), "AutoClaim address cannot be null");
         require(_feeController != address(0), "fee controller cannot be null");
+        require(_invariantCheck != address(0), "invariantCheck cannot be null");
         updateIntervalId = 1;
         factory = _factory;
+        invariantCheck = _invariantCheck;
         mintingFee = PoolSwapLibrary.convertUIntToDecimal(_mintingFee);
         burningFee = PoolSwapLibrary.convertUIntToDecimal(_burningFee);
         require(mintingFee < PoolSwapLibrary.MAX_MINTING_FEE, "Minting fee >= 100%");
@@ -156,7 +142,6 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         changeInterval = PoolSwapLibrary.convertUIntToDecimal(_changeInterval);
         feeController = _feeController;
         autoClaim = IAutoClaim(_autoClaim);
-        invariantCheck = IInvariantCheck(_invariantCheckContract);
         governance = _factoryOwner;
     }
 
@@ -264,7 +249,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
     /**
      * @notice Commit to minting/burning long/short tokens after the next price change
      * @param commitType Type of commit you're doing (Long vs Short, Mint vs Burn)
-     * @param amount Amount of quote tokens you want to commit to minting; OR amount of pool
+     * @param amount Amount of settlement tokens you want to commit to minting; OR amount of pool
      *               tokens you want to burn
      * @param fromAggregateBalance If minting, burning, or rebalancing into a delta neutral position,
      *                             will tokens be taken from user's aggregate balance?
@@ -276,7 +261,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         uint256 amount,
         bool fromAggregateBalance,
         bool payForClaim
-    ) external payable override checkInvariantsAfterFunction {
+    ) external payable override {
         require(amount > 0, "Amount must not be zero");
         updateAggregateBalance(msg.sender);
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
@@ -315,9 +300,9 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         applyCommitment(pool, commitType, amount, fromAggregateBalance, userCommit, totalCommit);
 
         if (commitType == CommitType.LongMint || (commitType == CommitType.ShortMint && !fromAggregateBalance)) {
-            // minting: pull in the quote token from the committer
+            // minting: pull in the settlement token from the committer
             // Do not need to transfer if minting using aggregate balance tokens, since the leveraged pool already owns these tokens.
-            pool.quoteTokenTransferFrom(msg.sender, leveragedPool, amount);
+            pool.settlementTokenTransferFrom(msg.sender, leveragedPool, amount);
         }
 
         if (payForClaim) {
@@ -344,7 +329,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
      * @dev Updates aggregate user balances
      * @dev Emits a `Claim` event on success
      */
-    function claim(address user) external override checkInvariantsAfterFunction onlyAutoClaimOrCommitter(user) {
+    function claim(address user) external override onlyAutoClaimOrCommitter(user) {
         updateAggregateBalance(user);
         Balance memory balance = userAggregateBalance[user];
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
@@ -359,7 +344,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         }
 
         if (balance.settlementTokens > 0) {
-            pool.quoteTokenTransfer(user, balance.settlementTokens);
+            pool.settlementTokenTransfer(user, balance.settlementTokens);
         }
         if (balance.longTokens > 0) {
             pool.poolTokenTransfer(true, user, balance.longTokens);
@@ -506,6 +491,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
      * @return shortTotalSupplyChange The amount of short pool tokens that have been added to the supply, passed back to LeveragedPool to mint them.
      * @return newLongBalance The updated longBalance
      * @return newShortBalance The updated longBalance
+     * @return lastPriceTimestamp The correct price timestamp for LeveragedPool to set. This is in case not all update intervals get upkept, we can track the time of the most recent upkept one.
      */
     function executeCommitments(
         uint256 lastPriceTimestamp,
@@ -520,10 +506,11 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             uint256,
             uint256,
             uint256,
+            uint256,
             uint256
         )
     {
-        uint32 counter = 1;
+        uint8 counter = 1;
 
         /*
          * (old)
@@ -550,25 +537,37 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
          * In reality, this should never iterate more than once, since more than one update interval
          * should never be passed without the previous one being upkept.
          */
-        uint256 longTotalSupply = IERC20(tokens[LONG_INDEX]).totalSupply();
-        uint256 shortTotalSupply = IERC20(tokens[SHORT_INDEX]).totalSupply();
-        uint256 longTotalSupplyBefore = longTotalSupply;
-        uint256 shortTotalSupplyBefore = shortTotalSupply;
-        uint256 _updateIntervalId;
-        while (true) {
+
+        CommitmentExecutionTracking memory executionTracking = CommitmentExecutionTracking({
+            longTotalSupply: IERC20(tokens[LONG_INDEX]).totalSupply(),
+            shortTotalSupply: IERC20(tokens[SHORT_INDEX]).totalSupply(),
+            longTotalSupplyBefore: 0,
+            shortTotalSupplyBefore: 0,
+            _updateIntervalId: 0
+        });
+
+        executionTracking.longTotalSupplyBefore = executionTracking.longTotalSupply;
+        executionTracking.shortTotalSupplyBefore = executionTracking.shortTotalSupply;
+
+        while (counter <= MAX_ITERATIONS) {
             if (block.timestamp >= lastPriceTimestamp + updateInterval * counter) {
                 // Another update interval has passed, so we have to do the nextIntervalCommit as well
-                _updateIntervalId = updateIntervalId;
-                burnFeeHistory[updateIntervalId] = burningFee;
-                (longTotalSupply, shortTotalSupply, longBalance, shortBalance) = executeGivenCommitments(
-                    totalPoolCommitments[updateIntervalId],
-                    longTotalSupply,
-                    shortTotalSupply,
+                executionTracking._updateIntervalId = updateIntervalId;
+                burnFeeHistory[executionTracking._updateIntervalId] = burningFee;
+                (
+                    executionTracking.longTotalSupply,
+                    executionTracking.shortTotalSupply,
+                    longBalance,
+                    shortBalance
+                ) = executeGivenCommitments(
+                    totalPoolCommitments[executionTracking._updateIntervalId],
+                    executionTracking.longTotalSupply,
+                    executionTracking.shortTotalSupply,
                     longBalance,
                     shortBalance
                 );
-                emit ExecutedCommitsForInterval(updateIntervalId, burningFee);
-                delete totalPoolCommitments[updateIntervalId];
+                emit ExecutedCommitsForInterval(executionTracking._updateIntervalId, burningFee);
+                delete totalPoolCommitments[executionTracking._updateIntervalId];
 
                 // counter overflowing would require an unrealistic number of update intervals
                 updateIntervalId += 1;
@@ -583,15 +582,25 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         }
 
         updateMintingFee(
-            PoolSwapLibrary.getPrice(longBalance, longTotalSupply),
-            PoolSwapLibrary.getPrice(shortBalance, shortTotalSupply)
+            PoolSwapLibrary.getPrice(longBalance, executionTracking.longTotalSupply),
+            PoolSwapLibrary.getPrice(shortBalance, executionTracking.shortTotalSupply)
         );
 
+        // Subtract counter by 1 to accurately reflect how many update intervals were executed
+        if (block.timestamp >= lastPriceTimestamp + updateInterval * (counter - 1)) {
+            // check if finished
+            // shift lastPriceTimestamp so next time the executeCommitments() will continue where it left off
+            lastPriceTimestamp = lastPriceTimestamp + updateInterval * (counter - 1);
+        } else {
+            // Set to current time if finished every update interval
+            lastPriceTimestamp = block.timestamp;
+        }
         return (
-            longTotalSupply - longTotalSupplyBefore,
-            shortTotalSupply - shortTotalSupplyBefore,
+            executionTracking.longTotalSupply - executionTracking.longTotalSupplyBefore,
+            executionTracking.shortTotalSupply - executionTracking.shortTotalSupplyBefore,
             longBalance,
-            shortBalance
+            shortBalance,
+            lastPriceTimestamp
         );
     }
 
@@ -664,7 +673,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
      * @dev Updates the `userAggregateBalance` mapping by applying `BalanceUpdate`s derived from iteration over the entirety of unaggregated commitments associated with the given user
      * @dev Emits an `AggregateBalanceUpdated` event upon successful termination
      */
-    function updateAggregateBalance(address user) public override checkInvariantsAfterFunction {
+    function updateAggregateBalance(address user) public override {
         Balance storage balance = userAggregateBalance[user];
 
         BalanceUpdate memory update = BalanceUpdate({
@@ -682,7 +691,10 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
 
         uint256[] memory currentIntervalIds = unAggregatedCommitments[user];
         uint256 unAggregatedLength = currentIntervalIds.length;
-        for (uint256 i = 0; i < unAggregatedLength; i++) {
+
+        uint8 maxIterations = unAggregatedLength < MAX_ITERATIONS ? uint8(unAggregatedLength) : MAX_ITERATIONS; // casting to uint8 is safe because we know it is less than MAX_ITERATIONS, a uint8
+
+        for (uint256 i = 0; i < maxIterations; i++) {
             uint256 id = currentIntervalIds[i];
             if (id == 0) {
                 continue;
@@ -824,11 +836,11 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
     }
 
     /**
-     * @notice Sets the quote token address and the address of the associated `LeveragedPool` contract to the provided values
+     * @notice Sets the settlement token address and the address of the associated `LeveragedPool` contract to the provided values
      * @param _leveragedPool Address of the pool to use
      * @dev Only callable by the associated `PoolFactory` contract
      * @dev Throws if either address are null
-     * @dev Emits a `QuoteAndPoolChanged` event on success
+     * @dev Emits a `SettlementAndPoolChanged` event on success
      */
     function setPool(address _leveragedPool) external override onlyFactory {
         require(_leveragedPool != address(0), "Leveraged pool address cannot be 0 address");

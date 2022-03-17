@@ -22,7 +22,7 @@ import {
 chai.use(chaiAsPromised)
 const { expect } = chai
 
-let quoteToken: string
+let settlementToken: string
 let oracleWrapper: ChainlinkOracleWrapper
 let settlementEthOracle: ChainlinkOracleWrapper
 let oracle: TestChainlinkOracle
@@ -38,7 +38,7 @@ const forwardTime = async (seconds: number) => {
 const setupHook = async () => {
     const signers = await ethers.getSigners()
     const amount = 10000
-    // Deploy quote token
+    // Deploy settlement token
     const testToken = (await ethers.getContractFactory(
         "TestToken",
         signers[0]
@@ -46,7 +46,7 @@ const setupHook = async () => {
     const token = await testToken.deploy("TEST TOKEN", "TST1")
     await token.deployed()
     await token.mint(signers[0].address, amount)
-    quoteToken = token.address
+    settlementToken = token.address
 
     // Deploy oracle. Using a test oracle for predictability
     const oracleFactory = (await ethers.getContractFactory(
@@ -89,6 +89,14 @@ const setupHook = async () => {
         await PoolFactory.deploy(generateRandomAddress(), signers[0].address)
     ).deployed()
 
+    const invariantCheckFactory = (await ethers.getContractFactory(
+        "InvariantCheck",
+        signers[0]
+    )) as InvariantCheck__factory
+
+    const invariantCheck = await invariantCheckFactory.deploy(factory.address)
+    await factory.setInvariantCheck(invariantCheck.address)
+
     const autoClaimFactory = (await ethers.getContractFactory("AutoClaim", {
         signer: signers[0],
     })) as AutoClaim__factory
@@ -101,24 +109,15 @@ const setupHook = async () => {
 
     await factory.connect(signers[0]).setPoolKeeper(poolKeeper.address)
 
-    const invariantCheckFactory = (await ethers.getContractFactory(
-        "InvariantCheck",
-        signers[0]
-    )) as InvariantCheck__factory
-
-    const invariantCheck = await invariantCheckFactory.deploy(factory.address)
-    await factory.setInvariantCheck(invariantCheck.address)
-
     // Create pool
     const deploymentData = {
         poolName: POOL_CODE,
         frontRunningInterval: 1,
         updateInterval: 2,
         leverageAmount: 1,
-        quoteToken: quoteToken,
+        settlementToken: settlementToken,
         oracleWrapper: oracleWrapper.address,
         settlementEthOracle: settlementEthOracle.address,
-        invariantCheckContract: invariantCheck.address,
         feeController: signers[0].address,
         mintingFee: 0,
         burningFee: 0,
@@ -131,10 +130,9 @@ const setupHook = async () => {
         frontRunningInterval: 1,
         updateInterval: 2,
         leverageAmount: 2,
-        quoteToken: quoteToken,
+        settlementToken: settlementToken,
         oracleWrapper: oracleWrapper.address,
         settlementEthOracle: settlementEthOracle.address,
-        invariantCheckContract: invariantCheck.address,
         feeController: signers[0].address,
         mintingFee: 0,
         burningFee: 0,

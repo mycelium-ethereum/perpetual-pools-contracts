@@ -4,7 +4,6 @@ const { expect } = chai
 import chaiAsPromised from "chai-as-promised"
 import {
     TestToken,
-    ERC20,
     PoolSwapLibrary,
     PoolCommitter,
     InvariantCheck,
@@ -20,6 +19,7 @@ import {
     deployMockPool,
     timeout,
 } from "../utilities"
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 chai.use(chaiAsPromised)
 
 const amountCommitted = ethers.utils.parseEther("2000")
@@ -34,11 +34,9 @@ describe("InvariantCheck - balanceInvariant", () => {
     let poolCommitter: PoolCommitter
     let token: TestToken
     let invariantCheck: InvariantCheck
-    let shortToken: ERC20
-    let longToken: ERC20
     let pool: LeveragedPoolBalanceDrainMock
-    let poolKeeper: PoolKeeper
     let library: PoolSwapLibrary
+    let signers: SignerWithAddress[]
 
     context("Pool not made by factory", async () => {
         it("Reverts due to not being valid pool", async () => {
@@ -54,7 +52,7 @@ describe("InvariantCheck - balanceInvariant", () => {
             library = result.library
             const oracleWrapper = result.oracleWrapper
             const settlementEthOracle = result.settlementEthOracle
-            const quoteToken = result.token.address
+            const settlementToken = result.token.address
             const long = result.longToken
             const short = result.shortToken
             const invariantCheck = result.invariantCheck
@@ -82,11 +80,11 @@ describe("InvariantCheck - balanceInvariant", () => {
                 _frontRunningInterval: frontRunningInterval,
                 _updateInterval: updateInterval,
                 _fee: fee,
+                _invariantCheck: invariantCheck.address,
                 _leverageAmount: leverage,
                 _feeAddress: feeAddress,
                 _secondaryFeeAddress: feeAddress,
-                _quoteToken: quoteToken,
-                _invariantCheckContract: invariantCheck.address,
+                _settlementToken: settlementToken,
                 _secondaryFeeSplitPercent: 10,
             })
 
@@ -116,14 +114,12 @@ describe("InvariantCheck - balanceInvariant", () => {
                     fee
                 )
                 pool = result.pool
-                poolKeeper = result.poolKeeper
                 library = result.library
                 poolCommitter = result.poolCommitter
                 invariantCheck = result.invariantCheck
+                signers = result.signers
 
                 token = result.token
-                shortToken = result.shortToken
-                longToken = result.longToken
 
                 await token.approve(pool.address, amountMinted.mul(10000))
 
@@ -149,23 +145,16 @@ describe("InvariantCheck - balanceInvariant", () => {
 
             it("Pauses contracts", async () => {
                 await pool.drainPool(1)
-                let pendingMintsBefore =
-                    await poolCommitter.pendingMintSettlementAmount()
-                const balanceBefore = await token.balanceOf(pool.address)
 
-                // Creating a commit reverts, since pools is drained
-                await expect(
-                    createCommit(poolCommitter, SHORT_MINT, amountCommitted)
-                ).to.be.revertedWith("Pool is paused")
+                await invariantCheck.checkInvariants(pool.address)
 
                 // Performing upkeep does not work
                 await timeout(updateInterval * 2000)
-                await poolKeeper.performUpkeepSinglePool(pool.address)
-                let pendingMintsAfter =
-                    await poolCommitter.pendingMintSettlementAmount()
-                const balanceAfter = await token.balanceOf(pool.address)
-                expect(pendingMintsBefore).to.equal(pendingMintsAfter)
-                expect(balanceAfter).to.equal(balanceBefore)
+
+                await pool.setKeeper(signers[0].address)
+                await expect(pool.poolUpkeep(10, 10)).to.be.revertedWith(
+                    "Pool is paused"
+                )
             })
         }
     )
@@ -181,14 +170,11 @@ describe("InvariantCheck - balanceInvariant", () => {
                 fee
             )
             pool = result.pool
-            poolKeeper = result.poolKeeper
             library = result.library
             poolCommitter = result.poolCommitter
             invariantCheck = result.invariantCheck
 
             token = result.token
-            shortToken = result.shortToken
-            longToken = result.longToken
 
             await token.approve(pool.address, amountMinted)
 
@@ -200,29 +186,13 @@ describe("InvariantCheck - balanceInvariant", () => {
 
         it("Pauses contracts", async () => {
             await pool.drainPool(1)
-            let pendingMintsBefore =
-                await poolCommitter.pendingMintSettlementAmount()
-            const balanceBefore = await token.balanceOf(pool.address)
-
-            // Creating a commit reverts, since pools is drained
-            await expect(
-                createCommit(poolCommitter, SHORT_MINT, amountCommitted)
-            ).to.be.revertedWith("Pool is paused")
-
-            // Performing upkeep does not work
-            await timeout(updateInterval * 2000)
-            await poolKeeper.performUpkeepSinglePool(pool.address)
-            let pendingMintsAfter =
-                await poolCommitter.pendingMintSettlementAmount()
-            const balanceAfter = await token.balanceOf(pool.address)
-            expect(pendingMintsBefore).to.equal(pendingMintsAfter)
-            expect(balanceAfter).to.equal(balanceBefore)
+            await invariantCheck.checkInvariants(pool.address)
+            expect(await pool.paused()).to.equal(true)
+            expect(await poolCommitter.paused()).to.equal(true)
         })
         it("Doesn't allow the contracts to get unpaused (Needs governance to unpause)", async () => {
             await pool.drainPool(1)
             await invariantCheck.checkInvariants(pool.address)
-            expect(await pool.paused()).to.equal(true)
-            expect(await poolCommitter.paused()).to.equal(true)
             await token.transfer(pool.address, 123)
             await invariantCheck.checkInvariants(pool.address)
             expect(await pool.paused()).to.equal(true)
@@ -231,8 +201,6 @@ describe("InvariantCheck - balanceInvariant", () => {
         it("Once paused, can manually unpause as governance", async () => {
             await pool.drainPool(1)
             await invariantCheck.checkInvariants(pool.address)
-            expect(await pool.paused()).to.equal(true)
-            expect(await poolCommitter.paused()).to.equal(true)
             await pool.unpause()
             await poolCommitter.unpause()
             expect(await pool.paused()).to.equal(false)

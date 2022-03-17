@@ -70,15 +70,6 @@ describe("LeveragedPool - executeCommitment: Long Burn", () => {
                 amountCommitted
             )
 
-            await token.transfer(signers[1].address, amountCommitted.mul(2))
-            await token.connect(signers[1]).approve(pool.address, amountMinted)
-            await poolCommitter
-                .connect(signers[1])
-                .commit(SHORT_MINT, amountCommitted, false, false)
-            await poolCommitter
-                .connect(signers[1])
-                .commit(LONG_MINT, amountCommitted, false, false)
-
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(9, 10)
             await poolCommitter.claim(signers[0].address)
@@ -90,11 +81,11 @@ describe("LeveragedPool - executeCommitment: Long Burn", () => {
             )
         })
         it("should adjust the live long pool balance", async () => {
-            expect(await pool.longBalance()).to.eq(amountCommitted.mul(2))
+            expect(await pool.longBalance()).to.eq(amountCommitted)
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(9, 9)
             await poolCommitter.claim(signers[0].address)
-            expect(await pool.longBalance()).to.eq(amountCommitted)
+            expect(await pool.longBalance()).to.eq(0)
         })
         it("should reduce the shadow long burn pool balance", async () => {
             expect(
@@ -108,7 +99,10 @@ describe("LeveragedPool - executeCommitment: Long Burn", () => {
                 ).longBurnPoolTokens
             ).to.eq(0)
         })
-        it("should transfer quote tokens to the commit owner", async () => {
+        it("should transfer settlement tokens to the commit owner", async () => {
+            expect(await token.balanceOf(signers[0].address)).to.eq(
+                amountMinted.sub(amountCommitted)
+            )
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(9, 9)
             const tokensBefore = await token.balanceOf(signers[0].address)
