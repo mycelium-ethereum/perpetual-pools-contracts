@@ -199,26 +199,7 @@ describe("PoolFactory.deployPool", () => {
             }
 
             await expect(factory.deployPool(deploymentData)).to.be.revertedWith(
-                "PoolKeeper: leveraged amount invalid"
-            )
-        })
-        it("should reject leverages greater than the MAX_LEVERAGE amount", async () => {
-            const deploymentData = {
-                poolName: POOL_CODE_2,
-                frontRunningInterval: 5,
-                updateInterval: 3,
-                leverageAmount: 100, // default max leverage is 10
-                settlementToken: generateRandomAddress(),
-                oracleWrapper: oracleWrapper.address,
-                settlementEthOracle: settlementEthOracle.address,
-                feeController: signers[0].address,
-                mintingFee: 0,
-                burningFee: 0,
-                changeInterval: 0,
-            }
-
-            await expect(factory.deployPool(deploymentData)).to.be.revertedWith(
-                "PoolKeeper: leveraged amount invalid"
+                "Leveraged amount cannot equal 0"
             )
         })
         it("should reject tokens with more than 18 decimals", async () => {
