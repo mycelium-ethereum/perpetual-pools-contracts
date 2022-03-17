@@ -36,9 +36,13 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
     bool public override paused;
     bool public override governanceTransferInProgress;
     address public keeper;
+    // When feeAddress changes, all prior fees are assigned to the new address
     address public feeAddress;
     address public secondaryFeeAddress;
     uint256 public secondaryFeeSplitPercent; // Split to secondary fee address as a percentage.
+    // Amount of fees assigned to either feeAddress (primaryFees), or secondaryFeeAddress (secondaryFees)
+    uint256 public override primaryFees;
+    uint256 public override secondaryFees;
     address public override settlementToken;
     address public override poolCommitter;
     address public override oracleWrapper;
@@ -293,13 +297,41 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
     }
 
     /**
-     * @notice Execute the fee transfer transactions. Transfers fees to primary fee address (DAO) and secondary (pool deployer).
+     * @notice Transfer primary fees to the primary fee address
+     * @dev Calls ERC20.safeTransfer on the settlement token
+     * @dev Emits a PrimaryFeesPaid event
+     */
+    function claimPrimaryFees() external override {
+        uint256 tempPrimaryFees = primaryFees;
+        primaryFees = 0;
+        IERC20(settlementToken).safeTransfer(feeAddress, tempPrimaryFees);
+        emit PrimaryFeesPaid(feeAddress, tempPrimaryFees);
+    }
+
+    /**
+     * @notice Transfer secondary fees to the secondary fee address
+     * @dev Calls ERC20.safeTransfer on the settlement token
+     * @dev Emits a SecondaryFeesPaid event
+     */
+    function claimSecondaryFees() external override {
+        uint256 tempSecondaryFees = secondaryFees;
+        secondaryFees = 0;
+        IERC20(settlementToken).safeTransfer(secondaryFeeAddress, tempSecondaryFees);
+        emit SecondaryFeesPaid(secondaryFeeAddress, tempSecondaryFees);
+    }
+
+    /**
+     * @notice Increment fee amounts. Allows primary or secondary fees to be claimed with either `claimPrimaryFees` or `claimSecondaryFees` respectively.
      *         If the DAO is the fee deployer, secondary fee address should be address(0) and all fees go to DAO.
      * @param totalFeeAmount total amount of fees paid
      */
     function feeTransfer(uint256 totalFeeAmount) internal {
         if (secondaryFeeAddress == address(0)) {
-            IERC20(settlementToken).safeTransfer(feeAddress, totalFeeAmount);
+            // IERC20(settlementToken).safeTransfer(feeAddress, totalFeeAmount);
+            unchecked {
+                // Overflow would require more than settlement's entire total supply
+                primaryFees += totalFeeAmount;
+            }
         } else {
             uint256 secondaryFee = PoolSwapLibrary.mulFraction(totalFeeAmount, secondaryFeeSplitPercent, 100);
             uint256 remainder;
@@ -309,6 +341,11 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
                 remainder = totalFeeAmount - secondaryFee;
             }
             IERC20 _settlementToken = IERC20(settlementToken);
+            unchecked {
+                // Overflow would require more than settlement's entire total supply
+                secondaryFees += secondaryFee;
+                primaryFees += remainder;
+            }
             if (secondaryFee != 0) {
                 _settlementToken.safeTransfer(secondaryFeeAddress, secondaryFee);
             }

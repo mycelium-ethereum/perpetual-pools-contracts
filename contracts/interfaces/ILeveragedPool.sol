@@ -82,6 +82,20 @@ interface ILeveragedPool {
     event KeeperAddressChanged(address indexed oldAddress, address indexed newAddress);
 
     /**
+     * @notice Indicates a payment of fees to the secondary fee address
+     * @param secondaryFeeAddress The address that got fees paid to it
+     * @param amount Amount of settlement token paid
+     */
+    event SecondaryFeesPaid(address indexed secondaryFeeAddress, uint256 amount);
+
+    /**
+     * @notice Indicates a payment of fees to the primary fee address
+     * @param feeAddress The address that got fees paid to it
+     * @param amount Amount of settlement token paid
+     */
+    event PrimaryFeesPaid(address indexed feeAddress, uint256 amount);
+
+    /**
      * @notice Indicates settlement assets have been withdrawn from the system
      * @param to Receipient
      * @param quantity Quantity of settlement tokens withdrawn
@@ -101,6 +115,10 @@ interface ILeveragedPool {
     function poolCommitter() external view returns (address);
 
     function settlementToken() external view returns (address);
+
+    function primaryFees() external view returns (uint256);
+
+    function secondaryFees() external view returns (uint256);
 
     function oracleWrapper() external view returns (address);
 
@@ -139,6 +157,10 @@ interface ILeveragedPool {
     function payKeeperFromBalances(address to, uint256 amount) external returns (bool);
 
     function settlementTokenTransfer(address to, uint256 amount) external;
+
+    function claimPrimaryFees() external;
+
+    function claimSecondaryFees() external;
 
     /**
      * @notice Transfer pool tokens from pool to user
