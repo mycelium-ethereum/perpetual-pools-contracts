@@ -7,7 +7,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 chai.use(chaiAsPromised)
 const { expect } = chai
 
-describe("PoolSwapLibrary - getBalancesAfterFees", () => {
+describe("PoolSwapLibrary - appropriateUpdateInterval", () => {
     let signers: SignerWithAddress[]
     let library: PoolSwapLibrary
     beforeEach(async () => {
@@ -239,7 +239,7 @@ describe("PoolSwapLibrary - getBalancesAfterFees", () => {
             "frontRunningInterval is just above updateInterval",
             async () => {
                 context(
-                    "Timestamp is inside fromrunning interval for the next update interval as well",
+                    "Timestamp is inside frontrunning interval for the next update interval as well",
                     async () => {
                         it("Returns update interval after next", async () => {
                             const time = 149

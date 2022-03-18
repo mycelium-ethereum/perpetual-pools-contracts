@@ -349,6 +349,8 @@ export const createCommit = async (
         commitID: getEventArgs(receipt, "CreateCommit")?.commitID,
         amount: getEventArgs(receipt, "CreateCommit")?.amount,
         commitType: getEventArgs(receipt, "CreateCommit")?.commitType,
+        appropriateUpdateIntervalId: getEventArgs(receipt, "CreateCommit")
+            ?.appropriateUpdateIntervalId,
         receipt: receipt,
     }
 }

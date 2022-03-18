@@ -12,7 +12,7 @@ contract ChainlinkOracleWrapper is IOracleWrapper {
      */
     address public override oracle;
     address public immutable override deployer;
-    uint256 private constant MAX_DECIMALS = 18;
+    uint8 private constant MAX_DECIMALS = 18;
     int256 public scaler;
 
     // #### Functions
@@ -28,6 +28,10 @@ contract ChainlinkOracleWrapper is IOracleWrapper {
         unchecked {
             scaler = int256(10**(MAX_DECIMALS - _decimals));
         }
+    }
+
+    function decimals() external pure override returns (uint8) {
+        return MAX_DECIMALS;
     }
 
     /**

@@ -19,10 +19,10 @@ interface IPoolCommitter {
         uint256 newLongBalance;
         uint256 longMintPoolTokens;
         uint256 shortMintPoolTokens;
-        uint256 longBurnInstantMintAmount;
-        uint256 shortBurnInstantMintAmount;
-        uint256 totalLongBurn;
-        uint256 totalShortBurn;
+        uint256 longBurnInstantMintSettlement;
+        uint256 shortBurnInstantMintSettlement;
+        uint256 totalLongBurnPoolTokens;
+        uint256 totalShortBurnPoolTokens;
     }
 
     // User aggregate balance
@@ -63,10 +63,9 @@ interface IPoolCommitter {
         uint256 _newLongTokensSum;
         uint256 _newShortTokensSum;
         uint256 _newSettlementTokensSum;
-        uint256 _balanceLongBurnPoolTokens;
-        uint256 _balanceShortBurnPoolTokens;
         uint256 _longBurnFee;
         uint256 _shortBurnFee;
+        uint8 _maxIterations;
     }
 
     // Track how much of a user's commitments are being done from their aggregate balance
@@ -82,6 +81,15 @@ interface IPoolCommitter {
         uint256 longBurnShortMintPoolTokens;
         uint256 balanceLongBurnMintPoolTokens;
         uint256 updateIntervalId;
+    }
+
+    // Track the relevant data when executing a range of update interval's commitments (stack too deep)
+    struct CommitmentExecutionTracking {
+        uint256 longTotalSupply;
+        uint256 shortTotalSupply;
+        uint256 longTotalSupplyBefore;
+        uint256 shortTotalSupplyBefore;
+        uint256 _updateIntervalId;
     }
 
     /**
@@ -179,6 +187,7 @@ interface IPoolCommitter {
     )
         external
         returns (
+            uint256,
             uint256,
             uint256,
             uint256,

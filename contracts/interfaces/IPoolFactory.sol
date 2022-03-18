@@ -109,8 +109,6 @@ interface IPoolFactory {
 
     function setInvariantCheck(address _invariantCheck) external;
 
-    function setMaxLeverage(uint16 newMaxLeverage) external;
-
     function setFeeReceiver(address _feeReceiver) external;
 
     function setFee(uint256 _fee) external;

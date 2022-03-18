@@ -40,8 +40,6 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
     uint8 constant MAX_DECIMALS = DEFAULT_NUM_DECIMALS;
     // Considering leap year thus using 365.2425 days per year
     uint32 constant DAYS_PER_LEAP_YEAR = 365.2425 days;
-    // Default max leverage of 10
-    uint16 public maxLeverage = 10;
     // Contract address to receive protocol fees
     address public feeReceiver;
 
@@ -132,10 +130,7 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
             IOracleWrapper(deploymentParameters.oracleWrapper).deployer() == msg.sender,
             "Deployer must be oracle wrapper owner"
         );
-        require(
-            deploymentParameters.leverageAmount >= 1 && deploymentParameters.leverageAmount <= maxLeverage,
-            "PoolKeeper: leveraged amount invalid"
-        );
+        require(deploymentParameters.leverageAmount != 0, "Leveraged amount cannot equal 0");
         require(
             IERC20DecimalsWrapper(deploymentParameters.settlementToken).decimals() <= MAX_DECIMALS,
             "Decimal precision too high"
@@ -165,15 +160,6 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
             deploymentParameters.mintingFee,
             deploymentParameters.burningFee,
             deploymentParameters.changeInterval
-        );
-
-        require(
-            deploymentParameters.leverageAmount >= 1 && deploymentParameters.leverageAmount <= maxLeverage,
-            "PoolKeeper: leveraged amount invalid"
-        );
-        require(
-            IERC20DecimalsWrapper(deploymentParameters.settlementToken).decimals() <= MAX_DECIMALS,
-            "Decimal precision too high"
         );
 
         LeveragedPool pool = LeveragedPool(Clones.cloneDeterministic(poolBaseAddress, uniquePoolHash));
@@ -291,19 +277,6 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
         require(_invariantCheck != address(0), "cannot be null");
         invariantCheck = _invariantCheck;
         emit InvariantCheckChanged(_invariantCheck);
-    }
-
-    /**
-     * @notice Sets the maximum leverage
-     * @param newMaxLeverage Maximum leverage permitted for all pools
-     * @dev Throws if provided maximum leverage is non-positive
-     * @dev Only callable by the owner
-     * @dev Emits a `MaxLeverageChanged` event on success
-     */
-    function setMaxLeverage(uint16 newMaxLeverage) external override onlyGov {
-        require(newMaxLeverage > 0, "Maximum leverage must be non-zero");
-        maxLeverage = newMaxLeverage;
-        emit MaxLeverageChanged(newMaxLeverage);
     }
 
     /**
