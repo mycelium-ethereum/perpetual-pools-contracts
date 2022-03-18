@@ -296,6 +296,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
          */
         if ((commitType == CommitType.LongMint || commitType == CommitType.ShortMint) && fromAggregateBalance) {
             // Want to take away from their balance's settlement tokens
+            require(amount <= userAggregateBalance[msg.sender].settlementTokens, "Insufficient settlement tokens");
             userAggregateBalance[msg.sender].settlementTokens -= amount;
         }
 
