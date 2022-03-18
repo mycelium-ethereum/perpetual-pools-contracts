@@ -730,9 +730,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
 
         // Add new tokens minted, and remove the ones that were burnt from this balance
         balance.longTokens += update._newLongTokensSum;
-        // balance.longTokens -= update._balanceLongBurnPoolTokens;
         balance.shortTokens += update._newShortTokensSum;
-        // balance.shortTokens -= update._balanceShortBurnPoolTokens;
         balance.settlementTokens += update._newSettlementTokensSum;
 
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
