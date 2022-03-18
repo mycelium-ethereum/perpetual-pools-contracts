@@ -285,6 +285,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
 
         uint256 length = unAggregatedCommitments[msg.sender].length;
         if (length == 0 || unAggregatedCommitments[msg.sender][length - 1] < appropriateUpdateIntervalId) {
+            // Push to the array if the most recent commitment was done in a prior update interval
             unAggregatedCommitments[msg.sender].push(appropriateUpdateIntervalId);
         }
 
@@ -573,7 +574,9 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
                 delete totalPoolCommitments[executionTracking._updateIntervalId];
 
                 // counter overflowing would require an unrealistic number of update intervals
-                updateIntervalId += 1;
+                unchecked {
+                    updateIntervalId += 1;
+                }
             } else {
                 break;
             }
@@ -685,17 +688,17 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             _newShortTokensSum: 0,
             _newSettlementTokensSum: 0,
             _longBurnFee: 0,
-            _shortBurnFee: 0
+            _shortBurnFee: 0,
+            _maxIterations: 0
         });
-
-        // Iterate from the most recent up until the current update interval
 
         uint256[] memory currentIntervalIds = unAggregatedCommitments[user];
         uint256 unAggregatedLength = currentIntervalIds.length;
 
-        uint8 maxIterations = unAggregatedLength < MAX_ITERATIONS ? uint8(unAggregatedLength) : MAX_ITERATIONS; // casting to uint8 is safe because we know it is less than MAX_ITERATIONS, a uint8
+        update._maxIterations = unAggregatedLength < MAX_ITERATIONS ? uint8(unAggregatedLength) : MAX_ITERATIONS; // casting to uint8 is safe because we know it is less than MAX_ITERATIONS, a uint8
 
-        for (uint256 i = 0; i < maxIterations; i++) {
+        // Iterate from the most recent up until the current update interval
+        for (uint256 i = 0; i < update._maxIterations; i++) {
             uint256 id = currentIntervalIds[i];
             if (id == 0) {
                 continue;
@@ -716,6 +719,15 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
                 update._longBurnFee += _longBurnFee;
                 update._shortBurnFee += _shortBurnFee;
                 delete userCommitments[user][id];
+                uint256[] storage commitmentIds = unAggregatedCommitments[user];
+                if (unAggregatedLength > MAX_ITERATIONS && i < commitmentIds.length - 1 && commitmentIds.length > 1) {
+                    // We only enter this branch if our iterations are capped (i.e. we do not delete the array after the loop)
+                    // Order doesn't actually matter in this array, so we can just put the last element into this index
+                    commitmentIds[i] = commitmentIds[commitmentIds.length - 1];
+                    commitmentIds.pop();
+                } else {
+                    commitmentIds.pop();
+                }
             } else {
                 // Clear them now that they have been accounted for in the balance
                 userCommitments[user][id].balanceLongBurnPoolTokens = 0;
@@ -723,14 +735,18 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
                 userCommitments[user][id].balanceLongBurnMintPoolTokens = 0;
                 userCommitments[user][id].balanceShortBurnMintPoolTokens = 0;
                 // This commitment wasn't ready to be completely added to the balance, so copy it over into the new ID array
-                storageArrayPlaceHolder.push(currentIntervalIds[i]);
+                if (unAggregatedLength <= MAX_ITERATIONS) {
+                    storageArrayPlaceHolder.push(currentIntervalIds[i]);
+                }
             }
         }
 
-        delete unAggregatedCommitments[user];
-        unAggregatedCommitments[user] = storageArrayPlaceHolder;
-
-        delete storageArrayPlaceHolder;
+        if (unAggregatedLength <= MAX_ITERATIONS) {
+            // We got through all update intervals, so we can replace all unaggregated update interval IDs
+            delete unAggregatedCommitments[user];
+            unAggregatedCommitments[user] = storageArrayPlaceHolder;
+            delete storageArrayPlaceHolder;
+        }
 
         // Add new tokens minted, and remove the ones that were burnt from this balance
         balance.longTokens += update._newLongTokensSum;
@@ -776,14 +792,17 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             _newShortTokensSum: 0,
             _newSettlementTokensSum: 0,
             _longBurnFee: 0,
-            _shortBurnFee: 0
+            _shortBurnFee: 0,
+            _maxIterations: 0
         });
-
-        // Iterate from the most recent up until the current update interval
 
         uint256[] memory currentIntervalIds = unAggregatedCommitments[user];
         uint256 unAggregatedLength = currentIntervalIds.length;
-        for (uint256 i = 0; i < unAggregatedLength; i++) {
+
+        update._maxIterations = unAggregatedLength < MAX_ITERATIONS ? uint8(unAggregatedLength) : MAX_ITERATIONS; // casting to uint8 is safe because we know it is less than MAX_ITERATIONS, a uint8
+
+        // Iterate from the most recent up until the current update interval
+        for (uint256 i = 0; i < update._maxIterations; i++) {
             uint256 id = currentIntervalIds[i];
             if (id == 0) {
                 continue;
