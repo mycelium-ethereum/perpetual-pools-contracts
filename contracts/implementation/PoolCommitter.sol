@@ -163,6 +163,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         UserCommitment storage userCommit,
         TotalCommitment storage totalCommit
     ) private {
+        Balance memory balance = userAggregateBalance[msg.sender];
         uint256 feeAmount;
 
         if (commitType == CommitType.LongMint || commitType == CommitType.ShortMint) {
@@ -189,6 +190,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             // long burning: pull in long pool tokens from committer
             if (fromAggregateBalance) {
                 // Burning from user's aggregate balance
+                require(amount <= balance.longTokens, "Insufficient pool tokens");
                 userAggregateBalance[msg.sender].longTokens -= amount;
                 userCommit.balanceLongBurnPoolTokens += amount;
                 // Burn from leveragedPool, because that is the official owner of the tokens before they are claimed
@@ -210,6 +212,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             totalCommit.shortBurnPoolTokens += amount;
             if (fromAggregateBalance) {
                 // Burning from user's aggregate balance
+                require(amount <= balance.shortTokens, "Insufficient pool tokens");
                 userAggregateBalance[msg.sender].shortTokens -= amount;
                 userCommit.balanceShortBurnPoolTokens += amount;
                 // Burn from leveragedPool, because that is the official owner of the tokens before they are claimed
@@ -223,6 +226,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             userCommit.longBurnShortMintPoolTokens += amount;
             totalCommit.longBurnShortMintPoolTokens += amount;
             if (fromAggregateBalance) {
+                require(amount <= balance.longTokens, "Insufficient pool tokens");
                 userAggregateBalance[msg.sender].longTokens -= amount;
                 userCommit.balanceLongBurnMintPoolTokens += amount;
                 pool.burnTokens(LONG_INDEX, amount, leveragedPool);
@@ -234,6 +238,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             userCommit.shortBurnLongMintPoolTokens += amount;
             totalCommit.shortBurnLongMintPoolTokens += amount;
             if (fromAggregateBalance) {
+                require(amount <= balance.shortTokens, "Insufficient pool tokens");
                 userAggregateBalance[msg.sender].shortTokens -= amount;
                 userCommit.balanceShortBurnMintPoolTokens += amount;
                 pool.burnTokens(SHORT_INDEX, amount, leveragedPool);

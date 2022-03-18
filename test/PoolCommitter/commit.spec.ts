@@ -241,7 +241,7 @@ describe("PoolCommitter - commit", () => {
             await poolCommitter.commit(SHORT_BURN, amountCommitted, true, false)
             await expect(
                 poolCommitter.commit(SHORT_BURN, amountCommitted, true, false)
-            ).to.be.reverted
+            ).to.be.revertedWith("Insufficient pool tokens")
         })
 
         it("Should not allow commits that are too large", async () => {
@@ -252,7 +252,7 @@ describe("PoolCommitter - commit", () => {
                     true,
                     false
                 )
-            ).to.be.reverted
+            ).to.be.revertedWith("Insufficient pool tokens")
         })
 
         it("Should allow for a combination of short_burn commits from wallet and aggregate balance", async () => {
@@ -523,7 +523,7 @@ describe("PoolCommitter - commit", () => {
             await poolCommitter.commit(LONG_BURN, amountCommitted, true, false)
             await expect(
                 poolCommitter.commit(LONG_BURN, amountCommitted, true, false)
-            ).to.be.reverted
+            ).to.be.revertedWith("Insufficient pool tokens")
         })
 
         it("Should not allow commits that are too large", async () => {
@@ -534,7 +534,7 @@ describe("PoolCommitter - commit", () => {
                     true,
                     false
                 )
-            ).to.be.reverted
+            ).to.be.revertedWith("Insufficient pool tokens")
         })
 
         it("Should allow for a combination of long_burn commits from wallet and aggregate balance", async () => {
@@ -863,7 +863,7 @@ describe("PoolCommitter - commit", () => {
                     true,
                     false
                 )
-            ).to.be.reverted
+            ).to.be.revertedWith("Insufficient pool tokens")
 
             const longBalance = await longToken.balanceOf(signers[0].address)
             const shortBalance = await shortToken.balanceOf(signers[0].address)
@@ -946,7 +946,7 @@ describe("PoolCommitter - commit", () => {
             })
 
             context("Invalid commitments", () => {
-                it("Should revert if you are attempting to LONG_BURN_THEN_MINT duplicate times (from wallet)", async () => {
+                it("Should revert if you are attempting to LONG_BURN_THEN_MINT duplicate times (from aggregate balance)", async () => {
                     // Commit using the balance in the wallet, which we just committed.
                     await poolCommitter.commit(
                         LONG_BURN_THEN_MINT,
@@ -961,7 +961,7 @@ describe("PoolCommitter - commit", () => {
                             true,
                             false
                         )
-                    ).to.be.reverted
+                    ).to.be.revertedWith("Insufficient pool tokens")
                 })
 
                 it("Should revert if you are attempting to LONG_BURN_THEN_MINT duplicate times (from aggregate balance)", async () => {
@@ -979,7 +979,7 @@ describe("PoolCommitter - commit", () => {
                             true,
                             false
                         )
-                    ).to.be.reverted
+                    ).to.be.revertedWith("Insufficient pool tokens")
                 })
 
                 it("Should revert if you are attempting to LONG_BURN_THEN_MINT too many tokens (from wallet)", async () => {
@@ -991,7 +991,7 @@ describe("PoolCommitter - commit", () => {
                             true,
                             false
                         )
-                    ).to.be.reverted
+                    ).to.be.revertedWith("Insufficient pool tokens")
                 })
 
                 it("Should revert if you are attempting to LONG_BURN_THEN_MINT too many tokens (from aggregate balance)", async () => {
@@ -1003,7 +1003,7 @@ describe("PoolCommitter - commit", () => {
                             true,
                             false
                         )
-                    ).to.be.reverted
+                    ).to.be.revertedWith("Insufficient pool tokens")
                 })
             })
 
@@ -1296,7 +1296,7 @@ describe("PoolCommitter - commit", () => {
                         true,
                         false
                     )
-                ).to.be.reverted
+                ).to.be.revertedWith("Insufficient pool tokens")
             })
         })
 
@@ -1548,7 +1548,7 @@ describe("PoolCommitter - commit", () => {
                         true,
                         false
                     )
-                ).to.be.reverted
+                ).to.be.revertedWith("Insufficient pool tokens")
             })
 
             it("Should revert if you are attempting to SHORT_BURN_THEN_MINT too many tokens (from wallet)", async () => {
@@ -1573,7 +1573,7 @@ describe("PoolCommitter - commit", () => {
                         true,
                         false
                     )
-                ).to.be.reverted
+                ).to.be.revertedWith("Insufficient pool tokens")
             })
         })
 
