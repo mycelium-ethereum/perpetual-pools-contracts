@@ -50,13 +50,6 @@ interface IPoolKeeper {
     event FactoryChanged(address indexed factory);
 
     /**
-     * @notice Indicates that the address of the associated `PriceObserver`
-     *          contract has changed
-     * @param observer Address of the new `PriceObserver` contract
-     */
-    event PriceObserverChanged(address indexed observer);
-
-    /**
      * @notice Indicates that the gas price for keeper rewards changed
      * @param price New gas price
      */

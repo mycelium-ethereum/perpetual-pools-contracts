@@ -12,8 +12,8 @@ import {
     TestClones,
     TestClones__factory,
     PoolCommitter,
-    PriceObserver__factory,
     SMAOracle__factory,
+    TestChainlinkOracle,
 } from "../../types"
 import { POOL_CODE, POOL_CODE_2, LONG_MINT, SHORT_MINT } from "../constants"
 import {
@@ -40,6 +40,7 @@ const { expect } = chai
 describe("PoolFactory.deployPool", () => {
     let factory: PoolFactory
     let poolKeeper: PoolKeeper
+    let chainlinkOracle: TestChainlinkOracle
     let oracleWrapper: ChainlinkOracleWrapper
     let settlementEthOracle: ChainlinkOracleWrapper
     let pool: LeveragedPool
@@ -62,6 +63,7 @@ describe("PoolFactory.deployPool", () => {
         factory = contracts.factory
         poolKeeper = contracts.poolKeeper
         oracleWrapper = contracts.oracleWrapper
+        chainlinkOracle = contracts.chainlinkOracle
         settlementEthOracle = contracts.settlementEthOracle
         pool = contracts.pool
         token = contracts.token
@@ -419,14 +421,6 @@ describe("PoolFactory.deployPool", () => {
 
     context("When using a SMA Oracle", async () => {
         it("To not be reverted", async () => {
-            /* deploy price observer contract */
-            const priceObserverFactory = (await ethers.getContractFactory(
-                "PriceObserver",
-                signers[0]
-            )) as PriceObserver__factory
-            const priceObserver = await priceObserverFactory.deploy()
-            await priceObserver.deployed()
-
             /* deploy SMA oracle contract */
             const smaOracleFactory = (await ethers.getContractFactory(
                 "SMAOracle",
@@ -434,16 +428,11 @@ describe("PoolFactory.deployPool", () => {
             )) as SMAOracle__factory
             const smaOracle = await smaOracleFactory.deploy(
                 oracleWrapper.address,
-                8,
-                priceObserver.address,
                 5,
                 1,
                 await signers[0].getAddress()
             )
             await smaOracle.deployed()
-
-            /* set our SMA oracle to the writer for the price observer contract */
-            await priceObserver.setWriter(smaOracle.address)
 
             for (let i = 0; i < 24; i++) {
                 await smaOracle.poll()

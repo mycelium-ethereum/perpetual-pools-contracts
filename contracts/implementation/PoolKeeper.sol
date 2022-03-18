@@ -4,7 +4,6 @@ pragma solidity 0.8.7;
 import "../interfaces/IPoolKeeper.sol";
 import "../interfaces/IOracleWrapper.sol";
 import "../interfaces/IPoolFactory.sol";
-import "../implementation/PriceObserver.sol";
 import "../interfaces/ILeveragedPool.sol";
 import "../interfaces/IERC20DecimalsWrapper.sol";
 
@@ -100,7 +99,6 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     /**
      * @notice Called by keepers to perform an update on a single pool
      * @param _pool Address of the pool to be upkept
-     * @dev Induces an update of the associated `PriceObserver` contract
      * @dev Tracks gas usage via `gasleft` accounting and uses this to inform
      *          keeper payment
      * @dev Catches any failure of the underlying `pool.poolUpkeep` call
