@@ -23,6 +23,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
     IAutoClaim public autoClaim;
     uint128 public override updateIntervalId = 1;
     // The amount that is extracted from each mint and burn, being left in the pool. Given as the decimal * 10 ^ 18. For example, 60% fee is 0.6 * 10 ^ 18
+    // Fees can be 0.
     bytes16 public mintingFee;
     bytes16 public burningFee;
     // The amount that the `mintingFee` will change each update interval, based on `updateMintingFee`, given as a decimal * 10 ^ 18 (same format as `_mintingFee`)
