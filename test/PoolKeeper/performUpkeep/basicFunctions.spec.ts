@@ -21,6 +21,7 @@ import {
     ChainlinkOracleWrapper,
     TestToken,
     TestChainlinkOracle,
+    L2Encoder,
 } from "../../../types"
 import { BigNumber } from "ethers"
 import { Result } from "ethers/lib/utils"
@@ -38,6 +39,7 @@ let POOL1_ADDR: string
 let POOL2_ADDR: string
 let signers: SignerWithAddress[]
 let token: TestToken
+let l2Encoder: L2Encoder
 
 const updateInterval = 10
 const frontRunningInterval = 1
@@ -64,6 +66,7 @@ const setupHook = async () => {
         feeAddress,
         fee
     )
+    l2Encoder = contracts1.l2Encoder
     const poolCommitter2 = contracts2.poolCommitter
     token = contracts1.token
     const token2 = contracts2.token
@@ -75,8 +78,8 @@ const setupHook = async () => {
     derivativeOracleWrapper = contracts1.oracleWrapper
     await token.approve(pool.address, mintAmount)
     await token2.approve(pool2.address, mintAmount)
-    await createCommit(poolCommitter, [2], mintAmount.div(2))
-    await createCommit(poolCommitter2, [2], mintAmount.div(2))
+    await createCommit(l2Encoder, poolCommitter, [2], mintAmount.div(2))
+    await createCommit(l2Encoder, poolCommitter2, [2], mintAmount.div(2))
     await timeout(updateInterval * 1000 * 2)
     await pool.setKeeper(signers[0].address)
     await pool.poolUpkeep(9, 10)

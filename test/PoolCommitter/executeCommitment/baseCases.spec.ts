@@ -6,6 +6,7 @@ import {
     LeveragedPool,
     TestToken,
     PoolCommitter,
+    L2Encoder,
 } from "../../../types"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { DEFAULT_FEE, LONG_MINT, POOL_CODE, SHORT_MINT } from "../../constants"
@@ -38,6 +39,7 @@ describe("poolCommitter - executeCommitment: Basic test cases", () => {
     let library: PoolSwapLibrary
     let signers: SignerWithAddress[]
     let poolCommitter: PoolCommitter
+    let l2Encoder: L2Encoder
 
     context("When committing during the frontRunningInterval", () => {
         it("Does not execute until the next update interval", async () => {
@@ -55,12 +57,13 @@ describe("poolCommitter - executeCommitment: Basic test cases", () => {
             pool = elements.pool
             const committer = elements.poolCommitter
             token = elements.token
+            l2Encoder = elements.l2Encoder
             const shortToken = elements.shortToken
             await token.approve(pool.address, ethers.constants.MaxUint256)
             await pool.setKeeper(signers[0].address)
             // Wait until somewhere between `frontRunningInterval <-> updateInterval`
             await timeout((_updateInterval - _frontRunningInterval / 2) * 1000)
-            await committer.commit(SHORT_MINT, amountCommitted, false, false)
+            await createCommit(l2Encoder, committer, SHORT_MINT, amountCommitted)
 
             const shortTokensSupplyBefore = await shortToken.totalSupply()
             // Now wait for updateInterval to pass
@@ -96,7 +99,7 @@ describe("poolCommitter - executeCommitment: Basic test cases", () => {
         })
         it("should revert if the commitment is too new", async () => {
             await token.approve(pool.address, amountCommitted)
-            await createCommit(poolCommitter, commitType, amountCommitted)
+            await createCommit(l2Encoder, poolCommitter, commitType, amountCommitted)
             await expect(
                 pool.poolUpkeep(lastPrice, lastPrice)
             ).to.be.rejectedWith(Error)
@@ -127,7 +130,7 @@ describe("poolCommitter - executeCommitment: Basic test cases", () => {
             poolCommitter = result.poolCommitter
 
             await token.approve(pool.address, amountCommitted)
-            commit = await createCommit(
+            commit = await createCommit(l2Encoder,
                 poolCommitter,
                 commitType,
                 amountCommitted

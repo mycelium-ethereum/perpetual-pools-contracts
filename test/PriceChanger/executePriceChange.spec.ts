@@ -56,8 +56,8 @@ const setupHook = async () => {
  */
 const fundPools = async () => {
     /*
-    const shortMint = await createCommit(pool, [0], amountCommitted)
-    const longMint = await createCommit(pool, [2], amountCommitted)
+    const shortMint = await createCommit(l2Encoder, pool, [0], amountCommitted)
+    const longMint = await createCommit(l2Encoder, pool, [2], amountCommitted)
     await timeout(2000)
     await pool.executePriceChange(1, lastPrice)
     await pool.executeCommitment([shortMint.commitID, longMint.commitID])

@@ -9,6 +9,7 @@ import {
     PoolCommitter,
     AutoClaim,
     PoolKeeper,
+    L2Encoder,
 } from "../../types"
 
 import {
@@ -48,6 +49,7 @@ describe("AutoClaim - paidClaim", () => {
     let autoClaim: AutoClaim
     let signers: SignerWithAddress[]
     let poolKeeper: PoolKeeper
+    let l2Encoder: L2Encoder
 
     beforeEach(async () => {
         const result = await deployPoolAndTokenContracts(
@@ -58,6 +60,7 @@ describe("AutoClaim - paidClaim", () => {
             feeAddress,
             fee
         )
+        l2Encoder = result.l2Encoder
         pool = result.pool
         library = result.library
         poolCommitter = result.poolCommitter
@@ -86,7 +89,7 @@ describe("AutoClaim - paidClaim", () => {
 
     context("When there is a claim but it is still pending", async () => {
         it("does nothing", async () => {
-            await createCommit(
+            await createCommit(l2Encoder,
                 poolCommitter,
                 LONG_MINT,
                 amountCommitted,
@@ -109,11 +112,7 @@ describe("AutoClaim - paidClaim", () => {
         beforeEach(async () => {
             await token.transfer(signers[1].address, amountCommitted.mul(2))
             await token.connect(signers[1]).approve(pool.address, amountMinted)
-            await poolCommitter
-                .connect(signers[1])
-                .commit(LONG_MINT, amountCommitted, false, true, {
-                    value: reward,
-                })
+            await createCommit(l2Encoder, poolCommitter, LONG_MINT, amountCommitted, false, true, reward, signers[1])
             await timeout(updateInterval * 1000)
             await poolKeeper.performUpkeepSinglePool(pool.address)
             balanceBeforeClaim = await ethers.provider.getBalance(

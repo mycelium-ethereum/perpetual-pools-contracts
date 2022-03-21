@@ -14,6 +14,7 @@ import {
     PoolCommitter,
     SMAOracle__factory,
     TestChainlinkOracle,
+    L2Encoder,
 } from "../../types"
 import { POOL_CODE, POOL_CODE_2, LONG_MINT, SHORT_MINT } from "../constants"
 import {
@@ -47,6 +48,7 @@ describe("PoolFactory.deployPool", () => {
     let token: TestToken
     let signers: SignerWithAddress[]
     let nonDAO: Signer
+    let l2Encoder: L2Encoder
 
     before(async () => {
         signers = await ethers.getSigners()
@@ -63,6 +65,7 @@ describe("PoolFactory.deployPool", () => {
         factory = contracts.factory
         poolKeeper = contracts.poolKeeper
         oracleWrapper = contracts.oracleWrapper
+        l2Encoder = contracts.l2Encoder
         chainlinkOracle = contracts.chainlinkOracle
         settlementEthOracle = contracts.settlementEthOracle
         pool = contracts.pool
@@ -368,12 +371,12 @@ describe("PoolFactory.deployPool", () => {
                 newPool.address,
                 ethers.utils.parseEther("10000")
             )
-            await createCommit(
+            await createCommit(l2Encoder,
                 poolCommitter,
                 LONG_MINT,
                 ethers.utils.parseEther("2000")
             )
-            await createCommit(
+            await createCommit(l2Encoder,
                 poolCommitter,
                 SHORT_MINT,
                 ethers.utils.parseEther("2000")
@@ -399,7 +402,7 @@ describe("PoolFactory.deployPool", () => {
             let feesPaidSecondary = await token.balanceOf(secondFeeAddress)
             expect(
                 parseFloat(ethers.utils.formatEther(feesPaidPrimary)) /
-                    parseFloat(ethers.utils.formatEther(feesPaidSecondary))
+                parseFloat(ethers.utils.formatEther(feesPaidSecondary))
             ).to.eq(4)
         })
     })

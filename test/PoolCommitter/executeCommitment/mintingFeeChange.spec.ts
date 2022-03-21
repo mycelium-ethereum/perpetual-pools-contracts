@@ -7,6 +7,7 @@ import {
     ERC20,
     PoolSwapLibrary,
     PoolCommitter,
+    L2Encoder,
 } from "../../../types"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { DEFAULT_FEE, LONG_MINT, POOL_CODE, SHORT_MINT } from "../../constants"
@@ -39,6 +40,7 @@ describe("PoolCommitter - mintingFee update", () => {
     let commit: CommitEventArgs
     let library: PoolSwapLibrary
     let poolCommitter: PoolCommitter
+    let l2Encoder: L2Encoder
 
     describe("updateMintFee", async () => {
         beforeEach(async () => {
@@ -58,18 +60,19 @@ describe("PoolCommitter - mintingFee update", () => {
             pool = result.pool
             signers = result.signers
             poolCommitter = result.poolCommitter
+            l2Encoder = result.l2Encoder
             await pool.setKeeper(signers[0].address)
             token = result.token
             library = result.library
             longToken = result.longToken
             shortToken = result.shortToken
             await token.approve(pool.address, amountMinted)
-            commit = await createCommit(
+            commit = await createCommit(l2Encoder,
                 poolCommitter,
                 LONG_MINT,
                 amountCommitted
             )
-            commit = await createCommit(
+            commit = await createCommit(l2Encoder,
                 poolCommitter,
                 SHORT_MINT,
                 amountCommitted
@@ -116,22 +119,22 @@ describe("PoolCommitter - mintingFee update", () => {
         context("longTokenPrice * shortTokenPrice > 1", async () => {
             it("Should decrease mintingFee", async () => {
                 // Make a few commits to bring price above $1
-                commit = await createCommit(
+                commit = await createCommit(l2Encoder,
                     poolCommitter,
                     LONG_MINT,
                     amountCommitted
                 )
-                commit = await createCommit(
+                commit = await createCommit(l2Encoder,
                     poolCommitter,
                     LONG_MINT,
                     amountCommitted
                 )
-                commit = await createCommit(
+                commit = await createCommit(l2Encoder,
                     poolCommitter,
                     SHORT_MINT,
                     amountCommitted
                 )
-                commit = await createCommit(
+                commit = await createCommit(l2Encoder,
                     poolCommitter,
                     SHORT_MINT,
                     amountCommitted

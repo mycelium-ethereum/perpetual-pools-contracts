@@ -11,6 +11,7 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "./PoolSwapLibrary.sol";
+import "hardhat/console.sol";
 
 /// @title This contract is responsible for handling commitment logic
 contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
@@ -249,22 +250,49 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         }
     }
 
+    function decodeCommitParams(bytes32 args)
+        internal
+        pure
+        returns (
+            uint256,
+            CommitType,
+            bool,
+            bool
+        )
+    {
+        uint256 amount;
+        CommitType commitType;
+        bool fromAggregateBalance;
+        bool payForClaim;
+
+        assembly {
+            amount := and(args, 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
+            commitType := and(shr(128, args), 0xFF)
+            fromAggregateBalance := and(shr(136, args), 0xFF)
+            payForClaim := and(shr(144, args), 0xFF)
+        }
+        return (amount, commitType, fromAggregateBalance, payForClaim);
+    }
+
     /**
      * @notice Commit to minting/burning long/short tokens after the next price change
-     * @param commitType Type of commit you're doing (Long vs Short, Mint vs Burn)
-     * @param amount Amount of settlement tokens you want to commit to minting; OR amount of pool
-     *               tokens you want to burn
-     * @param fromAggregateBalance If minting, burning, or rebalancing into a delta neutral position,
-     *                             will tokens be taken from user's aggregate balance?
-     * @param payForClaim True if user wants to pay for the commit to be claimed
+     * @param args Arguments for the commit function packed into one bytes32
+     *       128 bits        8 bits            8 bits            8 bits
+     * | shortenedAmount | commitType | fromAggregateBalance | payForClaim |
+     * @dev Arguments can be encoded with `L2Encoder.encodeCommitParams`
+     * @dev CommitType commitType: Type of commit you're doing (Long vs Short, Mint vs Burn)
+     * @dev uint128 shortenedAmount: Amount of settlement tokens you want to commit to minting; OR amount of pool
+     *                               tokens you want to burn
+     * @dev bool fromAggregateBalance: If minting, burning, or rebalancing into a delta neutral position,
+     *                                 will tokens be taken from user's aggregate balance?
+     * @dev bool payForClaim: True if user wants to pay for the commit to be claimed
      * @dev Emits a `CreateCommit` event on success
      */
-    function commit(
-        CommitType commitType,
-        uint256 amount,
-        bool fromAggregateBalance,
-        bool payForClaim
-    ) external payable override {
+    function commit(bytes32 args) external payable override {
+        console.logBytes32(args);
+        (uint256 amount, CommitType commitType, bool fromAggregateBalance, bool payForClaim) = decodeCommitParams(args);
+        console.log(amount);
+        console.log(uint8(commitType));
         require(amount > 0, "Amount must not be zero");
         updateAggregateBalance(msg.sender);
         ILeveragedPool pool = ILeveragedPool(leveragedPool);

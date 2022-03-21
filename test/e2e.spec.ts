@@ -9,6 +9,7 @@ import {
     PoolCommitter,
     PoolKeeper,
     TestChainlinkOracle,
+    L2Encoder,
 } from "../types"
 
 import {
@@ -47,6 +48,7 @@ describe("LeveragedPool - executeAllCommitments", () => {
     let library: PoolSwapLibrary
     let poolKeeper: PoolKeeper
     let chainlinkOracle: TestChainlinkOracle
+    let l2Encoder: L2Encoder
 
     describe("e2e", async () => {
         it("Operates normally", async () => {
@@ -64,6 +66,7 @@ describe("LeveragedPool - executeAllCommitments", () => {
             poolCommitter = result.poolCommitter
             poolKeeper = result.poolKeeper
             chainlinkOracle = result.chainlinkOracle
+            l2Encoder = result.l2Encoder
 
             token = result.token
             await token.setDecimals(8)
@@ -71,7 +74,7 @@ describe("LeveragedPool - executeAllCommitments", () => {
             longToken = result.longToken
 
             await token.approve(pool.address, amountMinted)
-            await createCommit(poolCommitter, LONG_MINT, amountCommitted)
+            await createCommit(l2Encoder, poolCommitter, LONG_MINT, amountCommitted)
             await timeout(updateInterval * 1000)
             await pool.setKeeper(signers[0].address)
             await expect(
@@ -86,9 +89,9 @@ describe("LeveragedPool - executeAllCommitments", () => {
             await pool.poolUpkeep(lastPrice, lastPrice)
 
             // Long mint commit
-            await createCommit(poolCommitter, LONG_MINT, amountCommitted)
+            await createCommit(l2Encoder, poolCommitter, LONG_MINT, amountCommitted)
             // Short mint commit
-            await createCommit(poolCommitter, SHORT_MINT, amountCommitted)
+            await createCommit(l2Encoder, poolCommitter, SHORT_MINT, amountCommitted)
 
             await shortToken.approve(pool.address, amountMinted)
             await longToken.approve(pool.address, await longToken.totalSupply())
@@ -197,7 +200,7 @@ describe("LeveragedPool - executeAllCommitments", () => {
             expect(shortBalanceAfter).to.be.gt(shortBalanceBefore)
 
             // Short burn
-            await createCommit(poolCommitter, SHORT_BURN, amountCommitted)
+            await createCommit(l2Encoder, poolCommitter, SHORT_BURN, amountCommitted)
             // Short tokens should be decreased by amountCommitted, to 0
             expect(await shortToken.totalSupply()).to.equal(0)
 
@@ -253,7 +256,7 @@ describe("LeveragedPool - executeAllCommitments", () => {
 
             const longTokens = await longToken.balanceOf(signers[0].address)
             // LONG BURN (undo all the long mints)
-            await createCommit(poolCommitter, LONG_BURN, longTokens)
+            await createCommit(l2Encoder, poolCommitter, LONG_BURN, longTokens)
             const longTokensAfter = await longToken.balanceOf(
                 signers[0].address
             )

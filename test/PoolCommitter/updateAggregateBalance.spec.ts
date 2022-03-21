@@ -7,6 +7,7 @@ import {
     ERC20,
     PoolSwapLibrary,
     PoolCommitter,
+    L2Encoder,
 } from "../../types"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import {
@@ -45,6 +46,8 @@ describe("PoolCommitter - updateAggregateBalance", () => {
     let signers: SignerWithAddress[]
     let commit: CommitEventArgs
     let library: PoolSwapLibrary
+    let l2Encoder: L2Encoder
+
     describe("Frontrunning interval : update interval ratio larger than MAX_ITERATIONS", () => {
         beforeEach(async () => {
             const result = await deployPoolAndTokenContracts(
@@ -56,6 +59,7 @@ describe("PoolCommitter - updateAggregateBalance", () => {
                 fee
             )
             pool = result.pool
+            l2Encoder = result.l2Encoder
             signers = result.signers
             token = result.token
             library = result.library
@@ -67,12 +71,12 @@ describe("PoolCommitter - updateAggregateBalance", () => {
             maxIterations = await poolCommitter.MAX_ITERATIONS()
 
             for (let i = 0; i < maxIterations; i++) {
-                await createCommit(poolCommitter, [LONG_MINT], amountCommitted)
+                await createCommit(l2Encoder, poolCommitter, [LONG_MINT], amountCommitted)
                 await timeout(updateInterval * 1000)
                 await pool.poolUpkeep(9, 9)
             }
 
-            const lastCommit = await createCommit(
+            const lastCommit = await createCommit(l2Encoder,
                 poolCommitter,
                 [LONG_MINT],
                 amountCommitted

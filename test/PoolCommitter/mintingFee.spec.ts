@@ -3,6 +3,7 @@ import chai from "chai"
 import chaiAsPromised from "chai-as-promised"
 import {
     ERC20,
+    L2Encoder,
     LeveragedPool,
     PoolCommitter,
     PoolKeeper,
@@ -17,6 +18,7 @@ import {
     timeout,
     getCurrentTotalCommit,
     getCurrentUserCommit,
+    createCommit,
 } from "../utilities"
 
 import { ContractReceipt } from "ethers"
@@ -44,6 +46,7 @@ describe("PoolCommitter - Mint commit with mint fee", () => {
     let longToken: ERC20
     let poolCommitter: PoolCommitter
     let poolKeeper: PoolKeeper
+    let l2Encoder: L2Encoder
 
     context("Setting mint fee", async () => {
         context("mint fee too high", async () => {
@@ -57,6 +60,7 @@ describe("PoolCommitter - Mint commit with mint fee", () => {
                     fee,
                     0
                 )
+                l2Encoder = result.l2Encoder
                 const mintingFee = ethers.utils.parseEther("1.01")
                 await expect(
                     result.poolCommitter.setMintingFee(mintingFee)
@@ -103,14 +107,7 @@ describe("PoolCommitter - Mint commit with mint fee", () => {
             poolKeeper = result.poolKeeper
             shortToken = result.shortToken
             await token.approve(pool.address, amountCommitted)
-            receipt = await (
-                await poolCommitter.commit(
-                    SHORT_MINT,
-                    amountCommitted,
-                    false,
-                    false
-                )
-            ).wait()
+            receipt = (await createCommit(l2Encoder, poolCommitter, SHORT_MINT, amountCommitted)).receipt
         })
         it("transfers all tokens to the pool", async () => {
             expect(await token.balanceOf(pool.address)).to.equal(
@@ -172,14 +169,7 @@ describe("PoolCommitter - Mint commit with mint fee", () => {
             shortToken = result.shortToken
             longToken = result.longToken
             await token.approve(pool.address, amountCommitted)
-            receipt = await (
-                await poolCommitter.commit(
-                    LONG_MINT,
-                    amountCommitted,
-                    false,
-                    false
-                )
-            ).wait()
+            receipt = (await createCommit(l2Encoder, poolCommitter, LONG_MINT, amountCommitted)).receipt
         })
         it("transfers all tokens to the pool", async () => {
             expect(await token.balanceOf(pool.address)).to.equal(

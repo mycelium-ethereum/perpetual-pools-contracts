@@ -7,15 +7,14 @@ import {
     ERC20,
     PoolSwapLibrary,
     PoolCommitter,
+    L2Encoder,
 } from "../../../types"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import {
     DEFAULT_FEE,
     DEFAULT_MINT_AMOUNT,
-    LONG_BURN,
     LONG_MINT,
     POOL_CODE,
-    SHORT_MINT,
 } from "../../constants"
 import {
     deployPoolAndTokenContracts,
@@ -45,6 +44,7 @@ describe("PoolCommitter - executeCommitments: setting lastPriceTimestamp", () =>
     let signers: SignerWithAddress[]
     let commit: CommitEventArgs
     let library: PoolSwapLibrary
+    let l2Encoder: L2Encoder
     describe("Exceeding MAX_ITERATIONS", () => {
         beforeEach(async () => {
             const result = await deployPoolAndTokenContracts(
@@ -55,6 +55,7 @@ describe("PoolCommitter - executeCommitments: setting lastPriceTimestamp", () =>
                 feeAddress,
                 fee
             )
+            l2Encoder = result.l2Encoder
             pool = result.pool
             signers = result.signers
             token = result.token
@@ -68,7 +69,7 @@ describe("PoolCommitter - executeCommitments: setting lastPriceTimestamp", () =>
             await token.approve(pool.address, amountMinted)
 
             for (let i = 0; i < maxIterations + 6; i++) {
-                commit = await createCommit(poolCommitter, [LONG_MINT], 1)
+                commit = await createCommit(l2Encoder, poolCommitter, [LONG_MINT], 1)
                 await timeout(updateInterval * 1000)
             }
         })

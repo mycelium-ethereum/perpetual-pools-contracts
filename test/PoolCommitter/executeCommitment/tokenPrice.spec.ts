@@ -7,6 +7,7 @@ import {
     ERC20,
     PoolSwapLibrary,
     PoolCommitter,
+    L2Encoder,
 } from "../../../types"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import {
@@ -42,6 +43,7 @@ describe("PoolCommitter - executeCommitment: Token Price", async () => {
     let poolCommitter: PoolCommitter
     let pool: LeveragedPool
     let signers: SignerWithAddress[]
+    let l2Encoder: L2Encoder
     describe("Short burn and mint", async () => {
         it("Should account for burns allocated to future update intervals", async () => {
             const result = await deployPoolAndTokenContracts(
@@ -56,13 +58,14 @@ describe("PoolCommitter - executeCommitment: Token Price", async () => {
             signers = result.signers
             token = result.token
             poolCommitter = result.poolCommitter
+            l2Encoder = result.l2Encoder
             await pool.setKeeper(signers[0].address)
             await token.approve(pool.address, amountMinted)
-            await createCommit(poolCommitter, [SHORT_MINT], amountCommitted)
+            await createCommit(l2Encoder, poolCommitter, [SHORT_MINT], amountCommitted)
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(10, 10)
             // Before FR interval
-            await createCommit(
+            await createCommit(l2Encoder,
                 poolCommitter,
                 [SHORT_BURN],
                 amountCommitted.div(4),
@@ -71,7 +74,7 @@ describe("PoolCommitter - executeCommitment: Token Price", async () => {
 
             // After FR interval
             await timeout((updateInterval - frontRunningInterval / 2) * 1000)
-            await createCommit(
+            await createCommit(l2Encoder,
                 poolCommitter,
                 [SHORT_BURN],
                 amountCommitted.div(4),
@@ -103,11 +106,11 @@ describe("PoolCommitter - executeCommitment: Token Price", async () => {
             poolCommitter = result.poolCommitter
             await pool.setKeeper(signers[0].address)
             await token.approve(pool.address, amountMinted)
-            await createCommit(poolCommitter, [LONG_MINT], amountCommitted)
+            await createCommit(l2Encoder, poolCommitter, [LONG_MINT], amountCommitted)
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(10, 10)
             // Before FR interval
-            await createCommit(
+            await createCommit(l2Encoder,
                 poolCommitter,
                 [LONG_BURN],
                 amountCommitted.div(4),
@@ -116,7 +119,7 @@ describe("PoolCommitter - executeCommitment: Token Price", async () => {
 
             // After FR interval. Increase by the the update interval minus a little by to get right in the middle of the frontrunning interval.
             await timeout((updateInterval - frontRunningInterval / 2) * 1000)
-            await createCommit(
+            await createCommit(l2Encoder,
                 poolCommitter,
                 [LONG_BURN],
                 amountCommitted.div(4),

@@ -7,6 +7,7 @@ import {
     ERC20,
     PoolSwapLibrary,
     PoolCommitter,
+    L2Encoder,
 } from "../../../types"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { DEFAULT_FEE, LONG_MINT, POOL_CODE } from "../../constants"
@@ -37,6 +38,7 @@ describe("LeveragedPool - executeCommitment: Long Mint", () => {
     let commit: CommitEventArgs
     let library: PoolSwapLibrary
     let poolCommitter: PoolCommitter
+    let l2Encoder: L2Encoder
 
     describe("Long Mint", () => {
         beforeEach(async () => {
@@ -54,9 +56,10 @@ describe("LeveragedPool - executeCommitment: Long Mint", () => {
             await pool.setKeeper(signers[0].address)
             token = result.token
             library = result.library
+            l2Encoder = result.l2Encoder
             longToken = result.longToken
             await token.approve(pool.address, amountMinted)
-            commit = await createCommit(
+            commit = await createCommit(l2Encoder,
                 poolCommitter,
                 LONG_MINT,
                 amountCommitted

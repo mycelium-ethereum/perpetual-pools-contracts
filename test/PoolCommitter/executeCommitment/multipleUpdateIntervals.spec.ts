@@ -1,7 +1,7 @@
 import { ethers } from "hardhat"
 import chai from "chai"
 import chaiAsPromised from "chai-as-promised"
-import { LeveragedPool, TestToken, PoolCommitter } from "../../../types"
+import { LeveragedPool, TestToken, PoolCommitter, L2Encoder } from "../../../types"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import {
     DEFAULT_FEE,
@@ -35,6 +35,7 @@ describe("PoolCommitter - Upkeeping with multiple update intervals pending", asy
 
     let poolCommitter: PoolCommitter
     let pool: LeveragedPool
+    let l2Encoder: L2Encoder
     let signers: SignerWithAddress[]
     describe("Short Burn when there are multiple update intervals waiting to be upkept", async () => {
         beforeEach(async () => {
@@ -50,6 +51,7 @@ describe("PoolCommitter - Upkeeping with multiple update intervals pending", asy
             signers = result.signers
             token = result.token
             poolCommitter = result.poolCommitter
+            l2Encoder = result.l2Encoder
 
             await pool.setKeeper(signers[0].address)
             await timeout(updateInterval * 1000)
@@ -58,10 +60,8 @@ describe("PoolCommitter - Upkeeping with multiple update intervals pending", asy
             await token.approve(pool.address, amountMinted)
             await token.transfer(signers[1].address, amountCommitted.mul(2))
             await token.connect(signers[1]).approve(pool.address, amountMinted)
-            await createCommit(poolCommitter, [SHORT_MINT], amountCommitted)
-            await poolCommitter
-                .connect(signers[1])
-                .commit(SHORT_MINT, amountCommitted, false, false)
+            await createCommit(l2Encoder, poolCommitter, [SHORT_MINT], amountCommitted)
+            await createCommit(l2Encoder, poolCommitter, SHORT_MINT, amountCommitted, false, false, 0, signers[1])
 
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(10, 10)
@@ -69,7 +69,7 @@ describe("PoolCommitter - Upkeeping with multiple update intervals pending", asy
             await poolCommitter.claim(signers[0].address)
             await poolCommitter.connect(signers[1]).claim(signers[1].address)
 
-            await createCommit(
+            await createCommit(l2Encoder,
                 poolCommitter,
                 [SHORT_BURN],
                 amountCommitted.div(4)
@@ -77,9 +77,7 @@ describe("PoolCommitter - Upkeeping with multiple update intervals pending", asy
 
             await timeout(updateInterval * 1000)
 
-            await poolCommitter
-                .connect(signers[1])
-                .commit(SHORT_BURN, amountCommitted.div(4), false, false)
+            await createCommit(l2Encoder, poolCommitter, SHORT_BURN, amountCommitted.div(2), false, false, 0, signers[1])
 
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(10, 10)
@@ -114,6 +112,7 @@ describe("PoolCommitter - Upkeeping with multiple update intervals pending", asy
             signers = result.signers
             token = result.token
             poolCommitter = result.poolCommitter
+            l2Encoder = result.l2Encoder
 
             await pool.setKeeper(signers[0].address)
             await timeout(updateInterval * 1000)
@@ -122,10 +121,8 @@ describe("PoolCommitter - Upkeeping with multiple update intervals pending", asy
             await token.approve(pool.address, amountMinted)
             await token.transfer(signers[1].address, amountCommitted.mul(2))
             await token.connect(signers[1]).approve(pool.address, amountMinted)
-            await createCommit(poolCommitter, [LONG_MINT], amountCommitted)
-            await poolCommitter
-                .connect(signers[1])
-                .commit(LONG_MINT, amountCommitted, false, false)
+            await createCommit(l2Encoder, poolCommitter, [LONG_MINT], amountCommitted)
+            await createCommit(l2Encoder, poolCommitter, LONG_MINT, amountCommitted, false, false, 0, signers[1])
 
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(10, 10)
@@ -133,7 +130,7 @@ describe("PoolCommitter - Upkeeping with multiple update intervals pending", asy
             await poolCommitter.claim(signers[0].address)
             await poolCommitter.connect(signers[1]).claim(signers[1].address)
 
-            await createCommit(
+            await createCommit(l2Encoder,
                 poolCommitter,
                 [LONG_BURN],
                 amountCommitted.div(4)
@@ -141,9 +138,7 @@ describe("PoolCommitter - Upkeeping with multiple update intervals pending", asy
 
             await timeout(updateInterval * 1000)
 
-            await poolCommitter
-                .connect(signers[1])
-                .commit(LONG_BURN, amountCommitted.div(4), false, false)
+            await createCommit(l2Encoder, poolCommitter, LONG_BURN, amountCommitted.div(4), false, false, 0, signers[1])
 
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(10, 10)

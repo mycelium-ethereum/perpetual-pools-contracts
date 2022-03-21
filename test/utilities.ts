@@ -4,6 +4,7 @@ import {
     ContractReceipt,
     ContractTransaction,
     Event,
+    Signer,
 } from "ethers"
 import { BytesLike, Result } from "ethers/lib/utils"
 import {
@@ -36,6 +37,8 @@ import {
     LeveragedPoolBalanceDrainMock,
     PoolFactoryBalanceDrainMock,
     PoolFactoryBalanceDrainMock__factory,
+    L2Encoder,
+    L2Encoder__factory,
 } from "../types"
 
 import { abi as ERC20Abi } from "../artifacts/@openzeppelin/contracts/token/ERC20/ERC20.sol/ERC20.json"
@@ -103,8 +106,15 @@ export const getEventArgs = (
 
 export const deployPoolSetupContracts = async () => {
     const amountMinted = DEFAULT_MINT_AMOUNT
-
     const signers = await ethers.getSigners()
+
+    const l2EncoderFactory = (await ethers.getContractFactory(
+        "L2Encoder",
+        signers[0]
+    )) as L2Encoder__factory
+    const l2Encoder = await l2EncoderFactory.deploy()
+    await l2Encoder.deployed()
+
     // Deploy test ERC20 token
     const testToken = (await ethers.getContractFactory(
         "TestToken",
@@ -202,6 +212,7 @@ export const deployPoolSetupContracts = async () => {
         token,
         library,
         autoClaim,
+        l2Encoder
     }
 }
 
@@ -242,6 +253,7 @@ export const deployPoolAndTokenContracts = async (
     invariantCheck: InvariantCheck
     settlementEthOracle: ChainlinkOracleWrapper
     autoClaim: AutoClaim
+    l2Encoder: L2Encoder
 }> => {
     const setupContracts = await deployPoolSetupContracts()
 
@@ -292,6 +304,7 @@ export const deployPoolAndTokenContracts = async (
     const settlementEthOracle = setupContracts.settlementEthOracle
     const autoClaim = setupContracts.autoClaim
     const invariantCheck = setupContracts.invariantCheck
+    const l2Encoder = setupContracts.l2Encoder
 
     return {
         signers,
@@ -312,6 +325,7 @@ export const deployPoolAndTokenContracts = async (
         oracleWrapper,
         settlementEthOracle,
         autoClaim,
+        l2Encoder
     }
 }
 
@@ -327,21 +341,23 @@ export interface CommitEventArgs {
  * @param amount The amount to commit to
  */
 export const createCommit = async (
+    l2Encoder: L2Encoder,
     poolCommitter: PoolCommitter,
     commitType: BigNumberish,
     amount: BigNumberish,
     fromAggregateBalance?: boolean,
     payForClaim?: boolean,
-    rewardAmount?: BigNumberish
+    rewardAmount?: BigNumberish,
+    signer?: Signer
 ): Promise<any> /*Promise<CommitEventArgs>*/ => {
     const fromAggBal = fromAggregateBalance ? fromAggregateBalance : false
     const isPayingForClaim = payForClaim ? payForClaim : false
+    const encodedArgs = await l2Encoder.encodeCommitParams(amount, commitType, fromAggBal, isPayingForClaim)
+    signer = signer ? signer : (await ethers.getSigners())[0]
+
     const receipt = await (
-        await poolCommitter.commit(
-            commitType,
-            amount,
-            fromAggBal,
-            isPayingForClaim,
+        await poolCommitter.connect(signer).commit(
+            encodedArgs,
             { value: rewardAmount }
         )
     ).wait()
@@ -438,10 +454,19 @@ export const deployMockPool = async (
     settlementEthOracle: ChainlinkOracleWrapper
     invariantCheck: InvariantCheck
     autoClaim: AutoClaim
+    l2Encoder: L2Encoder
 }> => {
     const amountMinted = DEFAULT_MINT_AMOUNT
 
     const signers = await ethers.getSigners()
+
+    const l2EncoderFactory = (await ethers.getContractFactory(
+        "L2Encoder",
+        signers[0]
+    )) as L2Encoder__factory
+    const l2Encoder = await l2EncoderFactory.deploy()
+    await l2Encoder.deployed()
+
     // Deploy test ERC20 token
     const testToken = (await ethers.getContractFactory(
         "TestToken",
@@ -587,5 +612,6 @@ export const deployMockPool = async (
         settlementEthOracle,
         invariantCheck,
         autoClaim,
+        l2Encoder
     }
 }

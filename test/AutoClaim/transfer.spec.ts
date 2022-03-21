@@ -9,6 +9,7 @@ import {
     PoolCommitter,
     AutoClaim,
     PoolKeeper,
+    L2Encoder,
 } from "../../types"
 
 import { POOL_CODE, DEFAULT_FEE } from "../constants"
@@ -41,6 +42,7 @@ describe("AutoClaim - Ether Transfers", async () => {
     let signers: SignerWithAddress[]
     let someUser: SignerWithAddress
     let poolKeeper: PoolKeeper
+    let l2Encoder: L2Encoder
     const commits: CommitEventArgs[] | undefined = []
 
     beforeEach(async () => {
@@ -52,6 +54,7 @@ describe("AutoClaim - Ether Transfers", async () => {
             feeAddress,
             fee
         )
+        l2Encoder = result.l2Encoder
         pool = result.pool
         library = result.library
         poolCommitter = result.poolCommitter

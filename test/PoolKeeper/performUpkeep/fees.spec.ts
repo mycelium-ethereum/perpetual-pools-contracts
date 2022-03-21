@@ -15,6 +15,7 @@ import {
     TestToken,
     TestChainlinkOracle,
     PoolCommitter,
+    L2Encoder,
 } from "../../../types"
 import { BigNumber } from "ethers"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
@@ -30,6 +31,7 @@ let poolCommitter: PoolCommitter
 let POOL1_ADDR: string
 let signers: SignerWithAddress[]
 let token: TestToken
+let l2Encoder: L2Encoder
 
 const updateInterval = 10
 const frontRunningInterval = 1
@@ -47,6 +49,7 @@ const setupHook = async () => {
         signers[0].address,
         fee
     )
+    l2Encoder = contracts1.l2Encoder
     poolCommitter = contracts1.poolCommitter
     token = contracts1.token
     pool = contracts1.pool
@@ -98,8 +101,8 @@ describe("Leveraged pool fees", () => {
         })
 
         it("Takes the right fee amount", async () => {
-            await createCommit(poolCommitter, [2], mintAmount.div(2))
-            await createCommit(poolCommitter, [0], mintAmount.div(2))
+            await createCommit(l2Encoder, poolCommitter, [2], mintAmount.div(2))
+            await createCommit(l2Encoder, poolCommitter, [0], mintAmount.div(2))
             await timeout(updateInterval * 1000 + 1000)
             await poolKeeper.performUpkeepSinglePool(pool.address)
             await timeout(updateInterval * 1000 + 1000)

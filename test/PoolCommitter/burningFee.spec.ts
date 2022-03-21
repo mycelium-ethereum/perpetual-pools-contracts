@@ -3,6 +3,7 @@ import chai from "chai"
 import chaiAsPromised from "chai-as-promised"
 import {
     ERC20,
+    L2Encoder,
     LeveragedPool,
     PoolCommitter,
     PoolKeeper,
@@ -24,6 +25,7 @@ import {
     timeout,
     getCurrentTotalCommit,
     getCurrentUserCommit,
+    createCommit,
 } from "../utilities"
 
 chai.use(chaiAsPromised)
@@ -49,6 +51,7 @@ describe("PoolCommitter - Burn commit with burn fee", () => {
     let longToken: ERC20
     let poolCommitter: PoolCommitter
     let poolKeeper: PoolKeeper
+    let l2Encoder: L2Encoder
 
     context("Create SHORT_BURN commit", () => {
         beforeEach(async () => {
@@ -69,22 +72,13 @@ describe("PoolCommitter - Burn commit with burn fee", () => {
             poolCommitter = result.poolCommitter
             poolKeeper = result.poolKeeper
             shortToken = result.shortToken
+            l2Encoder = result.l2Encoder
             await poolKeeper.setGasPrice("0")
             await token.approve(pool.address, amountCommitted)
-            await await poolCommitter.commit(
-                SHORT_MINT,
-                amountCommitted,
-                false,
-                false
-            )
+            await createCommit(l2Encoder, poolCommitter, SHORT_MINT, amountCommitted)
             await timeout(updateInterval * 1000)
             await poolKeeper.performUpkeepSinglePool(pool.address)
-            await await poolCommitter.commit(
-                SHORT_BURN,
-                amountCommitted,
-                true,
-                false
-            )
+            await createCommit(l2Encoder, poolCommitter, SHORT_BURN, amountCommitted, true)
         })
         it("burns all pool tokens", async () => {
             expect(await shortToken.totalSupply()).to.equal(0)
@@ -191,22 +185,13 @@ describe("PoolCommitter - Burn commit with burn fee", () => {
             poolCommitter = result.poolCommitter
             poolKeeper = result.poolKeeper
             longToken = result.longToken
+            l2Encoder = result.l2Encoder
             await poolKeeper.setGasPrice("0")
             await token.approve(pool.address, amountCommitted)
-            await await poolCommitter.commit(
-                LONG_MINT,
-                amountCommitted,
-                false,
-                false
-            )
+            await createCommit(l2Encoder, poolCommitter, LONG_MINT, amountCommitted)
             await timeout(updateInterval * 1000)
             await poolKeeper.performUpkeepSinglePool(pool.address)
-            await await poolCommitter.commit(
-                LONG_BURN,
-                amountCommitted,
-                true,
-                false
-            )
+            await createCommit(l2Encoder, poolCommitter, LONG_BURN, amountCommitted, true)
         })
         it("burns all pool tokens", async () => {
             expect(await longToken.totalSupply()).to.equal(0)

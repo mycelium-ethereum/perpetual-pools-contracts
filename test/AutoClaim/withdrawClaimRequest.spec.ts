@@ -9,6 +9,7 @@ import {
     PoolCommitter,
     AutoClaim,
     PoolKeeper,
+    L2Encoder,
 } from "../../types"
 
 import { POOL_CODE, DEFAULT_FEE, SHORT_MINT, POOL_CODE_2 } from "../constants"
@@ -18,6 +19,7 @@ import {
     generateRandomAddress,
     CommitEventArgs,
     timeout,
+    createCommit,
 } from "../utilities"
 import { BigNumber, BigNumberish, ContractReceipt } from "ethers"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
@@ -43,6 +45,7 @@ describe("AutoClaim - withdrawClaimRequest", () => {
     let autoClaim: AutoClaim
     let signers: SignerWithAddress[]
     let poolKeeper: PoolKeeper
+    let l2Encoder: L2Encoder
     let result: any
 
     const commits: CommitEventArgs[] | undefined = []
@@ -55,6 +58,7 @@ describe("AutoClaim - withdrawClaimRequest", () => {
             feeAddress,
             fee
         )
+        l2Encoder = result.l2Encoder
         pool = result.pool
         library = result.library
         poolCommitter = result.poolCommitter
@@ -82,13 +86,7 @@ describe("AutoClaim - withdrawClaimRequest", () => {
         async () => {
             let balanceBefore: BigNumberish
             beforeEach(async () => {
-                await poolCommitter.commit(
-                    SHORT_MINT,
-                    amountCommitted,
-                    false,
-                    true,
-                    { value: reward }
-                )
+                await createCommit(l2Encoder, poolCommitter, SHORT_MINT, amountCommitted, false, true, reward, signers[0])
                 balanceBefore = await ethers.provider.getBalance(
                     signers[0].address
                 )
@@ -116,20 +114,8 @@ describe("AutoClaim - withdrawClaimRequest", () => {
             let balanceBefore: BigNumber
             let receipt: ContractReceipt
             beforeEach(async () => {
-                await poolCommitter.commit(
-                    SHORT_MINT,
-                    amountCommitted,
-                    false,
-                    true,
-                    { value: reward }
-                )
-                await poolCommitter.commit(
-                    SHORT_MINT,
-                    amountCommitted,
-                    false,
-                    true,
-                    { value: reward }
-                )
+                await createCommit(l2Encoder, poolCommitter, SHORT_MINT, amountCommitted, false, true, reward, signers[0])
+                await createCommit(l2Encoder, poolCommitter, SHORT_MINT, amountCommitted, false, true, reward, signers[0])
                 await timeout(updateInterval * 1000)
                 await poolKeeper.performUpkeepSinglePool(pool.address)
                 balanceBefore = await ethers.provider.getBalance(
@@ -195,20 +181,8 @@ describe("AutoClaim - withdrawClaimRequest", () => {
 
                 await token.approve(pool2.address, amountMinted)
 
-                await poolCommitter.commit(
-                    SHORT_MINT,
-                    amountCommitted,
-                    false,
-                    true,
-                    { value: reward }
-                )
-                await poolCommitter2.commit(
-                    SHORT_MINT,
-                    amountCommitted,
-                    false,
-                    true,
-                    { value: reward }
-                )
+                await createCommit(l2Encoder, poolCommitter, SHORT_MINT, amountCommitted, false, true, reward, signers[0])
+                await createCommit(l2Encoder, poolCommitter2, SHORT_MINT, amountCommitted, false, true, reward, signers[0])
 
                 await timeout(updateInterval * 1000)
                 await poolKeeper.performUpkeepMultiplePools([

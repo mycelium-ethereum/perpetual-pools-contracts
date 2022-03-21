@@ -7,6 +7,7 @@ import {
     ERC20,
     PoolSwapLibrary,
     PoolCommitter,
+    L2Encoder,
 } from "../../types"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import {
@@ -43,6 +44,7 @@ describe("PoolCommitter - commit", () => {
     let signers: SignerWithAddress[]
     let library: PoolSwapLibrary
     let poolCommitter: PoolCommitter
+    let l2Encoder: L2Encoder
 
     describe("Long token double spend attack", () => {
         beforeEach(async () => {
@@ -61,16 +63,15 @@ describe("PoolCommitter - commit", () => {
             token = result.token
             library = result.library
             longToken = result.longToken
+            l2Encoder = result.l2Encoder
             await token.approve(pool.address, amountMinted)
 
             await token.transfer(signers[1].address, amountCommitted)
             await token.connect(signers[1]).approve(pool.address, amountMinted)
 
-            await poolCommitter
-                .connect(signers[1])
-                .commit(LONG_MINT, amountCommitted, false, false)
+            await createCommit(l2Encoder, poolCommitter, LONG_MINT, amountCommitted, false, false, 0, signers[1])
 
-            await createCommit(poolCommitter, LONG_MINT, amountCommitted)
+            await createCommit(l2Encoder, poolCommitter, LONG_MINT, amountCommitted)
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(10, 10)
             await poolCommitter.updateAggregateBalance(signers[0].address)
@@ -79,7 +80,7 @@ describe("PoolCommitter - commit", () => {
             const maxIterations = await poolCommitter.MAX_ITERATIONS()
             // Add maxIterations + 1 burn commits, across as many update intervals, so the last one will not get aggregated when the user next gets their balance aggregated
             for (let i = 0; i < maxIterations + 1; i++) {
-                await poolCommitter.commit(LONG_BURN, 1, true, false)
+                await createCommit(l2Encoder, poolCommitter, LONG_BURN, 1, true)
                 await timeout(updateInterval * 1000)
             }
             // The amount we have committed so far is 1 per commit * (maxIterations + 1)
@@ -87,12 +88,7 @@ describe("PoolCommitter - commit", () => {
             // We should only be able to then burn `amountCommitted - amountBurntSoFar`
             await timeout(updateInterval * 1000)
             await expect(
-                poolCommitter.commit(
-                    LONG_BURN,
-                    amountCommitted.sub(amountBurntSoFar).add(1),
-                    true,
-                    false
-                )
+                createCommit(l2Encoder, poolCommitter, LONG_BURN, amountCommitted.sub(amountBurntSoFar).add(1), true)
             ).to.be.reverted
         })
     })
@@ -113,16 +109,15 @@ describe("PoolCommitter - commit", () => {
             token = result.token
             library = result.library
             longToken = result.longToken
+            l2Encoder = result.l2Encoder
             await token.approve(pool.address, amountMinted)
 
             await token.transfer(signers[1].address, amountCommitted)
             await token.connect(signers[1]).approve(pool.address, amountMinted)
 
-            await poolCommitter
-                .connect(signers[1])
-                .commit(SHORT_MINT, amountCommitted, false, false)
+            await createCommit(l2Encoder, poolCommitter, SHORT_MINT, amountCommitted, false, false, 0, signers[1])
 
-            await createCommit(poolCommitter, SHORT_MINT, amountCommitted)
+            await createCommit(l2Encoder, poolCommitter, SHORT_MINT, amountCommitted)
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(10, 10)
             await poolCommitter.updateAggregateBalance(signers[0].address)
@@ -131,7 +126,7 @@ describe("PoolCommitter - commit", () => {
             const maxIterations = await poolCommitter.MAX_ITERATIONS()
             // Add maxIterations + 1 burn commits, across as many update intervals, so the last one will not get aggregated when the user next gets their balance aggregated
             for (let i = 0; i < maxIterations + 1; i++) {
-                await poolCommitter.commit(SHORT_BURN, 1, true, false)
+                await createCommit(l2Encoder, poolCommitter, SHORT_BURN, 1, true)
                 await timeout(updateInterval * 1000)
             }
             // The amount we have committed so far is 1 per commit * (maxIterations + 1)
@@ -139,12 +134,7 @@ describe("PoolCommitter - commit", () => {
             // We should only be able to then burn `amountCommitted - amountBurntSoFar`
             await timeout(updateInterval * 1000)
             await expect(
-                poolCommitter.commit(
-                    SHORT_BURN,
-                    amountCommitted.sub(amountBurntSoFar).add(1),
-                    true,
-                    false
-                )
+                createCommit(l2Encoder, poolCommitter, SHORT_BURN, amountCommitted.sub(amountBurntSoFar).add(1), true)
             ).to.be.reverted
         })
     })
