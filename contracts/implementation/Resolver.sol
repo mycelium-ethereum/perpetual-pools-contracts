@@ -12,9 +12,12 @@ contract Resolver {
         uint256 poolsLength = _pools.length;
         execPayLoad = new bytes[](poolsLength);
         for (uint256 i = 0; i < poolsLength; i++) {
-                if(IPoolKeeper(PoolKeeper).checkUpkeepSinglePool(_pools[i])){
-                    execPayLoad[i]=abi.encodeWithSelector(IPoolKeeper(PoolKeeper).checkUpkeepSinglePool.selector, address(_pools[i]));
-                }
+            if (IPoolKeeper(PoolKeeper).checkUpkeepSinglePool(_pools[i])) {
+                execPayLoad[i] = abi.encodeWithSelector(
+                    IPoolKeeper(PoolKeeper).checkUpkeepSinglePool.selector,
+                    address(_pools[i])
+                );
+            }
         }
         return execPayLoad;
     }
