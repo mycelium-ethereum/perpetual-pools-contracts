@@ -6,6 +6,7 @@ import "../interfaces/IOracleWrapper.sol";
 import "../interfaces/IPoolFactory.sol";
 import "../interfaces/ILeveragedPool.sol";
 import "../interfaces/IERC20DecimalsWrapper.sol";
+import "./PoolSwapLibrary.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "abdk-libraries-solidity/ABDKMathQuad.sol";
@@ -235,8 +236,8 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         // amount of settlement tokens to give to the keeper
         // _keeperGas + _keeperGas * percentTip
         uint256 wadRewardValue = _keeperGas + ((_keeperGas * _tipPercent) / 100);
-
-        return wadRewardValue;
+        uint256 decimals = IERC20DecimalsWrapper(ILeveragedPool(_pool).settlementToken()).decimals();
+        return PoolSwapLibrary.fromWad(uint256(wadRewardValue), decimals);
     }
 
     /**

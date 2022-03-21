@@ -179,12 +179,11 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
                 const poolTokenBalanceBefore = await token.balanceOf(
                     pool.address
                 )
-                const receipt = await (
-                    await poolKeeper.performUpkeepMultiplePools([
-                        POOL1_ADDR,
-                        POOL2_ADDR,
-                    ])
-                ).wait()
+
+                await poolKeeper.performUpkeepMultiplePools([
+                    POOL1_ADDR,
+                    POOL2_ADDR,
+                ])
 
                 const balanceAfter = await token.balanceOf(signers[0].address)
                 const poolTokenBalanceAfter = await token.balanceOf(
