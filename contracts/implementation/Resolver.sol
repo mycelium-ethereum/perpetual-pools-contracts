@@ -2,21 +2,20 @@
 pragma solidity 0.8.7;
 
 interface IPoolKeeper {
-    function isUpkeepRequiredSinglePool(address pool) external view returns (bool);
+    function checkUpkeepSinglePool(address pool) external view returns (bool);
 }
 
 contract Resolver {
-    bool[] boolArray;
-    address public immutable keeper = 0x759E817F0C40B11C775d1071d466B5ff5c6ce28e;
+    address public immutable PoolKeeper = 0x759E817F0C40B11C775d1071d466B5ff5c6ce28e;
 
-    constructor() {}
-
-    function checker(address _pools) public view returns (bool canBeUpKept, bytes memory execPayLoad) {
-        canBeUpKept = IPoolKeeper(keeper).isUpkeepRequiredSinglePool(_pools);
-        // uint256 poolsLength = _pools.length;
-        // for (uint256 i = 0; i < poolsLength; i++) {
-        //         boolArray.push(IPoolKeeper(keeper).isUpkeepRequiredSinglePool(_pools[i]));
-        // }
-        execPayLoad = abi.encodeWithSelector(IPoolKeeper(keeper).isUpkeepRequiredSinglePool.selector, address(_pools));
+    function checkerUpKeep(address[] memory _pools) public view returns (bytes[] memory execPayLoad) {
+        uint256 poolsLength = _pools.length;
+        execPayLoad = new bytes[](poolsLength);
+        for (uint256 i = 0; i < poolsLength; i++) {
+                if(IPoolKeeper(PoolKeeper).checkUpkeepSinglePool(_pools[i])){
+                    execPayLoad[i]=abi.encodeWithSelector(IPoolKeeper(PoolKeeper).checkUpkeepSinglePool.selector, address(_pools[i]));
+                }
+        }
+        return execPayLoad;
     }
 }
