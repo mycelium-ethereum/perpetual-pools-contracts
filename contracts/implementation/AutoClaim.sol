@@ -15,7 +15,7 @@ import "@openzeppelin/contracts/utils/Address.sol";
 contract AutoClaim is IAutoClaim {
     // User => PoolCommitter address => Claim Request
     mapping(address => mapping(address => ClaimRequest)) public claimRequests;
-    IPoolFactory internal poolFactory;
+    IPoolFactory internal immutable poolFactory;
 
     modifier onlyPoolCommitter() {
         require(poolFactory.isValidPoolCommitter(msg.sender), "msg.sender not valid PoolCommitter");
