@@ -4,12 +4,9 @@ pragma solidity 0.8.7;
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "../interfaces/IPoolCommitter.sol";
 
-//import {DataTypes} from "../protocol/libraries/types/DataTypes.sol";
-
 /**
  * @title L2Encoder
- * @author Aave
- * @notice Helper contract to encode calldata, used to optimize calldata size in L2Pool for transaction cost reduction
+ * @notice Helper contract to encode calldata, used to optimize calldata size
  * only indented to help generate calldata for uses/frontends.
  */
 contract L2Encoder {
