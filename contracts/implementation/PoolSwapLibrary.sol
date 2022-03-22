@@ -534,4 +534,33 @@ library PoolSwapLibrary {
 
         _newSettlementTokens = shortBurnResult + longBurnResult;
     }
+
+    struct RingBuffer {
+        int256[] xs;
+        uint256 n;
+        uint256 read;
+        uint256 write;
+    }
+
+    function push(RingBuffer calldata buf, int256 x) public pure returns (RingBuffer memory) {
+        int256[] memory ys = buf.xs;
+
+        if (buf.write == buf.n) {
+            ys[0] = x;
+            return RingBuffer(ys, buf.n, 1, buf.read);
+        } else {
+            ys[buf.write] = x;
+            return RingBuffer(ys, buf.n, buf.write + 1, buf.read);
+        }
+    }
+
+    function pop(RingBuffer calldata buf) public pure returns (RingBuffer memory, int256) {
+        int256 x = buf.xs[buf.read];
+
+        if (buf.read == buf.n) {
+            return (RingBuffer(buf.xs, buf.n, 0, buf.write), x);
+        } else {
+            return (RingBuffer(buf.xs, buf.n, buf.read + 1, buf.write), x);
+        }
+    }
 }
