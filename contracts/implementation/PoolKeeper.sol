@@ -26,7 +26,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
 
     /// Captures fixed gas overhead for performing upkeep that's unreachable
     /// by `gasleft()` due to our approach to error handling in that code
-    uint256 public constant FIXED_GAS_OVERHEAD = 80195;
+    uint256 public constant FIXED_GAS_OVERHEAD = 103719;
 
     // #### Global variables
     /**

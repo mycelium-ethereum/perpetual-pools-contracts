@@ -24,9 +24,6 @@ export const LONG_BURN = 3
 export const LONG_BURN_THEN_MINT = 4
 export const SHORT_BURN_THEN_MINT = 5
 
-// Calculated by commenting out the keeper reward logic and calling performUpkeepSinglePool
-export const SINGLE_POOL_UPKEEP_GAS_COST = "67678"
-
 export const DEFAULT_MAX_LEVERAGE = 10
 export const DEFAULT_MIN_LEVERAGE = 1
 export const GAS_OVERHEAD: BigNumberish = 80195

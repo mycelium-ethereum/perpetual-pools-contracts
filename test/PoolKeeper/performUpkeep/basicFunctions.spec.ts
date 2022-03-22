@@ -14,7 +14,6 @@ import {
     DEFAULT_MINT_AMOUNT,
     POOL_CODE,
     POOL_CODE_2,
-    SINGLE_POOL_UPKEEP_GAS_COST,
 } from "../../constants"
 import {
     PoolKeeper,
@@ -22,7 +21,7 @@ import {
     TestToken,
     TestChainlinkOracle,
 } from "../../../types"
-import { BigNumber } from "ethers"
+import { BigNumber, ContractReceipt } from "ethers"
 import { Result } from "ethers/lib/utils"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 
@@ -158,10 +157,12 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
                 )
                 await derivativeChainlinkOracle.setPrice("90000000")
                 await pool.setKeeper(poolKeeper.address)
-                await poolKeeper.performUpkeepMultiplePools([
-                    POOL1_ADDR,
-                    POOL2_ADDR,
-                ])
+                const result = await (
+                    await poolKeeper.performUpkeepMultiplePools([
+                        POOL1_ADDR,
+                        POOL2_ADDR,
+                    ])
+                ).wait()
                 newExecutionPrice = await poolKeeper.executionPrice(POOL1_ADDR)
                 newLastExecutionTime = await pool.lastPriceTimestamp()
             })
@@ -174,44 +175,80 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
                 expect(newExecutionPrice).to.equal(price)
             })
             it("Should update the keeper's balance", async () => {
+                /* maths aliases */
+                const decimals: number = 18
+                const wadFactor: BigNumber = BigNumber.from("10").pow(decimals)
+
+                /* fix an ETH price in USDC */
+                const ethPriceInSettlement: BigNumber =
+                    BigNumber.from("3000").mul(wadFactor)
+                const gasPriceInEth: BigNumber = BigNumber.from("10").mul(
+                    BigNumber.from("10").pow(9)
+                )
+                const gasPriceInSettlement: BigNumber = gasPriceInEth
+                    .mul(ethPriceInSettlement)
+                    .div(wadFactor)
+
+                /* wait */
                 await timeout(updateInterval * 1000 + 1000)
-                const balanceBefore = await token.balanceOf(signers[0].address)
-                const poolTokenBalanceBefore = await token.balanceOf(
+
+                /* pre-upkeep balances */
+                const keeperBalanceBefore: BigNumber = await token.balanceOf(
+                    signers[0].address
+                )
+                const poolBalanceBefore: BigNumber = await token.balanceOf(
                     pool.address
                 )
-                const receipt = await (
+
+                /* perform upkeep */
+                const receipt: ContractReceipt = await (
                     await poolKeeper.performUpkeepMultiplePools([
                         POOL1_ADDR,
                         POOL2_ADDR,
                     ])
                 ).wait()
 
-                const balanceAfter = await token.balanceOf(signers[0].address)
-                const poolTokenBalanceAfter = await token.balanceOf(
+                /* post-upkeep balances */
+                const actualKeeperBalanceAfter: BigNumber =
+                    await token.balanceOf(signers[0].address)
+                const actualPoolBalanceAfter: BigNumber = await token.balanceOf(
                     pool.address
                 )
-                const tenGwei = BigNumber.from("10").pow(9).mul(10)
-                const tenToTheEighteen = BigNumber.from("10").pow(18)
-                const tenToTheTen = BigNumber.from("10").pow(10)
-                const settlementPerEth = BigNumber.from("3000").mul(
-                    BigNumber.from(10).pow(8)
-                )
+                const actualKeeperReward: BigNumber =
+                    actualKeeperBalanceAfter.sub(keeperBalanceBefore)
 
-                const estimatedKeeperReward = BigNumber.from(
-                    SINGLE_POOL_UPKEEP_GAS_COST
-                )
-                    .mul(tenGwei)
-                    .mul(settlementPerEth)
-                    .mul(2) // Mul by 2 because there are two pools
-                    .div(tenToTheEighteen.div(tenToTheTen))
+                /* expected values */
 
-                const epsilon = estimatedKeeperReward.mul(
-                    ethers.utils.parseEther("0.0000000000000001")
+                /* k = (GAS * ETHPRICE * 10^d) */
+                const expectedKeeperReward: BigNumber =
+                    receipt.gasUsed.mul(gasPriceInSettlement)
+                // .mul(2) // Mul by 2 because there are two pools
+
+                const expectedKeeperBalanceAfter: BigNumber =
+                    keeperBalanceBefore.add(expectedKeeperReward)
+                const expectedPoolBalanceAfter: BigNumber =
+                    poolBalanceBefore.sub(expectedKeeperReward)
+
+                const epsilon = expectedKeeperBalanceAfter.mul(
+                    ethers.utils.parseEther("0.000000000000000001")
                 )
-                const lowerBound: any = estimatedKeeperReward.sub(epsilon)
-                const upperBound: any = estimatedKeeperReward.add(epsilon)
-                expect(balanceAfter).to.be.gt(balanceBefore)
-                expect(poolTokenBalanceAfter).to.be.lt(poolTokenBalanceBefore)
+                const lowerBound: any = expectedKeeperBalanceAfter.sub(epsilon)
+                const upperBound: any = expectedKeeperBalanceAfter.add(epsilon)
+
+                /* assertions */
+                expect(actualKeeperBalanceAfter).to.be.lt(upperBound)
+                expect(actualKeeperBalanceAfter).to.be.gt(lowerBound)
+                //expect(expectedKeeperReward).to.be.eq(
+                //    actualKeeperBalanceAfter.sub(keeperBalanceBefore)
+                //)
+                expect(actualKeeperBalanceAfter).to.be.gt(keeperBalanceBefore)
+                expect(actualPoolBalanceAfter).to.be.lt(poolBalanceBefore)
+                //expect(actualKeeperBalanceAfter).to.be.eq(
+                //    expectedKeeperBalanceAfter
+                //)
+                //expect(actualPoolBalanceAfter).to.be.eq(
+                //    expectedPoolBalanceAfter
+                //)
             })
             it("should calculate a new execution price", async () => {
                 expect(newLastExecutionPrice).to.eq(oldExecutionPrice)
