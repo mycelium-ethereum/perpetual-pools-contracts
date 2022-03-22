@@ -69,9 +69,23 @@ describe("PoolCommitter - commit", () => {
             await token.transfer(signers[1].address, amountCommitted)
             await token.connect(signers[1]).approve(pool.address, amountMinted)
 
-            await createCommit(l2Encoder, poolCommitter, LONG_MINT, amountCommitted, false, false, 0, signers[1])
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                LONG_MINT,
+                amountCommitted,
+                false,
+                false,
+                0,
+                signers[1]
+            )
 
-            await createCommit(l2Encoder, poolCommitter, LONG_MINT, amountCommitted)
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                LONG_MINT,
+                amountCommitted
+            )
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(10, 10)
             await poolCommitter.updateAggregateBalance(signers[0].address)
@@ -88,7 +102,13 @@ describe("PoolCommitter - commit", () => {
             // We should only be able to then burn `amountCommitted - amountBurntSoFar`
             await timeout(updateInterval * 1000)
             await expect(
-                createCommit(l2Encoder, poolCommitter, LONG_BURN, amountCommitted.sub(amountBurntSoFar).add(1), true)
+                createCommit(
+                    l2Encoder,
+                    poolCommitter,
+                    LONG_BURN,
+                    amountCommitted.sub(amountBurntSoFar).add(1),
+                    true
+                )
             ).to.be.reverted
         })
     })
@@ -115,9 +135,23 @@ describe("PoolCommitter - commit", () => {
             await token.transfer(signers[1].address, amountCommitted)
             await token.connect(signers[1]).approve(pool.address, amountMinted)
 
-            await createCommit(l2Encoder, poolCommitter, SHORT_MINT, amountCommitted, false, false, 0, signers[1])
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                SHORT_MINT,
+                amountCommitted,
+                false,
+                false,
+                0,
+                signers[1]
+            )
 
-            await createCommit(l2Encoder, poolCommitter, SHORT_MINT, amountCommitted)
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                SHORT_MINT,
+                amountCommitted
+            )
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(10, 10)
             await poolCommitter.updateAggregateBalance(signers[0].address)
@@ -126,7 +160,13 @@ describe("PoolCommitter - commit", () => {
             const maxIterations = await poolCommitter.MAX_ITERATIONS()
             // Add maxIterations + 1 burn commits, across as many update intervals, so the last one will not get aggregated when the user next gets their balance aggregated
             for (let i = 0; i < maxIterations + 1; i++) {
-                await createCommit(l2Encoder, poolCommitter, SHORT_BURN, 1, true)
+                await createCommit(
+                    l2Encoder,
+                    poolCommitter,
+                    SHORT_BURN,
+                    1,
+                    true
+                )
                 await timeout(updateInterval * 1000)
             }
             // The amount we have committed so far is 1 per commit * (maxIterations + 1)
@@ -134,7 +174,13 @@ describe("PoolCommitter - commit", () => {
             // We should only be able to then burn `amountCommitted - amountBurntSoFar`
             await timeout(updateInterval * 1000)
             await expect(
-                createCommit(l2Encoder, poolCommitter, SHORT_BURN, amountCommitted.sub(amountBurntSoFar).add(1), true)
+                createCommit(
+                    l2Encoder,
+                    poolCommitter,
+                    SHORT_BURN,
+                    amountCommitted.sub(amountBurntSoFar).add(1),
+                    true
+                )
             ).to.be.reverted
         })
     })

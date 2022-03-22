@@ -10,8 +10,8 @@ import "../interfaces/IInvariantCheck.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import "./PoolSwapLibrary.sol";
-import "hardhat/console.sol";
+import "../libraries/PoolSwapLibrary.sol";
+import "../libraries/CalldataLogic.sol";
 
 /// @title This contract is responsible for handling commitment logic
 contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
@@ -250,30 +250,6 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         }
     }
 
-    function decodeCommitParams(bytes32 args)
-        internal
-        pure
-        returns (
-            uint256,
-            CommitType,
-            bool,
-            bool
-        )
-    {
-        uint256 amount;
-        CommitType commitType;
-        bool fromAggregateBalance;
-        bool payForClaim;
-
-        assembly {
-            amount := and(args, 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
-            commitType := and(shr(128, args), 0xFF)
-            fromAggregateBalance := and(shr(136, args), 0xFF)
-            payForClaim := and(shr(144, args), 0xFF)
-        }
-        return (amount, commitType, fromAggregateBalance, payForClaim);
-    }
-
     /**
      * @notice Commit to minting/burning long/short tokens after the next price change
      * @param args Arguments for the commit function packed into one bytes32
@@ -289,10 +265,8 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
      * @dev Emits a `CreateCommit` event on success
      */
     function commit(bytes32 args) external payable override {
-        console.logBytes32(args);
-        (uint256 amount, CommitType commitType, bool fromAggregateBalance, bool payForClaim) = decodeCommitParams(args);
-        console.log(amount);
-        console.log(uint8(commitType));
+        (uint256 amount, CommitType commitType, bool fromAggregateBalance, bool payForClaim) = CalldataLogic
+            .decodeCommitParams(args);
         require(amount > 0, "Amount must not be zero");
         updateAggregateBalance(msg.sender);
         ILeveragedPool pool = ILeveragedPool(leveragedPool);

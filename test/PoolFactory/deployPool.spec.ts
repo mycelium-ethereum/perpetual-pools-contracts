@@ -371,12 +371,14 @@ describe("PoolFactory.deployPool", () => {
                 newPool.address,
                 ethers.utils.parseEther("10000")
             )
-            await createCommit(l2Encoder,
+            await createCommit(
+                l2Encoder,
                 poolCommitter,
                 LONG_MINT,
                 ethers.utils.parseEther("2000")
             )
-            await createCommit(l2Encoder,
+            await createCommit(
+                l2Encoder,
                 poolCommitter,
                 SHORT_MINT,
                 ethers.utils.parseEther("2000")
@@ -402,7 +404,7 @@ describe("PoolFactory.deployPool", () => {
             let feesPaidSecondary = await token.balanceOf(secondFeeAddress)
             expect(
                 parseFloat(ethers.utils.formatEther(feesPaidPrimary)) /
-                parseFloat(ethers.utils.formatEther(feesPaidSecondary))
+                    parseFloat(ethers.utils.formatEther(feesPaidSecondary))
             ).to.eq(4)
         })
     })

@@ -94,9 +94,19 @@ describe("InvariantCheck - balanceInvariant", () => {
             await result.token.approve(result.pool.address, amountMinted)
 
             // Long mint commit
-            await createCommit(l2Encoder, poolCommitter, LONG_MINT, amountCommitted)
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                LONG_MINT,
+                amountCommitted
+            )
             // short mint commit
-            await createCommit(l2Encoder, poolCommitter, SHORT_MINT, amountCommitted)
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                SHORT_MINT,
+                amountCommitted
+            )
 
             await expect(
                 invariantCheck.checkInvariants(pool.address)
@@ -127,23 +137,53 @@ describe("InvariantCheck - balanceInvariant", () => {
                 await token.approve(pool.address, amountMinted.mul(10000))
 
                 // Long mint commit
-                await createCommit(l2Encoder, poolCommitter, LONG_MINT, amountCommitted)
+                await createCommit(
+                    l2Encoder,
+                    poolCommitter,
+                    LONG_MINT,
+                    amountCommitted
+                )
 
                 await timeout(updateInterval * 1000)
                 // short mint commit
-                await createCommit(l2Encoder, poolCommitter, SHORT_MINT, amountCommitted)
+                await createCommit(
+                    l2Encoder,
+                    poolCommitter,
+                    SHORT_MINT,
+                    amountCommitted
+                )
                 await timeout(updateInterval * 1000)
                 // short mint commit
-                await createCommit(l2Encoder, poolCommitter, SHORT_MINT, amountCommitted)
+                await createCommit(
+                    l2Encoder,
+                    poolCommitter,
+                    SHORT_MINT,
+                    amountCommitted
+                )
                 await timeout(updateInterval * 1000)
                 // short mint commit
-                await createCommit(l2Encoder, poolCommitter, SHORT_MINT, amountCommitted)
+                await createCommit(
+                    l2Encoder,
+                    poolCommitter,
+                    SHORT_MINT,
+                    amountCommitted
+                )
                 await timeout(updateInterval * 1000)
                 // short mint commit
-                await createCommit(l2Encoder, poolCommitter, SHORT_MINT, amountCommitted)
+                await createCommit(
+                    l2Encoder,
+                    poolCommitter,
+                    SHORT_MINT,
+                    amountCommitted
+                )
                 await timeout(updateInterval * 1000)
                 // short mint commit
-                await createCommit(l2Encoder, poolCommitter, SHORT_MINT, amountCommitted)
+                await createCommit(
+                    l2Encoder,
+                    poolCommitter,
+                    SHORT_MINT,
+                    amountCommitted
+                )
             })
 
             it("Pauses contracts", async () => {
@@ -182,9 +222,19 @@ describe("InvariantCheck - balanceInvariant", () => {
             await token.approve(pool.address, amountMinted)
 
             // Long mint commit
-            await createCommit(l2Encoder, poolCommitter, LONG_MINT, amountCommitted)
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                LONG_MINT,
+                amountCommitted
+            )
             // short mint commit
-            await createCommit(l2Encoder, poolCommitter, SHORT_MINT, amountCommitted)
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                SHORT_MINT,
+                amountCommitted
+            )
         })
 
         it("Pauses contracts", async () => {

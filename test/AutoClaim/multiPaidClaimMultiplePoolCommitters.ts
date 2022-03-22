@@ -132,9 +132,28 @@ describe("AutoClaim - multiPaidClaimMultiplePoolCommitters", () => {
 
     context("When there are claims, but all are still pending", async () => {
         it("does nothing", async () => {
-            await createCommit(l2Encoder, poolCommitter, LONG_MINT, amountCommitted, false, true, reward, signers[0])
-            await createCommit(l2Encoder, poolCommitter, LONG_MINT, amountCommitted, false, true, reward, signers[1])
-            await createCommit(l2Encoder,
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                LONG_MINT,
+                amountCommitted,
+                false,
+                true,
+                reward,
+                signers[0]
+            )
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                LONG_MINT,
+                amountCommitted,
+                false,
+                true,
+                reward,
+                signers[1]
+            )
+            await createCommit(
+                l2Encoder,
                 poolCommitter2,
                 LONG_MINT,
                 amountCommitted,
@@ -171,14 +190,32 @@ describe("AutoClaim - multiPaidClaimMultiplePoolCommitters", () => {
             await token.transfer(signers[1].address, amountCommitted.mul(2))
             await token.connect(signers[1]).approve(pool.address, amountMinted)
 
-            await createCommit(l2Encoder, poolCommitter, LONG_MINT, amountCommitted, false, true, reward, signers[1])
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                LONG_MINT,
+                amountCommitted,
+                false,
+                true,
+                reward,
+                signers[1]
+            )
             await timeout(updateInterval * 1000)
             await poolKeeper.performUpkeepMultiplePools([
                 pool.address,
                 pool2.address,
             ])
 
-            await createCommit(l2Encoder, poolCommitter2, SHORT_MINT, amountCommitted, false, true, reward, signers[0])
+            await createCommit(
+                l2Encoder,
+                poolCommitter2,
+                SHORT_MINT,
+                amountCommitted,
+                false,
+                true,
+                reward,
+                signers[0]
+            )
 
             balanceBeforeClaim = await ethers.provider.getBalance(
                 signers[0].address
@@ -239,15 +276,42 @@ describe("AutoClaim - multiPaidClaimMultiplePoolCommitters", () => {
             await token.transfer(signers[1].address, amountCommitted.mul(2))
             await token.connect(signers[1]).approve(pool.address, amountMinted)
 
-            await createCommit(l2Encoder, poolCommitter, LONG_MINT, amountCommitted, false, true, reward, signers[1])
-            await createCommit(l2Encoder, poolCommitter2, SHORT_MINT, amountCommitted, false, true, reward, signers[0])
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                LONG_MINT,
+                amountCommitted,
+                false,
+                true,
+                reward,
+                signers[1]
+            )
+            await createCommit(
+                l2Encoder,
+                poolCommitter2,
+                SHORT_MINT,
+                amountCommitted,
+                false,
+                true,
+                reward,
+                signers[0]
+            )
             await timeout(updateInterval * 10000)
             await poolKeeper.performUpkeepMultiplePools([
                 pool.address,
                 pool2.address,
             ])
 
-            await createCommit(l2Encoder, poolCommitter, SHORT_MINT, amountCommitted, false, true, reward, signers[0])
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                SHORT_MINT,
+                amountCommitted,
+                false,
+                true,
+                reward,
+                signers[0]
+            )
 
             balanceBeforeClaim = await ethers.provider.getBalance(
                 signers[0].address

@@ -69,7 +69,12 @@ describe("LeveragedPool - feeTransfer", async () => {
         // Long mint commit
         await createCommit(l2Encoder, poolCommitter, LONG_MINT, amountCommitted)
         // short mint commit
-        await createCommit(l2Encoder, poolCommitter, SHORT_MINT, amountCommitted)
+        await createCommit(
+            l2Encoder,
+            poolCommitter,
+            SHORT_MINT,
+            amountCommitted
+        )
 
         await shortToken.approve(pool.address, amountMinted)
         await longToken.approve(pool.address, await longToken.totalSupply())
@@ -149,10 +154,15 @@ describe("LeveragedPool - feeTransfer", async () => {
             await result.pool.pause()
         })
         it("Commit should be paused", async () => {
-            const encodedArgs = await l2Encoder.encodeCommitParams(123, LONG_BURN, false, false)
-            await expect(
-                poolCommitter.commit(encodedArgs)
-            ).to.revertedWith("Pool is paused")
+            const encodedArgs = await l2Encoder.encodeCommitParams(
+                123,
+                LONG_BURN,
+                false,
+                false
+            )
+            await expect(poolCommitter.commit(encodedArgs)).to.revertedWith(
+                "Pool is paused"
+            )
         })
         it("Update fee address", async () => {
             await expect(

@@ -69,7 +69,12 @@ describe("PoolCommitter - executeCommitments: setting lastPriceTimestamp", () =>
             await token.approve(pool.address, amountMinted)
 
             for (let i = 0; i < maxIterations + 6; i++) {
-                commit = await createCommit(l2Encoder, poolCommitter, [LONG_MINT], 1)
+                commit = await createCommit(
+                    l2Encoder,
+                    poolCommitter,
+                    [LONG_MINT],
+                    1
+                )
                 await timeout(updateInterval * 1000)
             }
         })

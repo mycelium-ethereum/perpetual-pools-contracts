@@ -86,7 +86,16 @@ describe("AutoClaim - withdrawClaimRequest", () => {
         async () => {
             let balanceBefore: BigNumberish
             beforeEach(async () => {
-                await createCommit(l2Encoder, poolCommitter, SHORT_MINT, amountCommitted, false, true, reward, signers[0])
+                await createCommit(
+                    l2Encoder,
+                    poolCommitter,
+                    SHORT_MINT,
+                    amountCommitted,
+                    false,
+                    true,
+                    reward,
+                    signers[0]
+                )
                 balanceBefore = await ethers.provider.getBalance(
                     signers[0].address
                 )
@@ -114,8 +123,26 @@ describe("AutoClaim - withdrawClaimRequest", () => {
             let balanceBefore: BigNumber
             let receipt: ContractReceipt
             beforeEach(async () => {
-                await createCommit(l2Encoder, poolCommitter, SHORT_MINT, amountCommitted, false, true, reward, signers[0])
-                await createCommit(l2Encoder, poolCommitter, SHORT_MINT, amountCommitted, false, true, reward, signers[0])
+                await createCommit(
+                    l2Encoder,
+                    poolCommitter,
+                    SHORT_MINT,
+                    amountCommitted,
+                    false,
+                    true,
+                    reward,
+                    signers[0]
+                )
+                await createCommit(
+                    l2Encoder,
+                    poolCommitter,
+                    SHORT_MINT,
+                    amountCommitted,
+                    false,
+                    true,
+                    reward,
+                    signers[0]
+                )
                 await timeout(updateInterval * 1000)
                 await poolKeeper.performUpkeepSinglePool(pool.address)
                 balanceBefore = await ethers.provider.getBalance(
@@ -181,8 +208,26 @@ describe("AutoClaim - withdrawClaimRequest", () => {
 
                 await token.approve(pool2.address, amountMinted)
 
-                await createCommit(l2Encoder, poolCommitter, SHORT_MINT, amountCommitted, false, true, reward, signers[0])
-                await createCommit(l2Encoder, poolCommitter2, SHORT_MINT, amountCommitted, false, true, reward, signers[0])
+                await createCommit(
+                    l2Encoder,
+                    poolCommitter,
+                    SHORT_MINT,
+                    amountCommitted,
+                    false,
+                    true,
+                    reward,
+                    signers[0]
+                )
+                await createCommit(
+                    l2Encoder,
+                    poolCommitter2,
+                    SHORT_MINT,
+                    amountCommitted,
+                    false,
+                    true,
+                    reward,
+                    signers[0]
+                )
 
                 await timeout(updateInterval * 1000)
                 await poolKeeper.performUpkeepMultiplePools([

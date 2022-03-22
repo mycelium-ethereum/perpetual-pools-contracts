@@ -61,7 +61,12 @@ describe("LeveragedPool - executeCommitment: Short Mint", () => {
             shortToken = result.shortToken
             library = result.library
             await token.approve(pool.address, amountMinted)
-            commit = await createCommit(l2Encoder, poolCommitter, [0], amountCommitted)
+            commit = await createCommit(
+                l2Encoder,
+                poolCommitter,
+                [0],
+                amountCommitted
+            )
         })
         it("should adjust the live short pool balance", async () => {
             expect(await pool.shortBalance()).to.eq(0)

@@ -71,12 +71,18 @@ describe("PoolCommitter - updateAggregateBalance", () => {
             maxIterations = await poolCommitter.MAX_ITERATIONS()
 
             for (let i = 0; i < maxIterations; i++) {
-                await createCommit(l2Encoder, poolCommitter, [LONG_MINT], amountCommitted)
+                await createCommit(
+                    l2Encoder,
+                    poolCommitter,
+                    [LONG_MINT],
+                    amountCommitted
+                )
                 await timeout(updateInterval * 1000)
                 await pool.poolUpkeep(9, 9)
             }
 
-            const lastCommit = await createCommit(l2Encoder,
+            const lastCommit = await createCommit(
+                l2Encoder,
                 poolCommitter,
                 [LONG_MINT],
                 amountCommitted

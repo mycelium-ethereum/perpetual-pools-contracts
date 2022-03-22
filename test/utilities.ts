@@ -212,7 +212,7 @@ export const deployPoolSetupContracts = async () => {
         token,
         library,
         autoClaim,
-        l2Encoder
+        l2Encoder,
     }
 }
 
@@ -292,8 +292,8 @@ export const deployPoolAndTokenContracts = async (
     const longToken = await ethers.getContractAt(ERC20Abi, longTokenAddr)
     const shortToken = await ethers.getContractAt(ERC20Abi, shortTokenAddr)
 
-    let commiter = await pool.poolCommitter()
-    const poolCommitter = await ethers.getContractAt("PoolCommitter", commiter)
+    let committer = await pool.poolCommitter()
+    const poolCommitter = await ethers.getContractAt("PoolCommitter", committer)
 
     const token = setupContracts.token
     const library = setupContracts.library
@@ -325,7 +325,7 @@ export const deployPoolAndTokenContracts = async (
         oracleWrapper,
         settlementEthOracle,
         autoClaim,
-        l2Encoder
+        l2Encoder,
     }
 }
 
@@ -352,14 +352,18 @@ export const createCommit = async (
 ): Promise<any> /*Promise<CommitEventArgs>*/ => {
     const fromAggBal = fromAggregateBalance ? fromAggregateBalance : false
     const isPayingForClaim = payForClaim ? payForClaim : false
-    const encodedArgs = await l2Encoder.encodeCommitParams(amount, commitType, fromAggBal, isPayingForClaim)
+    const encodedArgs = await l2Encoder.encodeCommitParams(
+        amount,
+        commitType,
+        fromAggBal,
+        isPayingForClaim
+    )
     signer = signer ? signer : (await ethers.getSigners())[0]
 
     const receipt = await (
-        await poolCommitter.connect(signer).commit(
-            encodedArgs,
-            { value: rewardAmount }
-        )
+        await poolCommitter
+            .connect(signer)
+            .commit(encodedArgs, { value: rewardAmount })
     ).wait()
     return {
         commitID: getEventArgs(receipt, "CreateCommit")?.commitID,
@@ -590,8 +594,8 @@ export const deployMockPool = async (
     const longToken = await ethers.getContractAt(ERC20Abi, longTokenAddr)
     const shortToken = await ethers.getContractAt(ERC20Abi, shortTokenAddr)
 
-    let commiter = await pool.poolCommitter()
-    const poolCommitter = await ethers.getContractAt("PoolCommitter", commiter)
+    let committer = await pool.poolCommitter()
+    const poolCommitter = await ethers.getContractAt("PoolCommitter", committer)
 
     return {
         signers,
@@ -612,6 +616,6 @@ export const deployMockPool = async (
         settlementEthOracle,
         invariantCheck,
         autoClaim,
-        l2Encoder
+        l2Encoder,
     }
 }

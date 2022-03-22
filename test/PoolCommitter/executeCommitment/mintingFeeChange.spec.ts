@@ -67,12 +67,14 @@ describe("PoolCommitter - mintingFee update", () => {
             longToken = result.longToken
             shortToken = result.shortToken
             await token.approve(pool.address, amountMinted)
-            commit = await createCommit(l2Encoder,
+            commit = await createCommit(
+                l2Encoder,
                 poolCommitter,
                 LONG_MINT,
                 amountCommitted
             )
-            commit = await createCommit(l2Encoder,
+            commit = await createCommit(
+                l2Encoder,
                 poolCommitter,
                 SHORT_MINT,
                 amountCommitted
@@ -119,22 +121,26 @@ describe("PoolCommitter - mintingFee update", () => {
         context("longTokenPrice * shortTokenPrice > 1", async () => {
             it("Should decrease mintingFee", async () => {
                 // Make a few commits to bring price above $1
-                commit = await createCommit(l2Encoder,
+                commit = await createCommit(
+                    l2Encoder,
                     poolCommitter,
                     LONG_MINT,
                     amountCommitted
                 )
-                commit = await createCommit(l2Encoder,
+                commit = await createCommit(
+                    l2Encoder,
                     poolCommitter,
                     LONG_MINT,
                     amountCommitted
                 )
-                commit = await createCommit(l2Encoder,
+                commit = await createCommit(
+                    l2Encoder,
                     poolCommitter,
                     SHORT_MINT,
                     amountCommitted
                 )
-                commit = await createCommit(l2Encoder,
+                commit = await createCommit(
+                    l2Encoder,
                     poolCommitter,
                     SHORT_MINT,
                     amountCommitted

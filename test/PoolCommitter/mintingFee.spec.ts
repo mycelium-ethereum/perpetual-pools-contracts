@@ -107,7 +107,14 @@ describe("PoolCommitter - Mint commit with mint fee", () => {
             poolKeeper = result.poolKeeper
             shortToken = result.shortToken
             await token.approve(pool.address, amountCommitted)
-            receipt = (await createCommit(l2Encoder, poolCommitter, SHORT_MINT, amountCommitted)).receipt
+            receipt = (
+                await createCommit(
+                    l2Encoder,
+                    poolCommitter,
+                    SHORT_MINT,
+                    amountCommitted
+                )
+            ).receipt
         })
         it("transfers all tokens to the pool", async () => {
             expect(await token.balanceOf(pool.address)).to.equal(
@@ -169,7 +176,14 @@ describe("PoolCommitter - Mint commit with mint fee", () => {
             shortToken = result.shortToken
             longToken = result.longToken
             await token.approve(pool.address, amountCommitted)
-            receipt = (await createCommit(l2Encoder, poolCommitter, LONG_MINT, amountCommitted)).receipt
+            receipt = (
+                await createCommit(
+                    l2Encoder,
+                    poolCommitter,
+                    LONG_MINT,
+                    amountCommitted
+                )
+            ).receipt
         })
         it("transfers all tokens to the pool", async () => {
             expect(await token.balanceOf(pool.address)).to.equal(

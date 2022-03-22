@@ -67,7 +67,8 @@ describe("LeveragedPool - executeCommitment: Short Burn", () => {
             poolCommitter = result.poolCommitter
             l2Encoder = result.l2Encoder
             await token.approve(pool.address, amountMinted)
-            commit = await createCommit(l2Encoder,
+            commit = await createCommit(
+                l2Encoder,
                 poolCommitter,
                 SHORT_MINT,
                 amountCommitted
@@ -78,7 +79,8 @@ describe("LeveragedPool - executeCommitment: Short Burn", () => {
             await poolCommitter.claim(signers[0].address)
 
             await shortToken.approve(pool.address, amountCommitted)
-            commit = await createCommit(l2Encoder,
+            commit = await createCommit(
+                l2Encoder,
                 poolCommitter,
                 SHORT_BURN,
                 amountCommitted

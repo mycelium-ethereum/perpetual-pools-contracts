@@ -89,7 +89,8 @@ describe("AutoClaim - paidClaim", () => {
 
     context("When there is a claim but it is still pending", async () => {
         it("does nothing", async () => {
-            await createCommit(l2Encoder,
+            await createCommit(
+                l2Encoder,
                 poolCommitter,
                 LONG_MINT,
                 amountCommitted,
@@ -112,7 +113,16 @@ describe("AutoClaim - paidClaim", () => {
         beforeEach(async () => {
             await token.transfer(signers[1].address, amountCommitted.mul(2))
             await token.connect(signers[1]).approve(pool.address, amountMinted)
-            await createCommit(l2Encoder, poolCommitter, LONG_MINT, amountCommitted, false, true, reward, signers[1])
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                LONG_MINT,
+                amountCommitted,
+                false,
+                true,
+                reward,
+                signers[1]
+            )
             await timeout(updateInterval * 1000)
             await poolKeeper.performUpkeepSinglePool(pool.address)
             balanceBeforeClaim = await ethers.provider.getBalance(

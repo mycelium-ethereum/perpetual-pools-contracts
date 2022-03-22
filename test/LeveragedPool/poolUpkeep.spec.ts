@@ -72,7 +72,12 @@ describe("LeveragedPool - executeAllCommitments", async () => {
         // Long mint commit
         await createCommit(l2Encoder, poolCommitter, LONG_MINT, amountCommitted)
         // short mint commit
-        await createCommit(l2Encoder, poolCommitter, SHORT_MINT, amountCommitted)
+        await createCommit(
+            l2Encoder,
+            poolCommitter,
+            SHORT_MINT,
+            amountCommitted
+        )
 
         await timeout(updateInterval * 1000)
 
@@ -87,9 +92,19 @@ describe("LeveragedPool - executeAllCommitments", async () => {
     describe("With one Long Mint and one Long Burn and normal price change", async () => {
         it("Updates state", async () => {
             // Long mint commit
-            await createCommit(l2Encoder, poolCommitter, LONG_MINT, amountCommitted)
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                LONG_MINT,
+                amountCommitted
+            )
             // Long burn commit
-            await createCommit(l2Encoder, poolCommitter, LONG_BURN, amountCommitted.div(2))
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                LONG_BURN,
+                amountCommitted.div(2)
+            )
             await timeout(updateInterval * 1000)
 
             const shortTokenTotalSupplyBefore = await shortToken.totalSupply()

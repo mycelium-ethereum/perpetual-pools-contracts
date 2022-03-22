@@ -61,11 +61,17 @@ describe("PoolCommitter - executeCommitment: Token Price", async () => {
             l2Encoder = result.l2Encoder
             await pool.setKeeper(signers[0].address)
             await token.approve(pool.address, amountMinted)
-            await createCommit(l2Encoder, poolCommitter, [SHORT_MINT], amountCommitted)
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                [SHORT_MINT],
+                amountCommitted
+            )
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(10, 10)
             // Before FR interval
-            await createCommit(l2Encoder,
+            await createCommit(
+                l2Encoder,
                 poolCommitter,
                 [SHORT_BURN],
                 amountCommitted.div(4),
@@ -74,7 +80,8 @@ describe("PoolCommitter - executeCommitment: Token Price", async () => {
 
             // After FR interval
             await timeout((updateInterval - frontRunningInterval / 2) * 1000)
-            await createCommit(l2Encoder,
+            await createCommit(
+                l2Encoder,
                 poolCommitter,
                 [SHORT_BURN],
                 amountCommitted.div(4),
@@ -106,11 +113,17 @@ describe("PoolCommitter - executeCommitment: Token Price", async () => {
             poolCommitter = result.poolCommitter
             await pool.setKeeper(signers[0].address)
             await token.approve(pool.address, amountMinted)
-            await createCommit(l2Encoder, poolCommitter, [LONG_MINT], amountCommitted)
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                [LONG_MINT],
+                amountCommitted
+            )
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(10, 10)
             // Before FR interval
-            await createCommit(l2Encoder,
+            await createCommit(
+                l2Encoder,
                 poolCommitter,
                 [LONG_BURN],
                 amountCommitted.div(4),
@@ -119,7 +132,8 @@ describe("PoolCommitter - executeCommitment: Token Price", async () => {
 
             // After FR interval. Increase by the the update interval minus a little by to get right in the middle of the frontrunning interval.
             await timeout((updateInterval - frontRunningInterval / 2) * 1000)
-            await createCommit(l2Encoder,
+            await createCommit(
+                l2Encoder,
                 poolCommitter,
                 [LONG_BURN],
                 amountCommitted.div(4),

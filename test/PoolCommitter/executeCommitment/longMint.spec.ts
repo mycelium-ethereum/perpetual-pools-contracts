@@ -59,7 +59,8 @@ describe("LeveragedPool - executeCommitment: Long Mint", () => {
             l2Encoder = result.l2Encoder
             longToken = result.longToken
             await token.approve(pool.address, amountMinted)
-            commit = await createCommit(l2Encoder,
+            commit = await createCommit(
+                l2Encoder,
                 poolCommitter,
                 LONG_MINT,
                 amountCommitted

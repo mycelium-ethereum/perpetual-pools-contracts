@@ -74,7 +74,12 @@ describe("LeveragedPool - executeAllCommitments", () => {
             longToken = result.longToken
 
             await token.approve(pool.address, amountMinted)
-            await createCommit(l2Encoder, poolCommitter, LONG_MINT, amountCommitted)
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                LONG_MINT,
+                amountCommitted
+            )
             await timeout(updateInterval * 1000)
             await pool.setKeeper(signers[0].address)
             await expect(
@@ -89,9 +94,19 @@ describe("LeveragedPool - executeAllCommitments", () => {
             await pool.poolUpkeep(lastPrice, lastPrice)
 
             // Long mint commit
-            await createCommit(l2Encoder, poolCommitter, LONG_MINT, amountCommitted)
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                LONG_MINT,
+                amountCommitted
+            )
             // Short mint commit
-            await createCommit(l2Encoder, poolCommitter, SHORT_MINT, amountCommitted)
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                SHORT_MINT,
+                amountCommitted
+            )
 
             await shortToken.approve(pool.address, amountMinted)
             await longToken.approve(pool.address, await longToken.totalSupply())
@@ -200,7 +215,12 @@ describe("LeveragedPool - executeAllCommitments", () => {
             expect(shortBalanceAfter).to.be.gt(shortBalanceBefore)
 
             // Short burn
-            await createCommit(l2Encoder, poolCommitter, SHORT_BURN, amountCommitted)
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                SHORT_BURN,
+                amountCommitted
+            )
             // Short tokens should be decreased by amountCommitted, to 0
             expect(await shortToken.totalSupply()).to.equal(0)
 

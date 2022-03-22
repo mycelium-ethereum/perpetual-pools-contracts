@@ -63,7 +63,12 @@ describe("poolCommitter - executeCommitment: Basic test cases", () => {
             await pool.setKeeper(signers[0].address)
             // Wait until somewhere between `frontRunningInterval <-> updateInterval`
             await timeout((_updateInterval - _frontRunningInterval / 2) * 1000)
-            await createCommit(l2Encoder, committer, SHORT_MINT, amountCommitted)
+            await createCommit(
+                l2Encoder,
+                committer,
+                SHORT_MINT,
+                amountCommitted
+            )
 
             const shortTokensSupplyBefore = await shortToken.totalSupply()
             // Now wait for updateInterval to pass
@@ -99,7 +104,12 @@ describe("poolCommitter - executeCommitment: Basic test cases", () => {
         })
         it("should revert if the commitment is too new", async () => {
             await token.approve(pool.address, amountCommitted)
-            await createCommit(l2Encoder, poolCommitter, commitType, amountCommitted)
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                commitType,
+                amountCommitted
+            )
             await expect(
                 pool.poolUpkeep(lastPrice, lastPrice)
             ).to.be.rejectedWith(Error)
@@ -130,7 +140,8 @@ describe("poolCommitter - executeCommitment: Basic test cases", () => {
             poolCommitter = result.poolCommitter
 
             await token.approve(pool.address, amountCommitted)
-            commit = await createCommit(l2Encoder,
+            commit = await createCommit(
+                l2Encoder,
                 poolCommitter,
                 commitType,
                 amountCommitted

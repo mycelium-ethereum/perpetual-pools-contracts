@@ -67,7 +67,8 @@ describe("LeveragedPool - executeCommitment: Long Burn", () => {
             l2Encoder = result.l2Encoder
             await pool.setKeeper(signers[0].address)
             await token.approve(pool.address, amountMinted)
-            commit = await createCommit(l2Encoder,
+            commit = await createCommit(
+                l2Encoder,
                 poolCommitter,
                 [LONG_MINT],
                 amountCommitted
@@ -77,7 +78,8 @@ describe("LeveragedPool - executeCommitment: Long Burn", () => {
             await pool.poolUpkeep(9, 10)
             await poolCommitter.claim(signers[0].address)
             await longToken.approve(pool.address, amountCommitted)
-            commit = await createCommit(l2Encoder,
+            commit = await createCommit(
+                l2Encoder,
                 poolCommitter,
                 [LONG_BURN],
                 amountCommitted
