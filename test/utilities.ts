@@ -350,7 +350,7 @@ export const performUpkeep = async (
 ): Promise<any> /*Promise<CommitEventArgs>*/ => {
     const encodedArgs = await l2Encoder.encodePerformUpkeepParams(poolAddresses)
     signer = signer ? signer : (await ethers.getSigners())[0]
-    return await poolKeeper
+    return poolKeeper
         .connect(signer)
         .performUpkeepMultiplePoolsPacked(encodedArgs)
 }
