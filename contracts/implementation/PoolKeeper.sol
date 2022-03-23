@@ -179,8 +179,8 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @dev Will revert if the bytes array is a correct length (some multiple of 20 bytes)
      */
     function performUpkeepMultiplePoolsPacked(bytes calldata pools) external override {
-        require(pools.length % 20 == 0, "Data must only include addresses");
-        uint256 poolsLength = pools.length / 20;
+        require(pools.length % ADDRESS_LENGTH == 0, "Data must only include addresses");
+        uint256 poolsLength = pools.length / ADDRESS_LENGTH;
         for (uint256 i = 0; i < poolsLength; i++) {
             performUpkeepSinglePool(getNextPool(ARRAY_START_OFFSET + i * ADDRESS_LENGTH));
         }
