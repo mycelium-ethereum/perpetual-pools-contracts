@@ -181,8 +181,11 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     function performUpkeepMultiplePoolsPacked(bytes calldata pools) external override {
         require(pools.length % ADDRESS_LENGTH == 0, "Data must only include addresses");
         uint256 numPools = pools.length / ADDRESS_LENGTH;
-        for (uint256 i = 0; i < numPools; i++) {
+        for (uint256 i = 0; i < numPools; ) {
             performUpkeepSinglePool(getNextPool(ARRAY_START_OFFSET + i * ADDRESS_LENGTH));
+            unchecked {
+                ++i;
+            }
         }
     }
 
