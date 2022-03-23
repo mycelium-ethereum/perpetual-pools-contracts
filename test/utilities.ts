@@ -334,6 +334,27 @@ export interface CommitEventArgs {
     amount: BigNumberish
     commitType: BigNumberish
 }
+
+/**
+ * Creates a commit and returns the event arguments for it
+ * @param poolAddresses array of LeveragedPool addresses to upkeep
+ * @param poolKeeper the PoolKeeper object
+ * @param l2Encoder the L2Encoder object for encoding function parameters
+ * @param signer the ethers Signer object (optional)
+ */
+export const performUpkeep = async (
+    poolAddresses: string[],
+    poolKeeper: PoolKeeper,
+    l2Encoder: L2Encoder,
+    signer?: Signer
+): Promise<any> /*Promise<CommitEventArgs>*/ => {
+    const encodedArgs = await l2Encoder.encodePerformUpkeepParams(poolAddresses)
+    signer = signer ? signer : (await ethers.getSigners())[0]
+    return await poolKeeper
+        .connect(signer)
+        .performUpkeepMultiplePoolsPacked(encodedArgs)
+}
+
 /**
  * Creates a commit and returns the event arguments for it
  * @param pool The pool contract instance

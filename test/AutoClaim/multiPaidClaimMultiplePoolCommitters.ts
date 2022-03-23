@@ -25,6 +25,7 @@ import {
     createCommit,
     CommitEventArgs,
     timeout,
+    performUpkeep,
 } from "../utilities"
 import { BigNumberish } from "ethers"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
@@ -201,10 +202,11 @@ describe("AutoClaim - multiPaidClaimMultiplePoolCommitters", () => {
                 signers[1]
             )
             await timeout(updateInterval * 1000)
-            await poolKeeper.performUpkeepMultiplePools([
-                pool.address,
-                pool2.address,
-            ])
+            await performUpkeep(
+                [pool.address, pool2.address],
+                poolKeeper,
+                l2Encoder
+            )
 
             await createCommit(
                 l2Encoder,
@@ -297,10 +299,11 @@ describe("AutoClaim - multiPaidClaimMultiplePoolCommitters", () => {
                 signers[0]
             )
             await timeout(updateInterval * 10000)
-            await poolKeeper.performUpkeepMultiplePools([
-                pool.address,
-                pool2.address,
-            ])
+            await performUpkeep(
+                [pool.address, pool2.address],
+                poolKeeper,
+                l2Encoder
+            )
 
             await createCommit(
                 l2Encoder,

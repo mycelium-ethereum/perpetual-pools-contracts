@@ -13,8 +13,21 @@ contract L2Encoder {
     using SafeCast for uint256;
 
     /**
-     * @notice Encodes supply parameters from standard input to compact representation of 1 bytes32
-     * @dev Without an onBehalfOf parameter as the compact calls to L2Pool will use msg.sender as onBehalfOf
+     * @notice Encodes performUpkeepMultiplePools parameters from standard input to compact representation of 1 bytes32
+     * @param pools The array of LeveragedPool addresses to perform upkeep on.
+     * @return compact representation of performUpkeepMultiplePools
+     */
+    function encodePerformUpkeepParams(address[] calldata pools) external pure returns (bytes memory) {
+        bytes memory encoded;
+        uint256 len = pools.length;
+        for (uint256 i = 0; i < len; i++) {
+            encoded = bytes.concat(encoded, abi.encodePacked(pools[i]));
+        }
+        return encoded;
+    }
+
+    /**
+     * @notice Encodes commit parameters from standard input to compact representation of 1 bytes32
      * @param amount Amount of settlement tokens you want to commit to minting; OR amount of pool
      *               tokens you want to burn
      * @param commitType Type of commit you're doing (Long vs Short, Mint vs Burn)
