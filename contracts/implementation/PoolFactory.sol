@@ -256,6 +256,10 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
         return address(pairToken);
     }
 
+    function getPoolKeeper() external view override returns (address) {
+        return address(poolKeeper);
+    }
+
     /**
      * @notice Sets the address of the associated `PoolKeeper` contract
      * @param _poolKeeper Address of the `PoolKeeper`

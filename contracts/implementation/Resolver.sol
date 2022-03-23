@@ -1,22 +1,32 @@
 //SPDX-License-Identifier: CC-BY-NC-ND-4.0
 pragma solidity 0.8.7;
 
-interface IPoolKeeper {
-    function checkUpkeepSinglePool(address pool) external view returns (bool);
-}
+import "../interfaces/IResolver.sol";
+import "../interfaces/IPoolFactory.sol";
+import "../interfaces/IPoolKeeper.sol";
 
-contract Resolver {
-    address public immutable PoolKeeper = 0x759E817F0C40B11C775d1071d466B5ff5c6ce28e;
+contract Resolver is IResolver {
+    IPoolFactory public poolFactory;
+    IPoolKeeper public poolKeeper;
 
-    function checkerUpKeep(address[] memory _pools) public view returns (bytes[] memory execPayLoad) {
-        uint256 poolsLength = _pools.length;
+    constructor(address _poolFactory) {
+        poolFactory = IPoolFactory(_poolFactory);
+        poolKeeper = IPoolKeeper(poolFactory.getPoolKeeper());
+    }
+
+    function upKeepChecker() external view override returns (bytes[] memory execPayLoad) {
+        uint256 poolsLength = poolFactory.numPools();
         execPayLoad = new bytes[](poolsLength);
-        for (uint256 i = 0; i < poolsLength; i++) {
-            if (IPoolKeeper(PoolKeeper).checkUpkeepSinglePool(_pools[i])) {
+        for (uint256 i = 0; i < poolsLength; ) {
+            address pool = poolFactory.pools(i);
+            if (poolKeeper.isUpkeepRequiredSinglePool(pool)) {
                 execPayLoad[i] = abi.encodeWithSelector(
-                    IPoolKeeper(PoolKeeper).checkUpkeepSinglePool.selector,
-                    address(_pools[i])
+                    poolKeeper.isUpkeepRequiredSinglePool.selector,
+                    address(pool)
                 );
+            }
+            unchecked {
+                ++i;
             }
         }
         return execPayLoad;

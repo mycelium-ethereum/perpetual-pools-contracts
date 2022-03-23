@@ -100,6 +100,8 @@ interface IPoolFactory {
 
     function isValidPoolCommitter(address _poolCommitter) external view returns (bool);
 
+    function getPoolKeeper() external view returns (address);
+
     // #### Functions
     function deployPool(PoolDeployment calldata deploymentParameters) external returns (address);
 
