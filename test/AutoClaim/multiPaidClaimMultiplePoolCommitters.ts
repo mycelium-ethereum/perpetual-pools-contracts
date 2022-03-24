@@ -26,6 +26,7 @@ import {
     CommitEventArgs,
     timeout,
     performUpkeep,
+    autoClaimMultiPoolCommitters,
 } from "../utilities"
 import { BigNumberish } from "ethers"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
@@ -61,7 +62,6 @@ describe("AutoClaim - multiPaidClaimMultiplePoolCommitters", () => {
     let shortToken2: any
     let longToken2: any
 
-    const commits: CommitEventArgs[] | undefined = []
     beforeEach(async () => {
         const result = await deployPoolAndTokenContracts(
             POOL_CODE,
@@ -175,9 +175,11 @@ describe("AutoClaim - multiPaidClaimMultiplePoolCommitters", () => {
             ]
 
             const receipt = await (
-                await autoClaim.multiPaidClaimMultiplePoolCommitters(
+                await autoClaimMultiPoolCommitters(
                     users,
-                    committers
+                    committers,
+                    autoClaim,
+                    l2Encoder
                 )
             ).wait()
             expect(receipt?.events?.length).to.equal(0)
@@ -201,12 +203,18 @@ describe("AutoClaim - multiPaidClaimMultiplePoolCommitters", () => {
                 reward,
                 signers[1]
             )
+
+            console.log("yet")
+            console.log(pool.address)
+            console.log(await poolCommitter.leveragedPool())
+            console.log((await poolCommitter.updateIntervalId()).toString())
             await timeout(updateInterval * 1000)
             await performUpkeep(
                 [pool.address, pool2.address],
                 poolKeeper,
                 l2Encoder
             )
+            console.log((await poolCommitter.updateIntervalId()).toString())
 
             await createCommit(
                 l2Encoder,
@@ -226,16 +234,32 @@ describe("AutoClaim - multiPaidClaimMultiplePoolCommitters", () => {
             const users = [signers[0].address, signers[1].address]
             const committers = [poolCommitter2.address, poolCommitter.address]
 
+            console.log("USERS")
+            console.log(users)
+            console.log("COMMITTERS")
+            console.log(committers)
             receipt = await (
-                await autoClaim.multiPaidClaimMultiplePoolCommitters(
+                await autoClaimMultiPoolCommitters(
                     users,
-                    committers
+                    committers,
+                    autoClaim,
+                    l2Encoder
                 )
             ).wait()
         })
         it("Sends money", async () => {
             const balanceAfterClaim = await ethers.provider.getBalance(
                 signers[0].address
+            )
+            console.log(
+                ethers.utils
+                    .formatEther(balanceBeforeClaim.toString())
+                    .toString()
+            )
+            console.log(
+                ethers.utils
+                    .formatEther(balanceAfterClaim.toString())
+                    .toString()
             )
             expect(balanceBeforeClaim).to.be.lt(balanceAfterClaim)
         })
@@ -324,9 +348,11 @@ describe("AutoClaim - multiPaidClaimMultiplePoolCommitters", () => {
             const committers = [poolCommitter2.address, poolCommitter.address]
 
             receipt = await (
-                await autoClaim.multiPaidClaimMultiplePoolCommitters(
+                await autoClaimMultiPoolCommitters(
                     users,
-                    committers
+                    committers,
+                    autoClaim,
+                    l2Encoder
                 )
             ).wait()
         })

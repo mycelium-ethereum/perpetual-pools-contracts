@@ -13,7 +13,27 @@ contract L2Encoder {
     using SafeCast for uint256;
 
     /**
-     * @notice Encodes performUpkeepMultiplePools parameters from standard input to compact representation of 1 bytes32
+     * @notice Encodes multiPaidClaimMultiplePoolCommitters parameters from standard input to compact representation as a bytes variable
+     * @param users All users to execute claims for.
+     * @param poolCommitterAddresses The PoolCommitter addresses within which you would like to claim for the respective user.
+     * @return compact representation of performUpkeepMultiplePools
+     * @dev Assumes users.length == poolCommitterAddresses.length
+     */
+    function encodeAutoClaimMultiPoolCommittersParams(
+        address[] calldata users,
+        address[] calldata poolCommitterAddresses
+    ) external pure returns (bytes memory, bytes memory) {
+        bytes memory encoded1;
+        bytes memory encoded2;
+        for (uint256 i = 0; i < users.length; i++) {
+            encoded1 = bytes.concat(encoded1, abi.encodePacked(users[i]));
+            encoded2 = bytes.concat(encoded2, abi.encodePacked(poolCommitterAddresses[i]));
+        }
+        return (encoded1, encoded2);
+    }
+
+    /**
+     * @notice Encodes performUpkeepMultiplePools parameters from standard input to compact representation as a bytes variable
      * @param pools The array of LeveragedPool addresses to perform upkeep on.
      * @return compact representation of performUpkeepMultiplePools
      */

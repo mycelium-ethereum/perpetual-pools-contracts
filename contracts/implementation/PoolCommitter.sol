@@ -10,6 +10,8 @@ import "../interfaces/IInvariantCheck.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
+import "hardhat/console.sol";
+
 import "../libraries/PoolSwapLibrary.sol";
 import "../libraries/CalldataLogic.sol";
 
@@ -518,6 +520,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         )
     {
         uint8 counter = 1;
+        console.log("EXECUTE");
 
         /*
          * (old)

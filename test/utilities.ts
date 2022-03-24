@@ -336,7 +336,33 @@ export interface CommitEventArgs {
 }
 
 /**
- * Creates a commit and returns the event arguments for it
+ * @param users array of LeveragedPool addresses to upkeep
+ * @param poolCommitters the PoolKeeper object
+ * @param autoClaim
+ * @param l2Encoder the L2Encoder object for encoding function parameters
+ * @param signer the ethers Signer object (optional)
+ */
+export const autoClaimMultiPoolCommitters = async (
+    users: string[],
+    poolCommitters: string[],
+    autoClaim: AutoClaim,
+    l2Encoder: L2Encoder,
+    signer?: Signer
+): Promise<any> /*Promise<CommitEventArgs>*/ => {
+    const encodedArgs =
+        await l2Encoder.encodeAutoClaimMultiPoolCommittersParams(
+            users,
+            poolCommitters
+        )
+
+    signer = signer ? signer : (await ethers.getSigners())[0]
+    return await autoClaim
+        .connect(signer)
+        .multiPaidClaimMultiplePoolCommitters(encodedArgs[0], encodedArgs[1])
+}
+
+/**
+ * Performs upkeep on a pool
  * @param poolAddresses array of LeveragedPool addresses to upkeep
  * @param poolKeeper the PoolKeeper object
  * @param l2Encoder the L2Encoder object for encoding function parameters

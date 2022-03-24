@@ -58,14 +58,7 @@ interface IAutoClaim {
      */
     function paidClaim(address user, address poolCommitterAddress) external;
 
-    /**
-     * @notice Call `paidClaim` for multiple users, across multiple PoolCommitters
-     * @param users All users to execute claims for.
-     * @param poolCommitterAddresses The PoolCommitter addresses within which you would like to claim for the respective user
-     * @dev The nth index in poolCommitterAddresses should be the PoolCommitter where the nth address in user requested an auto claim
-     */
-    function multiPaidClaimMultiplePoolCommitters(address[] calldata users, address[] calldata poolCommitterAddresses)
-        external;
+    function multiPaidClaimMultiplePoolCommitters(bytes memory args1, bytes memory args2) external;
 
     /**
      * @notice Call `paidClaim` for multiple users, in a single PoolCommitter.
