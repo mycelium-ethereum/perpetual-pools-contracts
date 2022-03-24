@@ -256,10 +256,6 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
         return address(pairToken);
     }
 
-    function getPoolKeeper() external view override returns (address) {
-        return address(poolKeeper);
-    }
-
     /**
      * @notice Sets the address of the associated `PoolKeeper` contract
      * @param _poolKeeper Address of the `PoolKeeper`
@@ -271,6 +267,13 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
         require(_poolKeeper != address(0), "address cannot be null");
         poolKeeper = IPoolKeeper(_poolKeeper);
         emit PoolKeeperChanged(_poolKeeper);
+    }
+
+    /**
+     * @notice Gets the address of the associated `PoolKeeper` contract
+     */
+    function getPoolKeeper() external view override returns (address) {
+        return address(poolKeeper);
     }
 
     /**
