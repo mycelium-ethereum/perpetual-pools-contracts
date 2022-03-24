@@ -20,10 +20,7 @@ contract Resolver is IResolver {
         for (uint256 i = 0; i < poolsLength; ) {
             address pool = poolFactory.pools(i);
             if (poolKeeper.isUpkeepRequiredSinglePool(pool)) {
-                execPayLoad[i] = abi.encodeWithSelector(
-                    poolKeeper.isUpkeepRequiredSinglePool.selector,
-                    address(pool)
-                );
+                execPayLoad[i] = abi.encodeWithSelector(poolKeeper.isUpkeepRequiredSinglePool.selector, address(pool));
             }
             unchecked {
                 ++i;
