@@ -282,10 +282,10 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         TotalCommitment storage totalCommit = totalPoolCommitments[appropriateUpdateIntervalId];
         UserCommitment storage userCommit = userCommitments[msg.sender][appropriateUpdateIntervalId];
 
-        if(userCommit.updateIntervalId == 0) {
+        if (userCommit.updateIntervalId == 0) {
             userCommit.updateIntervalId = appropriateUpdateIntervalId;
         }
-        if(totalCommit.updateIntervalId == 0) {
+        if (totalCommit.updateIntervalId == 0) {
             totalCommit.updateIntervalId = appropriateUpdateIntervalId;
         }
 
