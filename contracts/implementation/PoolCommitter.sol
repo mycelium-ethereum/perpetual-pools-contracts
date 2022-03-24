@@ -282,7 +282,12 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         TotalCommitment storage totalCommit = totalPoolCommitments[appropriateUpdateIntervalId];
         UserCommitment storage userCommit = userCommitments[msg.sender][appropriateUpdateIntervalId];
 
-        userCommit.updateIntervalId = appropriateUpdateIntervalId;
+        if (userCommit.updateIntervalId == 0) {
+            userCommit.updateIntervalId = appropriateUpdateIntervalId;
+        }
+        if (totalCommit.updateIntervalId == 0) {
+            totalCommit.updateIntervalId = appropriateUpdateIntervalId;
+        }
 
         uint256 length = unAggregatedCommitments[msg.sender].length;
         if (length == 0 || unAggregatedCommitments[msg.sender][length - 1] < appropriateUpdateIntervalId) {
@@ -404,8 +409,8 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
     {
         pendingMintSettlementAmount =
             pendingMintSettlementAmount -
-            totalPoolCommitments[updateIntervalId].longMintSettlement -
-            totalPoolCommitments[updateIntervalId].shortMintSettlement;
+            totalPoolCommitments[_commits.updateIntervalId].longMintSettlement -
+            totalPoolCommitments[_commits.updateIntervalId].shortMintSettlement;
 
         BalancesAndSupplies memory balancesAndSupplies = BalancesAndSupplies({
             newShortBalance: _commits.shortMintSettlement + shortBalance,
@@ -419,7 +424,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         });
 
         // Update price before values change
-        priceHistory[updateIntervalId] = Prices({
+        priceHistory[_commits.updateIntervalId] = Prices({
             longPrice: PoolSwapLibrary.getPrice(longBalance, longTotalSupply + pendingLongBurnPoolTokens),
             shortPrice: PoolSwapLibrary.getPrice(shortBalance, shortTotalSupply + pendingShortBurnPoolTokens)
         });
