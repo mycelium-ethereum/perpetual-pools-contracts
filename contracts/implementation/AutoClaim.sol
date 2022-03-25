@@ -131,10 +131,10 @@ contract AutoClaim is IAutoClaim {
      * @dev The nth address in args2 should be the address of the PoolCommitter where the nth address in args1 requested an auto claim.
      */
     function multiPaidClaimMultiplePoolCommitters(bytes calldata args1, bytes calldata args2) external override {
-        require(args1.length % 20 == 0, "args must only include addresses");
+        require(args1.length % CalldataLogic.ADDRESS_LENGTH == 0, "args must only include addresses");
         require(args1.length == args2.length, "args must be same length");
         uint256 reward;
-        uint256 nrUsers = args1.length / 20;
+        uint256 nrUsers = args1.length / CalldataLogic.ADDRESS_LENGTH;
         uint256 poolCommittersOffset;
         uint256 userOffset;
         uint256 currentUpdateIntervalId;
