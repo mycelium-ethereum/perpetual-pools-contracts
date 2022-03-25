@@ -174,15 +174,16 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      */
     function performUpkeepMultiplePoolsPacked(bytes calldata pools) external override {
         require(pools.length % CalldataLogic.ADDRESS_LENGTH == 0, "Data must only include addresses");
-        uint256 poolsLength = pools.length / CalldataLogic.ADDRESS_LENGTH;
+        uint256 numPools = pools.length / CalldataLogic.ADDRESS_LENGTH;
         uint256 offset;
         assembly {
             offset := pools.offset
         }
-        for (uint256 i = 0; i < poolsLength; i++) {
+        for (uint256 i = 0; i < numPools; ) {
             performUpkeepSinglePool(CalldataLogic.getAddressAtOffset(offset));
             unchecked {
                 offset += CalldataLogic.ADDRESS_LENGTH;
+                ++i;
             }
         }
     }
