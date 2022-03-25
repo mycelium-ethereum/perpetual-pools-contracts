@@ -253,8 +253,10 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
     /**
      * @notice Commit to minting/burning long/short tokens after the next price change
      * @param args Arguments for the commit function packed into one bytes32
-     *     104 bits       8 bits            8 bits            8 bits         128 bits
-     * |  0-padding  | payForClaim | fromAggregateBalance | commitType | shortenedAmount |
+     *  _______________________________________________________________________________________
+     * |   104 bits  |     8 bits    |        8 bits        |    8 bits    |      128 bits     |
+     * |  0-padding  |  payForClaim  | fromAggregateBalance |  commitType  |  shortenedAmount  |
+     *  ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
      * @dev Arguments can be encoded with `L2Encoder.encodeCommitParams`
      * @dev bool payForClaim: True if user wants to pay for the commit to be claimed
      * @dev bool fromAggregateBalance: If minting, burning, or rebalancing into a delta neutral position,

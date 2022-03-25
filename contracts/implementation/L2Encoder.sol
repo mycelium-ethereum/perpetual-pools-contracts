@@ -13,6 +13,7 @@ contract L2Encoder {
     using SafeCast for uint256;
 
     /**
+<<<<<<< HEAD
      * @notice Encodes performUpkeepMultiplePools parameters from standard input to compact representation of 1 bytes32
      * @param pools The array of LeveragedPool addresses to perform upkeep on.
      * @return compact representation of performUpkeepMultiplePools
@@ -27,6 +28,8 @@ contract L2Encoder {
     }
 
     /**
+=======
+>>>>>>> d6ffe9049d1d78bbe07934d5de4e539ee2184e98
      * @notice Encodes commit parameters from standard input to compact representation of 1 bytes32
      * @param amount Amount of settlement tokens you want to commit to minting; OR amount of pool
      *               tokens you want to burn
