@@ -33,7 +33,7 @@ describe("L2Encoder - encodePerformUpkeepParams", () => {
     })
 
     context("All 0s edge case", async () => {
-        it.only("Encodes the values", async () => {
+        it("Encodes the values", async () => {
             let addresses = []
             let typesArray = []
             const numberOfAddresses = 10
