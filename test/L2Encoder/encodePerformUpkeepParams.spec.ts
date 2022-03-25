@@ -16,7 +16,7 @@ const encodedHexCharacters = encodedBytes * 2
 const hexChars32Bytes = 64
 const paddingRequired = hexChars32Bytes - encodedHexCharacters
 
-describe("L2Encoder - encodePerformUpkeepParams", () => {
+describe("L2Encoder - encodeAddressArray", () => {
     let signers: SignerWithAddress[]
     let l2Encoder: L2Encoder
     beforeEach(async () => {
@@ -45,7 +45,7 @@ describe("L2Encoder - encodePerformUpkeepParams", () => {
                 typesArray,
                 addresses
             )
-            const result = await l2Encoder.encodePerformUpkeepParams(addresses)
+            const result = await l2Encoder.encodeAddressArray(addresses)
             expect(result).to.equal(expectedResult)
         })
     })
@@ -62,7 +62,7 @@ describe("L2Encoder - encodePerformUpkeepParams", () => {
                 typesArray,
                 addresses
             )
-            const result = await l2Encoder.encodePerformUpkeepParams(addresses)
+            const result = await l2Encoder.encodeAddressArray(addresses)
             expect(result).to.equal(expectedResult)
         })
     })

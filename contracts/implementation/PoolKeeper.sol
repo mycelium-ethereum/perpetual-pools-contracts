@@ -7,6 +7,8 @@ import "../interfaces/IPoolFactory.sol";
 import "../interfaces/ILeveragedPool.sol";
 import "../interfaces/IERC20DecimalsWrapper.sol";
 
+import "../libraries/CalldataLogic.sol";
+
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "abdk-libraries-solidity/ABDKMathQuad.sol";
 
@@ -23,14 +25,6 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     uint256 public constant BLOCK_TIME = 13; /* in seconds */
     uint256 public constant MAX_TIP = 100; /* maximum keeper tip */
     bytes16 public constant FIXED_POINT = 0x403abc16d674ec800000000000000000; // 1 ether
-    /*
-     * Calldata for performUpkeepMultiplePoolsPacked looks like this:
-     * | function signature | Start of pools byte array | length of pools byte array |        pools bytes array        |
-     * |      4 bytes       |          32 bytes         |          32 bytes          |  20 * number_of_addresses bytes |
-     */
-    uint8 private constant ARRAY_START_OFFSET = 68;
-    // Length of address = 20
-    uint8 private constant ADDRESS_LENGTH = 20;
 
     /// Captures fixed gas overhead for performing upkeep that's unreachable
     /// by `gasleft()` due to our approach to error handling in that code
@@ -175,26 +169,23 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @param pools A tightly packed bytes array of LeveragedPool addresses to be upkept
      *     20 bytes       20 bytes       20 bytes     ...
      * | pool address | pool address | pool address | ... |
-     * @dev Arguments can be encoded with `L2Encoder.encodePerformUpkeepParams`
+     * @dev Arguments can be encoded with `L2Encoder.encodeAddressArray`
      * @dev Will revert if the bytes array is a correct length (some multiple of 20 bytes)
      */
     function performUpkeepMultiplePoolsPacked(bytes calldata pools) external override {
-        require(pools.length % ADDRESS_LENGTH == 0, "Data must only include addresses");
-        uint256 numPools = pools.length / ADDRESS_LENGTH;
+        require(pools.length % CalldataLogic.ADDRESS_LENGTH == 0, "Data must only include addresses");
+        uint256 numPools = pools.length / CalldataLogic.ADDRESS_LENGTH;
+        uint256 offset;
+        assembly {
+            offset := pools.offset
+        }
         for (uint256 i = 0; i < numPools; ) {
-            performUpkeepSinglePool(getNextPool(ARRAY_START_OFFSET + i * ADDRESS_LENGTH));
+            performUpkeepSinglePool(CalldataLogic.getAddressAtOffset(offset));
             unchecked {
+                offset += CalldataLogic.ADDRESS_LENGTH;
                 ++i;
             }
         }
-    }
-
-    function getNextPool(uint256 offset) private pure returns (address) {
-        bytes20 pool;
-        assembly {
-            pool := calldataload(offset)
-        }
-        return (address(pool));
     }
 
     /**

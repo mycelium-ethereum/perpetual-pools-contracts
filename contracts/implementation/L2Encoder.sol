@@ -13,15 +13,15 @@ contract L2Encoder {
     using SafeCast for uint256;
 
     /**
-     * @notice Encodes performUpkeepMultiplePools parameters from standard input to compact representation of 1 bytes32
-     * @param pools The array of LeveragedPool addresses to perform upkeep on.
-     * @return compact representation of performUpkeepMultiplePools
+     * @notice Encodes an array of addresses to compact representation as a bytes array
+     * @param args The array of LeveragedPool addresses to perform upkeep on
+     * @return compact bytes array of addresses
      */
-    function encodePerformUpkeepParams(address[] calldata pools) external pure returns (bytes memory) {
+    function encodeAddressArray(address[] calldata args) external pure returns (bytes memory) {
         bytes memory encoded;
-        uint256 len = pools.length;
+        uint256 len = args.length;
         for (uint256 i = 0; i < len; i++) {
-            encoded = bytes.concat(encoded, abi.encodePacked(pools[i]));
+            encoded = bytes.concat(encoded, abi.encodePacked(args[i]));
         }
         return encoded;
     }

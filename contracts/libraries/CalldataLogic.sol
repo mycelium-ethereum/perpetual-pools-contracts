@@ -6,6 +6,44 @@ import "../interfaces/IPoolCommitter.sol";
 /// @title CalldataLogic library
 /// @notice Library to decode calldata, used to optimize calldata size in PerpetualPools for L2 transaction cost reduction
 library CalldataLogic {
+    /*
+     * Calldata when parameter is a tightly packed bite array looks like this:
+     * -----------------------------------------------------------------------------------------------------
+     * | function signature | offset of byte array | length of byte array |           bytes array           |
+     * |      4 bytes       |       32 bytes       |       32 bytes       |  20 * number_of_addresses bytes |
+     * -----------------------------------------------------------------------------------------------------
+     *
+     * If there are two bytes arrays, then it looks like
+     * ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+     * | function signature | offset of 1st byte array | offset of 2nd byte array | length of 1st byte array |        1st bytes array          | length of 2nd byte array |        2nd bytes array          |
+     * |      4 bytes       |        32 bytes          |        32 bytes          |         32 bytes         |  20 * number_of_addresses bytes |         32 bytes         |  20 * number_of_addresses bytes |
+     * ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+     * and so on...
+     * Note that the offset indicates where the length is indicated, and the actual array itself starts 32 bytes after that
+     */
+    uint16 internal constant SLOT_LENGTH = 32;
+    uint16 internal constant FUNCTION_SIGNATURE_LENGTH = 4;
+    uint16 internal constant SINGLE_ARRAY_START_OFFSET = FUNCTION_SIGNATURE_LENGTH + SLOT_LENGTH * 2;
+    uint16 internal constant DOUBLE_ARRAY_START_OFFSET = FUNCTION_SIGNATURE_LENGTH + SLOT_LENGTH * 3;
+    // Length of address = 20
+    uint16 internal constant ADDRESS_LENGTH = 20;
+
+    function getAddressAtOffset(uint256 offset) internal pure returns (address) {
+        bytes20 addressAtOffset;
+        assembly {
+            addressAtOffset := calldataload(offset)
+        }
+        return (address(addressAtOffset));
+    }
+
+    /**
+     * @notice decodes compressed commit params to standard params
+     * @param args The packed commit args
+     * @return The amount of settlement or pool tokens to commit
+     * @return The CommitType
+     * @return Whether to make the commitment from user's aggregate balance
+     * @return Whether to pay for an autoclaim or not
+     */
     function decodeCommitParams(bytes32 args)
         internal
         pure
