@@ -55,51 +55,61 @@ describe("L2Encoder - encodeCommitParams", () => {
         })
     })
     context("Standard input", async () => {
-        context("Case 1", async () => {
-            it("Encodes the values", async () => {
-                const amount = amountCommitted
-                const commitType = LONG_BURN
-                const fromAggregateBalance = true
-                const payForClaim = true
-                let expectedResult = ethers.utils.solidityPack(
-                    ["bool", "bool", "uint8", "uint128"],
-                    [payForClaim, fromAggregateBalance, commitType, amount]
-                )
-                // Pad with 0s
-                expectedResult =
-                    "0x" + "0".repeat(paddingRequired) + expectedResult.slice(2)
-                console.log(expectedResult.length)
-                const result = await l2Encoder.encodeCommitParams(
-                    amount,
-                    commitType,
-                    fromAggregateBalance,
-                    payForClaim
-                )
-                expect(result).to.equal(expectedResult)
-            })
-        })
-        context("Case 2", async () => {
-            it("Encodes the values", async () => {
-                const amount = amountCommitted
-                const commitType = SHORT_MINT
-                const fromAggregateBalance = false
-                const payForClaim = true
-                let expectedResult = ethers.utils.solidityPack(
-                    ["bool", "bool", "uint8", "uint128"],
-                    [payForClaim, fromAggregateBalance, commitType, amount]
-                )
-                // Pad with 0s
-                expectedResult =
-                    "0x" + "0".repeat(paddingRequired) + expectedResult.slice(2)
-                console.log(expectedResult.length)
-                const result = await l2Encoder.encodeCommitParams(
-                    amount,
-                    commitType,
-                    fromAggregateBalance,
-                    payForClaim
-                )
-                expect(result).to.equal(expectedResult)
-            })
-        })
+        context(
+            "LONG_BURN, fromAggregateBalance = true, payForClaim = true",
+            async () => {
+                it("Encodes the values", async () => {
+                    const amount = amountCommitted
+                    const commitType = LONG_BURN
+                    const fromAggregateBalance = true
+                    const payForClaim = true
+                    let expectedResult = ethers.utils.solidityPack(
+                        ["bool", "bool", "uint8", "uint128"],
+                        [payForClaim, fromAggregateBalance, commitType, amount]
+                    )
+                    // Pad with 0s
+                    expectedResult =
+                        "0x" +
+                        "0".repeat(paddingRequired) +
+                        expectedResult.slice(2)
+                    console.log(expectedResult.length)
+                    const result = await l2Encoder.encodeCommitParams(
+                        amount,
+                        commitType,
+                        fromAggregateBalance,
+                        payForClaim
+                    )
+                    expect(result).to.equal(expectedResult)
+                })
+            }
+        )
+        context(
+            "SHORT_MINT, fromAggregateBalance = false, payForClaim = true",
+            async () => {
+                it("Encodes the values", async () => {
+                    const amount = amountCommitted
+                    const commitType = SHORT_MINT
+                    const fromAggregateBalance = false
+                    const payForClaim = true
+                    let expectedResult = ethers.utils.solidityPack(
+                        ["bool", "bool", "uint8", "uint128"],
+                        [payForClaim, fromAggregateBalance, commitType, amount]
+                    )
+                    // Pad with 0s
+                    expectedResult =
+                        "0x" +
+                        "0".repeat(paddingRequired) +
+                        expectedResult.slice(2)
+                    console.log(expectedResult.length)
+                    const result = await l2Encoder.encodeCommitParams(
+                        amount,
+                        commitType,
+                        fromAggregateBalance,
+                        payForClaim
+                    )
+                    expect(result).to.equal(expectedResult)
+                })
+            }
+        )
     })
 })
