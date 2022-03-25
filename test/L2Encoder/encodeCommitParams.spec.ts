@@ -99,7 +99,6 @@ describe("L2Encoder - encodeCommitParams", () => {
                         "0x" +
                         "0".repeat(paddingRequired) +
                         expectedResult.slice(2)
-                    console.log(expectedResult.length)
                     const result = await l2Encoder.encodeCommitParams(
                         amount,
                         commitType,
