@@ -13,8 +13,7 @@ contract L2Encoder {
     using SafeCast for uint256;
 
     /**
-     * @notice Encodes supply parameters from standard input to compact representation of 1 bytes32
-     * @dev Without an onBehalfOf parameter as the compact calls to L2Pool will use msg.sender as onBehalfOf
+     * @notice Encodes commit parameters from standard input to compact representation of 1 bytes32
      * @param amount Amount of settlement tokens you want to commit to minting; OR amount of pool
      *               tokens you want to burn
      * @param commitType Type of commit you're doing (Long vs Short, Mint vs Burn)
