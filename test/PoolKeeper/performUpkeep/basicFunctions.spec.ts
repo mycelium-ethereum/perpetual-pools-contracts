@@ -6,6 +6,7 @@ import {
     deployPoolAndTokenContracts,
     generateRandomAddress,
     getEventArgs,
+    performUpkeep,
     timeout,
 } from "../../utilities"
 
@@ -87,21 +88,9 @@ const setupHook = async () => {
     POOL2_ADDR = pool2.address
 }
 
-interface Upkeep {
-    cumulativePrice: BigNumber
-    lastSamplePrice: BigNumber
-    executionPrice: BigNumber
-    lastExecutionPrice: BigNumber
-    count: number
-    updateInterval: number
-    roundStart: number
-}
 describe("PoolKeeper - performUpkeep: basic functionality", () => {
-    let oldRound: Upkeep
-    let newRound: Upkeep
     let oldExecutionPrice: BigNumber
     let newExecutionPrice: BigNumber
-    let oldLastExecutionPrice: BigNumber
     let newLastExecutionPrice: BigNumber
     let oldLastExecutionTime: BigNumber
     let newLastExecutionTime: BigNumber
@@ -109,10 +98,7 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
         beforeEach(setupHook)
         it("should not revert if performData is invalid", async () => {
             await pool.setKeeper(poolKeeper.address)
-            await poolKeeper.performUpkeepMultiplePools([
-                POOL1_ADDR,
-                POOL2_ADDR,
-            ])
+            await performUpkeep([POOL1_ADDR, POOL2_ADDR], poolKeeper, l2Encoder)
         })
 
         describe("Upkeep - Price execution", () => {
@@ -127,10 +113,11 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
                 await pool.setKeeper(poolKeeper.address)
                 oldExecutionPrice = await poolKeeper.executionPrice(POOL1_ADDR)
                 const result = await (
-                    await poolKeeper.performUpkeepMultiplePools([
-                        POOL1_ADDR,
-                        POOL2_ADDR,
-                    ])
+                    await performUpkeep(
+                        [POOL1_ADDR, POOL2_ADDR],
+                        poolKeeper,
+                        l2Encoder
+                    )
                 ).wait()
                 newExecutionPrice = await poolKeeper.executionPrice(POOL1_ADDR)
                 event = getEventArgs(result, "KeeperPaid")
@@ -161,10 +148,11 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
                 )
                 await derivativeChainlinkOracle.setPrice("90000000")
                 await pool.setKeeper(poolKeeper.address)
-                await poolKeeper.performUpkeepMultiplePools([
-                    POOL1_ADDR,
-                    POOL2_ADDR,
-                ])
+                await performUpkeep(
+                    [POOL1_ADDR, POOL2_ADDR],
+                    poolKeeper,
+                    l2Encoder
+                )
                 newExecutionPrice = await poolKeeper.executionPrice(POOL1_ADDR)
                 newLastExecutionTime = await pool.lastPriceTimestamp()
             })
@@ -182,12 +170,11 @@ describe("PoolKeeper - performUpkeep: basic functionality", () => {
                 const poolTokenBalanceBefore = await token.balanceOf(
                     pool.address
                 )
-                const receipt = await (
-                    await poolKeeper.performUpkeepMultiplePools([
-                        POOL1_ADDR,
-                        POOL2_ADDR,
-                    ])
-                ).wait()
+                await performUpkeep(
+                    [POOL1_ADDR, POOL2_ADDR],
+                    poolKeeper,
+                    l2Encoder
+                )
 
                 const balanceAfter = await token.balanceOf(signers[0].address)
                 const poolTokenBalanceAfter = await token.balanceOf(

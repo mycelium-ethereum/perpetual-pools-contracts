@@ -7,6 +7,8 @@ import "../interfaces/IPoolFactory.sol";
 import "../interfaces/ILeveragedPool.sol";
 import "../interfaces/IERC20DecimalsWrapper.sol";
 
+import "../libraries/CalldataLogic.sol";
+
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "abdk-libraries-solidity/ABDKMathQuad.sol";
 
@@ -159,6 +161,32 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         uint256 poolsLength = pools.length;
         for (uint256 i = 0; i < poolsLength; i++) {
             performUpkeepSinglePool(pools[i]);
+        }
+    }
+
+    /**
+     * @notice Called by keepers to perform an update on multiple pools
+     * @param pools A tightly packed bytes array of LeveragedPool addresses to be upkept
+     *  __________________________________________________
+     * |   20 bytes       20 bytes       20 bytes     ... |
+     * | pool address | pool address | pool address | ... |
+     *  ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
+     * @dev Arguments can be encoded with `L2Encoder.encodeAddressArray`
+     * @dev Will revert if the bytes array is a correct length (some multiple of 20 bytes)
+     */
+    function performUpkeepMultiplePoolsPacked(bytes calldata pools) external override {
+        require(pools.length % CalldataLogic.ADDRESS_LENGTH == 0, "Data must only include addresses");
+        uint256 numPools = pools.length / CalldataLogic.ADDRESS_LENGTH;
+        uint256 offset;
+        assembly {
+            offset := pools.offset
+        }
+        for (uint256 i = 0; i < numPools; ) {
+            performUpkeepSinglePool(CalldataLogic.getAddressAtOffset(offset));
+            unchecked {
+                offset += CalldataLogic.ADDRESS_LENGTH;
+                ++i;
+            }
         }
     }
 

@@ -65,4 +65,6 @@ interface IPoolKeeper {
     function performUpkeepSinglePool(address pool) external;
 
     function performUpkeepMultiplePools(address[] calldata pools) external;
+
+    function performUpkeepMultiplePoolsPacked(bytes calldata pools) external;
 }

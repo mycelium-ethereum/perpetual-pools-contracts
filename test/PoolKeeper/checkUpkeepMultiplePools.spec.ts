@@ -1,7 +1,11 @@
 import { ethers, network } from "hardhat"
 import chai from "chai"
 import chaiAsPromised from "chai-as-promised"
-import { generateRandomAddress, incrementPrice } from "../utilities"
+import {
+    generateRandomAddress,
+    incrementPrice,
+    performUpkeep,
+} from "../utilities"
 
 import { POOL_CODE, POOL_CODE_2 } from "../constants"
 import {
@@ -17,6 +21,8 @@ import {
     PoolFactory,
     AutoClaim__factory,
     InvariantCheck__factory,
+    L2Encoder__factory,
+    L2Encoder,
 } from "../../types"
 
 chai.use(chaiAsPromised)
@@ -29,6 +35,7 @@ let oracle: TestChainlinkOracle
 let ethOracle: TestChainlinkOracle
 let poolKeeper: PoolKeeper
 let factory: PoolFactory
+let l2Encoder: L2Encoder
 
 const forwardTime = async (seconds: number) => {
     await network.provider.send("evm_increaseTime", [seconds])
@@ -47,6 +54,13 @@ const setupHook = async () => {
     await token.deployed()
     await token.mint(signers[0].address, amount)
     settlementToken = token.address
+
+    const l2EncoderFactory = (await ethers.getContractFactory(
+        "L2Encoder",
+        signers[0]
+    )) as L2Encoder__factory
+    l2Encoder = await l2EncoderFactory.deploy()
+    await l2Encoder.deployed()
 
     // Deploy oracle. Using a test oracle for predictability
     const oracleFactory = (await ethers.getContractFactory(
@@ -175,7 +189,7 @@ describe("PoolKeeper - checkUpkeepMultiplePools", () => {
         const poolAddresses = [await factory.pools(0), await factory.pools(1)]
         await forwardTime(5)
         await incrementPrice(underlyingOracle)
-        await poolKeeper.performUpkeepMultiplePools(poolAddresses)
+        await performUpkeep(poolAddresses, poolKeeper, l2Encoder)
         expect(await poolKeeper.checkUpkeepMultiplePools(poolAddresses)).to.eq(
             false
         )

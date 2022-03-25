@@ -20,6 +20,7 @@ import {
     CommitEventArgs,
     timeout,
     createCommit,
+    performUpkeep,
 } from "../utilities"
 import { BigNumber, BigNumberish, ContractReceipt } from "ethers"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
@@ -230,10 +231,11 @@ describe("AutoClaim - withdrawClaimRequest", () => {
                 )
 
                 await timeout(updateInterval * 1000)
-                await poolKeeper.performUpkeepMultiplePools([
-                    pool.address,
-                    pool2.address,
-                ])
+                await performUpkeep(
+                    [pool.address, pool2.address],
+                    poolKeeper,
+                    l2Encoder
+                )
                 balanceBefore = await ethers.provider.getBalance(
                     signers[0].address
                 )

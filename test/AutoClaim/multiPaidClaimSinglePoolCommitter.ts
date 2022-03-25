@@ -25,6 +25,8 @@ import {
     generateRandomAddress,
     createCommit,
     timeout,
+    performUpkeep,
+    autoClaimSinglePoolCommitter,
 } from "../utilities"
 import { BigNumberish } from "ethers"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
@@ -136,9 +138,11 @@ describe("AutoClaim - multiPaidClaimSinglePoolCommitter", () => {
             ]
 
             const receipt = await (
-                await autoClaim.multiPaidClaimSinglePoolCommitter(
+                await autoClaimSinglePoolCommitter(
                     users,
-                    poolCommitter.address
+                    poolCommitter.address,
+                    autoClaim,
+                    l2Encoder
                 )
             ).wait()
             expect(receipt?.events?.length).to.equal(0)
@@ -172,9 +176,11 @@ describe("AutoClaim - multiPaidClaimSinglePoolCommitter", () => {
             const users = [signers[0].address, signers[1].address]
 
             receipt = await (
-                await autoClaim.multiPaidClaimSinglePoolCommitter(
+                await autoClaimSinglePoolCommitter(
                     users,
-                    poolCommitter.address
+                    poolCommitter.address,
+                    autoClaim,
+                    l2Encoder
                 )
             ).wait()
         })
@@ -237,9 +243,11 @@ describe("AutoClaim - multiPaidClaimSinglePoolCommitter", () => {
             const users = [signers[0].address, signers[1].address]
 
             receipt = await (
-                await autoClaim.multiPaidClaimSinglePoolCommitter(
+                await autoClaimSinglePoolCommitter(
                     users,
-                    poolCommitter.address
+                    poolCommitter.address,
+                    autoClaim,
+                    l2Encoder
                 )
             ).wait()
         })
@@ -357,17 +365,20 @@ describe("AutoClaim - multiPaidClaimSinglePoolCommitter", () => {
                     signers[0]
                 )
                 await timeout(updateInterval * 1000)
-                await poolKeeper.performUpkeepMultiplePools([
-                    pool.address,
-                    pool2.address,
-                ])
+                await performUpkeep(
+                    [pool.address, pool2.address],
+                    poolKeeper,
+                    l2Encoder
+                )
 
                 const users = [signers[0].address, signers[1].address]
 
                 await (
-                    await autoClaim.multiPaidClaimSinglePoolCommitter(
+                    await autoClaimSinglePoolCommitter(
                         users,
-                        poolCommitter.address
+                        poolCommitter.address,
+                        autoClaim,
+                        l2Encoder
                     )
                 ).wait()
 

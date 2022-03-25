@@ -334,6 +334,72 @@ export interface CommitEventArgs {
     amount: BigNumberish
     commitType: BigNumberish
 }
+
+/**
+ * @param users array of user addresses to be autoclaimed
+ * @param poolCommitters the PoolKeeper object
+ * @param autoClaim
+ * @param l2Encoder the L2Encoder object for encoding function parameters
+ * @param signer the ethers Signer object (optional)
+ */
+export const autoClaimSinglePoolCommitter = async (
+    users: string[],
+    poolCommitter: string,
+    autoClaim: AutoClaim,
+    l2Encoder: L2Encoder,
+    signer?: Signer
+): Promise<any> /*Promise<CommitEventArgs>*/ => {
+    const encodedArgs = await l2Encoder.encodeAddressArray(users)
+
+    signer = signer ? signer : (await ethers.getSigners())[0]
+    return await autoClaim
+        .connect(signer)
+        .multiPaidClaimSinglePoolCommitter(encodedArgs, poolCommitter)
+}
+
+/**
+ * @param users array of user addresses to be autoclaimed
+ * @param poolCommitters The pool committers in which to claim
+ * @param autoClaim The AutoClaim contract
+ * @param l2Encoder the L2Encoder object for encoding function parameters
+ * @param signer the ethers Signer object (optional)
+ */
+export const autoClaimMultiPoolCommitters = async (
+    users: string[],
+    poolCommitters: string[],
+    autoClaim: AutoClaim,
+    l2Encoder: L2Encoder,
+    signer?: Signer
+): Promise<any> /*Promise<CommitEventArgs>*/ => {
+    const encodedArgs0 = await l2Encoder.encodeAddressArray(users)
+    const encodedArgs1 = await l2Encoder.encodeAddressArray(poolCommitters)
+
+    signer = signer ? signer : (await ethers.getSigners())[0]
+    return await autoClaim
+        .connect(signer)
+        .multiPaidClaimMultiplePoolCommitters(encodedArgs0, encodedArgs1)
+}
+
+/**
+ * Performs upkeep on a pool
+ * @param poolAddresses array of LeveragedPool addresses to upkeep
+ * @param poolKeeper the PoolKeeper object
+ * @param l2Encoder the L2Encoder object for encoding function parameters
+ * @param signer the ethers Signer object (optional)
+ */
+export const performUpkeep = async (
+    poolAddresses: string[],
+    poolKeeper: PoolKeeper,
+    l2Encoder: L2Encoder,
+    signer?: Signer
+): Promise<any> /*Promise<CommitEventArgs>*/ => {
+    const encodedArgs = await l2Encoder.encodeAddressArray(poolAddresses)
+    signer = signer ? signer : (await ethers.getSigners())[0]
+    return poolKeeper
+        .connect(signer)
+        .performUpkeepMultiplePoolsPacked(encodedArgs)
+}
+
 /**
  * Creates a commit and returns the event arguments for it
  * @param pool The pool contract instance
