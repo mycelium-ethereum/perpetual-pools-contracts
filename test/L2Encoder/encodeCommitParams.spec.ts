@@ -44,7 +44,6 @@ describe("L2Encoder - encodeCommitParams", () => {
             // Pad with 0s
             expectedResult =
                 "0x" + "0".repeat(paddingRequired) + expectedResult.slice(2)
-            console.log(expectedResult.length)
             const result = await l2Encoder.encodeCommitParams(
                 amount,
                 commitType,
@@ -68,7 +67,6 @@ describe("L2Encoder - encodeCommitParams", () => {
                 // Pad with 0s
                 expectedResult =
                     "0x" + "0".repeat(paddingRequired) + expectedResult.slice(2)
-                console.log(expectedResult.length)
                 const result = await l2Encoder.encodeCommitParams(
                     amount,
                     commitType,
@@ -91,7 +89,6 @@ describe("L2Encoder - encodeCommitParams", () => {
                 // Pad with 0s
                 expectedResult =
                     "0x" + "0".repeat(paddingRequired) + expectedResult.slice(2)
-                console.log(expectedResult.length)
                 const result = await l2Encoder.encodeCommitParams(
                     amount,
                     commitType,
