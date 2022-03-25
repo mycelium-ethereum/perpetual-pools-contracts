@@ -167,8 +167,10 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     /**
      * @notice Called by keepers to perform an update on multiple pools
      * @param pools A tightly packed bytes array of LeveragedPool addresses to be upkept
-     *     20 bytes       20 bytes       20 bytes     ...
+     *  __________________________________________________
+     * |   20 bytes       20 bytes       20 bytes     ... |
      * | pool address | pool address | pool address | ... |
+     *  ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
      * @dev Arguments can be encoded with `L2Encoder.encodeAddressArray`
      * @dev Will revert if the bytes array is a correct length (some multiple of 20 bytes)
      */
