@@ -7,6 +7,7 @@ import {
     ERC20,
     PoolSwapLibrary,
     PoolCommitter,
+    L2Encoder,
 } from "../../../types"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { DEFAULT_FEE, DEFAULT_MINT_AMOUNT, POOL_CODE } from "../../constants"
@@ -38,6 +39,7 @@ describe("LeveragedPool - executeCommitment: Short Mint", () => {
     let commit: CommitEventArgs
     let library: PoolSwapLibrary
     let poolCommitter: PoolCommitter
+    let l2Encoder: L2Encoder
 
     describe("Short Mint", () => {
         beforeEach(async () => {
@@ -52,13 +54,19 @@ describe("LeveragedPool - executeCommitment: Short Mint", () => {
             pool = result.pool
             signers = result.signers
             poolCommitter = result.poolCommitter
+            l2Encoder = result.l2Encoder
 
             await pool.setKeeper(signers[0].address)
             token = result.token
             shortToken = result.shortToken
             library = result.library
             await token.approve(pool.address, amountMinted)
-            commit = await createCommit(poolCommitter, [0], amountCommitted)
+            commit = await createCommit(
+                l2Encoder,
+                poolCommitter,
+                [0],
+                amountCommitted
+            )
         })
         it("should adjust the live short pool balance", async () => {
             expect(await pool.shortBalance()).to.eq(0)

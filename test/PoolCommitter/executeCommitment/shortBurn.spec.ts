@@ -7,6 +7,7 @@ import {
     ERC20,
     PoolSwapLibrary,
     PoolCommitter,
+    L2Encoder,
 } from "../../../types"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import {
@@ -46,6 +47,7 @@ describe("LeveragedPool - executeCommitment: Short Burn", () => {
     let signers: SignerWithAddress[]
     let commit: CommitEventArgs
     let poolCommitter: PoolCommitter
+    let l2Encoder: L2Encoder
 
     describe("Short Burn", () => {
         beforeEach(async () => {
@@ -63,8 +65,10 @@ describe("LeveragedPool - executeCommitment: Short Burn", () => {
             shortToken = result.shortToken
             library = result.library
             poolCommitter = result.poolCommitter
+            l2Encoder = result.l2Encoder
             await token.approve(pool.address, amountMinted)
             commit = await createCommit(
+                l2Encoder,
                 poolCommitter,
                 SHORT_MINT,
                 amountCommitted
@@ -76,6 +80,7 @@ describe("LeveragedPool - executeCommitment: Short Burn", () => {
 
             await shortToken.approve(pool.address, amountCommitted)
             commit = await createCommit(
+                l2Encoder,
                 poolCommitter,
                 SHORT_BURN,
                 amountCommitted

@@ -4,6 +4,7 @@ import {
     ContractReceipt,
     ContractTransaction,
     Event,
+    Signer,
 } from "ethers"
 import { BytesLike, Result } from "ethers/lib/utils"
 import {
@@ -36,6 +37,8 @@ import {
     LeveragedPoolBalanceDrainMock,
     PoolFactoryBalanceDrainMock,
     PoolFactoryBalanceDrainMock__factory,
+    L2Encoder,
+    L2Encoder__factory,
 } from "../types"
 
 import { abi as ERC20Abi } from "../artifacts/@openzeppelin/contracts/token/ERC20/ERC20.sol/ERC20.json"
@@ -103,8 +106,15 @@ export const getEventArgs = (
 
 export const deployPoolSetupContracts = async () => {
     const amountMinted = DEFAULT_MINT_AMOUNT
-
     const signers = await ethers.getSigners()
+
+    const l2EncoderFactory = (await ethers.getContractFactory(
+        "L2Encoder",
+        signers[0]
+    )) as L2Encoder__factory
+    const l2Encoder = await l2EncoderFactory.deploy()
+    await l2Encoder.deployed()
+
     // Deploy test ERC20 token
     const testToken = (await ethers.getContractFactory(
         "TestToken",
@@ -202,6 +212,7 @@ export const deployPoolSetupContracts = async () => {
         token,
         library,
         autoClaim,
+        l2Encoder,
     }
 }
 
@@ -242,6 +253,7 @@ export const deployPoolAndTokenContracts = async (
     invariantCheck: InvariantCheck
     settlementEthOracle: ChainlinkOracleWrapper
     autoClaim: AutoClaim
+    l2Encoder: L2Encoder
 }> => {
     const setupContracts = await deployPoolSetupContracts()
 
@@ -280,8 +292,8 @@ export const deployPoolAndTokenContracts = async (
     const longToken = await ethers.getContractAt(ERC20Abi, longTokenAddr)
     const shortToken = await ethers.getContractAt(ERC20Abi, shortTokenAddr)
 
-    let commiter = await pool.poolCommitter()
-    const poolCommitter = await ethers.getContractAt("PoolCommitter", commiter)
+    let committer = await pool.poolCommitter()
+    const poolCommitter = await ethers.getContractAt("PoolCommitter", committer)
 
     const token = setupContracts.token
     const library = setupContracts.library
@@ -292,6 +304,7 @@ export const deployPoolAndTokenContracts = async (
     const settlementEthOracle = setupContracts.settlementEthOracle
     const autoClaim = setupContracts.autoClaim
     const invariantCheck = setupContracts.invariantCheck
+    const l2Encoder = setupContracts.l2Encoder
 
     return {
         signers,
@@ -312,6 +325,7 @@ export const deployPoolAndTokenContracts = async (
         oracleWrapper,
         settlementEthOracle,
         autoClaim,
+        l2Encoder,
     }
 }
 
@@ -320,6 +334,72 @@ export interface CommitEventArgs {
     amount: BigNumberish
     commitType: BigNumberish
 }
+
+/**
+ * @param users array of user addresses to be autoclaimed
+ * @param poolCommitters the PoolKeeper object
+ * @param autoClaim
+ * @param l2Encoder the L2Encoder object for encoding function parameters
+ * @param signer the ethers Signer object (optional)
+ */
+export const autoClaimSinglePoolCommitter = async (
+    users: string[],
+    poolCommitter: string,
+    autoClaim: AutoClaim,
+    l2Encoder: L2Encoder,
+    signer?: Signer
+): Promise<any> /*Promise<CommitEventArgs>*/ => {
+    const encodedArgs = await l2Encoder.encodeAddressArray(users)
+
+    signer = signer ? signer : (await ethers.getSigners())[0]
+    return await autoClaim
+        .connect(signer)
+        .multiPaidClaimSinglePoolCommitter(encodedArgs, poolCommitter)
+}
+
+/**
+ * @param users array of user addresses to be autoclaimed
+ * @param poolCommitters The pool committers in which to claim
+ * @param autoClaim The AutoClaim contract
+ * @param l2Encoder the L2Encoder object for encoding function parameters
+ * @param signer the ethers Signer object (optional)
+ */
+export const autoClaimMultiPoolCommitters = async (
+    users: string[],
+    poolCommitters: string[],
+    autoClaim: AutoClaim,
+    l2Encoder: L2Encoder,
+    signer?: Signer
+): Promise<any> /*Promise<CommitEventArgs>*/ => {
+    const encodedArgs0 = await l2Encoder.encodeAddressArray(users)
+    const encodedArgs1 = await l2Encoder.encodeAddressArray(poolCommitters)
+
+    signer = signer ? signer : (await ethers.getSigners())[0]
+    return await autoClaim
+        .connect(signer)
+        .multiPaidClaimMultiplePoolCommitters(encodedArgs0, encodedArgs1)
+}
+
+/**
+ * Performs upkeep on a pool
+ * @param poolAddresses array of LeveragedPool addresses to upkeep
+ * @param poolKeeper the PoolKeeper object
+ * @param l2Encoder the L2Encoder object for encoding function parameters
+ * @param signer the ethers Signer object (optional)
+ */
+export const performUpkeep = async (
+    poolAddresses: string[],
+    poolKeeper: PoolKeeper,
+    l2Encoder: L2Encoder,
+    signer?: Signer
+): Promise<any> /*Promise<CommitEventArgs>*/ => {
+    const encodedArgs = await l2Encoder.encodeAddressArray(poolAddresses)
+    signer = signer ? signer : (await ethers.getSigners())[0]
+    return poolKeeper
+        .connect(signer)
+        .performUpkeepMultiplePoolsPacked(encodedArgs)
+}
+
 /**
  * Creates a commit and returns the event arguments for it
  * @param pool The pool contract instance
@@ -327,23 +407,29 @@ export interface CommitEventArgs {
  * @param amount The amount to commit to
  */
 export const createCommit = async (
+    l2Encoder: L2Encoder,
     poolCommitter: PoolCommitter,
     commitType: BigNumberish,
     amount: BigNumberish,
     fromAggregateBalance?: boolean,
     payForClaim?: boolean,
-    rewardAmount?: BigNumberish
+    rewardAmount?: BigNumberish,
+    signer?: Signer
 ): Promise<any> /*Promise<CommitEventArgs>*/ => {
     const fromAggBal = fromAggregateBalance ? fromAggregateBalance : false
     const isPayingForClaim = payForClaim ? payForClaim : false
+    const encodedArgs = await l2Encoder.encodeCommitParams(
+        amount,
+        commitType,
+        fromAggBal,
+        isPayingForClaim
+    )
+    signer = signer ? signer : (await ethers.getSigners())[0]
+
     const receipt = await (
-        await poolCommitter.commit(
-            commitType,
-            amount,
-            fromAggBal,
-            isPayingForClaim,
-            { value: rewardAmount }
-        )
+        await poolCommitter
+            .connect(signer)
+            .commit(encodedArgs, { value: rewardAmount })
     ).wait()
     return {
         commitID: getEventArgs(receipt, "CreateCommit")?.commitID,
@@ -438,10 +524,19 @@ export const deployMockPool = async (
     settlementEthOracle: ChainlinkOracleWrapper
     invariantCheck: InvariantCheck
     autoClaim: AutoClaim
+    l2Encoder: L2Encoder
 }> => {
     const amountMinted = DEFAULT_MINT_AMOUNT
 
     const signers = await ethers.getSigners()
+
+    const l2EncoderFactory = (await ethers.getContractFactory(
+        "L2Encoder",
+        signers[0]
+    )) as L2Encoder__factory
+    const l2Encoder = await l2EncoderFactory.deploy()
+    await l2Encoder.deployed()
+
     // Deploy test ERC20 token
     const testToken = (await ethers.getContractFactory(
         "TestToken",
@@ -565,8 +660,8 @@ export const deployMockPool = async (
     const longToken = await ethers.getContractAt(ERC20Abi, longTokenAddr)
     const shortToken = await ethers.getContractAt(ERC20Abi, shortTokenAddr)
 
-    let commiter = await pool.poolCommitter()
-    const poolCommitter = await ethers.getContractAt("PoolCommitter", commiter)
+    let committer = await pool.poolCommitter()
+    const poolCommitter = await ethers.getContractAt("PoolCommitter", committer)
 
     return {
         signers,
@@ -587,5 +682,6 @@ export const deployMockPool = async (
         settlementEthOracle,
         invariantCheck,
         autoClaim,
+        l2Encoder,
     }
 }
