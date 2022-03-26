@@ -182,9 +182,9 @@ contract AutoClaim is IAutoClaim {
      * @dev poolCommitterAddress should be the PoolCommitter where the all supplied user addresses requested an auto claim
      */
     function multiPaidClaimSinglePoolCommitter(bytes calldata args, address poolCommitterAddress) external override {
-        require(args.length % 20 == 0, "args must only include addresses");
+        require(args.length % CalldataLogic.ADDRESS_LENGTH == 0, "args must only include addresses");
 
-        uint256 nrUsers = args.length / 20;
+        uint256 nrUsers = args.length / CalldataLogic.ADDRESS_LENGTH;
         uint256 userOffset;
         assembly {
             userOffset := args.offset
