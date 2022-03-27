@@ -80,4 +80,6 @@ interface IPoolKeeper {
     function setKeeperRewards(address _keeperRewards) external;
 
     function setGasPrice(uint256 _price) external;
+
+    function performUpkeepMultiplePoolsPacked(bytes calldata pools) external;
 }

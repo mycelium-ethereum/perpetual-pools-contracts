@@ -9,6 +9,7 @@ import {
     PoolCommitter,
     AutoClaim,
     PoolKeeper,
+    L2Encoder,
 } from "../../types"
 
 import {
@@ -24,6 +25,8 @@ import {
     createCommit,
     CommitEventArgs,
     timeout,
+    performUpkeep,
+    autoClaimMultiPoolCommitters,
 } from "../utilities"
 import { BigNumberish } from "ethers"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
@@ -52,13 +55,13 @@ describe("AutoClaim - multiPaidClaimMultiplePoolCommitters", () => {
     let autoClaim: AutoClaim
     let signers: SignerWithAddress[]
     let poolKeeper: PoolKeeper
+    let l2Encoder: L2Encoder
 
     let poolCommitter2: any
     let pool2: any
     let shortToken2: any
     let longToken2: any
 
-    const commits: CommitEventArgs[] | undefined = []
     beforeEach(async () => {
         const result = await deployPoolAndTokenContracts(
             POOL_CODE,
@@ -68,6 +71,7 @@ describe("AutoClaim - multiPaidClaimMultiplePoolCommitters", () => {
             feeAddress,
             fee
         )
+        l2Encoder = result.l2Encoder
         pool = result.pool
         library = result.library
         poolCommitter = result.poolCommitter
@@ -130,19 +134,27 @@ describe("AutoClaim - multiPaidClaimMultiplePoolCommitters", () => {
     context("When there are claims, but all are still pending", async () => {
         it("does nothing", async () => {
             await createCommit(
+                l2Encoder,
                 poolCommitter,
                 LONG_MINT,
                 amountCommitted,
                 false,
                 true,
-                reward
+                reward,
+                signers[0]
             )
-            await poolCommitter
-                .connect(signers[1])
-                .commit(LONG_MINT, amountCommitted, false, true, {
-                    value: reward,
-                })
             await createCommit(
+                l2Encoder,
+                poolCommitter,
+                LONG_MINT,
+                amountCommitted,
+                false,
+                true,
+                reward,
+                signers[1]
+            )
+            await createCommit(
+                l2Encoder,
                 poolCommitter2,
                 LONG_MINT,
                 amountCommitted,
@@ -163,9 +175,11 @@ describe("AutoClaim - multiPaidClaimMultiplePoolCommitters", () => {
             ]
 
             const receipt = await (
-                await autoClaim.multiPaidClaimMultiplePoolCommitters(
+                await autoClaimMultiPoolCommitters(
                     users,
-                    committers
+                    committers,
+                    autoClaim,
+                    l2Encoder
                 )
             ).wait()
             expect(receipt?.events?.length).to.equal(0)
@@ -179,22 +193,34 @@ describe("AutoClaim - multiPaidClaimMultiplePoolCommitters", () => {
             await token.transfer(signers[1].address, amountCommitted.mul(2))
             await token.connect(signers[1]).approve(pool.address, amountMinted)
 
-            await poolCommitter
-                .connect(signers[1])
-                .commit(LONG_MINT, amountCommitted, false, true, {
-                    value: reward,
-                })
-            await timeout(updateInterval * 1000)
-            await poolKeeper.performUpkeepMultiplePools([
-                pool.address,
-                pool2.address,
-            ])
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                LONG_MINT,
+                amountCommitted,
+                false,
+                true,
+                reward,
+                signers[1]
+            )
 
-            await poolCommitter2
-                .connect(signers[0])
-                .commit(SHORT_MINT, amountCommitted, false, true, {
-                    value: reward,
-                })
+            await timeout(updateInterval * 1000)
+            await performUpkeep(
+                [pool.address, pool2.address],
+                poolKeeper,
+                l2Encoder
+            )
+
+            await createCommit(
+                l2Encoder,
+                poolCommitter2,
+                SHORT_MINT,
+                amountCommitted,
+                false,
+                true,
+                reward,
+                signers[0]
+            )
 
             balanceBeforeClaim = await ethers.provider.getBalance(
                 signers[0].address
@@ -204,9 +230,11 @@ describe("AutoClaim - multiPaidClaimMultiplePoolCommitters", () => {
             const committers = [poolCommitter2.address, poolCommitter.address]
 
             receipt = await (
-                await autoClaim.multiPaidClaimMultiplePoolCommitters(
+                await autoClaimMultiPoolCommitters(
                     users,
-                    committers
+                    committers,
+                    autoClaim,
+                    l2Encoder
                 )
             ).wait()
         })
@@ -255,28 +283,42 @@ describe("AutoClaim - multiPaidClaimMultiplePoolCommitters", () => {
             await token.transfer(signers[1].address, amountCommitted.mul(2))
             await token.connect(signers[1]).approve(pool.address, amountMinted)
 
-            await poolCommitter
-                .connect(signers[1])
-                .commit(LONG_MINT, amountCommitted, false, true, {
-                    value: reward,
-                })
-            await poolCommitter2
-                .connect(signers[0])
-                .commit(SHORT_MINT, amountCommitted, false, true, {
-                    value: reward,
-                })
-            await timeout(updateInterval * 10000)
-            await poolKeeper.performUpkeepMultiplePools([
-                pool.address,
-                pool2.address,
-            ])
-
-            await poolCommitter.commit(
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                LONG_MINT,
+                amountCommitted,
+                false,
+                true,
+                reward,
+                signers[1]
+            )
+            await createCommit(
+                l2Encoder,
+                poolCommitter2,
                 SHORT_MINT,
                 amountCommitted,
                 false,
                 true,
-                { value: reward }
+                reward,
+                signers[0]
+            )
+            await timeout(updateInterval * 10000)
+            await performUpkeep(
+                [pool.address, pool2.address],
+                poolKeeper,
+                l2Encoder
+            )
+
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                SHORT_MINT,
+                amountCommitted,
+                false,
+                true,
+                reward,
+                signers[0]
             )
 
             balanceBeforeClaim = await ethers.provider.getBalance(
@@ -287,9 +329,11 @@ describe("AutoClaim - multiPaidClaimMultiplePoolCommitters", () => {
             const committers = [poolCommitter2.address, poolCommitter.address]
 
             receipt = await (
-                await autoClaim.multiPaidClaimMultiplePoolCommitters(
+                await autoClaimMultiPoolCommitters(
                     users,
-                    committers
+                    committers,
+                    autoClaim,
+                    l2Encoder
                 )
             ).wait()
         })

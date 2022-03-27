@@ -5,7 +5,7 @@ import "../interfaces/ILeveragedPool.sol";
 import "../interfaces/IKeeperRewards.sol";
 import "../interfaces/IOracleWrapper.sol";
 
-import "./PoolSwapLibrary.sol";
+import "../libraries/PoolSwapLibrary.sol";
 
 /// @title The pool contract itself
 contract KeeperRewards is IKeeperRewards {

@@ -8,6 +8,7 @@ import {
     PoolSwapLibrary,
     PoolCommitter,
     PoolKeeper,
+    L2Encoder,
 } from "../../types"
 
 import { POOL_CODE, LONG_MINT, LONG_BURN, SHORT_MINT } from "../constants"
@@ -40,6 +41,7 @@ describe("LeveragedPool - feeTransfer", async () => {
     let longToken: ERC20
     let pool: LeveragedPool
     let library: PoolSwapLibrary
+    let l2Encoder: L2Encoder
     let poolKeeper: PoolKeeper
 
     const commits: CommitEventArgs[] | undefined = []
@@ -58,15 +60,21 @@ describe("LeveragedPool - feeTransfer", async () => {
 
         token = result.token
         shortToken = result.shortToken
+        l2Encoder = result.l2Encoder
         longToken = result.longToken
         poolKeeper = result.poolKeeper
 
         await token.approve(pool.address, amountMinted)
 
         // Long mint commit
-        await createCommit(poolCommitter, LONG_MINT, amountCommitted)
+        await createCommit(l2Encoder, poolCommitter, LONG_MINT, amountCommitted)
         // short mint commit
-        await createCommit(poolCommitter, SHORT_MINT, amountCommitted)
+        await createCommit(
+            l2Encoder,
+            poolCommitter,
+            SHORT_MINT,
+            amountCommitted
+        )
 
         await shortToken.approve(pool.address, amountMinted)
         await longToken.approve(pool.address, await longToken.totalSupply())
@@ -142,13 +150,19 @@ describe("LeveragedPool - feeTransfer", async () => {
             pool = result.pool
             poolCommitter = result.poolCommitter
             await result.token.approve(result.pool.address, 10000)
-            await result.poolCommitter.commit(LONG_MINT, 1000, false, false)
+            await createCommit(l2Encoder, poolCommitter, LONG_MINT, 1000)
             await result.pool.pause()
         })
         it("Commit should be paused", async () => {
-            await expect(
-                poolCommitter.commit(LONG_BURN, 123, false, false)
-            ).to.revertedWith("Pool is paused")
+            const encodedArgs = await l2Encoder.encodeCommitParams(
+                123,
+                LONG_BURN,
+                false,
+                false
+            )
+            await expect(poolCommitter.commit(encodedArgs)).to.revertedWith(
+                "Pool is paused"
+            )
         })
         it("Update fee address", async () => {
             await expect(

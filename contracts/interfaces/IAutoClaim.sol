@@ -58,22 +58,19 @@ interface IAutoClaim {
      */
     function paidClaim(address user, address poolCommitterAddress) external;
 
-    /**
-     * @notice Call `paidClaim` for multiple users, across multiple PoolCommitters
-     * @param users All users to execute claims for.
-     * @param poolCommitterAddresses The PoolCommitter addresses within which you would like to claim for the respective user
-     * @dev The nth index in poolCommitterAddresses should be the PoolCommitter where the nth address in user requested an auto claim
-     */
-    function multiPaidClaimMultiplePoolCommitters(address[] calldata users, address[] calldata poolCommitterAddresses)
-        external;
+    function multiPaidClaimMultiplePoolCommitters(bytes memory args1, bytes memory args2) external;
 
     /**
      * @notice Call `paidClaim` for multiple users, in a single PoolCommitter.
-     * @dev The poolCommitterAddresses should be the PoolCommitter where the nth address in user requested an auto claim
-     * @param users All users to execute claims for.
+     * @param args Arguments for the function packed into a bytes array. Generated with L2Encoder.encode
+     * -------------------------------------------------------------------------------------------------------------------------
+     * |          20 bytes          |          20 bytes         |          20 bytes          |          20 bytes         | ... |
+     * |      0th user address      |     1st user address      |      3rd user address      |      4th user address     | ... |
+     * -------------------------------------------------------------------------------------------------------------------------
      * @param poolCommitterAddress The PoolCommitter address within which you would like to claim for the respective user
+     * @dev poolCommitterAddress should be the PoolCommitter where the all supplied user addresses requested an auto claim
      */
-    function multiPaidClaimSinglePoolCommitter(address[] calldata users, address poolCommitterAddress) external;
+    function multiPaidClaimSinglePoolCommitter(bytes calldata args, address poolCommitterAddress) external;
 
     /**
      * @notice If a user's claim request never gets executed (due to not high enough of a reward), or they change their minds, enable them to withdraw their request.
