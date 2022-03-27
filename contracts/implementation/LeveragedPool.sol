@@ -4,6 +4,7 @@ pragma solidity 0.8.7;
 import "../interfaces/ILeveragedPool.sol";
 import "../interfaces/IPoolCommitter.sol";
 import "../interfaces/IPoolToken.sol";
+import "../interfaces/IPoolKeeper.sol";
 import "../interfaces/IInvariantCheck.sol";
 import "../interfaces/IPausable.sol";
 import "../interfaces/ITwoStepGovernance.sol";
@@ -50,9 +51,6 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
     address[2] public tokens;
     uint256 public override lastPriceTimestamp; // The last time the pool was upkept
 
-    // The address of the KeeperRewards contract permissioned to pay out pool upkeep rewards
-    address public keeperRewards;
-
     string public override poolName;
 
     // #### Modifiers
@@ -63,7 +61,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
     }
 
     modifier onlyKeeperRewards() {
-        require(msg.sender == keeperRewards, "msg.sender not keeperRewards");
+        require(msg.sender == IPoolKeeper(keeper).keeperRewards(), "msg.sender not keeperRewards");
         _;
     }
 
@@ -100,7 +98,6 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
         require(initialization._shortToken != address(0), "Short token cannot be 0 address");
         require(initialization._poolCommitter != address(0), "PoolCommitter cannot be 0 address");
         require(initialization._invariantCheck != address(0), "InvariantCheck cannot be 0 address");
-        require(initialization._keeperRewards != address(0), "KeeperRewards cannot be 0 address");
         require(initialization._fee < PoolSwapLibrary.WAD_PRECISION, "Fee >= 100%");
         require(initialization._secondaryFeeSplitPercent <= 100, "Secondary fee split cannot exceed 100%");
         require(initialization._updateInterval != 0, "Update interval cannot be 0");
@@ -126,7 +123,6 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
         tokens[LONG_INDEX] = initialization._longToken;
         tokens[SHORT_INDEX] = initialization._shortToken;
         poolCommitter = initialization._poolCommitter;
-        keeperRewards = initialization._keeperRewards;
         emit PoolInitialized(
             initialization._longToken,
             initialization._shortToken,
@@ -435,17 +431,6 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
         require(msg.sender == _oldSecondaryFeeAddress);
         secondaryFeeAddress = account;
         emit SecondaryFeeAddressUpdated(_oldSecondaryFeeAddress, account);
-    }
-
-    /**
-     * @notice Updates the KeeperReward contract of the pool
-     * @param _keeperRewards New address of the KeeperRewards contract
-     */
-    function setKeeperRewardsContract(address _keeperRewards) external override onlyGov {
-        require(_keeperRewards != address(0), "KeeperRewards cannot be 0 address");
-        address oldKeeperRewards = keeperRewards;
-        keeperRewards = _keeperRewards;
-        emit KeeperAddressChanged(oldKeeperRewards, _keeperRewards);
     }
 
     /**

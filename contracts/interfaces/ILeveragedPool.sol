@@ -13,7 +13,6 @@ interface ILeveragedPool {
         address _shortToken; // Address of the short pool token
         address _poolCommitter; // Address of the PoolCommitter contract
         address _invariantCheck; // Address of the InvariantCheck contract
-        address _keeperRewards; // The address of the KeeperRewards contract permissioned to pay out pool upkeep rewards
         string _poolName; // The pool identification name
         uint32 _frontRunningInterval; // The minimum number of seconds that must elapse before a commit is forced to wait until the next interval
         uint32 _updateInterval; // The minimum number of seconds that must elapse before a commit can be executed
@@ -201,8 +200,6 @@ interface ILeveragedPool {
     function intervalPassed() external view returns (bool);
 
     function balances() external view returns (uint256 _shortBalance, uint256 _longBalance);
-
-    function setKeeperRewardsContract(address _keeperRewards) external;
 
     function setKeeper(address _keeper) external;
 
