@@ -221,6 +221,7 @@ describe("LeveragedPool - initialize", () => {
                     _invariantCheck: invariantCheck.address,
                     _frontRunningInterval: frontRunningInterval,
                     _updateInterval: updateInterval,
+                    _keeperRewards: setupContracts.keeperRewards.address,
                     _fee: fee,
                     _leverageAmount: leverage,
                     _feeAddress: feeAddress,
@@ -246,8 +247,9 @@ describe("LeveragedPool - initialize", () => {
         let poolCommitter: PoolCommitter
         let long: Contract
         let short: Contract
+        let setupContracts: any
         beforeEach(async () => {
-            const setupContracts = await deployPoolAndTokenContracts(
+            setupContracts = await deployPoolAndTokenContracts(
                 POOL_CODE,
                 frontRunningInterval,
                 updateInterval,
@@ -288,6 +290,7 @@ describe("LeveragedPool - initialize", () => {
 
         it("should revert if an attempt is made to run it a second time", async () => {
             await leveragedPool.initialize({
+                _keeperRewards: setupContracts.keeperRewards.address,
                 _owner: signers[0].address,
                 _keeper: generateRandomAddress(),
                 _oracleWrapper: oracleWrapper.address,
@@ -308,6 +311,7 @@ describe("LeveragedPool - initialize", () => {
             })
             await expect(
                 leveragedPool.initialize({
+                    _keeperRewards: setupContracts.keeperRewards.address,
                     _owner: signers[0].address,
                     _keeper: generateRandomAddress(),
                     _oracleWrapper: oracleWrapper.address,
@@ -331,6 +335,7 @@ describe("LeveragedPool - initialize", () => {
         it("should revert if settlementToken address is the zero address", async () => {
             await expect(
                 leveragedPool.initialize({
+                    _keeperRewards: setupContracts.keeperRewards.address,
                     _owner: signers[0].address,
                     _keeper: generateRandomAddress(),
                     _oracleWrapper: oracleWrapper.address,
@@ -354,6 +359,7 @@ describe("LeveragedPool - initialize", () => {
         it("should revert if oracleWrapper address is the zero address", async () => {
             await expect(
                 leveragedPool.initialize({
+                    _keeperRewards: setupContracts.keeperRewards.address,
                     _owner: signers[0].address,
                     _keeper: generateRandomAddress(),
                     _oracleWrapper: ethers.constants.AddressZero,
@@ -377,6 +383,7 @@ describe("LeveragedPool - initialize", () => {
         it("should revert if the fee address is the zero address", async () => {
             await expect(
                 leveragedPool.initialize({
+                    _keeperRewards: setupContracts.keeperRewards.address,
                     _owner: signers[0].address,
                     _keeper: generateRandomAddress(),
                     _oracleWrapper: oracleWrapper.address,
@@ -400,6 +407,7 @@ describe("LeveragedPool - initialize", () => {
         it("should revert if the update interval is zero", async () => {
             await expect(
                 leveragedPool.initialize({
+                    _keeperRewards: setupContracts.keeperRewards.address,
                     _owner: signers[0].address,
                     _keeper: generateRandomAddress(),
                     _oracleWrapper: oracleWrapper.address,
@@ -432,6 +440,7 @@ describe("LeveragedPool - initialize", () => {
                 signers[0]
             ) as LeveragedPool
             await secondPool.initialize({
+                _keeperRewards: setupContracts.keeperRewards.address,
                 _owner: signers[0].address,
                 _keeper: generateRandomAddress(),
                 _oracleWrapper: oracleWrapper.address,
@@ -451,6 +460,7 @@ describe("LeveragedPool - initialize", () => {
                 _secondaryFeeSplitPercent: 10,
             })
             await leveragedPool.initialize({
+                _keeperRewards: setupContracts.keeperRewards.address,
                 _owner: signers[0].address,
                 _keeper: generateRandomAddress(),
                 _oracleWrapper: oracleWrapper.address,

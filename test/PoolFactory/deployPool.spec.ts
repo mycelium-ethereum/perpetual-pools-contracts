@@ -101,6 +101,7 @@ describe("PoolFactory.deployPool", () => {
         })
         it("should initialize the clone", async () => {
             const initialization = {
+                _keeperRewards: generateRandomAddress(),
                 _owner: generateRandomAddress(),
                 _keeper: generateRandomAddress(),
                 _oracleWrapper: generateRandomAddress(),
