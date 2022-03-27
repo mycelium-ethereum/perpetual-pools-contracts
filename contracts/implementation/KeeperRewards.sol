@@ -7,7 +7,7 @@ import "../interfaces/IOracleWrapper.sol";
 
 import "../libraries/PoolSwapLibrary.sol";
 
-/// @title The pool contract itself
+/// @title The contract for calculating and executing keeper reward payments
 contract KeeperRewards is IKeeperRewards {
     address public immutable keeper;
     /* Constants */
@@ -129,7 +129,7 @@ contract KeeperRewards is IKeeperRewards {
         uint256 _gasSpent,
         uint256 _settlementTokenPrice
     ) public pure returns (uint256) {
-        if (_settlementTokenPrice <= 0) {
+        if (_settlementTokenPrice == 0) {
             return 0;
         } else {
             /* gas spent plus our fixed gas overhead */
