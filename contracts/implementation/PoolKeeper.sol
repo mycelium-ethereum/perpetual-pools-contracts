@@ -169,6 +169,12 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         }
     }
 
+    /**
+     * @notice Changes the KeeperRewards contract, used for calculating and executing rewards for calls to upkeep functions
+     * @param _keeperRewards The new KeeperRewards contract
+     * @dev Only callable by the contract owner
+     * @dev emits KeeperRewardsSet when the addresss is successfuly changed
+     */
     function setKeeperRewards(address _keeperRewards) external override onlyOwner {
         require(_keeperRewards != address(0), "KeeperRewards cannot be 0 address");
         address oldKeeperRewards = keeperRewards;
