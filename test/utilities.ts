@@ -37,6 +37,8 @@ import {
     LeveragedPoolBalanceDrainMock,
     PoolFactoryBalanceDrainMock,
     PoolFactoryBalanceDrainMock__factory,
+    KeeperRewards__factory,
+    KeeperRewards,
     L2Encoder,
     L2Encoder__factory,
 } from "../types"
@@ -195,6 +197,16 @@ export const deployPoolSetupContracts = async () => {
     await factory.setPoolKeeper(poolKeeper.address)
     await factory.setFee(DEFAULT_FEE)
 
+    const keeperRewardsFactory = (await ethers.getContractFactory(
+        "KeeperRewards",
+        {
+            signer: signers[0],
+        }
+    )) as KeeperRewards__factory
+    let keeperRewards = await keeperRewardsFactory.deploy(poolKeeper.address)
+
+    await poolKeeper.setKeeperRewards(keeperRewards.address)
+
     const autoClaimFactory = (await ethers.getContractFactory("AutoClaim", {
         signer: signers[0],
     })) as AutoClaim__factory
@@ -212,6 +224,7 @@ export const deployPoolSetupContracts = async () => {
         token,
         library,
         autoClaim,
+        keeperRewards,
         l2Encoder,
     }
 }
@@ -253,6 +266,7 @@ export const deployPoolAndTokenContracts = async (
     invariantCheck: InvariantCheck
     settlementEthOracle: ChainlinkOracleWrapper
     autoClaim: AutoClaim
+    keeperRewards: KeeperRewards
     l2Encoder: L2Encoder
 }> => {
     const setupContracts = await deployPoolSetupContracts()
@@ -304,6 +318,7 @@ export const deployPoolAndTokenContracts = async (
     const settlementEthOracle = setupContracts.settlementEthOracle
     const autoClaim = setupContracts.autoClaim
     const invariantCheck = setupContracts.invariantCheck
+    const keeperRewards = setupContracts.keeperRewards
     const l2Encoder = setupContracts.l2Encoder
 
     return {
@@ -325,6 +340,7 @@ export const deployPoolAndTokenContracts = async (
         oracleWrapper,
         settlementEthOracle,
         autoClaim,
+        keeperRewards,
         l2Encoder,
     }
 }
@@ -524,6 +540,7 @@ export const deployMockPool = async (
     settlementEthOracle: ChainlinkOracleWrapper
     invariantCheck: InvariantCheck
     autoClaim: AutoClaim
+    keeperRewards: KeeperRewards
     l2Encoder: L2Encoder
 }> => {
     const amountMinted = DEFAULT_MINT_AMOUNT
@@ -627,6 +644,15 @@ export const deployMockPool = async (
     await factory.setPoolKeeper(poolKeeper.address)
     await factory.setFee(DEFAULT_FEE)
 
+    const keeperRewardsFactory = (await ethers.getContractFactory(
+        "KeeperRewards",
+        {
+            signer: signers[0],
+        }
+    )) as KeeperRewards__factory
+    let keeperRewards = await keeperRewardsFactory.deploy(poolKeeper.address)
+    await poolKeeper.setKeeperRewards(keeperRewards.address)
+
     // deploy the pool using the factory, not separately
     const deployParams = {
         poolName: POOL_CODE,
@@ -682,6 +708,7 @@ export const deployMockPool = async (
         settlementEthOracle,
         invariantCheck,
         autoClaim,
+        keeperRewards,
         l2Encoder,
     }
 }

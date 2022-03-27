@@ -59,6 +59,7 @@ describe("InvariantCheck - balanceInvariant", () => {
             const long = result.longToken
             const short = result.shortToken
             const invariantCheck = result.invariantCheck
+            const keeperRewards = result.keeperRewards
             poolCommitter = result.poolCommitter
 
             // Deploy a fake pool

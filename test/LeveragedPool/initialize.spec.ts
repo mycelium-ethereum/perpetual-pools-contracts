@@ -248,8 +248,9 @@ describe("LeveragedPool - initialize", () => {
         let poolCommitter: PoolCommitter
         let long: Contract
         let short: Contract
+        let setupContracts: any
         beforeEach(async () => {
-            const setupContracts = await deployPoolAndTokenContracts(
+            setupContracts = await deployPoolAndTokenContracts(
                 POOL_CODE,
                 frontRunningInterval,
                 updateInterval,

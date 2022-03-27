@@ -21,6 +21,7 @@ import {
     PoolFactory,
     AutoClaim__factory,
     InvariantCheck__factory,
+    KeeperRewards__factory,
     L2Encoder__factory,
     L2Encoder,
 } from "../../types"
@@ -92,9 +93,7 @@ const setupHook = async () => {
     )) as PoolSwapLibrary__factory
     const library = await libraryFactory.deploy()
     await library.deployed()
-    const poolKeeperFactory = (await ethers.getContractFactory("PoolKeeper", {
-        signer: signers[0],
-    })) as PoolKeeper__factory
+
     const PoolFactory = (await ethers.getContractFactory("PoolFactory", {
         signer: signers[0],
         libraries: { PoolSwapLibrary: library.address },
@@ -102,6 +101,24 @@ const setupHook = async () => {
     factory = await (
         await PoolFactory.deploy(generateRandomAddress(), signers[0].address)
     ).deployed()
+
+    const poolKeeperFactory = (await ethers.getContractFactory("PoolKeeper", {
+        signer: signers[0],
+    })) as PoolKeeper__factory
+    poolKeeper = await poolKeeperFactory.deploy(factory.address)
+    await poolKeeper.deployed()
+
+    await factory.connect(signers[0]).setPoolKeeper(poolKeeper.address)
+
+    const keeperRewardsFactory = (await ethers.getContractFactory(
+        "KeeperRewards",
+        {
+            signer: signers[0],
+        }
+    )) as KeeperRewards__factory
+    let keeperRewards = await keeperRewardsFactory.deploy(poolKeeper.address)
+
+    await poolKeeper.setKeeperRewards(keeperRewards.address)
 
     const invariantCheckFactory = (await ethers.getContractFactory(
         "InvariantCheck",
@@ -117,11 +134,6 @@ const setupHook = async () => {
     let autoClaim = await autoClaimFactory.deploy(factory.address)
     autoClaim = await autoClaim.deployed()
     await factory.setAutoClaim(autoClaim.address)
-
-    poolKeeper = await poolKeeperFactory.deploy(factory.address)
-    await poolKeeper.deployed()
-
-    await factory.connect(signers[0]).setPoolKeeper(poolKeeper.address)
 
     // Create pool
     const deploymentData = {

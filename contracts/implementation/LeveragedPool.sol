@@ -4,6 +4,7 @@ pragma solidity 0.8.7;
 import "../interfaces/ILeveragedPool.sol";
 import "../interfaces/IPoolCommitter.sol";
 import "../interfaces/IPoolToken.sol";
+import "../interfaces/IPoolKeeper.sol";
 import "../interfaces/IInvariantCheck.sol";
 import "../interfaces/IPausable.sol";
 import "../interfaces/ITwoStepGovernance.sol";
@@ -56,6 +57,11 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
 
     modifier onlyKeeper() {
         require(msg.sender == keeper, "msg.sender not keeper");
+        _;
+    }
+
+    modifier onlyKeeperRewards() {
+        require(msg.sender == IPoolKeeper(keeper).keeperRewards(), "msg.sender not keeperRewards");
         _;
     }
 
@@ -173,7 +179,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
     function payKeeperFromBalances(address to, uint256 amount)
         external
         override
-        onlyKeeper
+        onlyKeeperRewards
         onlyUnpaused
         returns (bool)
     {

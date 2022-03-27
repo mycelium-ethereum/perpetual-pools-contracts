@@ -124,8 +124,15 @@ module.exports = async (hre) => {
     const poolKeeper = await deploy("PoolKeeper", {
         from: deployer,
         log: true,
-        libraries: { PoolSwapLibrary: library.address },
         args: [factory.address],
+    })
+
+    // deploy KeeperRewards
+    const keeperReward = await deploy("KeeperRewards", {
+        from: deployer,
+        log: true,
+        libraries: { PoolSwapLibrary: library.address },
+        args: [poolKeeper.address],
     })
 
     // Set PoolKeeper
