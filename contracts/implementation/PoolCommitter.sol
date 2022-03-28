@@ -730,14 +730,12 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
                 update._shortBurnFee += _shortBurnFee;
                 delete userCommitments[user][id];
                 uint256[] storage commitmentIds = unAggregatedCommitments[user];
-                if (unAggregatedLength > MAX_ITERATIONS && i < commitmentIds.length - 1 && commitmentIds.length > 1) {
+                if (unAggregatedLength > MAX_ITERATIONS && commitmentIds.length > 1 && i < commitmentIds.length - 1) {
                     // We only enter this branch if our iterations are capped (i.e. we do not delete the array after the loop)
                     // Order doesn't actually matter in this array, so we can just put the last element into this index
                     commitmentIds[i] = commitmentIds[commitmentIds.length - 1];
-                    commitmentIds.pop();
-                } else {
-                    commitmentIds.pop();
                 }
+                commitmentIds.pop();
             } else {
                 // Clear them now that they have been accounted for in the balance
                 userCommitments[user][id].balanceLongBurnPoolTokens = 0;
