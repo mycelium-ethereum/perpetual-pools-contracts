@@ -45,6 +45,9 @@ The most accurate version of this list is the set of all PRs merged in since 16 
 Regardless, an abridged list is provided for convenience:
 
  - SMA pricing is now available via SMAOracle.sol(https://github.com/tracer-protocol/perpetual-pools-contracts/pull/172)
+ - SMA pricing "ramps up" (see the documentation comments in `SMAOracle`)
+ - Keeper rewards are now modular (https://github.com/tracer-protocol/perpetual-pools-contracts/pull/437)
+ - Various calling interfaces are now packed in order to minimise calldata used (https://github.com/tracer-protocol/perpetual-pools-contracts/pull/436)
  - The frontrunning interval is now able to be (and likely will be) much longer than the update interval (https://github.com/tracer-protocol/perpetual-pools-contracts/pull/190)
  - Commitments now occur in aggregate (https://github.com/tracer-protocol/perpetual-pools-contracts/pull/176)
  - Deployments of new instances of the Perpetual Pools system are now deterministic (https://github.com/tracer-protocol/perpetual-pools-contracts/pull/181)
