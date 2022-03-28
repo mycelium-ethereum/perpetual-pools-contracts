@@ -5,6 +5,8 @@ import "../interfaces/IResolver.sol";
 import "../interfaces/IPoolFactory.sol";
 import "../interfaces/IPoolKeeper.sol";
 
+/// @title The resolver contract is responsible for checking if a pool requires to be upkept
+/// @dev if upkeep is required for a pool then `upKeepChecker` returns the payload of the `isUpkeepRequiredSinglePool` function with the pool address as argument
 contract Resolver is IResolver {
     IPoolFactory public poolFactory;
     IPoolKeeper public poolKeeper;
