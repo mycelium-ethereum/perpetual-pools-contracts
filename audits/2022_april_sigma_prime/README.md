@@ -2,27 +2,56 @@
 
 Tracer Perpetual Pools V2 is the second major release of Tracer's Perpetual Pools product.
 
-Tracer Perpetual Pools is a system that provides leveraged, tokenised exposure to arbitrary assets via a simple and elegant model where settlement is locked within the system in exchange for *pool tokens* (via *minting*) and pool tokens are returned to the protocol in exchange for (some of) the underlying settlement tokens (via *burning*).
+Tracer Perpetual Pools is a system that provides leveraged, tokenised exposure to arbitrary assets via a simple and elegant model where collateral is locked within the system in exchange for *pool tokens* (via *minting*) and pool tokens are returned to the protocol in exchange for (some of) the underlying collateral tokens (via *burning*).
 
 For additional information on the higher-level economics of how Pools works, please consult the [whitepaper]().
 
+## Scope ##
+
+The scope of this audit will be the smart contracts under `contracts` in this repository as of commit hash [`05dee8f6b0ac216e4f7bdc47ea91d5a5a2903e29`](https://github.com/tracer-protocol/perpetual-pools-contracts/commit/05dee8f6b0ac216e4f7bdc47ea91d5a5a2903e29).
+
 ## Prior Audit Work ##
 
-### Sigma Prime ###
+### Version 1 ###
+
+#### Sigma Prime ####
 
 [Sigma Prime](https://sigmaprime.io) have performed an audit of the previous version of the codebase — i.e., Perpetual Pools v1. Both the audit report and the team's response to the audit's findings are available [here](https://tracer.finance/radar/sigma-prime-audit-response).
 
-### Code Arena ###
+#### Code Arena ####
 
 A crowdsourced audit was also undertaken via [Code 423n4](https://code4rena.com). The results are available [here](https://github.com/code-423n4/2021-10-tracer-findings).
 
+### Version 2 ###
+
+#### Runtime Verification ####
+
+[Runtime Verification](https://runtimeverification.com) undertook an audit of a previous version of the V2 codebase. Their draft report is [here](https://github.com/mycelium-ethereum/perpetual-pools-contracts-v2-spearbit/blob/pools-v2/Tracer_Security_Audit_Report_DRAFT_2.pdf).
+
+#### CARE ####
+
+Pools V2 also underwent a CARE program. The report for this is [here](https://docs.google.com/document/d/1S6pX2s-8lahcMIbyoR-jB_X6D_cmRy6CDXJCF1BV_Ig).
+
+The vast majority of these defects have been mitigated and are included in this repository.
+
+#### CARE-X ####
+
+Pools V2 also obviously underwent a CARE-X program for this engagement also. The draft report is [here](https://docs.google.com/document/d/155dHh83kqwaeb8jJhqGIk_4w4Y_vJu9be2f1WV4779I).
+
+#### Spearbit ####
+
+Immediately after the CARE-X engagement, [Spearbit](https://spearbit.com) also undertook an audit of the V2 codebase. We are awaiting a report from them at the time of writing.
+
 ## Changes Since V1 ##
 
-The most accurate version of this list is the set of all PRs merged in since 16 September 2021 until today (inclusive): https://github.com/tracer-protocol/perpetual-pools-contracts/pulls?q=is%3Apr+is%3Aclosed+merged%3A2021-09-16..2021-11-01
+The most accurate version of this list is the set of all PRs merged in since 16 September 2021 until today (inclusive): https://github.com/tracer-protocol/perpetual-pools-contracts/pulls?q=is%3Apr+is%3Aclosed+merged%3A2021-09-16..2022-03-28
 
 Regardless, an abridged list is provided for convenience:
 
  - SMA pricing is now available via `SMAOracle.sol` (https://github.com/tracer-protocol/perpetual-pools-contracts/pull/172)
+ - SMA pricing "ramps up" (see the documentation comments in `SMAOracle`)
+ - Keeper rewards are now modular (https://github.com/tracer-protocol/perpetual-pools-contracts/pull/437)
+ - Various calling interfaces are now packed in order to minimise calldata used (https://github.com/tracer-protocol/perpetual-pools-contracts/pull/436)
  - The frontrunning interval is now able to be (and likely will be) much longer than the update interval (https://github.com/tracer-protocol/perpetual-pools-contracts/pull/190)
  - Commitments now occur in aggregate (https://github.com/tracer-protocol/perpetual-pools-contracts/pull/176)
  - Deployments of new instances of the Perpetual Pools system are now deterministic (https://github.com/tracer-protocol/perpetual-pools-contracts/pull/181)
@@ -32,11 +61,11 @@ Regardless, an abridged list is provided for convenience:
 
 ## Known Issues ##
 
-Any issues in the [public repository](https://github.com/tracer-protocol/perpetual-pools-contracts) that were opened **prior to the start of CARE** are considered known and thus out-of-scope.
+Any issues in the [public repository](https://github.com/tracer-protocol/perpetual-pools-contracts) that were opened **prior to the start of this audit** are considered known and thus out-of-scope.
 
 ## Security Assumptions ##
 
-Any given pool will be upkept (that is to say `PoolCommitter::performUpkeepSinglePool`, `PoolCommitter::performUpkeepMultiplePools`, or their packed variants are called with the `LeveragedPool`'s address as a parameter) within a reasonable time after an update interval finishes (~15 minutes maximum)).
+Any given pool will be upkept (that is to say `PoolCommitter::performUpkeepSinglePool`, `PoolCommitter::performUpkeepMultiplePools`, or their packed variants are called with the LeveragedPool's address as a parameter) within a reasonable time after an update interval finishes (~15 minutes maximum)).
 
 ## Update Interval ##
 
