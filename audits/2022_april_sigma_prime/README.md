@@ -24,8 +24,6 @@ A crowdsourced audit was also undertaken via [Code 423n4](https://code4rena.com)
 
 [Runtime Verification](https://runtimeverification.com) undertook an audit of a previous version of the V2 codebase. Their draft report is [here](https://github.com/mycelium-ethereum/perpetual-pools-contracts-v2-spearbit/blob/pools-v2/Tracer_Security_Audit_Report_DRAFT_2.pdf).
 
-Note that we are still in the process of mitigating these defects, hence any duplicates of these can be considered as already acknowledged by the team.
-
 #### CARE ####
 
 Pools V2 also underwent a CARE program. The report for this is [here](https://docs.google.com/document/d/1S6pX2s-8lahcMIbyoR-jB_X6D_cmRy6CDXJCF1BV_Ig).
