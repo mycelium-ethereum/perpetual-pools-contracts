@@ -22,7 +22,10 @@ The most accurate version of this list is the set of all PRs merged in since 16 
 
 Regardless, an abridged list is provided for convenience:
 
- - SMA pricing is now available via SMAOracle.sol(https://github.com/tracer-protocol/perpetual-pools-contracts/pull/172)
+ - SMA pricing is now available via `SMAOracle.sol` (https://github.com/tracer-protocol/perpetual-pools-contracts/pull/172)
+ - SMA pricing "ramps up" (see the documentation comments in `SMAOracle`)
+ - Keeper rewards are now modular (https://github.com/tracer-protocol/perpetual-pools-contracts/pull/437)
+ - Various calling interfaces are now packed in order to minimise calldata used (https://github.com/tracer-protocol/perpetual-pools-contracts/pull/436)
  - The frontrunning interval is now able to be (and likely will be) much longer than the update interval (https://github.com/tracer-protocol/perpetual-pools-contracts/pull/190)
  - Commitments now occur in aggregate (https://github.com/tracer-protocol/perpetual-pools-contracts/pull/176)
  - Deployments of new instances of the Perpetual Pools system are now deterministic (https://github.com/tracer-protocol/perpetual-pools-contracts/pull/181)
@@ -36,7 +39,7 @@ Any issues in the [public repository](https://github.com/tracer-protocol/perpetu
 
 ## Security Assumptions ##
 
-Any given pool will be upkept (that is to say `PoolCommitter::performUpkeepSinglePool` or `PoolCommitter::performUpkeepMultiplePools` is called with the LeveragedPool's address as a parameter) within a reasonable time after an update interval finishes (~15 minutes maximum).
+Any given pool will be upkept (that is to say `PoolCommitter::performUpkeepSinglePool`, `PoolCommitter::performUpkeepMultiplePools`, or their packed variants are called with the `LeveragedPool`'s address as a parameter) within a reasonable time after an update interval finishes (~15 minutes maximum)).
 
 ## Update Interval ##
 
