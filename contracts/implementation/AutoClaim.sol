@@ -211,7 +211,7 @@ contract AutoClaim is IAutoClaim {
 
     function unchecked_inc(uint256 i) private pure returns (uint256) {
         unchecked {
-            return i + 1;
+            return ++i;
         }
     }
 
