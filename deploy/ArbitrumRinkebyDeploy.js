@@ -53,6 +53,12 @@ module.exports = async (hre) => {
         log: true,
     })
 
+    // deploy CalldataLogic
+    const calldataLogic = await deploy("CalldataLogic", {
+        from: deployer,
+        log: true,
+    })
+
     // deploy PoolFactory
     const factory = await deploy("PoolFactory", {
         from: deployer,
@@ -83,6 +89,25 @@ module.exports = async (hre) => {
         libraries: { PoolSwapLibrary: library.address },
         args: [factory.address],
     })
+
+    // deploy keeper rewards
+    const keeperRewards = await deploy("KeeperRewards", {
+        from: deployer,
+        log: true,
+        libraries: { CalldataLogic: calldataLogic.address },
+        args: [poolKeeper.address],
+    })
+
+    // set keeper rewards
+    await execute(
+        "PoolKeeper",
+        {
+            from: deployer,
+            log: true,
+        },
+        "setKeeperRewards",
+        keeperRewards.address
+    )
 
     // Set PoolKeeper
     await execute(
