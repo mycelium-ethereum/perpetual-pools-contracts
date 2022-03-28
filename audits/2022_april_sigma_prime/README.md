@@ -6,6 +6,10 @@ Tracer Perpetual Pools is a system that provides leveraged, tokenised exposure t
 
 For additional information on the higher-level economics of how Pools works, please consult the [whitepaper]().
 
+## Scope ##
+
+The scope of this audit will be the smart contracts under `contracts` in this repository as of commit hash [`05dee8f6b0ac216e4f7bdc47ea91d5a5a2903e29`](https://github.com/tracer-protocol/perpetual-pools-contracts/commit/05dee8f6b0ac216e4f7bdc47ea91d5a5a2903e29).
+
 ## Prior Audit Work ##
 
 ### Version 1 ###
