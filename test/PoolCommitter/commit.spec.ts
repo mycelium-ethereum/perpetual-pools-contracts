@@ -258,9 +258,6 @@ describe("PoolCommitter - commit", () => {
                 shortTokenSupplyBefore.sub(amountCommitted)
             ) // Supply decreases
             // Commitment storage updates
-            expect(userMostRecentCommit.balanceShortBurnPoolTokens).to.equal(
-                amountCommitted
-            )
             expect(userMostRecentCommit.shortBurnPoolTokens).to.equal(
                 amountCommitted
             )
@@ -330,10 +327,6 @@ describe("PoolCommitter - commit", () => {
                 poolCommitter
             )
 
-            // balanceShortBurnPoolTokens is updated
-            expect(userCommit.balanceShortBurnPoolTokens).to.equal(
-                amountCommitted
-            )
             /* SHORT_BURN COMMIT */
             await createCommit(
                 l2Encoder,
@@ -357,8 +350,6 @@ describe("PoolCommitter - commit", () => {
                 shortTokenSupplyBefore.sub(amountCommitted).sub(amountCommitted)
             )
 
-            // balanceShortBurnPoolTokens gets cleared, because on the update from the second `commit`, it is used and can then be cleared
-            expect(userMostRecentCommit.balanceShortBurnPoolTokens).to.equal(0)
             expect(userMostRecentCommit.shortBurnPoolTokens).to.equal(
                 amountCommitted.mul(2)
             )
@@ -596,9 +587,6 @@ describe("PoolCommitter - commit", () => {
                 longTokenSupplyBefore.sub(amountCommitted)
             ) // Supply decreases
             // Commitment storage updates
-            expect(userMostRecentCommit.balanceLongBurnPoolTokens).to.equal(
-                amountCommitted
-            )
             expect(userMostRecentCommit.longBurnPoolTokens).to.equal(
                 amountCommitted
             )
@@ -665,10 +653,6 @@ describe("PoolCommitter - commit", () => {
                 poolCommitter
             )
 
-            // balanceLongBurnPoolTokens is updated
-            expect(userCommit.balanceLongBurnPoolTokens).to.equal(
-                amountCommitted
-            )
             await createCommit(
                 l2Encoder,
                 poolCommitter,
@@ -691,8 +675,6 @@ describe("PoolCommitter - commit", () => {
                 poolCommitter
             )
 
-            // balanceLongBurnPoolTokens gets cleared, because on the update from the second `commit`, it is used and can then be cleared
-            expect(userMostRecentCommit.balanceLongBurnPoolTokens).to.equal(0)
             expect(userMostRecentCommit.longBurnPoolTokens).to.equal(
                 amountCommitted.mul(2)
             )
@@ -1132,9 +1114,6 @@ describe("PoolCommitter - commit", () => {
                 )
                 // Commitment storage updates
                 expect(
-                    userMostRecentCommit.balanceLongBurnMintPoolTokens
-                ).to.equal(amountCommitted)
-                expect(
                     userMostRecentCommit.longBurnShortMintPoolTokens
                 ).to.equal(amountCommitted)
                 expect(totalMostRecentCommit.longBurnPoolTokens).to.equal(0)
@@ -1329,15 +1308,6 @@ describe("PoolCommitter - commit", () => {
                     let shortBalance = await pool.shortBalance()
                     expect(longBalance).to.equal(amountCommitted)
                     expect(shortBalance).to.equal(0)
-
-                    expect(
-                        (
-                            await getCurrentUserCommit(
-                                signers[0].address,
-                                poolCommitter
-                            )
-                        ).balanceLongBurnMintPoolTokens
-                    ).to.equal(amountCommitted)
                     expect(
                         (
                             await getCurrentUserCommit(
@@ -1437,9 +1407,6 @@ describe("PoolCommitter - commit", () => {
                 longTokenSupplyBefore.sub(amountCommitted)
             )
             // Commitment storage updates
-            expect(userMostRecentCommit.balanceLongBurnMintPoolTokens).to.equal(
-                0
-            )
             expect(userMostRecentCommit.longBurnShortMintPoolTokens).to.equal(
                 amountCommitted
             )
@@ -1718,9 +1685,6 @@ describe("PoolCommitter - commit", () => {
                 shortTokenSupplyBefore.sub(amountCommitted)
             )
             // Commitment storage updates
-            expect(
-                userMostRecentCommit.balanceShortBurnMintPoolTokens
-            ).to.equal(0)
             expect(userMostRecentCommit.shortBurnLongMintPoolTokens).to.equal(
                 amountCommitted
             )

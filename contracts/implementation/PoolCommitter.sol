@@ -194,7 +194,6 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
                 // Burning from user's aggregate balance
                 require(amount <= balance.longTokens, "Insufficient pool tokens");
                 userAggregateBalance[msg.sender].longTokens -= amount;
-                userCommit.balanceLongBurnPoolTokens += amount;
                 // Burn from leveragedPool, because that is the official owner of the tokens before they are claimed
                 pool.burnTokens(LONG_INDEX, amount, leveragedPool);
             } else {
@@ -216,7 +215,6 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
                 // Burning from user's aggregate balance
                 require(amount <= balance.shortTokens, "Insufficient pool tokens");
                 userAggregateBalance[msg.sender].shortTokens -= amount;
-                userCommit.balanceShortBurnPoolTokens += amount;
                 // Burn from leveragedPool, because that is the official owner of the tokens before they are claimed
                 pool.burnTokens(SHORT_INDEX, amount, leveragedPool);
             } else {
@@ -230,7 +228,6 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             if (fromAggregateBalance) {
                 require(amount <= balance.longTokens, "Insufficient pool tokens");
                 userAggregateBalance[msg.sender].longTokens -= amount;
-                userCommit.balanceLongBurnMintPoolTokens += amount;
                 pool.burnTokens(LONG_INDEX, amount, leveragedPool);
             } else {
                 pool.burnTokens(LONG_INDEX, amount, msg.sender);
@@ -242,7 +239,6 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             if (fromAggregateBalance) {
                 require(amount <= balance.shortTokens, "Insufficient pool tokens");
                 userAggregateBalance[msg.sender].shortTokens -= amount;
-                userCommit.balanceShortBurnMintPoolTokens += amount;
                 pool.burnTokens(SHORT_INDEX, amount, leveragedPool);
             } else {
                 pool.burnTokens(SHORT_INDEX, amount, msg.sender);
@@ -737,11 +733,6 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
                 }
                 commitmentIds.pop();
             } else {
-                // Clear them now that they have been accounted for in the balance
-                userCommitments[user][id].balanceLongBurnPoolTokens = 0;
-                userCommitments[user][id].balanceShortBurnPoolTokens = 0;
-                userCommitments[user][id].balanceLongBurnMintPoolTokens = 0;
-                userCommitments[user][id].balanceShortBurnMintPoolTokens = 0;
                 // This commitment wasn't ready to be completely added to the balance, so copy it over into the new ID array
                 if (unAggregatedLength <= MAX_ITERATIONS) {
                     storageArrayPlaceHolder.push(currentIntervalIds[i]);
