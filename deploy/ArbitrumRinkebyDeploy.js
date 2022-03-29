@@ -7,13 +7,13 @@ module.exports = async (hre) => {
     const BTC_POOL_CODE = "BTC/USD"
     const ETH_POOL_CODE = "ETH/USD"
 
-    const DEPLOY_POOL_GAS_LIMIT = 10000000;
+    const DEPLOY_POOL_GAS_LIMIT = 10000000
 
     const POOL_DEFAULT_MINTING_FEE = ethers.utils.parseEther("0.015")
     const POOL_DEFAULT_BURNING_FEE = ethers.utils.parseEther("0.015")
     const POOL_DEFAULT_FRONT_RUNNING_INTERVAL = 2400
     const POOL_DEFAULT_UPDATE_INTERVAL = 300
-    const POOL_DEFAULT_CHANGE_INTERVAL = '0'
+    const POOL_DEFAULT_CHANGE_INTERVAL = "0"
 
     const ONE_LEVERAGE = 1
     const THREE_LEVERAGE = 3
