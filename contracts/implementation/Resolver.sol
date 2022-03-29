@@ -18,20 +18,21 @@ contract Resolver is IResolver {
 
     /**
      * @notice Iterate through all pools and will then return true if can be upkept, and data including the function selector and parameters.
+     * @return canExec True if pool requires upkeep
      * @return execPayLoad payload data of the `isUpkeepRequiredSinglePool` function selector with the pool address as argument
      */
-    function upKeepChecker() external view override returns (bytes[] memory execPayLoad) {
+    function checker() external view override returns (bool canExec, bytes memory execPayLoad) {
         uint256 poolsLength = poolFactory.numPools();
-        execPayLoad = new bytes[](poolsLength);
         for (uint256 i = 0; i < poolsLength; ) {
             address pool = poolFactory.pools(i);
             if (poolKeeper.isUpkeepRequiredSinglePool(pool)) {
-                execPayLoad[i] = abi.encodeWithSelector(poolKeeper.isUpkeepRequiredSinglePool.selector, address(pool));
+                canExec = true;
+                execPayLoad = abi.encodeWithSelector(poolKeeper.isUpkeepRequiredSinglePool.selector, address(pool));
             }
             unchecked {
                 ++i;
             }
+            if (canExec) break;
         }
-        return execPayLoad;
     }
 }

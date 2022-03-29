@@ -2,5 +2,5 @@
 pragma solidity 0.8.7;
 
 interface IResolver {
-    function upKeepChecker() external view returns (bytes[] memory execPayLoad);
+    function checker() external view returns (bool canExec, bytes memory execPayLoad);
 }
