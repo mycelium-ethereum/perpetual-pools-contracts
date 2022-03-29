@@ -279,7 +279,6 @@ module.exports = async (hre) => {
         deploymentData2,
         deploymentData3,
         deploymentData4,
-        // deploymentData5,
     ]
 
     console.log(`Deployed PoolFactory: ${factory.address}`)
