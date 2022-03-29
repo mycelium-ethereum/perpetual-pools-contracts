@@ -50,10 +50,21 @@ interface IPoolKeeper {
     event FactoryChanged(address indexed factory);
 
     /**
+     * @notice Indicates that the KeeperRewards contract has
+     * @param oldKeeperRewards The previous KeeperRewards contract
+     * @param newKeeperRewards The new KeeperRewards contract
+     */
+    event KeeperRewardsSet(address indexed oldKeeperRewards, address indexed newKeeperRewards);
+
+    /**
      * @notice Indicates that the gas price for keeper rewards changed
      * @param price New gas price
      */
     event GasPriceChanged(uint256 indexed price);
+
+    // #### Variables
+
+    function keeperRewards() external returns (address);
 
     // #### Functions
     function newPool(address _poolAddress) external;
@@ -65,4 +76,10 @@ interface IPoolKeeper {
     function performUpkeepSinglePool(address pool) external;
 
     function performUpkeepMultiplePools(address[] calldata pools) external;
+
+    function setKeeperRewards(address _keeperRewards) external;
+
+    function setGasPrice(uint256 _price) external;
+
+    function performUpkeepMultiplePoolsPacked(bytes calldata pools) external;
 }

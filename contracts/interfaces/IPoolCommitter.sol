@@ -162,12 +162,7 @@ interface IPoolCommitter {
         uint256 _changeInterval
     ) external;
 
-    function commit(
-        CommitType commitType,
-        uint256 amount,
-        bool fromAggregateBalance,
-        bool payForClaim
-    ) external payable;
+    function commit(bytes32 args) external payable;
 
     function updateIntervalId() external view returns (uint128);
 

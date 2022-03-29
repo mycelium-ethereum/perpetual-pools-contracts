@@ -7,6 +7,7 @@ import {
     ERC20,
     PoolSwapLibrary,
     PoolCommitter,
+    L2Encoder,
 } from "../../../types"
 
 import {
@@ -50,6 +51,7 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
     let library: PoolSwapLibrary
     let poolCommitter: PoolCommitter
     let signers: SignerWithAddress[]
+    let l2Encoder: L2Encoder
 
     describe("Long mint->Long Burn", () => {
         const commits: CommitEventArgs[] | undefined = []
@@ -62,6 +64,7 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
                 feeAddress,
                 fee
             )
+            l2Encoder = result.l2Encoder
             pool = result.pool
             library = result.library
             token = result.token
@@ -71,7 +74,7 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
 
             await token.approve(pool.address, amountMinted)
 
-            await createCommit(poolCommitter, [2], amountCommitted)
+            await createCommit(l2Encoder, poolCommitter, [2], amountCommitted)
             await shortToken.approve(pool.address, amountMinted)
             await timeout(updateInterval * 1000)
             await pool.setKeeper(signers[0].address)
@@ -81,10 +84,16 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
             await poolCommitter.claim(signers[0].address)
 
             commits.push(
-                await createCommit(poolCommitter, LONG_MINT, amountCommitted)
+                await createCommit(
+                    l2Encoder,
+                    poolCommitter,
+                    LONG_MINT,
+                    amountCommitted
+                )
             )
             commits.push(
                 await createCommit(
+                    l2Encoder,
                     poolCommitter,
                     LONG_BURN,
                     amountCommitted.div(2)
@@ -147,7 +156,12 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
 
             await token.approve(pool.address, amountMinted)
 
-            await createCommit(poolCommitter, SHORT_MINT, amountCommitted)
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                SHORT_MINT,
+                amountCommitted
+            )
 
             await shortToken.approve(pool.address, amountMinted)
             await timeout(updateInterval * 1000)
@@ -156,10 +170,16 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
             await poolCommitter.claim(result.signers[0].address)
 
             commits.push(
-                await createCommit(poolCommitter, SHORT_MINT, amountCommitted)
+                await createCommit(
+                    l2Encoder,
+                    poolCommitter,
+                    SHORT_MINT,
+                    amountCommitted
+                )
             )
             commits.push(
                 await createCommit(
+                    l2Encoder,
                     poolCommitter,
                     SHORT_BURN,
                     amountCommitted.div(2)
@@ -216,7 +236,12 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
                 ethers.utils.parseEther("9999999")
             )
 
-            await createCommit(poolCommitter, SHORT_MINT, amountCommitted)
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                SHORT_MINT,
+                amountCommitted
+            )
 
             // totalMostRecentCommit, userMostRecentCommit should be populated.
             // totalNextIntervalCommit, userNextIntervalCommit should be empty.
@@ -252,7 +277,12 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
             await timeout((updateInterval - frontRunningInterval / 2) * 1000)
 
             // Commit within frontrunning interval
-            await createCommit(poolCommitter, LONG_MINT, amountCommitted.div(2))
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                LONG_MINT,
+                amountCommitted.div(2)
+            )
 
             // Now totalNextIntervalCommit should be populated, but totalMostRecentCommit should remain unchanged
 
@@ -367,7 +397,12 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
                 ethers.utils.parseEther("9999999")
             )
 
-            await createCommit(poolCommitter, SHORT_MINT, amountCommitted)
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                SHORT_MINT,
+                amountCommitted
+            )
 
             // totalMostRecentCommit, userMostRecentCommit should be populated.
             // totalNextIntervalCommit, userNextIntervalCommit should be empty.
@@ -402,7 +437,12 @@ describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
 
             await timeout((updateInterval - frontRunningInterval / 2) * 1000)
 
-            await createCommit(poolCommitter, LONG_MINT, amountCommitted.div(2))
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                LONG_MINT,
+                amountCommitted.div(2)
+            )
 
             // Now totalNextIntervalCommit should be populated, but totalMostRecentCommit should remain unchanged
 

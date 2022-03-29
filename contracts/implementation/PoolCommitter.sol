@@ -10,7 +10,8 @@ import "../interfaces/IInvariantCheck.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import "./PoolSwapLibrary.sol";
+import "../libraries/PoolSwapLibrary.sol";
+import "../libraries/CalldataLogic.sol";
 
 /// @title This contract is responsible for handling commitment logic
 contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
@@ -23,6 +24,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
     IAutoClaim public autoClaim;
     uint128 public override updateIntervalId = 1;
     // The amount that is extracted from each mint and burn, being left in the pool. Given as the decimal * 10 ^ 18. For example, 60% fee is 0.6 * 10 ^ 18
+    // Fees can be 0.
     bytes16 public mintingFee;
     bytes16 public burningFee;
     // The amount that the `mintingFee` will change each update interval, based on `updateMintingFee`, given as a decimal * 10 ^ 18 (same format as `_mintingFee`)
@@ -250,20 +252,23 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
 
     /**
      * @notice Commit to minting/burning long/short tokens after the next price change
-     * @param commitType Type of commit you're doing (Long vs Short, Mint vs Burn)
-     * @param amount Amount of settlement tokens you want to commit to minting; OR amount of pool
-     *               tokens you want to burn
-     * @param fromAggregateBalance If minting, burning, or rebalancing into a delta neutral position,
-     *                             will tokens be taken from user's aggregate balance?
-     * @param payForClaim True if user wants to pay for the commit to be claimed
+     * @param args Arguments for the commit function packed into one bytes32
+     *  _______________________________________________________________________________________
+     * |   104 bits  |     8 bits    |        8 bits        |    8 bits    |      128 bits     |
+     * |  0-padding  |  payForClaim  | fromAggregateBalance |  commitType  |  shortenedAmount  |
+     *  ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
+     * @dev Arguments can be encoded with `L2Encoder.encodeCommitParams`
+     * @dev bool payForClaim: True if user wants to pay for the commit to be claimed
+     * @dev bool fromAggregateBalance: If minting, burning, or rebalancing into a delta neutral position,
+     *                                 will tokens be taken from user's aggregate balance?
+     * @dev CommitType commitType: Type of commit you're doing (Long vs Short, Mint vs Burn)
+     * @dev uint128 shortenedAmount: Amount of settlement tokens you want to commit to minting; OR amount of pool
+     *                               tokens you want to burn. Expanded to uint256 at decode time
      * @dev Emits a `CreateCommit` event on success
      */
-    function commit(
-        CommitType commitType,
-        uint256 amount,
-        bool fromAggregateBalance,
-        bool payForClaim
-    ) external payable override {
+    function commit(bytes32 args) external payable override {
+        (uint256 amount, CommitType commitType, bool fromAggregateBalance, bool payForClaim) = CalldataLogic
+            .decodeCommitParams(args);
         require(amount > 0, "Amount must not be zero");
         updateAggregateBalance(msg.sender);
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
@@ -281,7 +286,12 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         TotalCommitment storage totalCommit = totalPoolCommitments[appropriateUpdateIntervalId];
         UserCommitment storage userCommit = userCommitments[msg.sender][appropriateUpdateIntervalId];
 
-        userCommit.updateIntervalId = appropriateUpdateIntervalId;
+        if (userCommit.updateIntervalId == 0) {
+            userCommit.updateIntervalId = appropriateUpdateIntervalId;
+        }
+        if (totalCommit.updateIntervalId == 0) {
+            totalCommit.updateIntervalId = appropriateUpdateIntervalId;
+        }
 
         uint256 length = unAggregatedCommitments[msg.sender].length;
         if (length == 0 || unAggregatedCommitments[msg.sender][length - 1] < appropriateUpdateIntervalId) {
@@ -403,8 +413,8 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
     {
         pendingMintSettlementAmount =
             pendingMintSettlementAmount -
-            totalPoolCommitments[updateIntervalId].longMintSettlement -
-            totalPoolCommitments[updateIntervalId].shortMintSettlement;
+            totalPoolCommitments[_commits.updateIntervalId].longMintSettlement -
+            totalPoolCommitments[_commits.updateIntervalId].shortMintSettlement;
 
         BalancesAndSupplies memory balancesAndSupplies = BalancesAndSupplies({
             newShortBalance: _commits.shortMintSettlement + shortBalance,
@@ -418,7 +428,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         });
 
         // Update price before values change
-        priceHistory[updateIntervalId] = Prices({
+        priceHistory[_commits.updateIntervalId] = Prices({
             longPrice: PoolSwapLibrary.getPrice(longBalance, longTotalSupply + pendingLongBurnPoolTokens),
             shortPrice: PoolSwapLibrary.getPrice(shortBalance, shortTotalSupply + pendingShortBurnPoolTokens)
         });
@@ -720,14 +730,12 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
                 update._shortBurnFee += _shortBurnFee;
                 delete userCommitments[user][id];
                 uint256[] storage commitmentIds = unAggregatedCommitments[user];
-                if (unAggregatedLength > MAX_ITERATIONS && i < commitmentIds.length - 1 && commitmentIds.length > 1) {
+                if (unAggregatedLength > MAX_ITERATIONS && commitmentIds.length > 1 && i < commitmentIds.length - 1) {
                     // We only enter this branch if our iterations are capped (i.e. we do not delete the array after the loop)
                     // Order doesn't actually matter in this array, so we can just put the last element into this index
                     commitmentIds[i] = commitmentIds[commitmentIds.length - 1];
-                    commitmentIds.pop();
-                } else {
-                    commitmentIds.pop();
                 }
+                commitmentIds.pop();
             } else {
                 // Clear them now that they have been accounted for in the balance
                 userCommitments[user][id].balanceLongBurnPoolTokens = 0;
