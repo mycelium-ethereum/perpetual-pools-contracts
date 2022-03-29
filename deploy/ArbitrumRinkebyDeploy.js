@@ -285,8 +285,6 @@ module.exports = async (hre) => {
     console.log(`Deployed PoolSwapLibrary: ${library.address}`)
     console.log(`Deploy PoolKeeper: ${poolKeeper.address}`)
     console.log(`Deployed TestToken: ${token.address}`)
-    // console.log(`Deployed OracleWrapper: ${oracleWrapper.address}`)
-    // console.log(`Deploy PoolKeeper: ${poolKeeper.address}`)
     for (var i = 0; i < deploymentData.length; i++) {
         let receipt = await execute(
             "PoolFactory",
