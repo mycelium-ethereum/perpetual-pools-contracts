@@ -6,7 +6,9 @@ import "../interfaces/IOracleWrapper.sol";
 import "../interfaces/IPoolFactory.sol";
 import "../interfaces/ILeveragedPool.sol";
 import "../interfaces/IERC20DecimalsWrapper.sol";
-import "./PoolSwapLibrary.sol";
+import "../interfaces/IKeeperRewards.sol";
+
+import "../libraries/CalldataLogic.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "abdk-libraries-solidity/ABDKMathQuad.sol";
@@ -18,17 +20,6 @@ import "abdk-libraries-solidity/ABDKMathQuad.sol";
 /// @dev It has another large drawback in that it is not possible to calculate the cost of the current transaction Arbitrum, given that the cost is largely determined by L1 calldata cost.
 /// @dev Because of this, the reward calculation is an rough "good enough" estimation.
 contract PoolKeeper is IPoolKeeper, Ownable {
-    /* Constants */
-    uint256 public constant BASE_TIP = 5; // 5% base tip
-    uint256 public constant TIP_DELTA_PER_BLOCK = 5; // 5% increase per block
-    uint256 public constant BLOCK_TIME = 13; /* in seconds */
-    uint256 public constant MAX_TIP = 100; /* maximum keeper tip */
-    bytes16 public constant FIXED_POINT = 0x403abc16d674ec800000000000000000; // 1 ether
-
-    /// Captures fixed gas overhead for performing upkeep that's unreachable
-    /// by `gasleft()` due to our approach to error handling in that code
-    uint256 public constant FIXED_GAS_OVERHEAD = 80195;
-
     // #### Global variables
     /**
      * @notice Format: Pool address => last executionPrice
@@ -36,6 +27,8 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     mapping(address => int256) public executionPrice;
 
     IPoolFactory public immutable factory;
+    // The KeeperRewards contract permissioned to pay out pool upkeep rewards
+    address public override keeperRewards;
 
     uint256 public gasPrice = 10 gwei;
 
@@ -103,6 +96,8 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @dev Tracks gas usage via `gasleft` accounting and uses this to inform
      *          keeper payment
      * @dev Catches any failure of the underlying `pool.poolUpkeep` call
+     * @dev Emits a `KeeperPaid` event if the underlying call to `pool.payKeeperFromBalances` succeeds
+     * @dev Emits a `KeeperPaymentError` event otherwise
      */
     function performUpkeepSinglePool(address _pool) public override {
         uint256 startGas = gasleft();
@@ -136,17 +131,28 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         try ILeveragedPool(_pool).poolUpkeep(lastExecutionPrice, latestPrice) {
             executionPrice[_pool] = latestPrice;
             // If poolUpkeep is successful, refund the keeper for their gas costs
-            uint256 gasSpent = startGas - gasleft();
-            try IOracleWrapper(ILeveragedPool(_pool).settlementEthOracle()).poll() {} catch Error(
-                string memory reason
-            ) {
-                emit PoolUpkeepError(_pool, reason);
-            }
-            payKeeper(_pool, gasPrice, gasSpent, savedPreviousUpdatedTimestamp, updateInterval);
             emit UpkeepSuccessful(_pool, data, lastExecutionPrice, latestPrice);
         } catch Error(string memory reason) {
             // If poolUpkeep fails for any other reason, emit event
             emit PoolUpkeepError(_pool, reason);
+        }
+
+        uint256 gasSpent = startGas - gasleft();
+        uint256 reward;
+        // Emit events depending on whether or not the reward was actually paid
+        if (
+            IKeeperRewards(keeperRewards).payKeeper(
+                msg.sender,
+                _pool,
+                gasPrice,
+                gasSpent,
+                savedPreviousUpdatedTimestamp,
+                updateInterval
+            ) > 0
+        ) {
+            emit KeeperPaid(_pool, msg.sender, reward);
+        } else {
+            emit KeeperPaymentError(_pool, msg.sender, reward);
         }
     }
 
@@ -164,129 +170,41 @@ contract PoolKeeper is IPoolKeeper, Ownable {
     }
 
     /**
-     * @notice Pay keeper for upkeep
-     * @param _pool Address of the given pool
-     * @param _gasPrice Price of a single gas unit (in ETH (wei))
-     * @param _gasSpent Number of gas units spent
-     * @param _savedPreviousUpdatedTimestamp Last timestamp when the pool's price execution happened
-     * @param _updateInterval Pool interval of the given pool
-     * @dev Emits a `KeeperPaid` event if the underlying call to `pool.payKeeperFromBalances` succeeds
-     * @dev Emits a `KeeperPaymentError` event otherwise
+     * @notice Changes the KeeperRewards contract, used for calculating and executing rewards for calls to upkeep functions
+     * @param _keeperRewards The new KeeperRewards contract
+     * @dev Only callable by the contract owner
+     * @dev emits KeeperRewardsSet when the addresss is successfuly changed
      */
-    function payKeeper(
-        address _pool,
-        uint256 _gasPrice,
-        uint256 _gasSpent,
-        uint256 _savedPreviousUpdatedTimestamp,
-        uint256 _updateInterval
-    ) internal {
-        uint256 reward = keeperReward(_pool, _gasPrice, _gasSpent, _savedPreviousUpdatedTimestamp, _updateInterval);
-        if (ILeveragedPool(_pool).payKeeperFromBalances(msg.sender, reward)) {
-            emit KeeperPaid(_pool, msg.sender, reward);
-        } else {
-            // Usually occurs if pool just started and does not have any funds
-            emit KeeperPaymentError(_pool, msg.sender, reward);
+    function setKeeperRewards(address _keeperRewards) external override onlyOwner {
+        require(_keeperRewards != address(0), "KeeperRewards cannot be 0 address");
+        address oldKeeperRewards = keeperRewards;
+        keeperRewards = _keeperRewards;
+        emit KeeperRewardsSet(oldKeeperRewards, _keeperRewards);
+    }
+
+    /**
+     * @notice Called by keepers to perform an update on multiple pools
+     * @param pools A tightly packed bytes array of LeveragedPool addresses to be upkept
+     *  __________________________________________________
+     * |   20 bytes       20 bytes       20 bytes     ... |
+     * | pool address | pool address | pool address | ... |
+     *  ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
+     * @dev Arguments can be encoded with `L2Encoder.encodeAddressArray`
+     * @dev Will revert if the bytes array is a correct length (some multiple of 20 bytes)
+     */
+    function performUpkeepMultiplePoolsPacked(bytes calldata pools) external override {
+        require(pools.length % CalldataLogic.ADDRESS_LENGTH == 0, "Data must only include addresses");
+        uint256 numPools = pools.length / CalldataLogic.ADDRESS_LENGTH;
+        uint256 offset;
+        assembly {
+            offset := pools.offset
         }
-    }
-
-    /**
-     * @notice Payment keeper receives for performing upkeep on a given pool
-     * @param _pool Address of the given pool
-     * @param _gasPrice Price of a single gas unit (in ETH (wei))
-     * @param _gasSpent Number of gas units spent
-     * @param _savedPreviousUpdatedTimestamp Last timestamp when the pool's price execution happened
-     * @param _poolInterval Pool interval of the given pool
-     * @return Number of settlement tokens to give to the keeper for work performed
-     */
-    function keeperReward(
-        address _pool,
-        uint256 _gasPrice,
-        uint256 _gasSpent,
-        uint256 _savedPreviousUpdatedTimestamp,
-        uint256 _poolInterval
-    ) public view returns (uint256) {
-        /**
-         * Conceptually, we have
-         *
-         * Reward = Gas + Tip = Gas + (Base + Premium * Blocks)
-         *
-         * Very roughly to scale:
-         *
-         * +---------------------------+------+---+---+~~~~~
-         * | GGGGGGGGGGGGGGGGGGGGGGGGG | BBBB | P | P | ...
-         * +---------------------------+------+---+---+~~~~~
-         *
-         * Under normal circumstances, we don't expect there to be any time
-         * premium at all. The time premium exists in order to *further*
-         * incentivise upkeep in the event of lateness.
-         *
-         * The base tip exists to act as pure profit for a keeper.
-         *
-         * Of course, the gas component acts as compensation for performing
-         * on-chain computation.
-         *
-         */
-
-        // keeper gas cost in wei. WAD formatted
-        uint256 _keeperGas = keeperGas(_pool, _gasPrice, _gasSpent);
-
-        // tip percent
-        uint256 _tipPercent = keeperTip(_savedPreviousUpdatedTimestamp, _poolInterval);
-
-        // amount of settlement tokens to give to the keeper
-        // _keeperGas + _keeperGas * percentTip
-        uint256 wadRewardValue = _keeperGas + ((_keeperGas * _tipPercent) / 100);
-        uint256 decimals = IERC20DecimalsWrapper(ILeveragedPool(_pool).settlementToken()).decimals();
-        return PoolSwapLibrary.fromWad(uint256(wadRewardValue), decimals);
-    }
-
-    /**
-     * @notice Compensation a keeper will receive for their gas expenditure
-     * @param _pool Address of the given pool
-     * @param _gasPrice Price of a single gas unit (in ETH (wei))
-     * @param _gasSpent Number of gas units spent
-     * @return Keeper's gas compensation
-     * @dev Adds a constant to `_gasSpent` when calculating actual gas usage
-     */
-    function keeperGas(
-        address _pool,
-        uint256 _gasPrice,
-        uint256 _gasSpent
-    ) public view returns (uint256) {
-        int256 settlementTokenPrice = IOracleWrapper(ILeveragedPool(_pool).settlementEthOracle()).getPrice();
-
-        if (settlementTokenPrice <= 0) {
-            return 0;
-        } else {
-            /* gas spent plus our fixed gas overhead */
-            uint256 gasUsed = _gasSpent + FIXED_GAS_OVERHEAD;
-
-            /* safe due to explicit bounds check for settlementTokenPrice above */
-            /* (wei * Settlement / ETH) / fixed point (10^18) = amount in settlement */
-            bytes16 _weiSpent = ABDKMathQuad.fromUInt(_gasPrice * gasUsed);
-            bytes16 _settlementTokenPrice = ABDKMathQuad.fromUInt(uint256(settlementTokenPrice));
-            return
-                ABDKMathQuad.toUInt(ABDKMathQuad.div(ABDKMathQuad.mul(_weiSpent, _settlementTokenPrice), FIXED_POINT));
-        }
-    }
-
-    /**
-     * @notice Tip a keeper will receive for successfully updating the specified pool
-     * @param _savedPreviousUpdatedTimestamp Last timestamp when the pool's price execution happened
-     * @param _poolInterval Pool interval of the given pool
-     * @return Percent of the `keeperGas` cost to add to payment, as a percent
-     */
-    function keeperTip(uint256 _savedPreviousUpdatedTimestamp, uint256 _poolInterval) public view returns (uint256) {
-        /* the number of blocks that have elapsed since the given pool's updateInterval passed */
-        uint256 elapsedBlocksNumerator = (block.timestamp - (_savedPreviousUpdatedTimestamp + _poolInterval));
-
-        uint256 keeperTipAmount = BASE_TIP + (TIP_DELTA_PER_BLOCK * elapsedBlocksNumerator) / BLOCK_TIME;
-
-        // In case of network outages or otherwise, we want to cap the tip so that the keeper cost isn't unbounded
-        if (keeperTipAmount > MAX_TIP) {
-            return MAX_TIP;
-        } else {
-            return keeperTipAmount;
+        for (uint256 i = 0; i < numPools; ) {
+            performUpkeepSinglePool(CalldataLogic.getAddressAtOffset(offset));
+            unchecked {
+                offset += CalldataLogic.ADDRESS_LENGTH;
+                ++i;
+            }
         }
     }
 
@@ -297,7 +215,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @dev This function is only necessary due to the L2 deployment of Pools -- in reality, it should be `BASEFEE`
      * @dev Emits a `GasPriceChanged` event on success
      */
-    function setGasPrice(uint256 _price) external onlyOwner {
+    function setGasPrice(uint256 _price) external override onlyOwner {
         gasPrice = _price;
         emit GasPriceChanged(_price);
     }

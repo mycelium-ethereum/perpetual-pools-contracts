@@ -7,6 +7,8 @@ import "../interfaces/IAutoClaim.sol";
 
 import "@openzeppelin/contracts/utils/Address.sol";
 
+import "../libraries/CalldataLogic.sol";
+
 /// @title The contract to be used for paying to have a keeper claim your commit automatically
 /// @notice The way this works is when a user commits with `PoolCommitter::commit`, they have the option to set the `bool payForClaim` parameter to `true`.
 ///         During this function execution, `AutoClaim::payForClaim` is called, and `msg.value` is taken as the reward to whoever claims for requester (by using `AutoClaim::paidClaim`).
@@ -15,7 +17,7 @@ import "@openzeppelin/contracts/utils/Address.sol";
 contract AutoClaim is IAutoClaim {
     // User => PoolCommitter address => Claim Request
     mapping(address => mapping(address => ClaimRequest)) public claimRequests;
-    IPoolFactory internal poolFactory;
+    IPoolFactory internal immutable poolFactory;
 
     modifier onlyPoolCommitter() {
         require(poolFactory.isValidPoolCommitter(msg.sender), "msg.sender not valid PoolCommitter");
@@ -108,22 +110,61 @@ contract AutoClaim is IAutoClaim {
 
     /**
      * @notice Call `paidClaim` for multiple users, across multiple PoolCommitters.
-     * @param users All users to execute claims for.
-     * @param poolCommitterAddresses The PoolCommitter addresses within which you would like to claim for the respective user.
-     * @dev The nth index in poolCommitterAddresses should be the PoolCommitter where the nth address in user requested an auto claim.
+     * @param args1 Arguments for the function packed into a bytes array.
+     *                        __
+     *                       /  |
+     *    __ _ _ __ __ _ ___ `| |     _______________________________________________________________________________________________________________________
+     *   / _` | '__/ _` / __| | |    |          20 bytes          |          20 bytes         |          20 bytes          |          20 bytes         | ... |
+     *  | (_| | | | (_| \__ \_| |_   |      0th user address      |     1st user address      |      3rd user address      |      4th user address     | ... |
+     *   \__,_|_|  \__, |___/\___/    ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
+     *              __/ |
+     *             |___/
+     *                       ___
+     *                      |__ \
+     *    __ _ _ __ __ _ ___   ) |    _______________________________________________________________________________________________________________________
+     *   / _` | '__/ _` / __| / /    |          20 bytes          |          20 bytes         |          20 bytes          |          20 bytes         | ... |
+     *  | (_| | | | (_| \__ \/ /_    |  0th poolCommitter address | 1st poolCommitter address |  3rd poolCommitter address | 4th poolCommitter address | ... |
+     *   \__,_|_|  \__, |___/____|    ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
+     *              __/ |
+     *             |___/
+     *
+     * @dev The nth address in args2 should be the address of the PoolCommitter where the nth address in args1 requested an auto claim.
      */
-    function multiPaidClaimMultiplePoolCommitters(address[] calldata users, address[] calldata poolCommitterAddresses)
-        external
-        override
-    {
-        require(users.length == poolCommitterAddresses.length, "Supplied arrays must be same length");
+    function multiPaidClaimMultiplePoolCommitters(bytes calldata args1, bytes calldata args2) external override {
+        require(args1.length % CalldataLogic.ADDRESS_LENGTH == 0, "args must only include addresses");
+        require(args1.length == args2.length, "args must be same length");
         uint256 reward;
-        uint256 nrUsers = users.length;
-        for (uint256 i; i < nrUsers; i++) {
-            require(poolFactory.isValidPoolCommitter(poolCommitterAddresses[i]), "Invalid pool committer contract");
-            IPoolCommitter poolCommitter = IPoolCommitter(poolCommitterAddresses[i]);
-            uint256 currentUpdateIntervalId = poolCommitter.updateIntervalId();
-            reward += claim(users[i], poolCommitterAddresses[i], poolCommitter, currentUpdateIntervalId);
+        uint256 nrUsers = args1.length / CalldataLogic.ADDRESS_LENGTH;
+        uint256 poolCommittersOffset;
+        uint256 userOffset;
+        uint256 currentUpdateIntervalId;
+
+        assembly {
+            poolCommittersOffset := args2.offset
+            userOffset := args1.offset
+        }
+
+        address user;
+        address poolCommitterAddress;
+        for (uint256 i; i < nrUsers; ) {
+            // Fetch the next addresses
+            user = CalldataLogic.getAddressAtOffset(userOffset);
+            poolCommitterAddress = CalldataLogic.getAddressAtOffset(poolCommittersOffset);
+
+            // Make sure this PoolCommitter is one which has been deployed by the factory
+            require(poolFactory.isValidPoolCommitter(poolCommitterAddress), "Invalid pool committer contract");
+            IPoolCommitter poolCommitter = IPoolCommitter(poolCommitterAddress);
+
+            // Get the update interval ID of the pool committer we are using
+            currentUpdateIntervalId = poolCommitter.updateIntervalId();
+            reward += claim(user, poolCommitterAddress, poolCommitter, currentUpdateIntervalId);
+
+            unchecked {
+                ++i;
+                // The offset of the next addresses will be ADDRESS_LENGTH (20) bytes across
+                userOffset += CalldataLogic.ADDRESS_LENGTH;
+                poolCommittersOffset += CalldataLogic.ADDRESS_LENGTH;
+            }
         }
         if (reward > 0) {
             Address.sendValue(payable(msg.sender), reward);
@@ -132,20 +173,36 @@ contract AutoClaim is IAutoClaim {
 
     /**
      * @notice Call `paidClaim` for multiple users, in a single PoolCommitter.
-     * @param users All users to execute claims for.
+     * @param args Arguments for the function packed into a bytes array. Generated with L2Encoder.encode
+     *  _______________________________________________________________________________________________________________________
+     * |          20 bytes          |          20 bytes         |          20 bytes          |          20 bytes         | ... |
+     * |      0th user address      |     1st user address      |      3rd user address      |      4th user address     | ... |
+     *  ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
      * @param poolCommitterAddress The PoolCommitter address within which you would like to claim for the respective user
-     * @dev poolCommitterAddress should be the PoolCommitter where the nth address in user requested an auto claim
+     * @dev poolCommitterAddress should be the PoolCommitter where the all supplied user addresses requested an auto claim
      */
-    function multiPaidClaimSinglePoolCommitter(address[] calldata users, address poolCommitterAddress)
-        external
-        override
-    {
+    function multiPaidClaimSinglePoolCommitter(bytes calldata args, address poolCommitterAddress) external override {
+        require(args.length % CalldataLogic.ADDRESS_LENGTH == 0, "args must only include addresses");
+
+        uint256 nrUsers = args.length / CalldataLogic.ADDRESS_LENGTH;
+        uint256 userOffset;
+        assembly {
+            userOffset := args.offset
+        }
+
+        address user;
         uint256 reward;
         require(poolFactory.isValidPoolCommitter(poolCommitterAddress), "Invalid pool committer contract");
         IPoolCommitter poolCommitter = IPoolCommitter(poolCommitterAddress);
         uint256 currentUpdateIntervalId = poolCommitter.updateIntervalId();
-        for (uint256 i; i < users.length; i++) {
-            reward += claim(users[i], poolCommitterAddress, poolCommitter, currentUpdateIntervalId);
+        for (uint256 i; i < nrUsers; ) {
+            user = CalldataLogic.getAddressAtOffset(userOffset);
+            reward += claim(user, poolCommitterAddress, poolCommitter, currentUpdateIntervalId);
+
+            unchecked {
+                ++i;
+                userOffset += CalldataLogic.ADDRESS_LENGTH;
+            }
         }
         if (reward > 0) {
             Address.sendValue(payable(msg.sender), reward);

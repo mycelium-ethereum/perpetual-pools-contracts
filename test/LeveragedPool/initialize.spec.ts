@@ -13,6 +13,7 @@ import {
     PoolCommitter__factory,
     PoolCommitter,
     InvariantCheck,
+    L2Encoder,
 } from "../../types"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import {
@@ -52,6 +53,7 @@ describe("LeveragedPool - initialize", () => {
     let oracleWrapper: ChainlinkOracleWrapper
     let settlementEthOracle: ChainlinkOracleWrapper
     let invariantCheck: InvariantCheck
+    let l2Encoder: L2Encoder
 
     before(async () => {
         signers = await ethers.getSigners()
@@ -246,8 +248,9 @@ describe("LeveragedPool - initialize", () => {
         let poolCommitter: PoolCommitter
         let long: Contract
         let short: Contract
+        let setupContracts: any
         beforeEach(async () => {
-            const setupContracts = await deployPoolAndTokenContracts(
+            setupContracts = await deployPoolAndTokenContracts(
                 POOL_CODE,
                 frontRunningInterval,
                 updateInterval,

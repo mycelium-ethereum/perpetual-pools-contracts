@@ -7,6 +7,7 @@ import {
     ERC20,
     PoolSwapLibrary,
     PoolCommitter,
+    L2Encoder,
 } from "../../../types"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import {
@@ -46,6 +47,7 @@ describe("LeveragedPool - executeCommitment: Long Burn", () => {
     let signers: SignerWithAddress[]
     let commit: CommitEventArgs
     let library: PoolSwapLibrary
+    let l2Encoder: L2Encoder
     describe("Long Burn", () => {
         beforeEach(async () => {
             const result = await deployPoolAndTokenContracts(
@@ -62,9 +64,11 @@ describe("LeveragedPool - executeCommitment: Long Burn", () => {
             library = result.library
             longToken = result.longToken
             poolCommitter = result.poolCommitter
+            l2Encoder = result.l2Encoder
             await pool.setKeeper(signers[0].address)
             await token.approve(pool.address, amountMinted)
             commit = await createCommit(
+                l2Encoder,
                 poolCommitter,
                 [LONG_MINT],
                 amountCommitted
@@ -75,6 +79,7 @@ describe("LeveragedPool - executeCommitment: Long Burn", () => {
             await poolCommitter.claim(signers[0].address)
             await longToken.approve(pool.address, amountCommitted)
             commit = await createCommit(
+                l2Encoder,
                 poolCommitter,
                 [LONG_BURN],
                 amountCommitted

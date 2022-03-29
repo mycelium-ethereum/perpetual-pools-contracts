@@ -7,6 +7,7 @@ import {
     PoolCommitter,
     AutoClaim,
     PoolKeeper,
+    L2Encoder,
 } from "../../types"
 
 import { POOL_CODE, DEFAULT_FEE, LONG_MINT } from "../constants"
@@ -36,6 +37,7 @@ describe("AutoClaim - makePaidClaimRequest", () => {
     let autoClaim: AutoClaim
     let signers: SignerWithAddress[]
     let poolKeeper: PoolKeeper
+    let l2Encoder: L2Encoder
 
     beforeEach(async () => {
         const result = await deployPoolAndTokenContracts(
@@ -46,6 +48,7 @@ describe("AutoClaim - makePaidClaimRequest", () => {
             feeAddress,
             fee
         )
+        l2Encoder = result.l2Encoder
         pool = result.pool
         poolCommitter = result.poolCommitter
         autoClaim = result.autoClaim
@@ -67,6 +70,7 @@ describe("AutoClaim - makePaidClaimRequest", () => {
     context("When no pending request already exists", async () => {
         it("adds a new one", async () => {
             await createCommit(
+                l2Encoder,
                 poolCommitter,
                 LONG_MINT,
                 amountCommitted,
@@ -90,6 +94,7 @@ describe("AutoClaim - makePaidClaimRequest", () => {
         async () => {
             it("increments reward", async () => {
                 await createCommit(
+                    l2Encoder,
                     poolCommitter,
                     LONG_MINT,
                     amountCommitted,
@@ -98,6 +103,7 @@ describe("AutoClaim - makePaidClaimRequest", () => {
                     reward
                 )
                 await createCommit(
+                    l2Encoder,
                     poolCommitter,
                     LONG_MINT,
                     amountCommitted,
@@ -126,11 +132,17 @@ describe("AutoClaim - makePaidClaimRequest", () => {
                 await token
                     .connect(signers[1])
                     .approve(pool.address, amountMinted)
-                await poolCommitter
-                    .connect(signers[1])
-                    .commit(LONG_MINT, amountCommitted, false, true, {
-                        value: reward,
-                    })
+
+                await createCommit(
+                    l2Encoder,
+                    poolCommitter,
+                    LONG_MINT,
+                    amountCommitted,
+                    false,
+                    true,
+                    reward,
+                    signers[1]
+                )
                 await timeout(updateInterval * 1000)
                 await poolKeeper.performUpkeepSinglePool(pool.address)
 
@@ -138,13 +150,18 @@ describe("AutoClaim - makePaidClaimRequest", () => {
                     signers[1].address
                 )
 
-                const receipt = await (
-                    await poolCommitter
-                        .connect(signers[1])
-                        .commit(LONG_MINT, amountCommitted, false, true, {
-                            value: secondReward,
-                        })
-                ).wait()
+                const receipt = (
+                    await createCommit(
+                        l2Encoder,
+                        poolCommitter,
+                        LONG_MINT,
+                        amountCommitted,
+                        false,
+                        true,
+                        secondReward,
+                        signers[1]
+                    )
+                ).receipt
                 const gasCost = receipt.gasUsed.mul(receipt.effectiveGasPrice)
 
                 const request = await autoClaim.claimRequests(
