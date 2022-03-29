@@ -161,7 +161,7 @@ module.exports = async (hre) => {
     // const updateInterval = 3600 // 60 mins
     // const frontRunningInterval = 300 // 5 mins
     const updateInterval = 300 // 5 mins
-    const frontRunningInterval = 30 // 30 seconds
+    const frontRunningInterval = 2400 // 30 seconds
     const oneLeverage = 1
     const threeLeverage = 3
 
