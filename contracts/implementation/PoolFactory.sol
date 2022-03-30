@@ -67,8 +67,8 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
 
     // #### Functions
     constructor(address _feeReceiver, address _governance) {
-        require(_feeReceiver != address(0), "Address cannot be null");
-        require(_governance != address(0), "Address cannot be null");
+        require(_feeReceiver != address(0), "Fee receiver cannot be null");
+        require(_governance != address(0), "Governance cannot be null");
         governance = _governance;
 
         // Deploy base contracts
@@ -250,7 +250,7 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
      * @dev Emits a `PoolKeeperChanged` event on success
      */
     function setPoolKeeper(address _poolKeeper) external override onlyGov {
-        require(_poolKeeper != address(0), "address cannot be null");
+        require(_poolKeeper != address(0), "cannot be null");
         poolKeeper = IPoolKeeper(_poolKeeper);
         emit PoolKeeperChanged(_poolKeeper);
     }
@@ -262,7 +262,7 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
      * @dev Only callable by the owner
      */
     function setAutoClaim(address _autoClaim) external override onlyGov {
-        require(_autoClaim != address(0), "address cannot be null");
+        require(_autoClaim != address(0), "cannot be null");
         autoClaim = _autoClaim;
         emit AutoClaimChanged(_autoClaim);
     }
@@ -274,7 +274,7 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
      * @dev Only callable by the owner
      */
     function setInvariantCheck(address _invariantCheck) external override onlyGov {
-        require(_invariantCheck != address(0), "address cannot be null");
+        require(_invariantCheck != address(0), "cannot be null");
         invariantCheck = _invariantCheck;
         emit InvariantCheckChanged(_invariantCheck);
     }
@@ -287,7 +287,7 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
      * @dev Emits a `FeeReceiverChanged` event on success
      */
     function setFeeReceiver(address _feeReceiver) external override onlyGov {
-        require(_feeReceiver != address(0), "address cannot be null");
+        require(_feeReceiver != address(0), "Fee receiver cannot be null");
         feeReceiver = _feeReceiver;
         emit FeeReceiverChanged(_feeReceiver);
     }
@@ -330,7 +330,7 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
      */
     function transferGovernance(address _governance) external override onlyGov {
         require(_governance != governance, "New governance address cannot be same as old governance address");
-        require(_governance != address(0), "Governance address cannot be 0 address");
+        require(_governance != address(0), "Governance cannot be null");
         provisionalGovernance = _governance;
         governanceTransferInProgress = true;
         emit ProvisionalGovernanceChanged(_governance);

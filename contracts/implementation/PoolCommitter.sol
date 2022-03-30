@@ -131,7 +131,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         uint256 _changeInterval
     ) external override initializer {
         require(_factory != address(0), "Factory cannot be null");
-        require(_autoClaim != address(0), "AutoClaim address cannot be null");
+        require(_autoClaim != address(0), "AutoClaim cannot be null");
         require(_feeController != address(0), "fee controller cannot be null");
         require(_invariantCheck != address(0), "invariantCheck cannot be null");
         updateIntervalId = 1;
@@ -704,7 +704,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         update._maxIterations = unAggregatedLength < MAX_ITERATIONS ? uint8(unAggregatedLength) : MAX_ITERATIONS; // casting to uint8 is safe because we know it is less than MAX_ITERATIONS, a uint8
 
         // Iterate from the most recent up until the current update interval
-        for (uint256 i = 0; i < update._maxIterations; i++) {
+        for (uint256 i = 0; i < update._maxIterations; i = unchecked_inc(i)) {
             uint256 id = currentIntervalIds[i];
             if (id == 0) {
                 continue;
@@ -799,9 +799,8 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         uint256 unAggregatedLength = currentIntervalIds.length;
 
         update._maxIterations = unAggregatedLength < MAX_ITERATIONS ? uint8(unAggregatedLength) : MAX_ITERATIONS; // casting to uint8 is safe because we know it is less than MAX_ITERATIONS, a uint8
-
         // Iterate from the most recent up until the current update interval
-        for (uint256 i = 0; i < update._maxIterations; i++) {
+        for (uint256 i = 0; i < update._maxIterations; i = unchecked_inc(i)) {
             uint256 id = currentIntervalIds[i];
             if (id == 0) {
                 continue;
@@ -841,7 +840,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
      * @dev Emits a `SettlementAndPoolChanged` event on success
      */
     function setPool(address _leveragedPool) external override onlyFactory {
-        require(_leveragedPool != address(0), "Leveraged pool address cannot be 0 address");
+        require(_leveragedPool != address(0), "Leveraged pool cannot be null");
 
         leveragedPool = _leveragedPool;
         tokens = ILeveragedPool(leveragedPool).poolTokens();
@@ -904,5 +903,11 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
     function unpause() external override onlyGov {
         paused = false;
         emit Unpaused();
+    }
+
+    function unchecked_inc(uint256 i) private pure returns (uint256) {
+        unchecked {
+            return ++i;
+        }
     }
 }
