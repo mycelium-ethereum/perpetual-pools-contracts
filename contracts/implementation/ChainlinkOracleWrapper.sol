@@ -30,7 +30,7 @@ contract ChainlinkOracleWrapper is IOracleWrapper {
         }
     }
 
-    function decimals() external view override returns (uint8) {
+    function decimals() external pure override returns (uint8) {
         return MAX_DECIMALS;
     }
 
