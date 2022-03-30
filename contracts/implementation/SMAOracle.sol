@@ -4,6 +4,7 @@ pragma solidity 0.8.7;
 import "prb-math/contracts/PRBMathSD59x18.sol";
 
 import "../interfaces/IOracleWrapper.sol";
+import "../implementation/RingBuffer.sol";
 
 /**
  * @notice Applies a simple moving average (SMA) smoothing function to the spot
@@ -49,12 +50,8 @@ contract SMAOracle is IOracleWrapper {
      *
      */
 
-    /**
-     * @notice the stored spot prices by their period number
-     * @dev Only the most recent `numPeriods` prices are stored. The rest are deleted,
-     * which will result in a zero value for prices with index less than `periodCount - numPrices`.
-     */
-    mapping(uint256 => int256) public prices;
+    RingBuffer.RB_RingBuffer public prices;
+
     /// @notice the total number of periods that have occurred
     uint256 public periodCount;
 
@@ -152,14 +149,9 @@ contract SMAOracle is IOracleWrapper {
         int256 latestPrice = IOracleWrapper(oracle).getPrice();
 
         /* store the latest price */
-        prices[periodCount] = toWad(latestPrice);
+        prices = RingBuffer.push(prices, toWad(latestPrice));
 
-        /* if we've filled the numPeriods amount, delete the oldest price */
-        if (periodCount >= numPeriods) {
-            delete prices[periodCount - numPeriods];
-        }
-
-        periodCount++;
+        /* update most recent price timestamp */
         lastUpdate = block.timestamp;
     }
 
@@ -183,7 +175,7 @@ contract SMAOracle is IOracleWrapper {
 
         int256 sum;
         for (uint256 i = periodCount - k; i < periodCount; i++) {
-            sum += prices[i];
+            sum += prices.xs[i];
         }
 
         // This is safe because we know that `k` will be between 1 and MAX_PERIODS
