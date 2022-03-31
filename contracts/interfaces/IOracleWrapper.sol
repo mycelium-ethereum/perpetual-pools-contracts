@@ -3,7 +3,9 @@ pragma solidity 0.8.7;
 
 /// @title The oracle wrapper contract interface
 interface IOracleWrapper {
-    function oracle() external view returns (address);
+    function numOracles() external view returns (uint256);
+
+    function oracles(uint256 index) external view returns (address);
 
     function decimals() external view returns (uint8);
 

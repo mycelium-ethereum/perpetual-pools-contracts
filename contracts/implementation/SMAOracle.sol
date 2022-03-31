@@ -58,8 +58,9 @@ contract SMAOracle is IOracleWrapper {
     /// @notice the total number of periods that have occurred
     uint256 public periodCount;
 
-    /// Price feed to use for SMA
-    address public immutable override oracle;
+    uint256 public constant override numOracles = 1;
+    /// Index 0 holds the price feed to use for SMA
+    mapping(uint256 => address) public override oracles;
 
     // Deployer of the contract
     address public immutable override deployer;
@@ -80,23 +81,23 @@ contract SMAOracle is IOracleWrapper {
     int256 public immutable scaler;
 
     constructor(
-        address _inputOracle,
+        address _oracle,
         uint256 _numPeriods,
         uint256 _updateInterval,
         address _deployer
     ) {
-        require(_inputOracle != address(0) && _deployer != address(0), "SMA: Null address forbidden");
+        require(_oracle != address(0) && _deployer != address(0), "SMA: Null address forbidden");
         require(_numPeriods > 0 && _numPeriods <= MAX_PERIODS, "SMA: Out of bounds");
         require(_updateInterval != 0, "SMA: Update interval cannot be 0");
 
-        uint8 inputOracleDecimals = IOracleWrapper(_inputOracle).decimals();
-        require(inputOracleDecimals <= decimals, "SMA: Decimal precision too high");
+        uint8 oracleDecimals = IOracleWrapper(_oracle).decimals();
+        require(oracleDecimals <= decimals, "SMA: Decimal precision too high");
         /* `scaler` is always <= 10^18 and >= 1 so this cast is safe */
-        scaler = int256(10**(decimals - inputOracleDecimals));
+        scaler = int256(10**(decimals - oracleDecimals));
 
         numPeriods = _numPeriods;
         updateInterval = _updateInterval;
-        oracle = _inputOracle;
+        oracles[0] = _oracle;
         deployer = _deployer;
     }
 
@@ -149,7 +150,7 @@ contract SMAOracle is IOracleWrapper {
      */
     function _update() internal {
         /* query the underlying price feed */
-        int256 latestPrice = IOracleWrapper(oracle).getPrice();
+        int256 latestPrice = IOracleWrapper(oracles[0]).getPrice();
 
         /* store the latest price */
         prices[periodCount] = toWad(latestPrice);

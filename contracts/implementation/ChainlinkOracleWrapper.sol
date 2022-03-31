@@ -10,7 +10,9 @@ contract ChainlinkOracleWrapper is IOracleWrapper {
     /**
      * @notice The address of the feed oracle
      */
-    address public override oracle;
+    uint256 public constant override numOracles = 1;
+    mapping(uint256 => address) public override oracles;
+
     address public immutable override deployer;
     uint8 private constant MAX_DECIMALS = 18;
     int256 public scaler;
@@ -19,10 +21,10 @@ contract ChainlinkOracleWrapper is IOracleWrapper {
     constructor(address _oracle, address _deployer) {
         require(_oracle != address(0), "Oracle cannot be null");
         require(_deployer != address(0), "Deployer cannot be null");
-        oracle = _oracle;
+        oracles[0] = _oracle;
         deployer = _deployer;
         // reset the scaler for consistency
-        uint8 _decimals = AggregatorV2V3Interface(oracle).decimals();
+        uint8 _decimals = AggregatorV2V3Interface(_oracle).decimals();
         require(_decimals <= MAX_DECIMALS, "COA: too many decimals");
         // scaler is always <= 10^18 and >= 1 so this cast is safe
         unchecked {
@@ -56,8 +58,9 @@ contract ChainlinkOracleWrapper is IOracleWrapper {
      * @dev An internal function that gets the WAD value price and latest roundID
      */
     function _latestRoundData() internal view returns (int256, uint80) {
-        (uint80 roundID, int256 price, , uint256 timeStamp, uint80 answeredInRound) = AggregatorV2V3Interface(oracle)
-            .latestRoundData();
+        (uint80 roundID, int256 price, , uint256 timeStamp, uint80 answeredInRound) = AggregatorV2V3Interface(
+            oracles[0]
+        ).latestRoundData();
         require(answeredInRound >= roundID, "COA: Stale answer");
         require(timeStamp != 0, "COA: Round incomplete");
         return (toWad(price), roundID);

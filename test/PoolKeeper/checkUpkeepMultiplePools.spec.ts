@@ -173,7 +173,7 @@ describe("PoolKeeper - checkUpkeepMultiplePools", () => {
         /* induce price increase */
         underlyingOracle = (await ethers.getContractAt(
             "TestChainlinkOracle",
-            await oracleWrapper.oracle()
+            await oracleWrapper.oracles(0)
         )) as TestChainlinkOracle
     })
     it("should return true if the trigger condition is met", async () => {

@@ -75,7 +75,7 @@ describe("PoolKeeper - isUpkeepRequiredSinglePool", () => {
             const underlyingOracle: TestChainlinkOracle =
                 (await ethers.getContractAt(
                     "TestChainlinkOracle",
-                    await oracleWrapper.oracle()
+                    await oracleWrapper.oracles(0)
                 )) as TestChainlinkOracle
             await incrementPrice(underlyingOracle)
 
@@ -94,7 +94,7 @@ describe("PoolKeeper - isUpkeepRequiredSinglePool", () => {
             const underlyingOracle: TestChainlinkOracle =
                 (await ethers.getContractAt(
                     "TestChainlinkOracle",
-                    await oracleWrapper.oracle()
+                    await oracleWrapper.oracles(0)
                 )) as TestChainlinkOracle
             await incrementPrice(underlyingOracle)
 
