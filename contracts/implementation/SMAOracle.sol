@@ -59,8 +59,7 @@ contract SMAOracle is IOracleWrapper {
     uint256 public periodCount;
 
     uint256 public constant override numOracles = 1;
-    /// Index 0 holds the price feed to use for SMA
-    mapping(uint256 => address) public override oracles;
+    address private immutable oracle;
 
     // Deployer of the contract
     address public immutable override deployer;
@@ -97,8 +96,13 @@ contract SMAOracle is IOracleWrapper {
 
         numPeriods = _numPeriods;
         updateInterval = _updateInterval;
-        oracles[0] = _oracle;
+        oracle = _oracle;
         deployer = _deployer;
+    }
+
+    function oracles(uint256 index) public view override returns (address) {
+        require(index == 0, "SMA: Only one oracle is supported");
+        return oracle;
     }
 
     /**
@@ -150,7 +154,7 @@ contract SMAOracle is IOracleWrapper {
      */
     function _update() internal {
         /* query the underlying price feed */
-        int256 latestPrice = IOracleWrapper(oracles[0]).getPrice();
+        int256 latestPrice = IOracleWrapper(oracle).getPrice();
 
         /* store the latest price */
         prices[periodCount] = toWad(latestPrice);
