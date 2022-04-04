@@ -100,7 +100,7 @@ contract SMAOracle is IOracleWrapper {
         deployer = _deployer;
     }
 
-    function oracles(uint256 index) public view override returns (address) {
+    function oracles(uint256 index) external view override returns (address) {
         require(index == 0, "SMA: Only one oracle is supported");
         return oracle;
     }
