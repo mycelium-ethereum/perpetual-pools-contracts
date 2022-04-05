@@ -27,7 +27,7 @@ contract Resolver is IResolver {
             address pool = poolFactory.pools(i);
             if (poolKeeper.isUpkeepRequiredSinglePool(pool)) {
                 canExec = true;
-                execPayLoad = abi.encodeWithSelector(poolKeeper.isUpkeepRequiredSinglePool.selector, address(pool));
+                execPayLoad = abi.encodeWithSelector(poolKeeper.performUpkeepSinglePool.selector, address(pool));
             }
             if (canExec) break;
         }
