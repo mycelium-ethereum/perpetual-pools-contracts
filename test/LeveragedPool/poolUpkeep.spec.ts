@@ -116,31 +116,48 @@ describe("LeveragedPool - executeAllCommitments", async () => {
 
             const shortTokenTotalSupplyAfter = await shortToken.totalSupply()
             const longTokenTotalSupplyAfter = await longToken.totalSupply()
-            // (longBalance / (longTokenTotalSupply + longburnShadowPool)) * amountCommitted
-            //=(1000 + 1000) / 3000 * 2000 = 1333.333....
-            const expectedLongTokenDifference = "1333333333333333333333"
+
+            // tokensMinted = 1 / ((settlement/poolToken) / settlementCommitted)
+            //              = 1 / ((3462.117157260 / 2367.879441171) / amountCommitted)
+            //              = 1367.8794411...
+            const expectedLongTokenDifference = ethers.utils.parseEther(
+                "1367.879441171442321595"
+            )
 
             // Should be equal since the commits are long commits
             expect(shortTokenTotalSupplyAfter).to.equal(
                 shortTokenTotalSupplyBefore
             )
-            expect(longTokenTotalSupplyAfter).to.equal(
-                longTokenTotalSupplyBefore.add(expectedLongTokenDifference)
-            )
+            expect(
+                longTokenTotalSupplyAfter.sub(longTokenTotalSupplyBefore)
+            ).to.equal(expectedLongTokenDifference)
 
             const longBalanceAfter = await pool.longBalance()
             const shortBalanceAfter = await pool.shortBalance()
 
-            // Based on ratio and `getAmountOut`
-            const longBalanceDecreaseOnBurn = ethers.utils.parseEther("1500")
+            const shortBalanceDecrease = shortBalanceBefore
+                .sub(shortBalanceAfter)
+                .toString()
+
+            // Based on token price, (3462.117157260 / 2367.879441171)
+            // price * poolTokensBurnt
+            // = (3462.117157260 / 2367.879441171) * 1000 = 1462.11715726
+            const longBalanceDecreaseOnBurn = ethers.utils.parseEther(
+                "1462.117157260009758502"
+            )
+            expect(longBalanceDecreaseOnBurn).to.equal(
+                longBalanceBefore
+                    .add(shortBalanceDecrease)
+                    .add(amountCommitted)
+                    .sub(longBalanceAfter)
+            )
             // Long balance should increase by (the amount shortBalance decreases) + (the amount LONG MINT committed) - (the burn amount from the LONG BURN)
             expect(longBalanceAfter).to.equal(
                 longBalanceBefore
-                    .add(shortBalanceBefore.div(2))
+                    .add(shortBalanceDecrease)
                     .add(amountCommitted)
                     .sub(longBalanceDecreaseOnBurn)
             )
-            expect(shortBalanceAfter).to.equal(shortBalanceBefore.div(2))
         })
     })
 
