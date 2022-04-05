@@ -23,14 +23,11 @@ contract Resolver is IResolver {
      */
     function checker() external view override returns (bool canExec, bytes memory execPayLoad) {
         uint256 poolsLength = poolFactory.numPools();
-        for (uint256 i = 0; i < poolsLength; ) {
+        for (uint256 i = 0; i < poolsLength; i++) {
             address pool = poolFactory.pools(i);
             if (poolKeeper.isUpkeepRequiredSinglePool(pool)) {
                 canExec = true;
                 execPayLoad = abi.encodeWithSelector(poolKeeper.isUpkeepRequiredSinglePool.selector, address(pool));
-            }
-            unchecked {
-                ++i;
             }
             if (canExec) break;
         }
