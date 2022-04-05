@@ -4,6 +4,7 @@ pragma solidity 0.8.7;
 import "../interfaces/ILeveragedPool.sol";
 import "../interfaces/IPoolCommitter.sol";
 import "../interfaces/IPoolToken.sol";
+import "../interfaces/IPoolKeeper.sol";
 import "../interfaces/IInvariantCheck.sol";
 import "../interfaces/IPausable.sol";
 import "../interfaces/ITwoStepGovernance.sol";
@@ -11,7 +12,7 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "./PoolSwapLibrary.sol";
+import "../libraries/PoolSwapLibrary.sol";
 import "../interfaces/IOracleWrapper.sol";
 
 /// @title The pool contract itself
@@ -36,9 +37,13 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
     bool public override paused;
     bool public override governanceTransferInProgress;
     address public keeper;
+    // When feeAddress changes, all prior fees are assigned to the new address
     address public feeAddress;
     address public secondaryFeeAddress;
     uint256 public secondaryFeeSplitPercent; // Split to secondary fee address as a percentage.
+    // Amount of fees assigned to either feeAddress (primaryFees), or secondaryFeeAddress (secondaryFees)
+    uint256 public override primaryFees;
+    uint256 public override secondaryFees;
     address public override settlementToken;
     address public override poolCommitter;
     address public override oracleWrapper;
@@ -52,6 +57,11 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
 
     modifier onlyKeeper() {
         require(msg.sender == keeper, "msg.sender not keeper");
+        _;
+    }
+
+    modifier onlyKeeperRewards() {
+        require(msg.sender == IPoolKeeper(keeper).keeperRewards(), "msg.sender not keeperRewards");
         _;
     }
 
@@ -78,16 +88,16 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
     // #### Functions
 
     function initialize(ILeveragedPool.Initialization calldata initialization) external override initializer {
-        require(initialization._feeAddress != address(0), "Fee address cannot be 0 address");
-        require(initialization._settlementToken != address(0), "Settlement token cannot be 0 address");
-        require(initialization._oracleWrapper != address(0), "Oracle wrapper cannot be 0 address");
-        require(initialization._settlementEthOracle != address(0), "Keeper oracle cannot be 0 address");
-        require(initialization._owner != address(0), "Owner cannot be 0 address");
-        require(initialization._keeper != address(0), "Keeper cannot be 0 address");
-        require(initialization._longToken != address(0), "Long token cannot be 0 address");
-        require(initialization._shortToken != address(0), "Short token cannot be 0 address");
-        require(initialization._poolCommitter != address(0), "PoolCommitter cannot be 0 address");
-        require(initialization._invariantCheck != address(0), "InvariantCheck cannot be 0 address");
+        require(initialization._feeAddress != address(0), "Fee cannot be null");
+        require(initialization._settlementToken != address(0), "Settlement token cannot be null");
+        require(initialization._oracleWrapper != address(0), "Oracle wrapper cannot be null");
+        require(initialization._settlementEthOracle != address(0), "Keeper oracle cannot be null");
+        require(initialization._owner != address(0), "Owner cannot be null");
+        require(initialization._keeper != address(0), "Keeper cannot be null");
+        require(initialization._longToken != address(0), "Long token cannot be null");
+        require(initialization._shortToken != address(0), "Short token cannot be null");
+        require(initialization._poolCommitter != address(0), "PoolCommitter cannot be null");
+        require(initialization._invariantCheck != address(0), "InvariantCheck cannot be null");
         require(initialization._fee < PoolSwapLibrary.WAD_PRECISION, "Fee >= 100%");
         require(initialization._secondaryFeeSplitPercent <= 100, "Secondary fee split cannot exceed 100%");
         require(initialization._updateInterval != 0, "Update interval cannot be 0");
@@ -169,7 +179,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
     function payKeeperFromBalances(address to, uint256 amount)
         external
         override
-        onlyKeeper
+        onlyKeeperRewards
         onlyUnpaused
         returns (bool)
     {
@@ -293,13 +303,41 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
     }
 
     /**
-     * @notice Execute the fee transfer transactions. Transfers fees to primary fee address (DAO) and secondary (pool deployer).
+     * @notice Transfer primary fees to the primary fee address
+     * @dev Calls ERC20.safeTransfer on the settlement token
+     * @dev Emits a PrimaryFeesPaid event
+     */
+    function claimPrimaryFees() external override {
+        uint256 tempPrimaryFees = primaryFees;
+        primaryFees = 0;
+        IERC20(settlementToken).safeTransfer(feeAddress, tempPrimaryFees);
+        emit PrimaryFeesPaid(feeAddress, tempPrimaryFees);
+    }
+
+    /**
+     * @notice Transfer secondary fees to the secondary fee address
+     * @dev Calls ERC20.safeTransfer on the settlement token
+     * @dev Emits a SecondaryFeesPaid event
+     */
+    function claimSecondaryFees() external override {
+        uint256 tempSecondaryFees = secondaryFees;
+        secondaryFees = 0;
+        IERC20(settlementToken).safeTransfer(secondaryFeeAddress, tempSecondaryFees);
+        emit SecondaryFeesPaid(secondaryFeeAddress, tempSecondaryFees);
+    }
+
+    /**
+     * @notice Increment fee amounts. Allows primary or secondary fees to be claimed with either `claimPrimaryFees` or `claimSecondaryFees` respectively.
      *         If the DAO is the fee deployer, secondary fee address should be address(0) and all fees go to DAO.
      * @param totalFeeAmount total amount of fees paid
      */
     function feeTransfer(uint256 totalFeeAmount) internal {
         if (secondaryFeeAddress == address(0)) {
-            IERC20(settlementToken).safeTransfer(feeAddress, totalFeeAmount);
+            // IERC20(settlementToken).safeTransfer(feeAddress, totalFeeAmount);
+            unchecked {
+                // Overflow would require more than settlement's entire total supply
+                primaryFees += totalFeeAmount;
+            }
         } else {
             uint256 secondaryFee = PoolSwapLibrary.mulFraction(totalFeeAmount, secondaryFeeSplitPercent, 100);
             uint256 remainder;
@@ -309,6 +347,11 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
                 remainder = totalFeeAmount - secondaryFee;
             }
             IERC20 _settlementToken = IERC20(settlementToken);
+            unchecked {
+                // Overflow would require more than settlement's entire total supply
+                secondaryFees += secondaryFee;
+                primaryFees += remainder;
+            }
             if (secondaryFee != 0) {
                 _settlementToken.safeTransfer(secondaryFeeAddress, secondaryFee);
             }
@@ -373,7 +416,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
      * @dev Emits `FeeAddressUpdated` event on success
      */
     function updateFeeAddress(address account) external override onlyGov onlyUnpaused {
-        require(account != address(0), "Account cannot be 0 address");
+        require(account != address(0), "Account cannot be null");
         address oldFeeAddress = feeAddress;
         feeAddress = account;
         emit FeeAddressUpdated(oldFeeAddress, account);
@@ -395,7 +438,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
      * @param _keeper New address of the keeper contract
      */
     function setKeeper(address _keeper) external override onlyGov {
-        require(_keeper != address(0), "Keeper address cannot be 0 address");
+        require(_keeper != address(0), "Keeper cannot be null");
         address oldKeeper = keeper;
         keeper = _keeper;
         emit KeeperAddressChanged(oldKeeper, _keeper);
@@ -413,7 +456,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
      */
     function transferGovernance(address _governance) external override onlyGov {
         require(_governance != governance, "New governance address cannot be same as old governance address");
-        require(_governance != address(0), "Governance address cannot be 0 address");
+        require(_governance != address(0), "Governance cannot be null");
         provisionalGovernance = _governance;
         governanceTransferInProgress = true;
         emit ProvisionalGovernanceChanged(_governance);

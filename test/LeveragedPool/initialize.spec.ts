@@ -13,6 +13,7 @@ import {
     PoolCommitter__factory,
     PoolCommitter,
     InvariantCheck,
+    L2Encoder,
 } from "../../types"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import {
@@ -52,6 +53,7 @@ describe("LeveragedPool - initialize", () => {
     let oracleWrapper: ChainlinkOracleWrapper
     let settlementEthOracle: ChainlinkOracleWrapper
     let invariantCheck: InvariantCheck
+    let l2Encoder: L2Encoder
 
     before(async () => {
         signers = await ethers.getSigners()
@@ -246,8 +248,9 @@ describe("LeveragedPool - initialize", () => {
         let poolCommitter: PoolCommitter
         let long: Contract
         let short: Contract
+        let setupContracts: any
         beforeEach(async () => {
-            const setupContracts = await deployPoolAndTokenContracts(
+            setupContracts = await deployPoolAndTokenContracts(
                 POOL_CODE,
                 frontRunningInterval,
                 updateInterval,
@@ -349,7 +352,7 @@ describe("LeveragedPool - initialize", () => {
                     _settlementToken: ethers.constants.AddressZero,
                     _secondaryFeeSplitPercent: 10,
                 })
-            ).to.rejectedWith("Settlement token cannot be 0 address")
+            ).to.rejectedWith("Settlement token cannot be null")
         })
         it("should revert if oracleWrapper address is the zero address", async () => {
             await expect(
@@ -372,7 +375,7 @@ describe("LeveragedPool - initialize", () => {
                     _settlementToken: settlementToken,
                     _secondaryFeeSplitPercent: 10,
                 })
-            ).to.rejectedWith("Oracle wrapper cannot be 0 address")
+            ).to.rejectedWith("Oracle wrapper cannot be null")
         })
         it("should revert if the fee address is the zero address", async () => {
             await expect(
@@ -395,7 +398,7 @@ describe("LeveragedPool - initialize", () => {
                     _settlementToken: settlementToken,
                     _secondaryFeeSplitPercent: 10,
                 })
-            ).to.rejectedWith("Fee address cannot be 0 address")
+            ).to.rejectedWith("Fee cannot be null")
         })
         it("should revert if the update interval is zero", async () => {
             await expect(

@@ -19,10 +19,10 @@ interface IPoolCommitter {
         uint256 newLongBalance;
         uint256 longMintPoolTokens;
         uint256 shortMintPoolTokens;
-        uint256 longBurnInstantMintAmount;
-        uint256 shortBurnInstantMintAmount;
-        uint256 totalLongBurn;
-        uint256 totalShortBurn;
+        uint256 longBurnInstantMintSettlement;
+        uint256 shortBurnInstantMintSettlement;
+        uint256 totalLongBurnPoolTokens;
+        uint256 totalShortBurnPoolTokens;
     }
 
     // User aggregate balance
@@ -63,24 +63,19 @@ interface IPoolCommitter {
         uint256 _newLongTokensSum;
         uint256 _newShortTokensSum;
         uint256 _newSettlementTokensSum;
-        uint256 _balanceLongBurnPoolTokens;
-        uint256 _balanceShortBurnPoolTokens;
         uint256 _longBurnFee;
         uint256 _shortBurnFee;
+        uint8 _maxIterations;
     }
 
     // Track how much of a user's commitments are being done from their aggregate balance
     struct UserCommitment {
         uint256 longMintSettlement;
         uint256 longBurnPoolTokens;
-        uint256 balanceLongBurnPoolTokens;
         uint256 shortMintSettlement;
         uint256 shortBurnPoolTokens;
-        uint256 balanceShortBurnPoolTokens;
         uint256 shortBurnLongMintPoolTokens;
-        uint256 balanceShortBurnMintPoolTokens;
         uint256 longBurnShortMintPoolTokens;
-        uint256 balanceLongBurnMintPoolTokens;
         uint256 updateIntervalId;
     }
 
@@ -163,12 +158,7 @@ interface IPoolCommitter {
         uint256 _changeInterval
     ) external;
 
-    function commit(
-        CommitType commitType,
-        uint256 amount,
-        bool fromAggregateBalance,
-        bool payForClaim
-    ) external payable;
+    function commit(bytes32 args) external payable;
 
     function updateIntervalId() external view returns (uint128);
 

@@ -40,8 +40,6 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
     uint8 constant MAX_DECIMALS = DEFAULT_NUM_DECIMALS;
     // Considering leap year thus using 365.2425 days per year
     uint32 constant DAYS_PER_LEAP_YEAR = 365.2425 days;
-    // Default max leverage of 10
-    uint16 public maxLeverage = 10;
     // Contract address to receive protocol fees
     address public feeReceiver;
 
@@ -69,8 +67,8 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
 
     // #### Functions
     constructor(address _feeReceiver, address _governance) {
-        require(_feeReceiver != address(0), "Address cannot be null");
-        require(_governance != address(0), "Address cannot be null");
+        require(_feeReceiver != address(0), "Fee receiver cannot be null");
+        require(_governance != address(0), "Governance cannot be null");
         governance = _governance;
 
         // Deploy base contracts
@@ -132,10 +130,7 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
             IOracleWrapper(deploymentParameters.oracleWrapper).deployer() == msg.sender,
             "Deployer must be oracle wrapper owner"
         );
-        require(
-            deploymentParameters.leverageAmount >= 1 && deploymentParameters.leverageAmount <= maxLeverage,
-            "PoolKeeper: leveraged amount invalid"
-        );
+        require(deploymentParameters.leverageAmount != 0, "Leveraged amount cannot equal 0");
         require(
             IERC20DecimalsWrapper(deploymentParameters.settlementToken).decimals() <= MAX_DECIMALS,
             "Decimal precision too high"
@@ -165,15 +160,6 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
             deploymentParameters.mintingFee,
             deploymentParameters.burningFee,
             deploymentParameters.changeInterval
-        );
-
-        require(
-            deploymentParameters.leverageAmount >= 1 && deploymentParameters.leverageAmount <= maxLeverage,
-            "PoolKeeper: leveraged amount invalid"
-        );
-        require(
-            IERC20DecimalsWrapper(deploymentParameters.settlementToken).decimals() <= MAX_DECIMALS,
-            "Decimal precision too high"
         );
 
         LeveragedPoolBalanceDrainMock pool = LeveragedPoolBalanceDrainMock(
@@ -230,14 +216,14 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
 
     /**
      * @notice Deploy a contract for pool tokens
-     * @param poolOwner Address of the owner of the pool
+     * @param pool The pool address, owner of the Pool Token
      * @param leverage Amount of leverage for pool
      * @param deploymentParameters Deployment parameters for parent function
      * @param direction Long or short token, L- or S-
      * @return Address of the pool token
      */
     function deployPairToken(
-        address poolOwner,
+        address pool,
         string memory leverage,
         PoolDeployment memory deploymentParameters,
         string memory direction
@@ -254,7 +240,7 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
         );
 
         PoolToken pairToken = PoolToken(Clones.cloneDeterministic(pairTokenBaseAddress, uniqueTokenHash));
-        pairToken.initialize(poolOwner, poolNameAndSymbol, poolNameAndSymbol, settlementDecimals);
+        pairToken.initialize(pool, poolNameAndSymbol, poolNameAndSymbol, settlementDecimals);
         return address(pairToken);
     }
 
@@ -270,7 +256,7 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
      * @dev Emits a `PoolKeeperChanged` event on success
      */
     function setPoolKeeper(address _poolKeeper) external override onlyGov {
-        require(_poolKeeper != address(0), "address cannot be null");
+        require(_poolKeeper != address(0), "cannot be null");
         poolKeeper = IPoolKeeper(_poolKeeper);
         emit PoolKeeperChanged(_poolKeeper);
     }
@@ -282,7 +268,7 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
      * @dev Only callable by the owner
      */
     function setAutoClaim(address _autoClaim) external override onlyGov {
-        require(_autoClaim != address(0), "address cannot be null");
+        require(_autoClaim != address(0), "cannot be null");
         autoClaim = _autoClaim;
         emit AutoClaimChanged(_autoClaim);
     }
@@ -294,22 +280,9 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
      * @dev Only callable by the owner
      */
     function setInvariantCheck(address _invariantCheck) external override onlyGov {
-        require(_invariantCheck != address(0), "address cannot be null");
+        require(_invariantCheck != address(0), "cannot be null");
         invariantCheck = _invariantCheck;
         emit InvariantCheckChanged(_invariantCheck);
-    }
-
-    /**
-     * @notice Sets the maximum leverage
-     * @param newMaxLeverage Maximum leverage permitted for all pools
-     * @dev Throws if provided maximum leverage is non-positive
-     * @dev Only callable by the owner
-     * @dev Emits a `MaxLeverageChanged` event on success
-     */
-    function setMaxLeverage(uint16 newMaxLeverage) external override onlyGov {
-        require(newMaxLeverage > 0, "Maximum leverage must be non-zero");
-        maxLeverage = newMaxLeverage;
-        emit MaxLeverageChanged(newMaxLeverage);
     }
 
     /**
@@ -320,7 +293,7 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
      * @dev Emits a `FeeReceiverChanged` event on success
      */
     function setFeeReceiver(address _feeReceiver) external override onlyGov {
-        require(_feeReceiver != address(0), "address cannot be null");
+        require(_feeReceiver != address(0), "Fee receiver cannot be null");
         feeReceiver = _feeReceiver;
         emit FeeReceiverChanged(_feeReceiver);
     }
@@ -363,7 +336,7 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
      */
     function transferGovernance(address _governance) external override onlyGov {
         require(_governance != governance, "New governance address cannot be same as old governance address");
-        require(_governance != address(0), "Governance address cannot be 0 address");
+        require(_governance != address(0), "Governance cannot be null");
         provisionalGovernance = _governance;
         governanceTransferInProgress = true;
         emit ProvisionalGovernanceChanged(_governance);

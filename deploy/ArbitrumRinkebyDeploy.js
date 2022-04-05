@@ -4,6 +4,23 @@ module.exports = async (hre) => {
     const { deployer } = await getNamedAccounts()
     const accounts = await ethers.getSigners()
 
+    const BTC_POOL_CODE = "BTC/USD"
+    const ETH_POOL_CODE = "ETH/USD"
+
+    const DEPLOY_POOL_GAS_LIMIT = 10000000
+
+    const POOL_DEFAULT_MINTING_FEE = ethers.utils.parseEther("0.015")
+    const POOL_DEFAULT_BURNING_FEE = ethers.utils.parseEther("0.015")
+    const POOL_DEFAULT_FRONT_RUNNING_INTERVAL = 2400
+    const POOL_DEFAULT_UPDATE_INTERVAL = 300
+    const POOL_DEFAULT_CHANGE_INTERVAL = "0"
+
+    const ONE_LEVERAGE = 1
+    const THREE_LEVERAGE = 3
+
+    const SMA_DEFAULT_PERIODS = 24
+    const SMA_DEFAULT_UPDATE_INTERVAL = 300
+
     const arbitrumRinkEthUsdOracle = {
         address: "0x5f0423B1a6935dc5596e7A24d98532b67A0AeFd8",
     }
@@ -13,7 +30,7 @@ module.exports = async (hre) => {
 
     /* deploy testToken */
     const token = await deploy("TestToken", {
-        args: ["Test Tracer USDC", "TUSDC"],
+        args: ["Perpetual USD", "PPUSD"],
         from: deployer,
         log: true,
         contract: "TestToken",
@@ -27,72 +44,40 @@ module.exports = async (hre) => {
             log: true,
         },
         "mint",
-        ethers.utils.parseEther("10000000"), // 10 mil supply
-        accounts[0].address
+        accounts[0].address,
+        ethers.utils.parseEther("100000000") // 100 mil supply
     )
 
-    // deploy ChainlinkOracleWrapper
-    const oracleWrapper = await deploy("BtcUsdOracleWrapper", {
+    // base btc usd oracle wrapper
+    const btcOracleWrapper = await deploy("BtcUsdOracleWrapper", {
         from: deployer,
         log: true,
         contract: "ChainlinkOracleWrapper",
         args: [arbitrumRinkBtcUsdOracle.address, deployer],
     })
 
-    // deploy ChainlinkOracleWrapper for keeper
-    const keeperOracle = await deploy("ETHChainlinkOracleWrapper", {
+    // base eth usd oracle wrapper
+    const ethOracleWrapper = await deploy("EthUsdOracleWrapper", {
         from: deployer,
         log: true,
         contract: "ChainlinkOracleWrapper",
         args: [arbitrumRinkEthUsdOracle.address, deployer],
     })
 
-    // deploy SMA PriceObserver
-    const priceObserver = await deploy("EthUsdPriceObserver", {
-        from: deployer,
-        log: true,
-        contract: "PriceObserver",
-    })
-
-    // deploy SMA Oracle
-    // Note: if SMA oracle is not 24 periods you can't deploy oracle and pool in one go. Will need to wait until SMA oracle has enough periods before deploying pool.
-    const smaOracleWrapper = await deploy("EthUsdPriceSMAOracle", {
-        from: deployer,
-        log: true,
-        contract: "SMAOracle",
-        args: [
-            keeperOracle.address, //Oracle Address
-            8, //Spot decimals
-            priceObserver.address, //Observer address
-            24, // number of periods
-            3600, // Update interval
-            deployer, // deployer address
-        ],
-    })
-
-    // Set Writer on Price Observer to SMA Oracle
-    await execute(
-        "EthUsdPriceObserver",
-        {
-            from: deployer,
-            log: true,
-        },
-        "setWriter",
-        smaOracleWrapper.address
-    )
-
-    // Poll so there is an initial price
-    await execute(
-        "EthUsdPriceSMAOracle",
-        {
-            from: deployer,
-            log: true,
-        },
-        "poll"
-    )
-
     // deploy PoolSwapLibrary
     const library = await deploy("PoolSwapLibrary", {
+        from: deployer,
+        log: true,
+    })
+
+    // deploy CalldataLogic
+    const calldataLogic = await deploy("CalldataLogic", {
+        from: deployer,
+        log: true,
+    })
+
+    // deploy L2Encoder
+    const l2Encoder = await deploy("L2Encoder", {
         from: deployer,
         log: true,
     })
@@ -103,7 +88,7 @@ module.exports = async (hre) => {
         log: true,
         libraries: { PoolSwapLibrary: library.address },
         // (fee receiver)
-        args: [deployer],
+        args: [deployer, deployer],
     })
 
     // deploy InvariantCheck
@@ -127,6 +112,25 @@ module.exports = async (hre) => {
         libraries: { PoolSwapLibrary: library.address },
         args: [factory.address],
     })
+
+    // deploy keeper rewards
+    const keeperRewards = await deploy("KeeperRewards", {
+        from: deployer,
+        log: true,
+        libraries: { CalldataLogic: calldataLogic.address },
+        args: [poolKeeper.address],
+    })
+
+    // set keeper rewards
+    await execute(
+        "PoolKeeper",
+        {
+            from: deployer,
+            log: true,
+        },
+        "setKeeperRewards",
+        keeperRewards.address
+    )
 
     // Set PoolKeeper
     await execute(
@@ -162,72 +166,121 @@ module.exports = async (hre) => {
         fee
     )
 
-    const BTC_POOL_CODE = "BTC/USD"
-    const ETH_POOL_CODE = "ETH/USD"
+    await execute(
+        "PoolFactory",
+        {
+            from: deployer,
+            log: true,
+        },
+        "setInvariantCheck",
+        invariantCheck.address
+    )
 
-    const updateInterval = 3600 // 60 mins
-    const frontRunningInterval = 300 // 5 mins
-    const oneLeverage = 1
-    const threeLeverage = 3
-    // deploy LeveragePool
-    // BTC-USD 1x
-    const deploymentData1 = {
-        poolName: BTC_POOL_CODE,
-        frontRunningInterval: frontRunningInterval,
-        updateInterval: updateInterval,
-        leverageAmount: oneLeverage,
-        quoteToken: token.address,
-        oracleWrapper: oracleWrapper.address,
-        settlementEthOracle: keeperOracle.address,
-        invariantCheckContract: invariantCheck.address,
-    }
+    // deploy ETH SMA Oracle
+    const ethSmaOracleWrapper = await deploy("EthUsdSMAOracle", {
+        from: deployer,
+        log: true,
+        contract: "SMAOracle",
+        args: [
+            ethOracleWrapper.address, //Oracle Address
+            SMA_DEFAULT_PERIODS, // number of periods
+            SMA_DEFAULT_UPDATE_INTERVAL, // Update interval
+            deployer, // deployer address
+        ],
+    })
 
-    // BTC-USD 3x
-    const deploymentData2 = {
-        poolName: BTC_POOL_CODE,
-        frontRunningInterval: frontRunningInterval,
-        updateInterval: updateInterval,
-        leverageAmount: threeLeverage,
-        quoteToken: token.address,
-        oracleWrapper: oracleWrapper.address,
-        settlementEthOracle: keeperOracle.address,
-        invariantCheckContract: invariantCheck.address,
-    }
+    // Poll so there is an initial price
+    await execute(
+        "EthUsdSMAOracle",
+        {
+            from: deployer,
+            log: true,
+        },
+        "poll"
+    )
+
+    const btcSmaOracleWrapper = await deploy("BtcUsdSMAOracle", {
+        from: deployer,
+        log: true,
+        contract: "SMAOracle",
+        args: [
+            btcOracleWrapper.address, //Oracle Address
+            SMA_DEFAULT_PERIODS, // number of periods
+            SMA_DEFAULT_UPDATE_INTERVAL, // Update interval
+            deployer, // deployer address
+        ],
+    })
+
+    // Poll so there is an initial price
+    await execute(
+        "BtcUsdSMAOracle",
+        {
+            from: deployer,
+            log: true,
+        },
+        "poll"
+    )
+
+    // deploy pools
 
     // ETH-USD 1x
-    const deploymentData3 = {
+    const deploymentData1 = {
         poolName: ETH_POOL_CODE,
-        frontRunningInterval: frontRunningInterval,
-        updateInterval: updateInterval,
-        leverageAmount: oneLeverage,
-        quoteToken: token.address,
-        oracleWrapper: keeperOracle.address,
-        settlementEthOracle: keeperOracle.address,
-        invariantCheckContract: invariantCheck.address,
+        frontRunningInterval: POOL_DEFAULT_FRONT_RUNNING_INTERVAL,
+        updateInterval: POOL_DEFAULT_UPDATE_INTERVAL,
+        leverageAmount: ONE_LEVERAGE,
+        settlementToken: token.address,
+        oracleWrapper: ethSmaOracleWrapper.address,
+        settlementEthOracle: ethOracleWrapper.address,
+        feeController: deployer,
+        mintingFee: POOL_DEFAULT_MINTING_FEE,
+        burningFee: POOL_DEFAULT_BURNING_FEE,
+        changeInterval: POOL_DEFAULT_CHANGE_INTERVAL,
     }
 
     // ETH-USD 3x
-    const deploymentData4 = {
+    const deploymentData2 = {
         poolName: ETH_POOL_CODE,
-        frontRunningInterval: frontRunningInterval,
-        updateInterval: updateInterval,
-        leverageAmount: threeLeverage,
-        quoteToken: token.address,
-        oracleWrapper: keeperOracle.address,
-        settlementEthOracle: keeperOracle.address,
-        invariantCheckContract: invariantCheck.address,
+        frontRunningInterval: POOL_DEFAULT_FRONT_RUNNING_INTERVAL,
+        updateInterval: POOL_DEFAULT_UPDATE_INTERVAL,
+        leverageAmount: THREE_LEVERAGE,
+        settlementToken: token.address,
+        oracleWrapper: ethSmaOracleWrapper.address,
+        settlementEthOracle: ethOracleWrapper.address,
+        feeController: deployer,
+        mintingFee: POOL_DEFAULT_MINTING_FEE,
+        burningFee: POOL_DEFAULT_BURNING_FEE,
+        changeInterval: POOL_DEFAULT_CHANGE_INTERVAL,
     }
 
-    // Eth-USD 3x SMA Oracle
-    const deploymentData5 = {
-        poolName: ETH_POOL_CODE,
-        frontRunningInterval: frontRunningInterval,
-        updateInterval: updateInterval,
-        leverageAmount: threeLeverage,
-        quoteToken: token.address,
-        oracleWrapper: smaOracleWrapper.address,
-        settlementEthOracle: keeperOracle.address,
-        invariantCheckContract: invariantCheck.address,
+    // BTC-USD 1x
+    const deploymentData3 = {
+        poolName: BTC_POOL_CODE,
+        frontRunningInterval: POOL_DEFAULT_FRONT_RUNNING_INTERVAL,
+        updateInterval: POOL_DEFAULT_UPDATE_INTERVAL,
+        leverageAmount: ONE_LEVERAGE,
+        settlementToken: token.address,
+        oracleWrapper: btcSmaOracleWrapper.address,
+        settlementEthOracle: ethOracleWrapper.address,
+        feeController: deployer,
+        mintingFee: POOL_DEFAULT_MINTING_FEE,
+        burningFee: POOL_DEFAULT_BURNING_FEE,
+        changeInterval: POOL_DEFAULT_CHANGE_INTERVAL,
+    }
+
+    // BTC-USD 3x
+    const deploymentData4 = {
+        poolName: BTC_POOL_CODE,
+        frontRunningInterval: POOL_DEFAULT_FRONT_RUNNING_INTERVAL,
+        updateInterval: POOL_DEFAULT_UPDATE_INTERVAL,
+        leverageAmount: THREE_LEVERAGE,
+        settlementToken: token.address,
+        oracleWrapper: btcSmaOracleWrapper.address,
+        settlementEthOracle: ethOracleWrapper.address,
+        feeController: deployer,
+        mintingFee: POOL_DEFAULT_MINTING_FEE,
+        burningFee: POOL_DEFAULT_BURNING_FEE,
+        changeInterval: POOL_DEFAULT_CHANGE_INTERVAL,
     }
 
     const deploymentData = [
@@ -235,28 +288,30 @@ module.exports = async (hre) => {
         deploymentData2,
         deploymentData3,
         deploymentData4,
-        deploymentData5,
     ]
 
-    // console.log(`Deploy PoolKeeper: ${poolKeeper.address}`)
+    console.log(`Deployed TestToken: ${token.address}`)
+    console.log(`Deployed PoolFactory: ${factory.address}`)
+    console.log(`Deployed PoolSwapLibrary: ${library.address}`)
+    console.log(`Deployed CalldataLogic: ${calldataLogic.address}`)
+    console.log(`Deployed L2Encoder: ${l2Encoder.address}`)
+    console.log(`Deployed PoolKeeper: ${poolKeeper.address}`)
+
     for (var i = 0; i < deploymentData.length; i++) {
         let receipt = await execute(
             "PoolFactory",
             {
                 from: deployer,
                 log: true,
+                gasLimit: DEPLOY_POOL_GAS_LIMIT,
             },
             "deployPool",
             deploymentData[i]
         )
         const event = receipt.events.find((el) => el.event === "DeployPool")
 
-        console.log(`Deployed PoolFactory: ${factory.address}`)
         console.log(`Deployed LeveragedPool: ${event.args.pool}`)
         console.log(`Deployed PoolCommitter: ${event.args.poolCommitter}`)
-        console.log(`Deploy PoolKeeper: ${poolKeeper.address}`)
-        console.log(`Deployed TestToken: ${token.address}`)
-        console.log(`Deployed OracleWrapper: ${oracleWrapper.address}`)
     }
 
     // Commented out because if fails if already verified. Need to only do it once or modify to not failed if already verified

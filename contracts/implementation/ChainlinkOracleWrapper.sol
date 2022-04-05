@@ -12,13 +12,13 @@ contract ChainlinkOracleWrapper is IOracleWrapper {
      */
     address public override oracle;
     address public immutable override deployer;
-    uint256 private constant MAX_DECIMALS = 18;
+    uint8 private constant MAX_DECIMALS = 18;
     int256 public scaler;
 
     // #### Functions
     constructor(address _oracle, address _deployer) {
-        require(_oracle != address(0), "Oracle cannot be 0 address");
-        require(_deployer != address(0), "Deployer cannot be 0 address");
+        require(_oracle != address(0), "Oracle cannot be null");
+        require(_deployer != address(0), "Deployer cannot be null");
         oracle = _oracle;
         deployer = _deployer;
         // reset the scaler for consistency
@@ -28,6 +28,10 @@ contract ChainlinkOracleWrapper is IOracleWrapper {
         unchecked {
             scaler = int256(10**(MAX_DECIMALS - _decimals));
         }
+    }
+
+    function decimals() external pure override returns (uint8) {
+        return MAX_DECIMALS;
     }
 
     /**

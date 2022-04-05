@@ -7,7 +7,7 @@ contract TestOracle {
     address public oracle;
 
     function setOracle(address _oracle) external {
-        require(oracle != address(0), "Oracle cannot be 0 address");
+        require(oracle != address(0), "Oracle cannot be null");
         oracle = _oracle;
     }
 

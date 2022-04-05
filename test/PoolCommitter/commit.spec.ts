@@ -3,6 +3,7 @@ import chai from "chai"
 import chaiAsPromised from "chai-as-promised"
 import {
     ERC20,
+    L2Encoder,
     LeveragedPool,
     PoolCommitter,
     PoolKeeper,
@@ -27,6 +28,7 @@ import {
     timeout,
     getCurrentTotalCommit,
     getCurrentUserCommit,
+    createCommit,
 } from "../utilities"
 
 import { ContractReceipt } from "ethers"
@@ -42,7 +44,7 @@ const frontRunningInterval = 1000
 const fee = DEFAULT_FEE
 const leverage = 1
 
-describe("LeveragedPool - commit", () => {
+describe("PoolCommitter - commit", () => {
     let pool: LeveragedPool
     let signers: SignerWithAddress[]
     let token: TestToken
@@ -51,6 +53,7 @@ describe("LeveragedPool - commit", () => {
     let longToken: ERC20
     let poolCommitter: PoolCommitter
     let poolKeeper: PoolKeeper
+    let l2Encoder: L2Encoder
 
     context("Create commit", () => {
         let receipt: ContractReceipt
@@ -63,6 +66,7 @@ describe("LeveragedPool - commit", () => {
                 feeAddress,
                 fee
             )
+            l2Encoder = result.l2Encoder
             signers = result.signers
             pool = result.pool
             token = result.token
@@ -70,14 +74,15 @@ describe("LeveragedPool - commit", () => {
             poolCommitter = result.poolCommitter
             poolKeeper = result.poolKeeper
             await token.approve(pool.address, amountCommitted)
-            receipt = await (
-                await poolCommitter.commit(
+            receipt = (
+                await createCommit(
+                    l2Encoder,
+                    poolCommitter,
                     SHORT_MINT,
                     amountCommitted,
-                    false,
                     false
                 )
-            ).wait()
+            ).receipt
         })
         it("should update the total commit amount", async () => {
             expect(
@@ -116,18 +121,23 @@ describe("LeveragedPool - commit", () => {
             expect(
                 (await getCurrentTotalCommit(poolCommitter)).shortMintSettlement
             ).to.eq(0)
-            await poolCommitter.commit([0], amountCommitted, false, false)
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                SHORT_MINT,
+                amountCommitted
+            )
             expect(
                 (await getCurrentTotalCommit(poolCommitter)).shortMintSettlement
             ).to.eq(amountCommitted)
         })
 
         it("should update the shadow short burn balance for short burn commits", async () => {
-            await await poolCommitter.commit(
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
                 SHORT_MINT,
-                amountCommitted,
-                false,
-                false
+                amountCommitted
             )
             await timeout(updateInterval * 1000)
             await pool.setKeeper(signers[0].address)
@@ -138,11 +148,11 @@ describe("LeveragedPool - commit", () => {
             expect(
                 (await getCurrentTotalCommit(poolCommitter)).shortBurnPoolTokens
             ).to.eq(0)
-            await poolCommitter.commit(
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
                 SHORT_BURN,
-                amountCommitted,
-                false,
-                false
+                amountCommitted
             )
             expect(
                 (await getCurrentTotalCommit(poolCommitter)).shortBurnPoolTokens
@@ -153,7 +163,12 @@ describe("LeveragedPool - commit", () => {
             expect(
                 (await getCurrentTotalCommit(poolCommitter)).longMintSettlement
             ).to.eq(0)
-            await poolCommitter.commit(LONG_MINT, amountCommitted, false, false)
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                LONG_MINT,
+                amountCommitted
+            )
 
             expect(
                 (await getCurrentTotalCommit(poolCommitter)).longMintSettlement
@@ -161,7 +176,12 @@ describe("LeveragedPool - commit", () => {
         })
 
         it("should update the shadow long burn balance for long burn commits", async () => {
-            await poolCommitter.commit(LONG_MINT, amountCommitted, false, false)
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                LONG_MINT,
+                amountCommitted
+            )
             await timeout(updateInterval * 1000)
             await pool.setKeeper(signers[0].address)
             await pool.poolUpkeep(1, 2)
@@ -171,7 +191,12 @@ describe("LeveragedPool - commit", () => {
             expect(
                 (await getCurrentTotalCommit(poolCommitter)).longBurnPoolTokens
             ).to.eq(0)
-            await poolCommitter.commit(LONG_BURN, amountCommitted, false, false)
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                LONG_BURN,
+                amountCommitted
+            )
             expect(
                 (await getCurrentTotalCommit(poolCommitter)).longBurnPoolTokens
             ).to.eq(amountCommitted)
@@ -194,15 +219,16 @@ describe("LeveragedPool - commit", () => {
             library = result.library
             shortToken = result.shortToken
             longToken = result.longToken
+            l2Encoder = result.l2Encoder
             poolCommitter = result.poolCommitter
 
             await token.approve(pool.address, amountCommitted.mul(999))
             await pool.setKeeper(signers[0].address)
-            await poolCommitter.commit(
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
                 SHORT_MINT,
-                amountCommitted,
-                false,
-                false
+                amountCommitted
             )
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(1, 1)
@@ -211,7 +237,13 @@ describe("LeveragedPool - commit", () => {
         it("Should appropriately set values", async () => {
             // Commit using the balance in the contracts, which we just committed.
             const shortTokenSupplyBefore = await shortToken.totalSupply()
-            await poolCommitter.commit(SHORT_BURN, amountCommitted, true, false)
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                SHORT_BURN,
+                amountCommitted,
+                true
+            )
             const shortTokenSupplyAfter = await shortToken.totalSupply()
 
             const userMostRecentCommit = await getCurrentUserCommit(
@@ -226,9 +258,6 @@ describe("LeveragedPool - commit", () => {
                 shortTokenSupplyBefore.sub(amountCommitted)
             ) // Supply decreases
             // Commitment storage updates
-            expect(userMostRecentCommit.balanceShortBurnPoolTokens).to.equal(
-                amountCommitted
-            )
             expect(userMostRecentCommit.shortBurnPoolTokens).to.equal(
                 amountCommitted
             )
@@ -238,19 +267,32 @@ describe("LeveragedPool - commit", () => {
         })
 
         it("Should not allow for too many commitments (that bring amount over a user's balance)", async () => {
-            await poolCommitter.commit(SHORT_BURN, amountCommitted, true, false)
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                SHORT_BURN,
+                amountCommitted,
+                true
+            )
             await expect(
-                poolCommitter.commit(SHORT_BURN, amountCommitted, true, false)
+                createCommit(
+                    l2Encoder,
+                    poolCommitter,
+                    SHORT_BURN,
+                    amountCommitted,
+                    true
+                )
             ).to.be.revertedWith("Insufficient pool tokens")
         })
 
         it("Should not allow commits that are too large", async () => {
             await expect(
-                poolCommitter.commit(
+                createCommit(
+                    l2Encoder,
+                    poolCommitter,
                     SHORT_BURN,
                     amountCommitted.mul(300),
-                    true,
-                    false
+                    true
                 )
             ).to.be.revertedWith("Insufficient pool tokens")
         })
@@ -259,11 +301,11 @@ describe("LeveragedPool - commit", () => {
             await poolCommitter.claim(signers[0].address)
 
             /* SHORT_MINT COMMIT */
-            await poolCommitter.commit(
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
                 SHORT_MINT,
-                amountCommitted,
-                false,
-                false
+                amountCommitted
             )
             await timeout(updateInterval * 1000)
             /* UPKEEP */
@@ -272,23 +314,25 @@ describe("LeveragedPool - commit", () => {
             const shortTokenSupplyBefore = await shortToken.totalSupply()
 
             /* SHORT_BURN COMMIT */
-            await poolCommitter.commit(SHORT_BURN, amountCommitted, true, false)
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                SHORT_BURN,
+                amountCommitted,
+                true
+            )
 
             const userCommit = await getCurrentUserCommit(
                 signers[0].address,
                 poolCommitter
             )
 
-            // balanceShortBurnPoolTokens is updated
-            expect(userCommit.balanceShortBurnPoolTokens).to.equal(
-                amountCommitted
-            )
             /* SHORT_BURN COMMIT */
-            await poolCommitter.commit(
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
                 SHORT_BURN,
-                amountCommitted,
-                false,
-                false
+                amountCommitted
             )
 
             const shortTokenSupplyAfter = await shortToken.totalSupply()
@@ -306,8 +350,6 @@ describe("LeveragedPool - commit", () => {
                 shortTokenSupplyBefore.sub(amountCommitted).sub(amountCommitted)
             )
 
-            // balanceShortBurnPoolTokens gets cleared, because on the update from the second `commit`, it is used and can then be cleared
-            expect(userMostRecentCommit.balanceShortBurnPoolTokens).to.equal(0)
             expect(userMostRecentCommit.shortBurnPoolTokens).to.equal(
                 amountCommitted.mul(2)
             )
@@ -347,24 +389,25 @@ describe("LeveragedPool - commit", () => {
             shortToken = result.shortToken
             longToken = result.longToken
             poolCommitter = result.poolCommitter
+            l2Encoder = result.l2Encoder
 
             await token.approve(pool.address, amountCommitted.mul(999))
             await pool.setKeeper(signers[0].address)
-            await poolCommitter.commit(
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
                 SHORT_MINT,
-                amountCommitted,
-                false,
-                false
+                amountCommitted
             )
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(1, 1)
             await poolCommitter.claim(signers[0].address)
             // Burn, so you have settlement tokens in your aggregate balance
-            await poolCommitter.commit(
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
                 SHORT_BURN,
-                amountCommitted,
-                false,
-                false
+                amountCommitted
             )
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(1, 1)
@@ -373,7 +416,13 @@ describe("LeveragedPool - commit", () => {
         it("Should appropriately set values", async () => {
             // Commit using the balance in the contracts, which we just committed.
             const shortTokenSupplyBefore = await shortToken.totalSupply()
-            await poolCommitter.commit(SHORT_MINT, amountCommitted, true, false)
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                SHORT_MINT,
+                amountCommitted,
+                true
+            )
             const shortTokenSupplyAfter = await shortToken.totalSupply()
 
             const userMostRecentCommit = await getCurrentUserCommit(
@@ -400,32 +449,51 @@ describe("LeveragedPool - commit", () => {
         })
 
         it("Should not allow for too many commitments (that bring amount over a user's balance)", async () => {
-            await poolCommitter.commit(SHORT_MINT, amountCommitted, true, false)
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                SHORT_MINT,
+                amountCommitted,
+                true
+            )
             await expect(
-                poolCommitter.commit(SHORT_MINT, amountCommitted, true, false)
-            ).be.rejected // Can't figure out how to get the "overflow" error message to be used in chai assertins
+                createCommit(
+                    l2Encoder,
+                    poolCommitter,
+                    SHORT_MINT,
+                    amountCommitted,
+                    true
+                )
+            ).be.rejected // Can't figure out how to get the "overflow" error message to be used in chai assertions
         })
 
         it("Should not allow commits that are too large", async () => {
             await expect(
-                poolCommitter.commit(
+                createCommit(
+                    l2Encoder,
+                    poolCommitter,
                     SHORT_MINT,
                     amountCommitted.mul(300),
-                    true,
-                    false
+                    true
                 )
-            ).be.rejected // Can't figure out how to get the "overflow" error message to be used in chai assertins
+            ).be.rejected // Can't figure out how to get the "overflow" error message to be used in chai assertions
         })
 
         it("Should allow for a combination of short_mint commits from wallet and aggregate balance", async () => {
             const shortTokenSupplyBefore = await shortToken.totalSupply()
 
-            await poolCommitter.commit(SHORT_MINT, amountCommitted, true, false)
-            await poolCommitter.commit(
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
                 SHORT_MINT,
                 amountCommitted,
-                false,
-                false
+                true
+            )
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                SHORT_MINT,
+                amountCommitted
             )
 
             const shortTokenSupplyAfter = await shortToken.totalSupply()
@@ -485,7 +553,12 @@ describe("LeveragedPool - commit", () => {
 
             await token.approve(pool.address, amountCommitted.mul(999))
             await pool.setKeeper(signers[0].address)
-            await poolCommitter.commit(LONG_MINT, amountCommitted, false, false)
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                LONG_MINT,
+                amountCommitted
+            )
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(1, 1)
         })
@@ -493,7 +566,13 @@ describe("LeveragedPool - commit", () => {
         it("Should appropriately set values", async () => {
             // Commit using the balance in the contracts, which we just committed.
             const longTokenSupplyBefore = await longToken.totalSupply()
-            await poolCommitter.commit(LONG_BURN, amountCommitted, true, false)
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                LONG_BURN,
+                amountCommitted,
+                true
+            )
             const longTokenSupplyAfter = await longToken.totalSupply()
 
             const userMostRecentCommit = await getCurrentUserCommit(
@@ -508,9 +587,6 @@ describe("LeveragedPool - commit", () => {
                 longTokenSupplyBefore.sub(amountCommitted)
             ) // Supply decreases
             // Commitment storage updates
-            expect(userMostRecentCommit.balanceLongBurnPoolTokens).to.equal(
-                amountCommitted
-            )
             expect(userMostRecentCommit.longBurnPoolTokens).to.equal(
                 amountCommitted
             )
@@ -520,19 +596,32 @@ describe("LeveragedPool - commit", () => {
         })
 
         it("Should not allow for too many commitments (that bring amount over a user's balance)", async () => {
-            await poolCommitter.commit(LONG_BURN, amountCommitted, true, false)
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                LONG_BURN,
+                amountCommitted,
+                true
+            )
             await expect(
-                poolCommitter.commit(LONG_BURN, amountCommitted, true, false)
+                createCommit(
+                    l2Encoder,
+                    poolCommitter,
+                    LONG_BURN,
+                    amountCommitted,
+                    true
+                )
             ).to.be.revertedWith("Insufficient pool tokens")
         })
 
         it("Should not allow commits that are too large", async () => {
             await expect(
-                poolCommitter.commit(
+                createCommit(
+                    l2Encoder,
+                    poolCommitter,
                     LONG_BURN,
                     amountCommitted.mul(300),
-                    true,
-                    false
+                    true
                 )
             ).to.be.revertedWith("Insufficient pool tokens")
         })
@@ -540,24 +629,36 @@ describe("LeveragedPool - commit", () => {
         it("Should allow for a combination of long_burn commits from wallet and aggregate balance", async () => {
             await poolCommitter.claim(signers[0].address)
 
-            await poolCommitter.commit(LONG_MINT, amountCommitted, false, false)
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                LONG_MINT,
+                amountCommitted
+            )
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(1, 1)
 
             const longTokenSupplyBefore = await longToken.totalSupply()
 
-            await poolCommitter.commit(LONG_BURN, amountCommitted, true, false)
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                LONG_BURN,
+                amountCommitted,
+                true
+            )
 
             const userCommit = await getCurrentUserCommit(
                 signers[0].address,
                 poolCommitter
             )
 
-            // balanceLongBurnPoolTokens is updated
-            expect(userCommit.balanceLongBurnPoolTokens).to.equal(
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                LONG_BURN,
                 amountCommitted
             )
-            await poolCommitter.commit(LONG_BURN, amountCommitted, false, false)
 
             const longTokenSupplyAfter = await longToken.totalSupply()
 
@@ -574,8 +675,6 @@ describe("LeveragedPool - commit", () => {
                 poolCommitter
             )
 
-            // balanceLongBurnPoolTokens gets cleared, because on the update from the second `commit`, it is used and can then be cleared
-            expect(userMostRecentCommit.balanceLongBurnPoolTokens).to.equal(0)
             expect(userMostRecentCommit.longBurnPoolTokens).to.equal(
                 amountCommitted.mul(2)
             )
@@ -613,15 +712,26 @@ describe("LeveragedPool - commit", () => {
             shortToken = result.shortToken
             longToken = result.longToken
             poolCommitter = result.poolCommitter
+            l2Encoder = result.l2Encoder
 
             await token.approve(pool.address, amountCommitted.mul(999))
             await pool.setKeeper(signers[0].address)
-            await poolCommitter.commit(LONG_MINT, amountCommitted, false, false)
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                LONG_MINT,
+                amountCommitted
+            )
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(1, 1)
             await poolCommitter.claim(signers[0].address)
             // Burn, so you have settlement tokens in your aggregate balance
-            await poolCommitter.commit(LONG_BURN, amountCommitted, false, false)
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                LONG_BURN,
+                amountCommitted
+            )
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(1, 1)
         })
@@ -629,7 +739,13 @@ describe("LeveragedPool - commit", () => {
         it("Should appropriately set values", async () => {
             // Commit using the balance in the contracts, which we just committed.
             const longTokenSupplyBefore = await longToken.totalSupply()
-            await poolCommitter.commit(LONG_MINT, amountCommitted, true, false)
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                LONG_MINT,
+                amountCommitted,
+                true
+            )
             const longTokenSupplyAfter = await longToken.totalSupply()
 
             const userMostRecentCommit = await getCurrentUserCommit(
@@ -655,34 +771,58 @@ describe("LeveragedPool - commit", () => {
         })
 
         it("Should not allow for too many commitments (that bring amount over a user's balance)", async () => {
-            await poolCommitter.commit(LONG_MINT, amountCommitted, true, false)
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                LONG_MINT,
+                amountCommitted,
+                true
+            )
             await expect(
-                poolCommitter.commit(LONG_MINT, amountCommitted, true, false)
-            ).be.rejected // Can't figure out how to get the "overflow" error message to be used in chai assertins
+                createCommit(
+                    l2Encoder,
+                    poolCommitter,
+                    LONG_MINT,
+                    amountCommitted,
+                    true
+                )
+            ).be.rejected // Can't figure out how to get the "overflow" error message to be used in chai assertions
         })
 
         it("Should not allow commits that are too large", async () => {
             await expect(
-                poolCommitter.commit(
+                createCommit(
+                    l2Encoder,
+                    poolCommitter,
                     LONG_MINT,
                     amountCommitted.mul(300),
-                    true,
-                    false
+                    true
                 )
-            ).be.rejected // Can't figure out how to get the "overflow" error message to be used in chai assertins
+            ).be.rejected // Can't figure out how to get the "overflow" error message to be used in chai assertions
         })
 
         it("Long mint from aggregate balance reduces settlement token amount in balance", async () => {
             const longTokenSupplyBefore = await longToken.totalSupply()
 
-            await poolCommitter.commit(LONG_MINT, amountCommitted, true, false)
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                LONG_MINT,
+                amountCommitted,
+                true
+            )
 
             // Balance storage updates
             const settlementTokens = (
                 await poolCommitter.getAggregateBalance(signers[0].address)
             ).settlementTokens
             expect(settlementTokens).to.equal(0)
-            await poolCommitter.commit(LONG_MINT, amountCommitted, false, false)
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                LONG_MINT,
+                amountCommitted
+            )
 
             const longTokenSupplyAfter = await longToken.totalSupply()
 
@@ -717,7 +857,13 @@ describe("LeveragedPool - commit", () => {
         it("Should allow for a combination of long_mint commits from wallet and aggregate balance", async () => {
             const longTokenSupplyBefore = await longToken.totalSupply()
 
-            await poolCommitter.commit(LONG_MINT, amountCommitted, true, false)
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                LONG_MINT,
+                amountCommitted,
+                true
+            )
 
             const userCommit = await getCurrentUserCommit(
                 signers[0].address,
@@ -729,7 +875,12 @@ describe("LeveragedPool - commit", () => {
                 await poolCommitter.getAggregateBalance(signers[0].address)
             ).settlementTokens
             expect(settlementTokens).to.equal(0)
-            await poolCommitter.commit(LONG_MINT, amountCommitted, false, false)
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                LONG_MINT,
+                amountCommitted
+            )
 
             const longTokenSupplyAfter = await longToken.totalSupply()
 
@@ -782,12 +933,22 @@ describe("LeveragedPool - commit", () => {
 
             await token.approve(pool.address, amountCommitted.mul(999))
             await pool.setKeeper(signers[0].address)
-            await poolCommitter.commit(LONG_MINT, amountCommitted, false, false)
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                LONG_MINT,
+                amountCommitted
+            )
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(1, 1)
             await poolCommitter.claim(signers[0].address)
             // Burn, so you have settlement tokens in your aggregate balance
-            await poolCommitter.commit(LONG_BURN, amountCommitted, false, false)
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                LONG_BURN,
+                amountCommitted
+            )
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(1, 1)
         })
@@ -795,14 +956,25 @@ describe("LeveragedPool - commit", () => {
         it("Operates as intended", async () => {
             const longTokenSupplyBefore = await longToken.totalSupply()
 
-            await poolCommitter.commit(LONG_MINT, amountCommitted, true, false)
-            await poolCommitter.commit(LONG_MINT, amountCommitted, false, false)
-
-            await poolCommitter.commit(
-                SHORT_MINT,
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                LONG_MINT,
                 amountCommitted,
-                false,
-                false
+                true
+            )
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                LONG_MINT,
+                amountCommitted
+            )
+
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                SHORT_MINT,
+                amountCommitted
             )
 
             const longTokenSupplyAfter = await longToken.totalSupply()
@@ -841,14 +1013,20 @@ describe("LeveragedPool - commit", () => {
             const balanceBefore = await longToken.balanceOf(signers[0].address)
 
             await expect(
-                poolCommitter.commit(SHORT_BURN, amountCommitted, false, false)
+                createCommit(
+                    l2Encoder,
+                    poolCommitter,
+                    SHORT_BURN,
+                    amountCommitted
+                )
             ).to.be.revertedWith("ERC20: burn amount exceeds balance")
 
-            await poolCommitter.commit(
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
                 SHORT_BURN,
                 amountCommitted.div(2),
-                true,
-                false
+                true
             )
 
             // Go into frontRunningInterval
@@ -857,11 +1035,12 @@ describe("LeveragedPool - commit", () => {
             await poolCommitter.claim(signers[0].address)
 
             await expect(
-                poolCommitter.commit(
+                createCommit(
+                    l2Encoder,
+                    poolCommitter,
                     SHORT_BURN,
                     amountCommitted.div(2),
-                    true,
-                    false
+                    true
                 )
             ).to.be.revertedWith("Insufficient pool tokens")
 
@@ -899,11 +1078,11 @@ describe("LeveragedPool - commit", () => {
 
                 await token.approve(pool.address, amountCommitted.mul(999))
                 await pool.setKeeper(signers[0].address)
-                await poolCommitter.commit(
+                await createCommit(
+                    l2Encoder,
+                    poolCommitter,
                     LONG_MINT,
-                    amountCommitted,
-                    false,
-                    false
+                    amountCommitted
                 )
                 await timeout(updateInterval * 1000)
                 await pool.poolUpkeep(1, 1)
@@ -912,11 +1091,12 @@ describe("LeveragedPool - commit", () => {
             it("Should appropriately set values", async () => {
                 // Commit using the balance in the contracts, which we just committed.
                 const longTokenSupplyBefore = await longToken.totalSupply()
-                await poolCommitter.commit(
+                await createCommit(
+                    l2Encoder,
+                    poolCommitter,
                     LONG_BURN_THEN_MINT,
                     amountCommitted,
-                    true,
-                    false
+                    true
                 )
                 const longTokenSupplyAfter = await longToken.totalSupply()
 
@@ -934,9 +1114,6 @@ describe("LeveragedPool - commit", () => {
                 )
                 // Commitment storage updates
                 expect(
-                    userMostRecentCommit.balanceLongBurnMintPoolTokens
-                ).to.equal(amountCommitted)
-                expect(
                     userMostRecentCommit.longBurnShortMintPoolTokens
                 ).to.equal(amountCommitted)
                 expect(totalMostRecentCommit.longBurnPoolTokens).to.equal(0)
@@ -946,38 +1123,42 @@ describe("LeveragedPool - commit", () => {
             })
 
             context("Invalid commitments", () => {
-                it("Should revert if you are attempting to LONG_BURN_THEN_MINT duplicate times (from wallet)", async () => {
+                it("Should revert if you are attempting to LONG_BURN_THEN_MINT duplicate times (from aggregate balance)", async () => {
                     // Commit using the balance in the wallet, which we just committed.
-                    await poolCommitter.commit(
+                    await createCommit(
+                        l2Encoder,
+                        poolCommitter,
                         LONG_BURN_THEN_MINT,
                         amountCommitted,
-                        true,
-                        false
+                        true
                     )
                     await expect(
-                        poolCommitter.commit(
+                        createCommit(
+                            l2Encoder,
+                            poolCommitter,
                             LONG_BURN_THEN_MINT,
                             amountCommitted,
-                            true,
-                            false
+                            true
                         )
                     ).to.be.revertedWith("Insufficient pool tokens")
                 })
 
                 it("Should revert if you are attempting to LONG_BURN_THEN_MINT duplicate times (from aggregate balance)", async () => {
                     // Commit using the balance in the contracts, which we just committed.
-                    await poolCommitter.commit(
+                    await createCommit(
+                        l2Encoder,
+                        poolCommitter,
                         LONG_BURN_THEN_MINT,
                         amountCommitted,
-                        true,
-                        false
+                        true
                     )
                     await expect(
-                        poolCommitter.commit(
+                        createCommit(
+                            l2Encoder,
+                            poolCommitter,
                             LONG_BURN_THEN_MINT,
                             amountCommitted,
-                            true,
-                            false
+                            true
                         )
                     ).to.be.revertedWith("Insufficient pool tokens")
                 })
@@ -985,11 +1166,12 @@ describe("LeveragedPool - commit", () => {
                 it("Should revert if you are attempting to LONG_BURN_THEN_MINT too many tokens (from wallet)", async () => {
                     // Commit using the balance in the wallet, which we just committed.
                     await expect(
-                        poolCommitter.commit(
+                        createCommit(
+                            l2Encoder,
+                            poolCommitter,
                             LONG_BURN_THEN_MINT,
                             amountCommitted.add(1),
-                            true,
-                            false
+                            true
                         )
                     ).to.be.revertedWith("Insufficient pool tokens")
                 })
@@ -997,13 +1179,14 @@ describe("LeveragedPool - commit", () => {
                 it("Should revert if you are attempting to LONG_BURN_THEN_MINT too many tokens (from aggregate balance)", async () => {
                     // Commit using the balance in the contracts, which we just committed.
                     await expect(
-                        poolCommitter.commit(
+                        createCommit(
+                            l2Encoder,
+                            poolCommitter,
                             LONG_BURN_THEN_MINT,
                             amountCommitted.add(1),
-                            true,
-                            false
+                            true
                         )
-                    ).to.be.revertedWith("Insufficient pool tokens") // The error here is different from burning from wallet, because it does not burn from user's wallet and thus needs to manually check
+                    ).to.be.revertedWith("Insufficient pool tokens")
                 })
             })
 
@@ -1013,11 +1196,11 @@ describe("LeveragedPool - commit", () => {
                         "Short Price = $0.5 Long Price = $1.5",
                         async () => {
                             it("Appropriately burns and mints at the correct rate", async () => {
-                                await poolCommitter.commit(
+                                await createCommit(
+                                    l2Encoder,
+                                    poolCommitter,
                                     SHORT_MINT,
-                                    amountCommitted,
-                                    false,
-                                    false
+                                    amountCommitted
                                 )
                                 await timeout(updateInterval * 1000)
                                 await pool.poolUpkeep(1, 1)
@@ -1025,11 +1208,12 @@ describe("LeveragedPool - commit", () => {
                                 // Double price
                                 await pool.poolUpkeep(1000, 2000)
 
-                                await poolCommitter.commit(
+                                await createCommit(
+                                    l2Encoder,
+                                    poolCommitter,
                                     LONG_BURN_THEN_MINT,
                                     amountCommitted,
-                                    true,
-                                    false
+                                    true
                                 )
 
                                 const balanceBefore =
@@ -1060,17 +1244,19 @@ describe("LeveragedPool - commit", () => {
 
                 it("Allows for Multiple commits (adding up to a valid amount)", async () => {
                     // Commit using the balance in the contracts, which we just committed.
-                    await poolCommitter.commit(
+                    await createCommit(
+                        l2Encoder,
+                        poolCommitter,
                         LONG_BURN_THEN_MINT,
                         amountCommitted.div(2),
-                        true,
-                        false
+                        true
                     )
-                    await poolCommitter.commit(
+                    await createCommit(
+                        l2Encoder,
+                        poolCommitter,
                         LONG_BURN_THEN_MINT,
                         amountCommitted.div(2),
-                        true,
-                        false
+                        true
                     )
                     let longBalance = await pool.longBalance()
                     let shortBalance = await pool.shortBalance()
@@ -1111,25 +1297,17 @@ describe("LeveragedPool - commit", () => {
 
                 it("Should Allow for execution and updating of balances with one single commit", async () => {
                     // Commit using the balance in the contracts, which we just committed.
-                    await poolCommitter.commit(
+                    await createCommit(
+                        l2Encoder,
+                        poolCommitter,
                         LONG_BURN_THEN_MINT,
                         amountCommitted,
-                        true,
-                        false
+                        true
                     )
                     let longBalance = await pool.longBalance()
                     let shortBalance = await pool.shortBalance()
                     expect(longBalance).to.equal(amountCommitted)
                     expect(shortBalance).to.equal(0)
-
-                    expect(
-                        (
-                            await getCurrentUserCommit(
-                                signers[0].address,
-                                poolCommitter
-                            )
-                        ).balanceLongBurnMintPoolTokens
-                    ).to.equal(amountCommitted)
                     expect(
                         (
                             await getCurrentUserCommit(
@@ -1194,7 +1372,12 @@ describe("LeveragedPool - commit", () => {
 
             await token.approve(pool.address, amountCommitted.mul(999))
             await pool.setKeeper(signers[0].address)
-            await poolCommitter.commit(LONG_MINT, amountCommitted, false, false)
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                LONG_MINT,
+                amountCommitted
+            )
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(1, 1)
         })
@@ -1203,11 +1386,11 @@ describe("LeveragedPool - commit", () => {
             // Commit using the balance in the contracts, which we just committed.
             await poolCommitter.claim(signers[0].address)
             const longTokenSupplyBefore = await longToken.totalSupply()
-            await poolCommitter.commit(
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
                 LONG_BURN_THEN_MINT,
-                amountCommitted,
-                false,
-                false
+                amountCommitted
             )
             const longTokenSupplyAfter = await longToken.totalSupply()
 
@@ -1224,9 +1407,6 @@ describe("LeveragedPool - commit", () => {
                 longTokenSupplyBefore.sub(amountCommitted)
             )
             // Commitment storage updates
-            expect(userMostRecentCommit.balanceLongBurnMintPoolTokens).to.equal(
-                0
-            )
             expect(userMostRecentCommit.longBurnShortMintPoolTokens).to.equal(
                 amountCommitted
             )
@@ -1240,49 +1420,51 @@ describe("LeveragedPool - commit", () => {
             it("Should revert if you are attempting to LONG_BURN_THEN_MINT duplicate times (from wallet)", async () => {
                 // Commit using the balance in the wallet, which we just committed.
                 await poolCommitter.claim(signers[0].address)
-                await poolCommitter.commit(
+                await createCommit(
+                    l2Encoder,
+                    poolCommitter,
                     LONG_BURN_THEN_MINT,
-                    amountCommitted,
-                    false,
-                    false
+                    amountCommitted
                 )
                 await expect(
-                    poolCommitter.commit(
+                    createCommit(
+                        l2Encoder,
+                        poolCommitter,
                         LONG_BURN_THEN_MINT,
-                        amountCommitted,
-                        false,
-                        false
+                        amountCommitted
                     )
                 ).to.be.revertedWith("ERC20: burn amount exceeds balance")
             })
 
             it("Should revert if you are attempting to LONG_BURN_THEN_MINT duplicate times (from aggregate balance)", async () => {
                 // Commit using the balance in the contracts, which we just committed.
-                await poolCommitter.commit(
+                await createCommit(
+                    l2Encoder,
+                    poolCommitter,
                     LONG_BURN_THEN_MINT,
                     amountCommitted,
-                    true,
-                    false
+                    true
                 )
                 await expect(
-                    poolCommitter.commit(
+                    createCommit(
+                        l2Encoder,
+                        poolCommitter,
                         LONG_BURN_THEN_MINT,
                         amountCommitted,
-                        true,
-                        false
+                        true
                     )
-                ).to.be.revertedWith("Insufficient pool tokens")
+                ).to.be.reverted
             })
 
             it("Should revert if you are attempting to LONG_BURN_THEN_MINT too many tokens (from wallet)", async () => {
                 // Commit using the balance in the wallet, which we just committed.
                 await poolCommitter.claim(signers[0].address)
                 await expect(
-                    poolCommitter.commit(
+                    createCommit(
+                        l2Encoder,
+                        poolCommitter,
                         LONG_BURN_THEN_MINT,
-                        amountCommitted.add(1),
-                        false,
-                        false
+                        amountCommitted.add(1)
                     )
                 ).to.be.revertedWith("ERC20: burn amount exceeds balance")
             })
@@ -1290,13 +1472,14 @@ describe("LeveragedPool - commit", () => {
             it("Should revert if you are attempting to LONG_BURN_THEN_MINT too many tokens (from aggregate balance)", async () => {
                 // Commit using the balance in the contracts, which we just committed.
                 await expect(
-                    poolCommitter.commit(
+                    createCommit(
+                        l2Encoder,
+                        poolCommitter,
                         LONG_BURN_THEN_MINT,
                         amountCommitted.add(1),
-                        true,
-                        false
+                        true
                     )
-                ).to.be.revertedWith("Insufficient pool tokens") // The error here is different from burning from wallet, because it does not burn from user's wallet and thus needs to manually check
+                ).to.be.revertedWith("Insufficient pool tokens")
             })
         })
 
@@ -1304,11 +1487,11 @@ describe("LeveragedPool - commit", () => {
             context("Different prices per token", () => {
                 context("Short Price = $0.5 Long Price = $1.5", async () => {
                     it("Appropriately burns and mints at the correct rate", async () => {
-                        await poolCommitter.commit(
+                        await createCommit(
+                            l2Encoder,
+                            poolCommitter,
                             SHORT_MINT,
-                            amountCommitted,
-                            false,
-                            false
+                            amountCommitted
                         )
                         await timeout(updateInterval * 1000)
                         await pool.poolUpkeep(1, 1)
@@ -1317,11 +1500,11 @@ describe("LeveragedPool - commit", () => {
                         await pool.poolUpkeep(1000, 2000)
                         await poolCommitter.claim(signers[0].address)
 
-                        await poolCommitter.commit(
+                        await createCommit(
+                            l2Encoder,
+                            poolCommitter,
                             LONG_BURN_THEN_MINT,
-                            amountCommitted,
-                            false,
-                            false
+                            amountCommitted
                         )
 
                         const balanceBefore =
@@ -1349,17 +1532,17 @@ describe("LeveragedPool - commit", () => {
             it("Multiple commits (adding up to a valid amount)", async () => {
                 // Commit using the balance in the contracts, which we just committed.
                 await poolCommitter.claim(signers[0].address)
-                await poolCommitter.commit(
+                await createCommit(
+                    l2Encoder,
+                    poolCommitter,
                     LONG_BURN_THEN_MINT,
-                    amountCommitted.div(2),
-                    false,
-                    false
+                    amountCommitted.div(2)
                 )
-                await poolCommitter.commit(
+                await createCommit(
+                    l2Encoder,
+                    poolCommitter,
                     LONG_BURN_THEN_MINT,
-                    amountCommitted.div(2),
-                    false,
-                    false
+                    amountCommitted.div(2)
                 )
                 let longBalance = await pool.longBalance()
                 let shortBalance = await pool.shortBalance()
@@ -1401,11 +1584,11 @@ describe("LeveragedPool - commit", () => {
             it("Should Allow for execution and updating of balances with one single commit", async () => {
                 // Commit using the balance in the contracts, which we just committed.
                 await poolCommitter.claim(signers[0].address)
-                await poolCommitter.commit(
+                await createCommit(
+                    l2Encoder,
+                    poolCommitter,
                     LONG_BURN_THEN_MINT,
-                    amountCommitted,
-                    false,
-                    false
+                    amountCommitted
                 )
                 let longBalance = await pool.longBalance()
                 let shortBalance = await pool.shortBalance()
@@ -1463,14 +1646,15 @@ describe("LeveragedPool - commit", () => {
             shortToken = result.shortToken
             longToken = result.longToken
             poolCommitter = result.poolCommitter
+            l2Encoder = result.l2Encoder
 
             await token.approve(pool.address, amountCommitted.mul(999))
             await pool.setKeeper(signers[0].address)
-            await poolCommitter.commit(
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
                 SHORT_MINT,
-                amountCommitted,
-                false,
-                false
+                amountCommitted
             )
             await timeout(updateInterval * 1000)
             await pool.poolUpkeep(1, 1)
@@ -1480,11 +1664,11 @@ describe("LeveragedPool - commit", () => {
             // Commit using the balance in the contracts, which we just committed.
             await poolCommitter.claim(signers[0].address)
             const shortTokenSupplyBefore = await shortToken.totalSupply()
-            await poolCommitter.commit(
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
                 SHORT_BURN_THEN_MINT,
-                amountCommitted,
-                false,
-                false
+                amountCommitted
             )
             const shortTokenSupplyAfter = await shortToken.totalSupply()
 
@@ -1501,9 +1685,6 @@ describe("LeveragedPool - commit", () => {
                 shortTokenSupplyBefore.sub(amountCommitted)
             )
             // Commitment storage updates
-            expect(
-                userMostRecentCommit.balanceShortBurnMintPoolTokens
-            ).to.equal(0)
             expect(userMostRecentCommit.shortBurnLongMintPoolTokens).to.equal(
                 amountCommitted
             )
@@ -1517,36 +1698,38 @@ describe("LeveragedPool - commit", () => {
             it("Should revert if you are attempting to SHORT_BURN_THEN_MINT duplicate times (from wallet)", async () => {
                 // Commit using the balance in the wallet, which we just committed.
                 await poolCommitter.claim(signers[0].address)
-                await poolCommitter.commit(
+                await createCommit(
+                    l2Encoder,
+                    poolCommitter,
                     SHORT_BURN_THEN_MINT,
-                    amountCommitted,
-                    false,
-                    false
+                    amountCommitted
                 )
                 await expect(
-                    poolCommitter.commit(
+                    createCommit(
+                        l2Encoder,
+                        poolCommitter,
                         SHORT_BURN_THEN_MINT,
-                        amountCommitted,
-                        false,
-                        false
+                        amountCommitted
                     )
                 ).to.be.revertedWith("ERC20: burn amount exceeds balance")
             })
 
             it("Should revert if you are attempting to SHORT_BURN_THEN_MINT duplicate times (from aggregate balance)", async () => {
                 // Commit using the balance in the contracts, which we just committed.
-                await poolCommitter.commit(
+                await createCommit(
+                    l2Encoder,
+                    poolCommitter,
                     SHORT_BURN_THEN_MINT,
                     amountCommitted,
-                    true,
-                    false
+                    true
                 )
                 await expect(
-                    poolCommitter.commit(
+                    createCommit(
+                        l2Encoder,
+                        poolCommitter,
                         SHORT_BURN_THEN_MINT,
                         amountCommitted,
-                        true,
-                        false
+                        true
                     )
                 ).to.be.revertedWith("Insufficient pool tokens")
             })
@@ -1555,11 +1738,11 @@ describe("LeveragedPool - commit", () => {
                 // Commit using the balance in the wallet, which we just committed.
                 await poolCommitter.claim(signers[0].address)
                 await expect(
-                    poolCommitter.commit(
+                    createCommit(
+                        l2Encoder,
+                        poolCommitter,
                         SHORT_BURN_THEN_MINT,
-                        amountCommitted.add(1),
-                        false,
-                        false
+                        amountCommitted.add(1)
                     )
                 ).to.be.revertedWith("ERC20: burn amount exceeds balance")
             })
@@ -1567,13 +1750,14 @@ describe("LeveragedPool - commit", () => {
             it("Should revert if you are attempting to SHORT_BURN_THEN_MINT too many tokens (from aggregate balance)", async () => {
                 // Commit using the balance in the contracts, which we just committed.
                 await expect(
-                    poolCommitter.commit(
+                    createCommit(
+                        l2Encoder,
+                        poolCommitter,
                         SHORT_BURN_THEN_MINT,
                         amountCommitted.add(1),
-                        true,
-                        false
+                        true
                     )
-                ).to.be.revertedWith("Insufficient pool tokens") // The error here is different from burning from wallet, because it does not burn from user's wallet and thus needs to manually check
+                ).to.be.revertedWith("Insufficient pool tokens")
             })
         })
 
@@ -1581,11 +1765,11 @@ describe("LeveragedPool - commit", () => {
             context("Different prices per token", () => {
                 context("Short Price = $0.5 Long Price = $1.5", async () => {
                     it("Appropriately burns and mints at the correct rate", async () => {
-                        await poolCommitter.commit(
+                        await createCommit(
+                            l2Encoder,
+                            poolCommitter,
                             LONG_MINT,
-                            amountCommitted,
-                            false,
-                            false
+                            amountCommitted
                         )
                         await timeout(updateInterval * 1000)
                         await pool.poolUpkeep(1, 1)
@@ -1594,17 +1778,16 @@ describe("LeveragedPool - commit", () => {
                         await pool.poolUpkeep(1000, 2000)
                         await poolCommitter.claim(signers[0].address)
 
-                        await poolCommitter.commit(
-                            SHORT_BURN_THEN_MINT,
-                            amountCommitted,
-                            false,
-                            false
-                        )
-
                         const balanceBefore =
                             await poolCommitter.getAggregateBalance(
                                 signers[0].address
                             )
+                        await createCommit(
+                            l2Encoder,
+                            poolCommitter,
+                            SHORT_BURN_THEN_MINT,
+                            amountCommitted
+                        )
 
                         await timeout(updateInterval * 1000)
                         await pool.poolUpkeep(2000, 2000)
@@ -1627,17 +1810,17 @@ describe("LeveragedPool - commit", () => {
             it("Multiple commits (adding up to a valid amount)", async () => {
                 // Commit using the balance in the contracts, which we just committed.
                 await poolCommitter.claim(signers[0].address)
-                await poolCommitter.commit(
+                await createCommit(
+                    l2Encoder,
+                    poolCommitter,
                     SHORT_BURN_THEN_MINT,
-                    amountCommitted.div(2),
-                    false,
-                    false
+                    amountCommitted.div(2)
                 )
-                await poolCommitter.commit(
+                await createCommit(
+                    l2Encoder,
+                    poolCommitter,
                     SHORT_BURN_THEN_MINT,
-                    amountCommitted.div(2),
-                    false,
-                    false
+                    amountCommitted.div(2)
                 )
                 let longBalance = await pool.longBalance()
                 let shortBalance = await pool.shortBalance()
@@ -1679,11 +1862,11 @@ describe("LeveragedPool - commit", () => {
             it("Should Allow for execution and updating of balances with one single commit", async () => {
                 // Commit using the balance in the contracts, which we just committed.
                 await poolCommitter.claim(signers[0].address)
-                await poolCommitter.commit(
+                await createCommit(
+                    l2Encoder,
+                    poolCommitter,
                     SHORT_BURN_THEN_MINT,
-                    amountCommitted,
-                    false,
-                    false
+                    amountCommitted
                 )
                 let longBalance = await pool.longBalance()
                 let shortBalance = await pool.shortBalance()
@@ -1752,11 +1935,11 @@ describe("LeveragedPool - commit", () => {
                 it("Sets the correct update interval's values", async () => {
                     const updateIntervalId =
                         await poolCommitter.updateIntervalId()
-                    await poolCommitter.commit(
+                    await createCommit(
+                        l2Encoder,
+                        poolCommitter,
                         SHORT_MINT,
-                        amountCommitted,
-                        false,
-                        false
+                        amountCommitted
                     )
 
                     const currentCommitment = await getCurrentUserCommit(
@@ -1792,11 +1975,11 @@ describe("LeveragedPool - commit", () => {
                 it("Correctly executes and updates balance", async () => {
                     const updateIntervalId =
                         await poolCommitter.updateIntervalId()
-                    await poolCommitter.commit(
+                    await createCommit(
+                        l2Encoder,
+                        poolCommitter,
                         SHORT_MINT,
-                        amountCommitted,
-                        false,
-                        false
+                        amountCommitted
                     )
 
                     const currentCommitment = await getCurrentUserCommit(
@@ -1845,11 +2028,11 @@ describe("LeveragedPool - commit", () => {
                             await poolCommitter.updateIntervalId()
 
                         // Commit for updateIntervalId + 5
-                        await poolCommitter.commit(
+                        await createCommit(
+                            l2Encoder,
+                            poolCommitter,
                             SHORT_MINT,
-                            amountCommitted,
-                            false,
-                            false
+                            amountCommitted
                         )
 
                         // updateIntervalId
@@ -1857,11 +2040,11 @@ describe("LeveragedPool - commit", () => {
                         await pool.poolUpkeep(1, 1)
 
                         // Commit for updateIntervalId + 6
-                        await poolCommitter.commit(
+                        await createCommit(
+                            l2Encoder,
+                            poolCommitter,
                             SHORT_MINT,
-                            amountCommitted,
-                            false,
-                            false
+                            amountCommitted
                         )
 
                         // updateIntervalId + 1
@@ -1869,11 +2052,11 @@ describe("LeveragedPool - commit", () => {
                         await pool.poolUpkeep(1, 1)
 
                         // Commit for updateIntervalId + 7
-                        await poolCommitter.commit(
+                        await createCommit(
+                            l2Encoder,
+                            poolCommitter,
                             LONG_MINT,
-                            amountCommitted,
-                            false,
-                            false
+                            amountCommitted
                         )
 
                         // updateIntervalId + 2
@@ -1881,18 +2064,18 @@ describe("LeveragedPool - commit", () => {
                         await pool.poolUpkeep(1, 1)
 
                         // Commit for updateIntervalId + 8
-                        await poolCommitter.commit(
+                        await createCommit(
+                            l2Encoder,
+                            poolCommitter,
                             LONG_MINT,
-                            amountCommitted,
-                            false,
-                            false
+                            amountCommitted
                         )
                         // Commit for updateIntervalId + 8
-                        await poolCommitter.commit(
+                        await createCommit(
+                            l2Encoder,
+                            poolCommitter,
                             LONG_MINT,
-                            amountCommitted,
-                            false,
-                            false
+                            amountCommitted
                         )
 
                         // updateIntervalId + 3
@@ -1904,11 +2087,11 @@ describe("LeveragedPool - commit", () => {
                         await pool.poolUpkeep(1, 1)
 
                         // Commit for updateIntervalId + 10
-                        await poolCommitter.commit(
+                        await createCommit(
+                            l2Encoder,
+                            poolCommitter,
                             LONG_MINT,
-                            amountCommitted,
-                            false,
-                            false
+                            amountCommitted
                         )
 
                         // updateIntervalId + 5
@@ -1975,11 +2158,11 @@ describe("LeveragedPool - commit", () => {
                                 await poolCommitter.updateIntervalId()
 
                             // Commit for updateIntervalId + 5
-                            await poolCommitter.commit(
+                            await createCommit(
+                                l2Encoder,
+                                poolCommitter,
                                 SHORT_MINT,
-                                amountCommitted,
-                                false,
-                                false
+                                amountCommitted
                             )
 
                             for (let i = 0; i < 30; i++) {
@@ -1987,11 +2170,11 @@ describe("LeveragedPool - commit", () => {
                                 await pool.poolUpkeep(1, 1)
                             }
 
-                            await poolCommitter.commit(
+                            await createCommit(
+                                l2Encoder,
+                                poolCommitter,
                                 LONG_MINT,
-                                amountCommitted,
-                                false,
-                                false
+                                amountCommitted
                             )
 
                             let userBalance =
@@ -2085,11 +2268,11 @@ describe("LeveragedPool - commit", () => {
             await token.approve(pool.address, amountCommitted)
         })
         it("should not require a settlement token transfer for short burn commits", async () => {
-            await poolCommitter.commit(
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
                 SHORT_MINT,
-                amountCommitted,
-                false,
-                false
+                amountCommitted
             )
 
             await timeout(updateInterval * 1000)
@@ -2098,21 +2281,21 @@ describe("LeveragedPool - commit", () => {
 
             expect(await token.balanceOf(pool.address)).to.eq(amountCommitted)
             await poolCommitter.claim(signers[0].address)
-            await poolCommitter.commit(
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
                 SHORT_BURN,
-                amountCommitted,
-                false,
-                false
+                amountCommitted
             )
 
             expect(await token.balanceOf(pool.address)).to.eq(amountCommitted)
         })
         it("should not require a settlement token transfer for long burn commits", async () => {
-            await await poolCommitter.commit(
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
                 LONG_MINT,
-                amountCommitted,
-                false,
-                false
+                amountCommitted
             )
             await timeout(updateInterval * 1000)
             await pool.setKeeper(signers[0].address)
@@ -2120,16 +2303,21 @@ describe("LeveragedPool - commit", () => {
 
             expect(await token.balanceOf(pool.address)).to.eq(amountCommitted)
             await poolCommitter.claim(signers[0].address)
-            await poolCommitter.commit(LONG_BURN, amountCommitted, false, false)
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                LONG_BURN,
+                amountCommitted
+            )
             expect(await token.balanceOf(pool.address)).to.eq(amountCommitted)
         })
         it("should burn the user's short pair tokens for short burn commits", async () => {
             // Acquire pool tokens
-            await await poolCommitter.commit(
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
                 SHORT_MINT,
-                amountCommitted,
-                false,
-                false
+                amountCommitted
             )
             await timeout(updateInterval * 1000)
             await pool.setKeeper(signers[0].address)
@@ -2141,21 +2329,21 @@ describe("LeveragedPool - commit", () => {
                 amountCommitted
             )
             await poolCommitter.claim(signers[0].address)
-            await poolCommitter.commit(
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
                 SHORT_BURN,
-                amountCommitted,
-                false,
-                false
+                amountCommitted
             )
             expect(await shortToken.balanceOf(signers[0].address)).to.eq(0)
         })
         it("should burn the user's long pair tokens for long burn commits", async () => {
             // Acquire pool tokens
-            await await poolCommitter.commit(
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
                 LONG_MINT,
-                amountCommitted,
-                false,
-                false
+                amountCommitted
             )
             await timeout(updateInterval * 1000)
             await pool.setKeeper(signers[0].address)
@@ -2167,22 +2355,32 @@ describe("LeveragedPool - commit", () => {
                 amountCommitted
             )
             await poolCommitter.claim(signers[0].address)
-            await poolCommitter.commit(LONG_BURN, amountCommitted, false, false)
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                LONG_BURN,
+                amountCommitted
+            )
             expect(await longToken.balanceOf(signers[0].address)).to.eq(0)
         })
         it("should transfer the user's settlement tokens into the pool for long mint commits", async () => {
             expect(await token.balanceOf(pool.address)).to.eq(0)
-            await poolCommitter.commit(LONG_MINT, amountCommitted, false, false)
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                LONG_MINT,
+                amountCommitted
+            )
             expect(await token.balanceOf(pool.address)).to.eq(amountCommitted)
         })
 
         it("should transfer the user's settlement tokens into the pool for short mint commits", async () => {
             expect(await token.balanceOf(pool.address)).to.eq(0)
-            await poolCommitter.commit(
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
                 SHORT_MINT,
-                amountCommitted,
-                false,
-                false
+                amountCommitted
             )
             expect(await token.balanceOf(pool.address)).to.eq(amountCommitted)
         })

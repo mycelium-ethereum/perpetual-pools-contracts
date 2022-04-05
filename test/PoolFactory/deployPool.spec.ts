@@ -12,8 +12,9 @@ import {
     TestClones,
     TestClones__factory,
     PoolCommitter,
-    PriceObserver__factory,
     SMAOracle__factory,
+    TestChainlinkOracle,
+    L2Encoder,
 } from "../../types"
 import { POOL_CODE, POOL_CODE_2, LONG_MINT, SHORT_MINT } from "../constants"
 import {
@@ -40,12 +41,14 @@ const { expect } = chai
 describe("PoolFactory.deployPool", () => {
     let factory: PoolFactory
     let poolKeeper: PoolKeeper
+    let chainlinkOracle: TestChainlinkOracle
     let oracleWrapper: ChainlinkOracleWrapper
     let settlementEthOracle: ChainlinkOracleWrapper
     let pool: LeveragedPool
     let token: TestToken
     let signers: SignerWithAddress[]
     let nonDAO: Signer
+    let l2Encoder: L2Encoder
 
     before(async () => {
         signers = await ethers.getSigners()
@@ -62,6 +65,8 @@ describe("PoolFactory.deployPool", () => {
         factory = contracts.factory
         poolKeeper = contracts.poolKeeper
         oracleWrapper = contracts.oracleWrapper
+        l2Encoder = contracts.l2Encoder
+        chainlinkOracle = contracts.chainlinkOracle
         settlementEthOracle = contracts.settlementEthOracle
         pool = contracts.pool
         token = contracts.token
@@ -199,26 +204,7 @@ describe("PoolFactory.deployPool", () => {
             }
 
             await expect(factory.deployPool(deploymentData)).to.be.revertedWith(
-                "PoolKeeper: leveraged amount invalid"
-            )
-        })
-        it("should reject leverages greater than the MAX_LEVERAGE amount", async () => {
-            const deploymentData = {
-                poolName: POOL_CODE_2,
-                frontRunningInterval: 5,
-                updateInterval: 3,
-                leverageAmount: 100, // default max leverage is 10
-                settlementToken: generateRandomAddress(),
-                oracleWrapper: oracleWrapper.address,
-                settlementEthOracle: settlementEthOracle.address,
-                feeController: signers[0].address,
-                mintingFee: 0,
-                burningFee: 0,
-                changeInterval: 0,
-            }
-
-            await expect(factory.deployPool(deploymentData)).to.be.revertedWith(
-                "PoolKeeper: leveraged amount invalid"
+                "Leveraged amount cannot equal 0"
             )
         })
         it("should reject tokens with more than 18 decimals", async () => {
@@ -386,11 +372,13 @@ describe("PoolFactory.deployPool", () => {
                 ethers.utils.parseEther("10000")
             )
             await createCommit(
+                l2Encoder,
                 poolCommitter,
                 LONG_MINT,
                 ethers.utils.parseEther("2000")
             )
             await createCommit(
+                l2Encoder,
                 poolCommitter,
                 SHORT_MINT,
                 ethers.utils.parseEther("2000")
@@ -438,14 +426,6 @@ describe("PoolFactory.deployPool", () => {
 
     context("When using a SMA Oracle", async () => {
         it("To not be reverted", async () => {
-            /* deploy price observer contract */
-            const priceObserverFactory = (await ethers.getContractFactory(
-                "PriceObserver",
-                signers[0]
-            )) as PriceObserver__factory
-            const priceObserver = await priceObserverFactory.deploy()
-            await priceObserver.deployed()
-
             /* deploy SMA oracle contract */
             const smaOracleFactory = (await ethers.getContractFactory(
                 "SMAOracle",
@@ -453,16 +433,11 @@ describe("PoolFactory.deployPool", () => {
             )) as SMAOracle__factory
             const smaOracle = await smaOracleFactory.deploy(
                 oracleWrapper.address,
-                8,
-                priceObserver.address,
                 5,
                 1,
                 await signers[0].getAddress()
             )
             await smaOracle.deployed()
-
-            /* set our SMA oracle to the writer for the price observer contract */
-            await priceObserver.setWriter(smaOracle.address)
 
             for (let i = 0; i < 24; i++) {
                 await smaOracle.poll()

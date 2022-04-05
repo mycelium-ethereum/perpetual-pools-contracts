@@ -44,14 +44,10 @@ describe("PoolKeeper - createPool", () => {
         }
     })
 
-    it("should Revert if leverageAmount == 0 and if leveragedAmount > maxLeverage", async () => {
+    it("should Revert if leverageAmount == 0", async () => {
         deploymentData.leverageAmount = 0
         await expect(factory.deployPool(deploymentData)).to.be.revertedWith(
-            "PoolKeeper: leveraged amount invalid"
-        )
-        deploymentData.leverageAmount = (await factory.maxLeverage()) + 1
-        await expect(factory.deployPool(deploymentData)).to.be.revertedWith(
-            "PoolKeeper: leveraged amount invalid"
+            "Leveraged amount cannot equal 0"
         )
     })
 
