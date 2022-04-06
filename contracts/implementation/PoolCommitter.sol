@@ -131,7 +131,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         uint256 _changeInterval
     ) external override initializer {
         require(_factory != address(0), "Factory cannot be null");
-        require(_autoClaim != address(0), "AutoClaim address cannot be null");
+        require(_autoClaim != address(0), "AutoClaim cannot be null");
         require(_feeController != address(0), "fee controller cannot be null");
         require(_invariantCheck != address(0), "invariantCheck cannot be null");
         updateIntervalId = 1;
@@ -194,7 +194,6 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
                 // Burning from user's aggregate balance
                 require(amount <= balance.longTokens, "Insufficient pool tokens");
                 userAggregateBalance[msg.sender].longTokens -= amount;
-                userCommit.balanceLongBurnPoolTokens += amount;
                 // Burn from leveragedPool, because that is the official owner of the tokens before they are claimed
                 pool.burnTokens(LONG_INDEX, amount, leveragedPool);
             } else {
@@ -216,7 +215,6 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
                 // Burning from user's aggregate balance
                 require(amount <= balance.shortTokens, "Insufficient pool tokens");
                 userAggregateBalance[msg.sender].shortTokens -= amount;
-                userCommit.balanceShortBurnPoolTokens += amount;
                 // Burn from leveragedPool, because that is the official owner of the tokens before they are claimed
                 pool.burnTokens(SHORT_INDEX, amount, leveragedPool);
             } else {
@@ -230,7 +228,6 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             if (fromAggregateBalance) {
                 require(amount <= balance.longTokens, "Insufficient pool tokens");
                 userAggregateBalance[msg.sender].longTokens -= amount;
-                userCommit.balanceLongBurnMintPoolTokens += amount;
                 pool.burnTokens(LONG_INDEX, amount, leveragedPool);
             } else {
                 pool.burnTokens(LONG_INDEX, amount, msg.sender);
@@ -242,7 +239,6 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             if (fromAggregateBalance) {
                 require(amount <= balance.shortTokens, "Insufficient pool tokens");
                 userAggregateBalance[msg.sender].shortTokens -= amount;
-                userCommit.balanceShortBurnMintPoolTokens += amount;
                 pool.burnTokens(SHORT_INDEX, amount, leveragedPool);
             } else {
                 pool.burnTokens(SHORT_INDEX, amount, msg.sender);
@@ -708,7 +704,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         update._maxIterations = unAggregatedLength < MAX_ITERATIONS ? uint8(unAggregatedLength) : MAX_ITERATIONS; // casting to uint8 is safe because we know it is less than MAX_ITERATIONS, a uint8
 
         // Iterate from the most recent up until the current update interval
-        for (uint256 i = 0; i < update._maxIterations; i++) {
+        for (uint256 i = 0; i < update._maxIterations; i = unchecked_inc(i)) {
             uint256 id = currentIntervalIds[i];
             if (id == 0) {
                 continue;
@@ -737,11 +733,6 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
                 }
                 commitmentIds.pop();
             } else {
-                // Clear them now that they have been accounted for in the balance
-                userCommitments[user][id].balanceLongBurnPoolTokens = 0;
-                userCommitments[user][id].balanceShortBurnPoolTokens = 0;
-                userCommitments[user][id].balanceLongBurnMintPoolTokens = 0;
-                userCommitments[user][id].balanceShortBurnMintPoolTokens = 0;
                 // This commitment wasn't ready to be completely added to the balance, so copy it over into the new ID array
                 if (unAggregatedLength <= MAX_ITERATIONS) {
                     storageArrayPlaceHolder.push(currentIntervalIds[i]);
@@ -808,9 +799,8 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         uint256 unAggregatedLength = currentIntervalIds.length;
 
         update._maxIterations = unAggregatedLength < MAX_ITERATIONS ? uint8(unAggregatedLength) : MAX_ITERATIONS; // casting to uint8 is safe because we know it is less than MAX_ITERATIONS, a uint8
-
         // Iterate from the most recent up until the current update interval
-        for (uint256 i = 0; i < update._maxIterations; i++) {
+        for (uint256 i = 0; i < update._maxIterations; i = unchecked_inc(i)) {
             uint256 id = currentIntervalIds[i];
             if (id == 0) {
                 continue;
@@ -850,7 +840,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
      * @dev Emits a `SettlementAndPoolChanged` event on success
      */
     function setPool(address _leveragedPool) external override onlyFactory {
-        require(_leveragedPool != address(0), "Leveraged pool address cannot be 0 address");
+        require(_leveragedPool != address(0), "Leveraged pool cannot be null");
 
         leveragedPool = _leveragedPool;
         tokens = ILeveragedPool(leveragedPool).poolTokens();
@@ -913,5 +903,11 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
     function unpause() external override onlyGov {
         paused = false;
         emit Unpaused();
+    }
+
+    function unchecked_inc(uint256 i) private pure returns (uint256) {
+        unchecked {
+            return ++i;
+        }
     }
 }

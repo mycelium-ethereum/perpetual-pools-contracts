@@ -25,7 +25,7 @@ contract AutoClaim is IAutoClaim {
     }
 
     constructor(address _poolFactoryAddress) {
-        require(_poolFactoryAddress != address(0), "PoolFactory address == 0");
+        require(_poolFactoryAddress != address(0), "PoolFactory cannot be null");
         poolFactory = IPoolFactory(_poolFactoryAddress);
     }
 
@@ -75,7 +75,7 @@ contract AutoClaim is IAutoClaim {
      * @param poolCommitterAddress The PoolCommitter address within which the user's claim will be executed
      */
     function paidClaim(address user, address poolCommitterAddress) public override {
-        require(poolFactory.isValidPoolCommitter(poolCommitterAddress), "Invalid PoolCommitter");
+        require(poolFactory.isValidPoolCommitter(poolCommitterAddress), "Invalid pool committer contract");
         IPoolCommitter poolCommitter = IPoolCommitter(poolCommitterAddress);
         uint256 currentUpdateIntervalId = poolCommitter.updateIntervalId();
         uint256 reward = claim(user, poolCommitterAddress, poolCommitter, currentUpdateIntervalId);
@@ -264,6 +264,12 @@ contract AutoClaim is IAutoClaim {
         returns (bool)
     {
         return request.updateIntervalId > 0 && request.updateIntervalId < currentUpdateIntervalId;
+    }
+
+    function unchecked_inc(uint256 i) private pure returns (uint256) {
+        unchecked {
+            return ++i;
+        }
     }
 
     receive() external payable {

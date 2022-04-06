@@ -181,8 +181,9 @@ contract SMAOracle is IOracleWrapper {
             k = numPeriods;
         }
 
+        /* linear scan over the [n - k, n] subsequence */
         int256 sum;
-        for (uint256 i = periodCount - k; i < periodCount; i++) {
+        for (uint256 i = periodCount - k; i < periodCount; i = unchecked_inc(i)) {
             sum += prices[i];
         }
 
@@ -197,5 +198,11 @@ contract SMAOracle is IOracleWrapper {
      */
     function toWad(int256 x) private view returns (int256) {
         return x * scaler;
+    }
+
+    function unchecked_inc(uint256 i) private pure returns (uint256) {
+        unchecked {
+            return ++i;
+        }
     }
 }

@@ -72,14 +72,10 @@ interface IPoolCommitter {
     struct UserCommitment {
         uint256 longMintSettlement;
         uint256 longBurnPoolTokens;
-        uint256 balanceLongBurnPoolTokens;
         uint256 shortMintSettlement;
         uint256 shortBurnPoolTokens;
-        uint256 balanceShortBurnPoolTokens;
         uint256 shortBurnLongMintPoolTokens;
-        uint256 balanceShortBurnMintPoolTokens;
         uint256 longBurnShortMintPoolTokens;
-        uint256 balanceLongBurnMintPoolTokens;
         uint256 updateIntervalId;
     }
 
