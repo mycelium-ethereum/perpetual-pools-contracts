@@ -204,7 +204,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         Balance memory balance = userAggregateBalance[msg.sender];
         uint256 feeAmount;
 
-        if (commitType == CommitType.LongMint || commitType == CommitType.ShortMint) {
+        if (this.isMint(commitType)) {
             // We want to deduct the amount of settlement tokens that will be recorded under the commit by the minting fee
             // and then add it to the correct side of the pool
             feeAmount =
