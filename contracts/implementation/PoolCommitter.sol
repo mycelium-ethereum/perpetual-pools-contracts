@@ -103,18 +103,38 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         _;
     }
 
+    /**
+     * @notice Determines whether the provided commitment type represents a
+     *          mint
+     * @return Boolean indicating if `t` is mint
+     */
     function isMint(CommitType t) external pure override returns (bool) {
         return t == CommitType.LongMint || t == CommitType.ShortMint;
     }
 
+    /**
+     * @notice Determines whether the provided commitment type represents a
+     *          burn
+     * @return Boolean indicating if `t` is burn
+     */
     function isBurn(CommitType t) external pure override returns (bool) {
         return t == CommitType.LongBurn || t == CommitType.ShortBurn;
     }
 
+    /**
+     * @notice Determines whether the provided commitment type represents a
+     *          long
+     * @return Boolean indicating if `t` is long
+     */
     function isLong(CommitType t) external pure override returns (bool) {
         return t == CommitType.LongMint || t == CommitType.LongBurn;
     }
 
+    /**
+     * @notice Determines whether the provided commitment type represents a
+     *          short
+     * @return Boolean indicating if `t` is short
+     */
     function isShort(CommitType t) external pure override returns (bool) {
         return t == CommitType.ShortMint || t == CommitType.ShortBurn;
     }
