@@ -113,7 +113,7 @@ const setupHook = async () => {
         "KeeperRewards",
         {
             signer: signers[0],
-            libraries: { PoolSwapLibrary: library.address }
+            libraries: { PoolSwapLibrary: library.address },
         }
     )) as KeeperRewards__factory
     let keeperRewards = await keeperRewardsFactory.deploy(poolKeeper.address)
