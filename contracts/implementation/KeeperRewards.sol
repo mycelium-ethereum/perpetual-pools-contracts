@@ -4,6 +4,7 @@ pragma solidity 0.8.7;
 import "../interfaces/ILeveragedPool.sol";
 import "../interfaces/IKeeperRewards.sol";
 import "../interfaces/IOracleWrapper.sol";
+import "../interfaces/IERC20DecimalsWrapper.sol";
 
 import "../libraries/PoolSwapLibrary.sol";
 
@@ -54,6 +55,7 @@ contract KeeperRewards is IKeeperRewards {
         int256 settlementTokenPrice = IOracleWrapper(ILeveragedPool(_pool).settlementEthOracle()).getPrice();
 
         uint256 reward = keeperReward(
+            _pool,
             _gasPrice,
             _gasSpent,
             _savedPreviousUpdatedTimestamp,
@@ -76,6 +78,7 @@ contract KeeperRewards is IKeeperRewards {
      * @return Number of settlement tokens to give to the keeper for work performed
      */
     function keeperReward(
+        address _pool,
         uint256 _gasPrice,
         uint256 _gasSpent,
         uint256 _savedPreviousUpdatedTimestamp,
@@ -113,8 +116,8 @@ contract KeeperRewards is IKeeperRewards {
         // amount of settlement tokens to give to the keeper
         // _keeperGas + _keeperGas * percentTip
         uint256 wadRewardValue = _keeperGas + ((_keeperGas * _tipPercent) / 100);
-
-        return wadRewardValue;
+        uint256 decimals = IERC20DecimalsWrapper(ILeveragedPool(_pool).settlementToken()).decimals();
+        return PoolSwapLibrary.fromWad(uint256(wadRewardValue), decimals);
     }
 
     /**
