@@ -111,6 +111,14 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         return t == CommitType.LongBurn || t == CommitType.ShortBurn;
     }
 
+    function isLong(CommitType t) external pure override returns (bool) {
+        return t == CommitType.LongMint || t == CommitType.LongBurn;
+    }
+
+    function isShort(CommitType t) external pure override returns (bool) {
+        return t == CommitType.ShortMint || t == CommitType.ShortBurn;
+    }
+
     /**
      * @notice Initialises the contract
      * @param _factory Address of the associated `PoolFactory` contract

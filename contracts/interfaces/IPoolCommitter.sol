@@ -17,6 +17,10 @@ interface IPoolCommitter {
 
     function isBurn(CommitType t) external pure returns (bool);
 
+    function isLong(CommitType t) external pure returns (bool);
+
+    function isShort(CommitType t) external pure returns (bool);
+
     // Pool balances and supplies
     struct BalancesAndSupplies {
         uint256 newShortBalance;
