@@ -345,18 +345,9 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
                 // secondaryFee is calculated as totalFeeAmount * secondaryFeeSplitPercent / 100
                 // secondaryFeeSplitPercent <= 100 and therefore secondaryFee <= totalFeeAmount - The following line can not underflow
                 remainder = totalFeeAmount - secondaryFee;
-            }
-            IERC20 _settlementToken = IERC20(settlementToken);
-            unchecked {
                 // Overflow would require more than settlement's entire total supply
                 secondaryFees += secondaryFee;
                 primaryFees += remainder;
-            }
-            if (secondaryFee != 0) {
-                _settlementToken.safeTransfer(secondaryFeeAddress, secondaryFee);
-            }
-            if (remainder != 0) {
-                _settlementToken.safeTransfer(feeAddress, remainder);
             }
         }
     }
