@@ -14,6 +14,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import {
     DEFAULT_FEE,
     LONG_BURN,
+    LONG_BURN_THEN_MINT,
     LONG_MINT,
     POOL_CODE,
     SHORT_BURN,
@@ -27,6 +28,7 @@ import {
     getCurrentUserCommit,
     createCommit,
 } from "../utilities"
+import { BigNumber } from "ethers"
 
 chai.use(chaiAsPromised)
 const { expect } = chai
@@ -240,6 +242,87 @@ describe("PoolCommitter - Burn commit with burn fee", () => {
                 (await poolCommitter.getAggregateBalance(signers[0].address))
                     .settlementTokens
             ).to.equal(amountCommitted.sub(feeTaken))
+        })
+
+        it("Updates wallet balance properly on claim", async () => {
+            await timeout(updateInterval * 1000)
+            await poolKeeper.performUpkeepSinglePool(pool.address)
+            await poolCommitter.claim(signers[0].address)
+            expect(await longToken.balanceOf(signers[0].address)).to.equal(0)
+        })
+    })
+
+    context("Create LONG_BURN_SHORT_MINT commit", async () => {
+        let longBurnShortMintFee: BigNumber
+        beforeEach(async () => {
+            const result = await deployPoolAndTokenContracts(
+                POOL_CODE,
+                frontRunningInterval,
+                updateInterval,
+                leverage,
+                feeAddress,
+                fee,
+                0,
+                burnFee
+            )
+            signers = result.signers
+            pool = result.pool
+            token = result.token
+            library = result.library
+            poolCommitter = result.poolCommitter
+            poolKeeper = result.poolKeeper
+            longToken = result.longToken
+            l2Encoder = result.l2Encoder
+
+            // The expected fee is the burn fee + the minting fee on the other side. Given that the mint fee == burn fee, we can expect a fee equal to double the burn fee.
+            longBurnShortMintFee = amountCommitted.div(burnFeeReciprocal).mul(2)
+
+            await poolKeeper.setGasPrice("0")
+            await token.approve(pool.address, amountCommitted)
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                LONG_MINT,
+                amountCommitted
+            )
+            // Make the mint fee equal to the burn fee
+            await poolCommitter.setMintingFee(burnFee)
+            await timeout(updateInterval * 1000)
+            await poolKeeper.performUpkeepSinglePool(pool.address)
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                LONG_BURN_THEN_MINT,
+                amountCommitted,
+                true
+            )
+        })
+        it("burns all pool tokens", async () => {
+            expect(await longToken.totalSupply()).to.equal(0)
+        })
+
+        it("stores the amount committed", async () => {
+            expect(
+                (await getCurrentTotalCommit(poolCommitter))
+                    .longBurnShortMintPoolTokens
+            ).to.equal(amountCommitted)
+            expect(
+                (await getCurrentUserCommit(signers[0].address, poolCommitter))
+                    .longBurnShortMintPoolTokens
+            ).to.equal(amountCommitted)
+        })
+
+        it("Updates aggregate balance", async () => {
+            await timeout(updateInterval * 1000)
+            await poolKeeper.performUpkeepSinglePool(pool.address)
+            expect(
+                (await poolCommitter.getAggregateBalance(signers[0].address))
+                    .longTokens
+            ).to.equal(0)
+            expect(
+                (await poolCommitter.getAggregateBalance(signers[0].address))
+                    .settlementTokens
+            ).to.equal(amountCommitted.sub(longBurnShortMintFee))
         })
 
         it("Updates wallet balance properly on claim", async () => {

@@ -2,6 +2,7 @@
 pragma solidity 0.8.7;
 
 import "abdk-libraries-solidity/ABDKMathQuad.sol";
+import "hardhat/console.sol";
 
 /// @title Library for various useful (mostly) mathematical functions
 library PoolSwapLibrary {
@@ -25,6 +26,7 @@ library PoolSwapLibrary {
     struct UpdateData {
         bytes16 longPrice;
         bytes16 shortPrice;
+        bytes16 mintingFeeRate;
         uint256 currentUpdateIntervalId;
         uint256 updateIntervalId;
         uint256 longMintSettlement;
@@ -34,6 +36,17 @@ library PoolSwapLibrary {
         uint256 longBurnShortMintPoolTokens;
         uint256 shortBurnLongMintPoolTokens;
         bytes16 burnFee;
+    }
+
+    /// Information about the result of calculating a user's updated aggregate balance
+    struct UpdateResult {
+        uint256 _newLongTokens; // Quantity of long pool tokens post-application
+        uint256 _newShortTokens; // Quantity of short pool tokens post-application
+        uint256 _longBurnFee; // Quantity of settlement tokens taken as a fee from long burns
+        uint256 _longSettlementFee; // The fee taken from ShortBurnLongMint commits
+        uint256 _shortBurnFee; // Quantity of settlement tokens taken as a fee from short burns
+        uint256 _shortSettlementFee; // The fee taken from ShortBurnLongMint commits
+        uint256 _newSettlementTokens; // Quantity of settlement tokens post
     }
 
     /// Information required to perform a price change (of the underlying asset)
@@ -440,23 +453,40 @@ library PoolSwapLibrary {
      * @notice Calculate the number of pool tokens to mint, given some settlement token amount, a price, and a burn amount from other side for instant mint
      * @param price The price of a pool token
      * @param oppositePrice The price of the opposite side's pool token
+     * @param mintingFeeRate PoolCommitter.mintingFee - The amount that is extracted from each mint. Given as the decimal * 10 ^ 18. For example, 60% fee is 0.6 * 10 ^ 18 Fees can be 0.
      * @param amount The amount of settlement tokens being used to mint
      * @param amountBurnedInstantMint The amount of pool tokens that were burnt from the opposite side for an instant mint in this side
      * @return Quantity of pool tokens to mint
+     * @return Quantity of settlement tokens taken for minting fee
      * @dev Throws if price is zero
      */
     function getMintWithBurns(
         bytes16 price,
         bytes16 oppositePrice,
+        bytes16 mintingFeeRate,
         uint256 amount,
         uint256 amountBurnedInstantMint
-    ) public pure returns (uint256) {
+    ) public view returns (uint256, uint256) {
         require(price != 0, "price == 0");
+        uint256 mintFeeSettlementAmount;
         if (amountBurnedInstantMint > 0) {
             // Calculate amount of settlement tokens generated from the burn.
-            amount += getBurn(oppositePrice, amountBurnedInstantMint);
+            uint256 burnSettlementAmount = getBurn(oppositePrice, amountBurnedInstantMint);
+            // Calculate the amount of fees taken from the upcoming mint.
+            mintFeeSettlementAmount = mintingFee(mintingFeeRate, burnSettlementAmount);
+            burnSettlementAmount -= mintFeeSettlementAmount;
+            amount += burnSettlementAmount;
         }
-        return getMint(price, amount);
+        return (getMint(price, amount), mintFeeSettlementAmount);
+    }
+
+    /**
+     * @notice Calculate the amount of settlement tokens to take as the minting fee
+     * @param mintingFeeRate PoolCommitter.mintingFee - The amount that is extracted from each mint. Given as the decimal * 10 ^ 18. For example, 60% fee is 0.6 * 10 ^ 18 Fees can be 0.
+     * @param amount The amount of settlement tokens being committed to mint
+     */
+    function mintingFee(bytes16 mintingFeeRate, uint256 amount) public pure returns (uint256) {
+        return ABDKMathQuad.toUInt(multiplyDecimalByUInt(mintingFeeRate, amount)) / WAD_PRECISION;
     }
 
     /**
@@ -473,65 +503,64 @@ library PoolSwapLibrary {
     /**
      * @notice Calculate the change in a user's balance based on recent commit(s)
      * @param data Information needed for updating the balance including prices and recent commit amounts
-     * @return _newLongTokens Quantity of additional long tokens the user would receive
-     * @return _newShortTokens Quantity of additional short tokens the user would receive
-     * @return _longBurnFee Quantity of settlement tokens taken as a fee from long burns
-     * @return _shortBurnFee Quantity of settlement tokens taken as a fee from short burns
-     * @return _newSettlementTokens Quantity of additional settlement tokens the user would receive
+     * @return The UpdateResult struct with the data pertaining to the update of user's aggregate balance
      */
-    function getUpdatedAggregateBalance(UpdateData calldata data)
-        external
-        pure
-        returns (
-            uint256 _newLongTokens,
-            uint256 _newShortTokens,
-            uint256 _longBurnFee,
-            uint256 _shortBurnFee,
-            uint256 _newSettlementTokens
-        )
-    {
+    function getUpdatedAggregateBalance(UpdateData calldata data) external view returns (UpdateResult memory) {
+        UpdateResult memory result = UpdateResult(0, 0, 0, 0, 0, 0, 0);
         if (data.updateIntervalId >= data.currentUpdateIntervalId) {
             // Update interval has not passed: No change
-            return (0, 0, 0, 0, 0);
+            return result;
         }
-        uint256 longBurnResult; // The amount of settlement tokens to withdraw based on long token burn
-        uint256 shortBurnResult; // The amount of settlement tokens to withdraw based on short token burn
         if (data.longMintSettlement > 0 || data.shortBurnLongMintPoolTokens > 0) {
-            _newLongTokens = getMintWithBurns(
+            (result._newLongTokens, result._longSettlementFee) = getMintWithBurns(
                 data.longPrice,
                 data.shortPrice,
+                data.mintingFeeRate,
                 data.longMintSettlement,
                 data.shortBurnLongMintPoolTokens
             );
         }
 
-        if (data.longBurnPoolTokens > 0) {
+        if (data.longBurnPoolTokens > 0 || data.longBurnShortMintPoolTokens > 0) {
             // Calculate the amount of settlement tokens earned from burning long tokens
-            longBurnResult = getBurn(data.longPrice, data.longBurnPoolTokens);
+            uint256 longBurnResult = getBurn(
+                data.longPrice,
+                data.longBurnPoolTokens + data.longBurnShortMintPoolTokens
+            );
             // Calculate the fee
-            _longBurnFee = convertDecimalToUInt(multiplyDecimalByUInt(data.burnFee, longBurnResult)) / WAD_PRECISION;
+            result._longBurnFee =
+                convertDecimalToUInt(multiplyDecimalByUInt(data.burnFee, longBurnResult)) /
+                WAD_PRECISION;
             // Subtract the fee from settlement token amount
-            longBurnResult -= _longBurnFee;
+            longBurnResult -= result._longBurnFee;
+            result._newSettlementTokens += longBurnResult;
         }
 
         if (data.shortMintSettlement > 0 || data.longBurnShortMintPoolTokens > 0) {
-            _newShortTokens = getMintWithBurns(
+            (result._newShortTokens, result._shortSettlementFee) = getMintWithBurns(
                 data.shortPrice,
                 data.longPrice,
+                data.mintingFeeRate,
                 data.shortMintSettlement,
                 data.longBurnShortMintPoolTokens
             );
         }
 
-        if (data.shortBurnPoolTokens > 0) {
+        if (data.shortBurnPoolTokens > 0 || data.shortBurnLongMintPoolTokens > 0) {
             // Calculate the amount of settlement tokens earned from burning short tokens
-            shortBurnResult = getBurn(data.shortPrice, data.shortBurnPoolTokens);
+            uint256 shortBurnResult = getBurn(
+                data.shortPrice,
+                data.shortBurnPoolTokens + data.shortBurnLongMintPoolTokens
+            );
             // Calculate the fee
-            _shortBurnFee = convertDecimalToUInt(multiplyDecimalByUInt(data.burnFee, shortBurnResult)) / WAD_PRECISION;
+            result._shortBurnFee =
+                convertDecimalToUInt(multiplyDecimalByUInt(data.burnFee, shortBurnResult)) /
+                WAD_PRECISION;
             // Subtract the fee from settlement token amount
-            shortBurnResult -= _shortBurnFee;
+            shortBurnResult -= result._shortBurnFee;
+            result._newSettlementTokens += shortBurnResult;
         }
 
-        _newSettlementTokens = shortBurnResult + longBurnResult;
+        return result;
     }
 }
