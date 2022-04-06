@@ -57,7 +57,7 @@ contract AutoClaim is IAutoClaim {
                 // If the claim request is pending but not yet valid (it was made in the current commit), we want to add to the value.
                 // Note that in context, the user *usually* won't need or want to increment `ClaimRequest.reward` more than once because the first call to `payForClaim` should suffice.
                 request.reward += msg.value;
-                emit PaidClaimRequestUpdate(user, msg.sender, request.reward);
+                emit PaidClaimRequestUpdate(user, msg.sender, request.updateIntervalId, request.reward);
                 return;
             }
         }
@@ -66,7 +66,7 @@ contract AutoClaim is IAutoClaim {
         requestUpdateIntervalId = poolCommitter.getAppropriateUpdateIntervalId();
         request.updateIntervalId = requestUpdateIntervalId;
         request.reward = msg.value;
-        emit PaidClaimRequestUpdate(user, msg.sender, request.reward);
+        emit PaidClaimRequestUpdate(user, msg.sender, requestUpdateIntervalId, request.reward);
     }
 
     /**
