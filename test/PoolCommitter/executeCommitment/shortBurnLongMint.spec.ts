@@ -68,7 +68,6 @@ describe("PoolCommitter - executeCommitment: short burn into instant short mint"
         pool = result.pool
         signers = result.signers
         token = result.token
-        library = result.library
         shortToken = result.shortToken
         longToken = result.longToken
         poolCommitter = result.poolCommitter
