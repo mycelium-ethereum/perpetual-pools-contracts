@@ -465,7 +465,7 @@ library PoolSwapLibrary {
         bytes16 mintingFeeRate,
         uint256 amount,
         uint256 amountBurnedInstantMint
-    ) public view returns (uint256, uint256) {
+    ) public pure returns (uint256, uint256) {
         require(price != 0, "price == 0");
         uint256 mintFeeSettlementAmount;
         if (amountBurnedInstantMint > 0) {
