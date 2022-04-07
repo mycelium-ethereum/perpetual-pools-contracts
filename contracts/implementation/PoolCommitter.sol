@@ -337,7 +337,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
          * Hence, we do the storage change if `fromAggregateBalance == true` before calling `applyCommitment`, and do the interaction if `fromAggregateBalance == false` after.
          * Lastly, we call `AutoClaim::makePaidClaimRequest`, which is an external interaction (albeit with a protocol contract).
          */
-        if ((commitType == CommitType.LongMint || commitType == CommitType.ShortMint) && fromAggregateBalance) {
+        if (this.isMint(commitType) && fromAggregateBalance) {
             // Want to take away from their balance's settlement tokens
             require(amount <= userAggregateBalance[msg.sender].settlementTokens, "Insufficient settlement tokens");
             userAggregateBalance[msg.sender].settlementTokens -= amount;
@@ -345,7 +345,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
 
         applyCommitment(pool, commitType, amount, fromAggregateBalance, userCommit, totalCommit);
 
-        if ((commitType == CommitType.LongMint || commitType == CommitType.ShortMint) && !fromAggregateBalance) {
+        if (this.isMint(commitType) && !fromAggregateBalance) {
             // minting: pull in the settlement token from the committer
             // Do not need to transfer if minting using aggregate balance tokens, since the leveraged pool already owns these tokens.
             pool.settlementTokenTransferFrom(msg.sender, leveragedPool, amount);
