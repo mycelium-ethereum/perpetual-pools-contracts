@@ -88,9 +88,13 @@ describe("LeveragedPool - executeCommitment: Long Burn into instant short mint",
         await poolCommitter.setMintingFee(mintFee)
 
         // Burn fee taken out, then mint fee taken out
-        mintFeeAmount = (amountCommitted.sub(amountCommitted.div(burnFeeReciprocal))).div(mintFeeReciprocal)
+        mintFeeAmount = amountCommitted
+            .sub(amountCommitted.div(burnFeeReciprocal))
+            .div(mintFeeReciprocal)
         // The expected fee is the burn fee + the minting fee on the other side. Given that the mint fee == burn fee, we can expect a fee equal to the (amountCommitted / BurnFee) + (amountCommittedAfterBurnFee / mintFee)
-        longBurnShortMintFee = amountCommitted.div(burnFeeReciprocal).add(mintFeeAmount)
+        longBurnShortMintFee = amountCommitted
+            .div(burnFeeReciprocal)
+            .add(mintFeeAmount)
 
         await timeout(updateInterval * 1000)
         await pool.poolUpkeep(9, 10)
@@ -107,13 +111,17 @@ describe("LeveragedPool - executeCommitment: Long Burn into instant short mint",
         expect(await shortToken.totalSupply()).to.eq(0)
         await timeout(updateInterval * 1000)
         await pool.poolUpkeep(9, 9)
-        expect(await shortToken.totalSupply()).to.eq(amountCommitted.sub(longBurnShortMintFee))
+        expect(await shortToken.totalSupply()).to.eq(
+            amountCommitted.sub(longBurnShortMintFee)
+        )
     })
     it("should adjust the live short pool balance", async () => {
         expect(await pool.longBalance()).to.eq(amountCommitted)
         await timeout(updateInterval * 1000)
         await pool.poolUpkeep(9, 9)
-        expect(await pool.shortBalance()).to.eq(amountCommitted.sub(longBurnShortMintFee))
+        expect(await pool.shortBalance()).to.eq(
+            amountCommitted.sub(longBurnShortMintFee)
+        )
     })
     it("should adjust the live long pool balance", async () => {
         expect(await pool.longBalance()).to.eq(amountCommitted)
@@ -123,7 +131,8 @@ describe("LeveragedPool - executeCommitment: Long Burn into instant short mint",
     })
     it("should reduce the shadow long burn short mint pool balance", async () => {
         expect(
-            (await getCurrentTotalCommit(poolCommitter)).longBurnShortMintPoolTokens
+            (await getCurrentTotalCommit(poolCommitter))
+                .longBurnShortMintPoolTokens
         ).to.equal(amountCommitted)
         await timeout(updateInterval * 1000)
         await pool.poolUpkeep(9, 9)
@@ -147,14 +156,12 @@ describe("LeveragedPool - executeCommitment: Long Burn into instant short mint",
     })
 
     it("should transfer short tokens to the commit owner", async () => {
-        expect(await shortToken.balanceOf(signers[0].address)).to.eq(
-            0
-        )
+        expect(await shortToken.balanceOf(signers[0].address)).to.eq(0)
         await timeout(updateInterval * 1000)
         await pool.poolUpkeep(9, 9)
         await poolCommitter.claim(signers[0].address)
-        expect(
-            await shortToken.balanceOf(signers[0].address)
-        ).to.eq(amountCommitted.sub(longBurnShortMintFee))
+        expect(await shortToken.balanceOf(signers[0].address)).to.eq(
+            amountCommitted.sub(longBurnShortMintFee)
+        )
     })
 })

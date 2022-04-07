@@ -283,9 +283,13 @@ describe("PoolCommitter - Burn commit with burn fee", () => {
             mintFeeReciprocal = burnFeeReciprocal
 
             // Burn fee taken out, then mint fee taken out
-            mintFeeAmount = (amountCommitted.sub(amountCommitted.div(burnFeeReciprocal))).div(mintFeeReciprocal)
+            mintFeeAmount = amountCommitted
+                .sub(amountCommitted.div(burnFeeReciprocal))
+                .div(mintFeeReciprocal)
             // The expected fee is the burn fee + the minting fee on the other side. Given that the mint fee == burn fee, we can expect a fee equal to the (amountCommitted / BurnFee) + (amountCommittedAfterBurnFee / mintFee)
-            shortBurnLongMintFee = amountCommitted.div(burnFeeReciprocal).add(mintFeeAmount)
+            shortBurnLongMintFee = amountCommitted
+                .div(burnFeeReciprocal)
+                .add(mintFeeAmount)
 
             await poolKeeper.setGasPrice("0")
             await token.approve(pool.address, amountCommitted)
@@ -354,14 +358,12 @@ describe("PoolCommitter - Burn commit with burn fee", () => {
             expect(await shortToken.balanceOf(signers[0].address)).to.equal(0)
 
             // Long tokens should increment, because we instantly mint them from the burn
-            expect(
-                (await longToken.balanceOf(signers[0].address))
-            ).to.equal(amountCommitted.sub(shortBurnLongMintFee))
+            expect(await longToken.balanceOf(signers[0].address)).to.equal(
+                amountCommitted.sub(shortBurnLongMintFee)
+            )
 
             // Given that we are using all the settlement tokens generated from the short burn to instantly mint, we should expect no change to settlement token amount
-            expect(settlementAfter.sub(settlementBefore)).to.equal(
-                0
-            )
+            expect(settlementAfter.sub(settlementBefore)).to.equal(0)
         })
 
         it("Updates long and short balance", async () => {
@@ -412,9 +414,13 @@ describe("PoolCommitter - Burn commit with burn fee", () => {
             mintFeeReciprocal = burnFeeReciprocal
 
             // Burn fee taken out, then mint fee taken out
-            mintFeeAmount = (amountCommitted.sub(amountCommitted.div(burnFeeReciprocal))).div(mintFeeReciprocal)
+            mintFeeAmount = amountCommitted
+                .sub(amountCommitted.div(burnFeeReciprocal))
+                .div(mintFeeReciprocal)
             // The expected fee is the burn fee + the minting fee on the other side. Given that the mint fee == burn fee, we can expect a fee equal to the (amountCommitted / BurnFee) + (amountCommittedAfterBurnFee / mintFee)
-            longBurnShortMintFee = amountCommitted.div(burnFeeReciprocal).add(mintFeeAmount)
+            longBurnShortMintFee = amountCommitted
+                .div(burnFeeReciprocal)
+                .add(mintFeeAmount)
 
             await poolKeeper.setGasPrice("0")
             await token.approve(pool.address, amountCommitted)
@@ -473,15 +479,17 @@ describe("PoolCommitter - Burn commit with burn fee", () => {
             await timeout(updateInterval * 1000)
             await poolKeeper.performUpkeepSinglePool(pool.address)
             const settlementBefore = await token.balanceOf(signers[0].address)
-            const shortTokenBefore = await shortToken.balanceOf(signers[0].address)
+            const shortTokenBefore = await shortToken.balanceOf(
+                signers[0].address
+            )
             await poolCommitter.claim(signers[0].address)
-            const shortTokenAfter = await shortToken.balanceOf(signers[0].address)
+            const shortTokenAfter = await shortToken.balanceOf(
+                signers[0].address
+            )
             const settlementAfter = await token.balanceOf(signers[0].address)
 
             expect(await longToken.balanceOf(signers[0].address)).to.equal(0)
-            expect(settlementAfter.sub(settlementBefore)).to.equal(
-                0
-            )
+            expect(settlementAfter.sub(settlementBefore)).to.equal(0)
             expect(shortTokenAfter.sub(shortTokenBefore)).to.equal(
                 amountCommitted.sub(longBurnShortMintFee)
             )
