@@ -18,6 +18,7 @@ import {
     LONG_MINT,
     POOL_CODE,
     SHORT_BURN,
+    SHORT_BURN_THEN_MINT,
     SHORT_MINT,
 } from "../constants"
 import {
@@ -252,8 +253,122 @@ describe("PoolCommitter - Burn commit with burn fee", () => {
         })
     })
 
+    context("Create SHORT_BURN_LONG_MINT commit", async () => {
+        let shortBurnLongMintFee: BigNumber
+        let mintFee: BigNumber
+        let mintFeeReciprocal: BigNumber
+        let mintFeeAmount: BigNumber
+        beforeEach(async () => {
+            const result = await deployPoolAndTokenContracts(
+                POOL_CODE,
+                frontRunningInterval,
+                updateInterval,
+                leverage,
+                feeAddress,
+                fee,
+                0,
+                burnFee
+            )
+            signers = result.signers
+            pool = result.pool
+            token = result.token
+            library = result.library
+            poolCommitter = result.poolCommitter
+            poolKeeper = result.poolKeeper
+            longToken = result.longToken
+            shortToken = result.shortToken
+            l2Encoder = result.l2Encoder
+
+            mintFee = burnFee
+            mintFeeReciprocal = burnFeeReciprocal
+
+            // The expected fee is the burn fee + the minting fee on the other side. Given that the mint fee == burn fee, we can expect a fee equal to double the burn fee.
+            shortBurnLongMintFee = amountCommitted.div(burnFeeReciprocal).mul(2)
+            mintFeeAmount = amountCommitted.div(mintFeeReciprocal)
+
+            await poolKeeper.setGasPrice("0")
+            await token.approve(pool.address, amountCommitted)
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                SHORT_MINT,
+                amountCommitted
+            )
+            // Make the mint fee equal to the burn fee
+            await poolCommitter.setMintingFee(mintFee)
+            await timeout(updateInterval * 1000)
+            await poolKeeper.performUpkeepSinglePool(pool.address)
+            await createCommit(
+                l2Encoder,
+                poolCommitter,
+                SHORT_BURN_THEN_MINT,
+                amountCommitted,
+                true
+            )
+        })
+        it("burns all pool tokens", async () => {
+            expect(await shortToken.totalSupply()).to.equal(0)
+        })
+
+        it("stores the amount committed", async () => {
+            expect(
+                (await getCurrentTotalCommit(poolCommitter))
+                    .shortBurnLongMintPoolTokens
+            ).to.equal(amountCommitted)
+            expect(
+                (await getCurrentUserCommit(signers[0].address, poolCommitter))
+                    .shortBurnLongMintPoolTokens
+            ).to.equal(amountCommitted)
+        })
+
+        it("Updates aggregate balance", async () => {
+            await timeout(updateInterval * 1000)
+            await poolKeeper.performUpkeepSinglePool(pool.address)
+            expect(
+                (await poolCommitter.getAggregateBalance(signers[0].address))
+                    .shortTokens
+            ).to.equal(0)
+            expect(
+                (await poolCommitter.getAggregateBalance(signers[0].address))
+                    .settlementTokens
+            ).to.equal(amountCommitted.sub(shortBurnLongMintFee))
+        })
+
+        it("Updates wallet balance when claiming", async () => {
+            await timeout(updateInterval * 1000)
+            await poolKeeper.performUpkeepSinglePool(pool.address)
+            const settlementBefore = await token.balanceOf(signers[0].address)
+            await poolCommitter.claim(signers[0].address)
+            const settlementAfter = await token.balanceOf(signers[0].address)
+            expect(await shortToken.balanceOf(signers[0].address)).to.equal(0)
+            expect(settlementAfter.sub(settlementBefore)).to.equal(
+                amountCommitted.sub(shortBurnLongMintFee)
+            )
+        })
+
+        it("Updates long and short balance", async () => {
+            await timeout(updateInterval * 1000)
+            await poolKeeper.performUpkeepSinglePool(pool.address)
+
+            const shortBalanceBefore = await pool.shortBalance()
+            const longBalanceBefore = await pool.longBalance()
+            await poolCommitter.claim(signers[0].address)
+            const shortBalanceAfter = await pool.shortBalance()
+            const longBalanceAfter = await pool.longBalance()
+
+            // Short Balance should get short burn fee paid
+            expect(shortBalanceAfter.sub(shortBalanceBefore)).to.equal(feeTaken)
+            // Long balance should get the minting fee added to it
+            expect(longBalanceAfter.sub(longBalanceBefore)).to.equal(
+                mintFeeAmount
+            )
+        })
+    })
     context("Create LONG_BURN_SHORT_MINT commit", async () => {
         let longBurnShortMintFee: BigNumber
+        let mintFee: BigNumber
+        let mintFeeReciprocal: BigNumber
+        let mintFeeAmount: BigNumber
         beforeEach(async () => {
             const result = await deployPoolAndTokenContracts(
                 POOL_CODE,
@@ -274,8 +389,12 @@ describe("PoolCommitter - Burn commit with burn fee", () => {
             longToken = result.longToken
             l2Encoder = result.l2Encoder
 
+            mintFee = burnFee
+            mintFeeReciprocal = burnFeeReciprocal
+
             // The expected fee is the burn fee + the minting fee on the other side. Given that the mint fee == burn fee, we can expect a fee equal to double the burn fee.
             longBurnShortMintFee = amountCommitted.div(burnFeeReciprocal).mul(2)
+            mintFeeAmount = amountCommitted.div(mintFeeReciprocal)
 
             await poolKeeper.setGasPrice("0")
             await token.approve(pool.address, amountCommitted)
@@ -286,7 +405,7 @@ describe("PoolCommitter - Burn commit with burn fee", () => {
                 amountCommitted
             )
             // Make the mint fee equal to the burn fee
-            await poolCommitter.setMintingFee(burnFee)
+            await poolCommitter.setMintingFee(mintFee)
             await timeout(updateInterval * 1000)
             await poolKeeper.performUpkeepSinglePool(pool.address)
             await createCommit(
@@ -325,11 +444,34 @@ describe("PoolCommitter - Burn commit with burn fee", () => {
             ).to.equal(amountCommitted.sub(longBurnShortMintFee))
         })
 
-        it("Updates wallet balance properly on claim", async () => {
+        it("Updates wallet balance when claiming", async () => {
             await timeout(updateInterval * 1000)
             await poolKeeper.performUpkeepSinglePool(pool.address)
+            const settlementBefore = await token.balanceOf(signers[0].address)
             await poolCommitter.claim(signers[0].address)
+            const settlementAfter = await token.balanceOf(signers[0].address)
             expect(await longToken.balanceOf(signers[0].address)).to.equal(0)
+            expect(settlementAfter.sub(settlementBefore)).to.equal(
+                amountCommitted.sub(longBurnShortMintFee)
+            )
+        })
+
+        it("Updates long and short balance", async () => {
+            await timeout(updateInterval * 1000)
+            await poolKeeper.performUpkeepSinglePool(pool.address)
+
+            const shortBalanceBefore = await pool.shortBalance()
+            const longBalanceBefore = await pool.longBalance()
+            await poolCommitter.claim(signers[0].address)
+            const shortBalanceAfter = await pool.shortBalance()
+            const longBalanceAfter = await pool.longBalance()
+
+            // Long Balance should get long burn fee paid
+            expect(longBalanceAfter.sub(longBalanceBefore)).to.equal(feeTaken)
+            // Short balance should get the minting fee added to it
+            expect(shortBalanceAfter.sub(shortBalanceBefore)).to.equal(
+                mintFeeAmount
+            )
         })
     })
 })

@@ -63,6 +63,8 @@ interface IPoolCommitter {
         uint256 _newLongTokensSum;
         uint256 _newShortTokensSum;
         uint256 _newSettlementTokensSum;
+        uint256 _longSettlementFee;
+        uint256 _shortSettlementFee;
         uint256 _longBurnFee;
         uint256 _shortBurnFee;
         uint8 _maxIterations;

@@ -13,8 +13,6 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../libraries/PoolSwapLibrary.sol";
 import "../libraries/CalldataLogic.sol";
 
-import "hardhat/console.sol";
-
 /// @title This contract is responsible for handling commitment logic
 contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
     // #### Globals
@@ -682,6 +680,8 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             _newLongTokensSum: 0,
             _newShortTokensSum: 0,
             _newSettlementTokensSum: 0,
+            _longSettlementFee: 0,
+            _shortSettlementFee: 0,
             _longBurnFee: 0,
             _shortBurnFee: 0,
             _maxIterations: 0
@@ -704,7 +704,12 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
                 PoolSwapLibrary.UpdateResult memory result = getBalanceSingleCommitment(commitment);
                 update._newLongTokensSum += result._newLongTokens;
                 update._newShortTokensSum += result._newShortTokens;
-                update._newSettlementTokensSum += result._newSettlementTokens;
+                update._newSettlementTokensSum +=
+                    result._newSettlementTokens -
+                    result._longSettlementFee -
+                    result._shortSettlementFee;
+                update._longSettlementFee += result._longSettlementFee;
+                update._shortSettlementFee += result._shortSettlementFee;
                 update._longBurnFee += result._longBurnFee;
                 update._shortBurnFee += result._shortBurnFee;
                 delete userCommitments[user][id];
@@ -737,7 +742,10 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
 
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
         (uint256 shortBalance, uint256 longBalance) = pool.balances();
-        pool.setNewPoolBalances(longBalance + update._longBurnFee, shortBalance + update._shortBurnFee);
+        pool.setNewPoolBalances(
+            longBalance + update._longBurnFee + update._longSettlementFee,
+            shortBalance + update._shortBurnFee + update._shortSettlementFee
+        );
 
         emit AggregateBalanceUpdated(user);
     }
@@ -773,6 +781,8 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             _newLongTokensSum: 0,
             _newShortTokensSum: 0,
             _newSettlementTokensSum: 0,
+            _longSettlementFee: 0,
+            _shortSettlementFee: 0,
             _longBurnFee: 0,
             _shortBurnFee: 0,
             _maxIterations: 0

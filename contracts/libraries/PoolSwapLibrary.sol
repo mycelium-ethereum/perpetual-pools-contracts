@@ -2,7 +2,6 @@
 pragma solidity 0.8.7;
 
 import "abdk-libraries-solidity/ABDKMathQuad.sol";
-import "hardhat/console.sol";
 
 /// @title Library for various useful (mostly) mathematical functions
 library PoolSwapLibrary {
