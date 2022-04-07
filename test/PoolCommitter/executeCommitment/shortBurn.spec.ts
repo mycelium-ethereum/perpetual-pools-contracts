@@ -39,7 +39,7 @@ const frontRunningInterval = 100 // seconds
 const fee = DEFAULT_FEE
 const leverage = 2
 
-describe("LeveragedPool - executeCommitment: Short Burn", () => {
+describe("PoolCommitter - executeCommitment: Short Burn", () => {
     let token: TestToken
     let shortToken: ERC20
     let library: PoolSwapLibrary

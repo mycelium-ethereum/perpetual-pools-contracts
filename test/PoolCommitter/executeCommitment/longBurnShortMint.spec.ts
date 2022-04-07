@@ -44,7 +44,7 @@ const mintFeeReciprocal = ethers.BigNumber.from("100")
 const burnFeeReciprocal = ethers.BigNumber.from("100")
 const leverage = 2
 
-describe("LeveragedPool - executeCommitment: Long Burn into instant short mint", () => {
+describe("PoolCommitter - executeCommitment: Long Burn into instant short mint", () => {
     let token: TestToken
 
     let longToken: ERC20
