@@ -400,6 +400,8 @@ describe("PoolFactory.deployPool", () => {
                 BigNumber.from("2").mul(lastPrice)
             )
 
+            await newPool.claimPrimaryFees()
+            await newPool.claimSecondaryFees()
             let feesPaidPrimary = await token.balanceOf(feeAddress)
             let feesPaidSecondary = await token.balanceOf(secondFeeAddress)
             expect(

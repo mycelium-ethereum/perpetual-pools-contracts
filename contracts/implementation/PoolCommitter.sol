@@ -104,6 +104,42 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
     }
 
     /**
+     * @notice Determines whether the provided commitment type represents a
+     *          mint
+     * @return Boolean indicating if `t` is mint
+     */
+    function isMint(CommitType t) external pure override returns (bool) {
+        return t == CommitType.LongMint || t == CommitType.ShortMint;
+    }
+
+    /**
+     * @notice Determines whether the provided commitment type represents a
+     *          burn
+     * @return Boolean indicating if `t` is burn
+     */
+    function isBurn(CommitType t) external pure override returns (bool) {
+        return t == CommitType.LongBurn || t == CommitType.ShortBurn;
+    }
+
+    /**
+     * @notice Determines whether the provided commitment type represents a
+     *          long
+     * @return Boolean indicating if `t` is long
+     */
+    function isLong(CommitType t) external pure override returns (bool) {
+        return t == CommitType.LongMint || t == CommitType.LongBurn;
+    }
+
+    /**
+     * @notice Determines whether the provided commitment type represents a
+     *          short
+     * @return Boolean indicating if `t` is short
+     */
+    function isShort(CommitType t) external pure override returns (bool) {
+        return t == CommitType.ShortMint || t == CommitType.ShortBurn;
+    }
+
+    /**
      * @notice Initialises the contract
      * @param _factory Address of the associated `PoolFactory` contract
      * @param _autoClaim Address of the associated `AutoClaim` contract
@@ -168,7 +204,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         Balance memory balance = userAggregateBalance[msg.sender];
         uint256 feeAmount;
 
-        if (commitType == CommitType.LongMint || commitType == CommitType.ShortMint) {
+        if (this.isMint(commitType)) {
             // We want to deduct the amount of settlement tokens that will be recorded under the commit by the minting fee
             // and then add it to the correct side of the pool
             feeAmount =
