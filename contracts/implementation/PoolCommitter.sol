@@ -345,7 +345,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
 
         applyCommitment(pool, commitType, amount, fromAggregateBalance, userCommit, totalCommit);
 
-        if (commitType == CommitType.LongMint || (commitType == CommitType.ShortMint && !fromAggregateBalance)) {
+        if ((commitType == CommitType.LongMint || commitType == CommitType.ShortMint) && !fromAggregateBalance) {
             // minting: pull in the settlement token from the committer
             // Do not need to transfer if minting using aggregate balance tokens, since the leveraged pool already owns these tokens.
             pool.settlementTokenTransferFrom(msg.sender, leveragedPool, amount);

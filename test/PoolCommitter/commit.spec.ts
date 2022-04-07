@@ -416,6 +416,7 @@ describe("PoolCommitter - commit", () => {
         it("Should appropriately set values", async () => {
             // Commit using the balance in the contracts, which we just committed.
             const shortTokenSupplyBefore = await shortToken.totalSupply()
+            const settlementBefore = await token.balanceOf(signers[0].address)
             await createCommit(
                 l2Encoder,
                 poolCommitter,
@@ -424,6 +425,10 @@ describe("PoolCommitter - commit", () => {
                 true
             )
             const shortTokenSupplyAfter = await shortToken.totalSupply()
+            const settlementAfter = await token.balanceOf(signers[0].address)
+
+            // Settlement token balance should not change
+            expect(settlementAfter).to.equal(settlementBefore)
 
             const userMostRecentCommit = await getCurrentUserCommit(
                 signers[0].address,
@@ -739,6 +744,8 @@ describe("PoolCommitter - commit", () => {
         it("Should appropriately set values", async () => {
             // Commit using the balance in the contracts, which we just committed.
             const longTokenSupplyBefore = await longToken.totalSupply()
+            const settlementBefore = await token.balanceOf(signers[0].address)
+
             await createCommit(
                 l2Encoder,
                 poolCommitter,
@@ -747,6 +754,10 @@ describe("PoolCommitter - commit", () => {
                 true
             )
             const longTokenSupplyAfter = await longToken.totalSupply()
+            const settlementAfter = await token.balanceOf(signers[0].address)
+
+            // Settlement should not change (this commit is from aggregate balance)
+            expect(settlementAfter).to.equal(settlementBefore)
 
             const userMostRecentCommit = await getCurrentUserCommit(
                 signers[0].address,
