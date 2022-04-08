@@ -18,6 +18,12 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
     // #### Globals
     uint128 public constant LONG_INDEX = 0;
     uint128 public constant SHORT_INDEX = 1;
+    // Set max minting fee to 100%. This is a ABDKQuad representation of 1 * 10 ** 18
+    bytes16 public constant MAX_MINTING_FEE = 0x403abc16d674ec800000000000000000;
+    // Set max burning fee to 10%. This is a ABDKQuad representation of 0.1 * 10 ** 18
+    bytes16 public constant MAX_BURNING_FEE = 0x40376345785d8a000000000000000000;
+    // Maximum changeInterval is the theoretical maximum change to the minting fee in one update interval.
+    bytes16 public constant MAX_CHANGE_INTERVAL = MAX_MINTING_FEE;
 
     // 15 was chosen because it will definitely fit in a block on Arbitrum which can be tricky to ascertain definitive computation cap without trial and error, while it is also a reasonable number of upkeeps to get executed in one transaction
     uint8 public constant MAX_ITERATIONS = 15;
@@ -152,8 +158,9 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
      * @dev Throws if autoClaim contract address is null
      * @dev Throws if autoclaim contract address is null
      * @dev Only callable by the associated initializer address
-     * @dev Throws if minting fee is over 100%
-     * @dev Throws if burning fee is over 100%
+     * @dev Throws if minting fee is over MAX_MINTING_FEE
+     * @dev Throws if burning fee is over MAX_BURNING_FEE
+     * @dev Throws if changeInterval is over MAX_CHANGE_INTERVAL
      * @dev Emits a `ChangeIntervalSet` event on success
      */
     function initialize(
@@ -175,9 +182,11 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         invariantCheck = _invariantCheck;
         mintingFee = PoolSwapLibrary.convertUIntToDecimal(_mintingFee);
         burningFee = PoolSwapLibrary.convertUIntToDecimal(_burningFee);
-        require(mintingFee < PoolSwapLibrary.MAX_MINTING_FEE, "Minting fee >= 100%");
-        require(burningFee < PoolSwapLibrary.MAX_BURNING_FEE, "Burning fee >= 10%");
         changeInterval = PoolSwapLibrary.convertUIntToDecimal(_changeInterval);
+        require(mintingFee <= MAX_MINTING_FEE, "Minting fee exceeds limit");
+        require(burningFee <= MAX_BURNING_FEE, "Burning fee exceeds limit");
+        //         require(changeInterval <= MAX_CHANGE_INTERVAL, "changeInterval exceeds limit");
+
         feeController = _feeController;
         autoClaim = IAutoClaim(_autoClaim);
         governance = _factoryOwner;
@@ -666,10 +675,10 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             // longTokenPrice * shortTokenPrice <= 1
             mintingFee = PoolSwapLibrary.addBytes(mintingFee, changeInterval);
 
-            if (PoolSwapLibrary.compareDecimals(mintingFee, PoolSwapLibrary.MAX_MINTING_FEE) == 1) {
+            if (PoolSwapLibrary.compareDecimals(mintingFee, MAX_MINTING_FEE) == 1) {
                 // mintingFee is greater than 1 (100%).
                 // We want to cap this at a theoretical max of 100%
-                mintingFee = PoolSwapLibrary.MAX_MINTING_FEE;
+                mintingFee = MAX_MINTING_FEE;
             }
         }
     }
@@ -890,7 +899,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
      */
     function setBurningFee(uint256 _burningFee) external override onlyFeeController {
         burningFee = PoolSwapLibrary.convertUIntToDecimal(_burningFee);
-        require(burningFee < PoolSwapLibrary.MAX_BURNING_FEE, "Burning fee >= 10%");
+        require(burningFee < MAX_BURNING_FEE, "Burning fee >= 10%");
         emit BurningFeeSet(_burningFee);
     }
 
@@ -902,7 +911,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
      */
     function setMintingFee(uint256 _mintingFee) external override onlyFeeController {
         mintingFee = PoolSwapLibrary.convertUIntToDecimal(_mintingFee);
-        require(mintingFee < PoolSwapLibrary.MAX_MINTING_FEE, "Minting fee >= 100%");
+        require(mintingFee < MAX_MINTING_FEE, "Minting fee >= 100%");
         emit MintingFeeSet(_mintingFee);
     }
 
