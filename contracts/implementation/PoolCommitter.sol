@@ -185,7 +185,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         changeInterval = PoolSwapLibrary.convertUIntToDecimal(_changeInterval);
         require(mintingFee <= MAX_MINTING_FEE, "Minting fee exceeds limit");
         require(burningFee <= MAX_BURNING_FEE, "Burning fee exceeds limit");
-        //         require(changeInterval <= MAX_CHANGE_INTERVAL, "changeInterval exceeds limit");
+        require(changeInterval <= MAX_CHANGE_INTERVAL, "Change Interval exceeds limit");
 
         feeController = _feeController;
         autoClaim = IAutoClaim(_autoClaim);
@@ -923,6 +923,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
      */
     function setChangeInterval(uint256 _changeInterval) external override onlyFeeController {
         changeInterval = PoolSwapLibrary.convertUIntToDecimal(_changeInterval);
+        require(changeInterval <= MAX_CHANGE_INTERVAL, "Change Interval exceeds limit");
         emit ChangeIntervalSet(_changeInterval);
     }
 
