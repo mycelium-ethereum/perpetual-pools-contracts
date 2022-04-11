@@ -88,13 +88,39 @@ describe("AutoClaim - checkClaim", () => {
     )
 
     context(
-        "When called with nonexecutable claim and correct update interval ID",
+        "When called with nonexecutable claim with future update interval ID and correct update interval ID",
         async () => {
             it("Returns false", async () => {
                 const one: BigNumber = ethers.BigNumber.from(1)
                 const ten: BigNumber = ethers.BigNumber.from(10)
 
                 const someUpdateIntervalId: BigNumber = ten
+                const someReward: BigNumberish = 100
+                const executableClaim = {
+                    updateIntervalId: someUpdateIntervalId,
+                    reward: someReward,
+                }
+                const currentUpdateIntervalId: BigNumber = one
+
+                const actualResult: boolean = await autoClaim.checkClaim(
+                    executableClaim,
+                    currentUpdateIntervalId
+                )
+
+                const expectedResult: boolean = false
+
+                await expect(actualResult).to.eq(expectedResult)
+            })
+        }
+    )
+
+    context(
+        "When called with nonexecutable claim with zero update interval ID and correct update interval ID",
+        async () => {
+            it("Returns false", async () => {
+                const one: BigNumber = ethers.BigNumber.from(1)
+
+                const someUpdateIntervalId: BigNumberish = 0
                 const someReward: BigNumberish = 100
                 const executableClaim = {
                     updateIntervalId: someUpdateIntervalId,
