@@ -224,14 +224,37 @@ library PoolSwapLibrary {
 
     /**
      * @notice Calculates the effect of a price change. This involves calculating how many funds to transfer from the losing pool to the other.
-     * @dev This function should be called by the LeveragedPool.
-     * @param priceChange The struct containing necessary data to calculate price change
+     * @dev This function should be called by the LeveragedPool
+     * @dev The value transfer is calculated using a sigmoid function
+     * @dev The sigmoid function used is defined as follows:
+     *          when newPrice >= oldPrice
+     *              losing_pool_multiplier = 2 / (1 + e^(-2 * L * (1 - (newPrice / oldPrice)))) - 1
+     *          when newPrice < oldPrice
+     *              losing_pool_multiplier = 2 / (1 + e^(-2 * L * (1 - (oldPrice / newPrice)))) - 1
+     *          where
+     *              e = euler's number
+     *              L = leverage
+     *              newPrice = the new oracle price
+     *              oldPrice = the previous oracle price
+     * @param longBalance Settlement token balance on the long side of the pool before the price change
+     * @param shortBalance Settlement token balance on the short side of the pool before the price change
+     * @param leverageAmount The leverage of the pool
+     * @param oldPrice The previous price
+     * @param newPrice The new price
+     * @param fee The pool's annualised protocol fee
      * @return Resulting long balance
      * @return Resulting short balance
      * @return Resulting fees taken from long balance
      * @return Resulting fees taken from short balance
      */
-    function calculatePriceChange(PriceChangeData calldata priceChange)
+    function calculateValueTransfer(
+        uint256 longBalance,
+        uint256 shortBalance,
+        bytes16 leverageAmount,
+        int256 oldPrice,
+        int256 newPrice,
+        bytes16 fee
+    )
         external
         pure
         returns (
@@ -241,43 +264,91 @@ library PoolSwapLibrary {
             uint256
         )
     {
-        uint256 shortBalance = priceChange.shortBalance;
-        uint256 longBalance = priceChange.longBalance;
-        bytes16 leverageAmount = priceChange.leverageAmount;
-        int256 oldPrice = priceChange.oldPrice;
-        int256 newPrice = priceChange.newPrice;
-        bytes16 fee = priceChange.fee;
-
+        // Copy into a struct (otherwise stack gets too deep)
+        PriceChangeData memory priceChangeData = PoolSwapLibrary.PriceChangeData(
+            oldPrice,
+            newPrice,
+            longBalance,
+            shortBalance,
+            leverageAmount,
+            fee
+        );
         // Calculate fees from long and short sides
-        uint256 longFeeAmount = convertDecimalToUInt(multiplyDecimalByUInt(fee, longBalance)) /
-            PoolSwapLibrary.WAD_PRECISION;
-        uint256 shortFeeAmount = convertDecimalToUInt(multiplyDecimalByUInt(fee, shortBalance)) /
-            PoolSwapLibrary.WAD_PRECISION;
+        uint256 longFeeAmount = convertDecimalToUInt(
+            multiplyDecimalByUInt(priceChangeData.fee, priceChangeData.longBalance)
+        ) / PoolSwapLibrary.WAD_PRECISION;
+        uint256 shortFeeAmount = convertDecimalToUInt(
+            multiplyDecimalByUInt(priceChangeData.fee, priceChangeData.shortBalance)
+        ) / PoolSwapLibrary.WAD_PRECISION;
 
-        shortBalance = shortBalance - shortFeeAmount;
-        longBalance = longBalance - longFeeAmount;
+        priceChangeData.shortBalance -= shortFeeAmount;
+        priceChangeData.longBalance -= longFeeAmount;
 
-        // Use the ratio to determine if the price increased or decreased and therefore which direction
-        // the funds should be transferred towards.
+        uint256 sumBeforePriceChange = priceChangeData.shortBalance + priceChangeData.longBalance;
 
-        bytes16 ratio = divInt(newPrice, oldPrice);
-        int8 direction = compareDecimals(ratio, PoolSwapLibrary.ONE);
-        // Take into account the leverage
-        bytes16 lossMultiplier = getLossMultiplier(ratio, direction, leverageAmount);
+        if (newPrice >= oldPrice && priceChangeData.shortBalance > 0) {
+            // Price increased
+            // Using the sigmoid function defined in the function's natspec, move funds from short side to long side
+            bytes16 ratio = divInt(priceChangeData.oldPrice, priceChangeData.newPrice);
+            bytes16 poolMultiplier = sigmoid(leverageAmount, ratio);
 
-        if (direction >= 0 && shortBalance > 0) {
-            // Move funds from short to long pair
-            uint256 lossAmount = getLossAmount(lossMultiplier, shortBalance);
-            shortBalance = shortBalance - lossAmount;
-            longBalance = longBalance + lossAmount;
-        } else if (direction < 0 && longBalance > 0) {
-            // Move funds from long to short pair
-            uint256 lossAmount = getLossAmount(lossMultiplier, longBalance);
-            shortBalance = shortBalance + lossAmount;
-            longBalance = longBalance - lossAmount;
+            priceChangeData.longBalance += ABDKMathQuad.toUInt(
+                ABDKMathQuad.mul(ABDKMathQuad.fromUInt(priceChangeData.shortBalance), poolMultiplier)
+            );
+            priceChangeData.shortBalance = ABDKMathQuad.toUInt(
+                ABDKMathQuad.mul(
+                    ABDKMathQuad.fromUInt(priceChangeData.shortBalance),
+                    ABDKMathQuad.sub(ONE, poolMultiplier)
+                )
+            );
+        } else if (newPrice < oldPrice && priceChangeData.longBalance > 0) {
+            // Price decreased
+            // Using the sigmoid function defined in the function's natspec, move funds from long side to short side
+            bytes16 ratio = divInt(priceChangeData.newPrice, priceChangeData.oldPrice);
+            bytes16 poolMultiplier = sigmoid(leverageAmount, ratio);
+
+            priceChangeData.shortBalance += ABDKMathQuad.toUInt(
+                ABDKMathQuad.mul(ABDKMathQuad.fromUInt(priceChangeData.longBalance), poolMultiplier)
+            );
+            priceChangeData.longBalance = ABDKMathQuad.toUInt(
+                ABDKMathQuad.mul(
+                    ABDKMathQuad.fromUInt(priceChangeData.longBalance),
+                    ABDKMathQuad.sub(ONE, poolMultiplier)
+                )
+            );
         }
 
-        return (longBalance, shortBalance, longFeeAmount, shortFeeAmount);
+        if (sumBeforePriceChange > priceChangeData.longBalance + priceChangeData.shortBalance) {
+            // Move dust into winning side
+            // This is only ever 1 wei (negligible)
+            if (newPrice > oldPrice) {
+                priceChangeData.longBalance +=
+                    sumBeforePriceChange -
+                    (priceChangeData.longBalance + priceChangeData.shortBalance);
+            } else {
+                priceChangeData.shortBalance +=
+                    sumBeforePriceChange -
+                    (priceChangeData.longBalance + priceChangeData.shortBalance);
+            }
+        }
+
+        return (priceChangeData.longBalance, priceChangeData.shortBalance, longFeeAmount, shortFeeAmount);
+    }
+
+    /**
+     * @notice Use a sigmoid function to determine the losing pool multiplier.
+     * @return The losing pool multiplier, represented as an ABDKMathQuad IEEE754 quadruple-precision binary floating-point numbers
+     * @dev The returned value is used in `calculateValueTransfer` as the portion to move from the losing side into the winning side
+     */
+    function sigmoid(bytes16 leverage, bytes16 ratio) private pure returns (bytes16) {
+        /**
+         * denominator = 1 + e ^ (-2 * leverage * (1 - ratio))
+         */
+        bytes16 denominator = ABDKMathQuad.mul(ABDKMathQuad.fromInt(-2), leverage);
+        denominator = ABDKMathQuad.mul(denominator, ABDKMathQuad.sub(ONE, ratio));
+        denominator = ABDKMathQuad.add(ONE, ABDKMathQuad.exp(denominator));
+        bytes16 numerator = ABDKMathQuad.add(ONE, ONE); // 2
+        return ABDKMathQuad.sub((ABDKMathQuad.div(numerator, denominator)), ONE);
     }
 
     /**

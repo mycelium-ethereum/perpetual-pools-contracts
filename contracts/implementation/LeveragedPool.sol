@@ -271,20 +271,19 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
         } else {
             uint256 _shortBalance = shortBalance;
             uint256 _longBalance = longBalance;
-            PoolSwapLibrary.PriceChangeData memory priceChangeData = PoolSwapLibrary.PriceChangeData(
-                _oldPrice,
-                _newPrice,
-                _longBalance,
-                _shortBalance,
-                leverageAmount,
-                fee
-            );
             (
                 uint256 newLongBalance,
                 uint256 newShortBalance,
                 uint256 longFeeAmount,
                 uint256 shortFeeAmount
-            ) = PoolSwapLibrary.calculatePriceChange(priceChangeData);
+            ) = PoolSwapLibrary.calculateValueTransfer(
+                    _longBalance,
+                    _shortBalance,
+                    leverageAmount,
+                    _oldPrice,
+                    _newPrice,
+                    fee
+                );
 
             unchecked {
                 emit PoolRebalance(
