@@ -216,9 +216,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         if (this.isMint(commitType)) {
             // We want to deduct the amount of settlement tokens that will be recorded under the commit by the minting fee
             // and then add it to the correct side of the pool
-            feeAmount =
-                PoolSwapLibrary.convertDecimalToUInt(PoolSwapLibrary.multiplyDecimalByUInt(mintingFee, amount)) /
-                PoolSwapLibrary.WAD_PRECISION;
+            feeAmount = PoolSwapLibrary.mintingOrBurningFee(mintingFee, amount);
             amount = amount - feeAmount;
             pendingMintSettlementAmount += amount;
         }
@@ -468,27 +466,33 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             totalShortBurnPoolTokens: _commits.shortBurnPoolTokens + _commits.shortBurnLongMintPoolTokens
         });
 
+        bytes16 longPrice = PoolSwapLibrary.getPrice(longBalance, longTotalSupply + pendingLongBurnPoolTokens);
+        bytes16 shortPrice = PoolSwapLibrary.getPrice(shortBalance, shortTotalSupply + pendingShortBurnPoolTokens);
         // Update price before values change
-        priceHistory[_commits.updateIntervalId] = Prices({
-            longPrice: PoolSwapLibrary.getPrice(longBalance, longTotalSupply + pendingLongBurnPoolTokens),
-            shortPrice: PoolSwapLibrary.getPrice(shortBalance, shortTotalSupply + pendingShortBurnPoolTokens)
-        });
+        priceHistory[_commits.updateIntervalId] = Prices({longPrice: longPrice, shortPrice: shortPrice});
 
         // Amount of collateral tokens that are generated from the long burn into instant mints
-        balancesAndSupplies.longBurnInstantMintSettlement = PoolSwapLibrary.getWithdrawAmountOnBurn(
-            longTotalSupply,
-            _commits.longBurnShortMintPoolTokens,
-            longBalance,
-            pendingLongBurnPoolTokens
-        );
+        {
+            (uint256 mintSettlement, , ) = PoolSwapLibrary.processBurnInstantMintCommit(
+                _commits.longBurnShortMintPoolTokens,
+                longPrice,
+                burningFee,
+                mintingFee
+            );
+            balancesAndSupplies.longBurnInstantMintSettlement = mintSettlement;
+        }
+
         balancesAndSupplies.newShortBalance += balancesAndSupplies.longBurnInstantMintSettlement;
         // Amount of collateral tokens that are generated from the short burn into instant mints
-        balancesAndSupplies.shortBurnInstantMintSettlement = PoolSwapLibrary.getWithdrawAmountOnBurn(
-            shortTotalSupply,
-            _commits.shortBurnLongMintPoolTokens,
-            shortBalance,
-            pendingShortBurnPoolTokens
-        );
+        {
+            (uint256 mintSettlement, , ) = PoolSwapLibrary.processBurnInstantMintCommit(
+                _commits.shortBurnLongMintPoolTokens,
+                shortPrice,
+                burningFee,
+                mintingFee
+            );
+            balancesAndSupplies.shortBurnInstantMintSettlement = mintSettlement;
+        }
         balancesAndSupplies.newLongBalance += balancesAndSupplies.shortBurnInstantMintSettlement;
 
         // Long Mints
@@ -687,24 +691,13 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
      * @notice Updates the aggregate balance based on the result of application
      *          of the provided (user) commitment
      * @param _commit Commitment to apply
-     * @return _newLongTokens Quantity of long pool tokens post-application
-     * @return _newShortTokens Quantity of short pool tokens post-application
-     * @return _longBurnFee Quantity of settlement tokens taken as a fee from long burns
-     * @return _shortBurnFee Quantity of settlement tokens taken as a fee from short burns
-     * @return _newSettlementTokens Quantity of settlement tokens post
-     *                                  application
+     * @return The PoolSwapLibrary.UpdateResult struct with the data pertaining to the update of user's aggregate balance
      * @dev Wraps two (pure) library functions from `PoolSwapLibrary`
      */
     function getBalanceSingleCommitment(UserCommitment memory _commit)
         internal
         view
-        returns (
-            uint256 _newLongTokens,
-            uint256 _newShortTokens,
-            uint256 _longBurnFee,
-            uint256 _shortBurnFee,
-            uint256 _newSettlementTokens
-        )
+        returns (PoolSwapLibrary.UpdateResult memory)
     {
         PoolSwapLibrary.UpdateData memory updateData = PoolSwapLibrary.UpdateData({
             longPrice: priceHistory[_commit.updateIntervalId].longPrice,
@@ -717,11 +710,11 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             shortBurnPoolTokens: _commit.shortBurnPoolTokens,
             longBurnShortMintPoolTokens: _commit.longBurnShortMintPoolTokens,
             shortBurnLongMintPoolTokens: _commit.shortBurnLongMintPoolTokens,
-            burnFee: burnFeeHistory[_commit.updateIntervalId]
+            burnFee: burnFeeHistory[_commit.updateIntervalId],
+            mintingFeeRate: mintingFee
         });
 
-        (_newLongTokens, _newShortTokens, _longBurnFee, _shortBurnFee, _newSettlementTokens) = PoolSwapLibrary
-            .getUpdatedAggregateBalance(updateData);
+        return PoolSwapLibrary.getUpdatedAggregateBalance(updateData);
     }
 
     /**
@@ -738,8 +731,8 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             _newLongTokensSum: 0,
             _newShortTokensSum: 0,
             _newSettlementTokensSum: 0,
-            _longBurnFee: 0,
-            _shortBurnFee: 0,
+            _longSettlementFee: 0,
+            _shortSettlementFee: 0,
             _maxIterations: 0
         });
 
@@ -757,18 +750,13 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             UserCommitment memory commitment = userCommitments[user][id];
 
             if (commitment.updateIntervalId < updateIntervalId) {
-                (
-                    uint256 _newLongTokens,
-                    uint256 _newShortTokens,
-                    uint256 _longBurnFee,
-                    uint256 _shortBurnFee,
-                    uint256 _newSettlementTokens
-                ) = getBalanceSingleCommitment(commitment);
-                update._newLongTokensSum += _newLongTokens;
-                update._newShortTokensSum += _newShortTokens;
-                update._newSettlementTokensSum += _newSettlementTokens;
-                update._longBurnFee += _longBurnFee;
-                update._shortBurnFee += _shortBurnFee;
+                PoolSwapLibrary.UpdateResult memory result = getBalanceSingleCommitment(commitment);
+                update._newLongTokensSum += result._newLongTokens;
+                update._newShortTokensSum += result._newShortTokens;
+                // result._newSettlementTokens has already been decremented by the minting fees from the `LongBurnShortMint` and `ShortBurnLongMint` commits.
+                update._newSettlementTokensSum += result._newSettlementTokens;
+                update._longSettlementFee += result._longSettlementFee;
+                update._shortSettlementFee += result._shortSettlementFee;
                 delete userCommitments[user][id];
                 uint256[] storage commitmentIds = unAggregatedCommitments[user];
                 if (unAggregatedLength > MAX_ITERATIONS && commitmentIds.length > 1 && i < commitmentIds.length - 1) {
@@ -799,7 +787,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
 
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
         (uint256 shortBalance, uint256 longBalance) = pool.balances();
-        pool.setNewPoolBalances(longBalance + update._longBurnFee, shortBalance + update._shortBurnFee);
+        pool.setNewPoolBalances(longBalance + update._longSettlementFee, shortBalance + update._shortSettlementFee);
 
         emit AggregateBalanceUpdated(user);
     }
@@ -835,8 +823,8 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             _newLongTokensSum: 0,
             _newShortTokensSum: 0,
             _newSettlementTokensSum: 0,
-            _longBurnFee: 0,
-            _shortBurnFee: 0,
+            _longSettlementFee: 0,
+            _shortSettlementFee: 0,
             _maxIterations: 0
         });
 
@@ -856,16 +844,11 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             want to deduct burns from the balance from a user's balance.
             Therefore, this should happen outside of the if block below.*/
             if (commitment.updateIntervalId < updateIntervalId) {
-                (
-                    uint256 _newLongTokens,
-                    uint256 _newShortTokens,
-                    ,
-                    ,
-                    uint256 _newSettlementTokens
-                ) = getBalanceSingleCommitment(commitment);
-                update._newLongTokensSum += _newLongTokens;
-                update._newShortTokensSum += _newShortTokens;
-                update._newSettlementTokensSum += _newSettlementTokens;
+                PoolSwapLibrary.UpdateResult memory result = getBalanceSingleCommitment(commitment);
+                update._newLongTokensSum += result._newLongTokens;
+                update._newShortTokensSum += result._newShortTokens;
+                // result._newSettlementTokens has already been decremented by the minting fees from the `LongBurnShortMint` and `ShortBurnLongMint` commits.
+                update._newSettlementTokensSum += result._newSettlementTokens;
             }
         }
 

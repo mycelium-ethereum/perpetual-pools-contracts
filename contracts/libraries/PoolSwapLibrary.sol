@@ -19,6 +19,7 @@ library PoolSwapLibrary {
     struct UpdateData {
         bytes16 longPrice;
         bytes16 shortPrice;
+        bytes16 mintingFeeRate;
         uint256 currentUpdateIntervalId;
         uint256 updateIntervalId;
         uint256 longMintSettlement;
@@ -28,6 +29,15 @@ library PoolSwapLibrary {
         uint256 longBurnShortMintPoolTokens;
         uint256 shortBurnLongMintPoolTokens;
         bytes16 burnFee;
+    }
+
+    /// Information about the result of calculating a user's updated aggregate balance
+    struct UpdateResult {
+        uint256 _newLongTokens; // Quantity of long pool tokens post-application
+        uint256 _newShortTokens; // Quantity of short pool tokens post-application
+        uint256 _longSettlementFee; // The fee taken from ShortBurnLongMint commits
+        uint256 _shortSettlementFee; // The fee taken from ShortBurnLongMint commits
+        uint256 _newSettlementTokens; // Quantity of settlement tokens post
     }
 
     /// Information required to perform a price change (of the underlying asset)
@@ -502,26 +512,12 @@ library PoolSwapLibrary {
     }
 
     /**
-     * @notice Calculate the number of pool tokens to mint, given some settlement token amount, a price, and a burn amount from other side for instant mint
-     * @param price The price of a pool token
-     * @param oppositePrice The price of the opposite side's pool token
-     * @param amount The amount of settlement tokens being used to mint
-     * @param amountBurnedInstantMint The amount of pool tokens that were burnt from the opposite side for an instant mint in this side
-     * @return Quantity of pool tokens to mint
-     * @dev Throws if price is zero
+     * @notice Calculate the amount of settlement tokens to take as the minting fee
+     * @param feeRate PoolCommitter's mintingFee or burningFee - The amount that is extracted from each mint or burn. Given as the decimal * 10 ^ 18. For example, 60% fee is 0.6 * 10 ^ 18 Fees can be 0.
+     * @param amount The amount of settlement tokens being committed to mint
      */
-    function getMintWithBurns(
-        bytes16 price,
-        bytes16 oppositePrice,
-        uint256 amount,
-        uint256 amountBurnedInstantMint
-    ) public pure returns (uint256) {
-        require(price != 0, "price == 0");
-        if (amountBurnedInstantMint > 0) {
-            // Calculate amount of settlement tokens generated from the burn.
-            amount += getBurn(oppositePrice, amountBurnedInstantMint);
-        }
-        return getMint(price, amount);
+    function mintingOrBurningFee(bytes16 feeRate, uint256 amount) public pure returns (uint256) {
+        return ABDKMathQuad.toUInt(multiplyDecimalByUInt(feeRate, amount)) / WAD_PRECISION;
     }
 
     /**
@@ -536,67 +532,124 @@ library PoolSwapLibrary {
     }
 
     /**
-     * @notice Calculate the change in a user's balance based on recent commit(s)
-     * @param data Information needed for updating the balance including prices and recent commit amounts
-     * @return _newLongTokens Quantity of additional long tokens the user would receive
-     * @return _newShortTokens Quantity of additional short tokens the user would receive
-     * @return _longBurnFee Quantity of settlement tokens taken as a fee from long burns
-     * @return _shortBurnFee Quantity of settlement tokens taken as a fee from short burns
-     * @return _newSettlementTokens Quantity of additional settlement tokens the user would receive
+     * @notice Given an amount of pool tokens to flip to the other side of the pool, calculate the amount of settlement tokens generated from the burn, burn fee, and subsequent minting fee
+     * @dev Takes out the burn fee before taking out the mint fee.
+     * @param amount The amount of pool tokens being flipped
+     * @param burnPrice The price of the pool token being burnt
+     * @param burningFee Fee rate for pool token burns
+     * @param mintingFee Fee rate for mints
+     * @return Amount of settlement tokens used to mint.
+     * @return The burn fee. This should be given to the side of the pool of the burnt tokens.
+     * @return The mint fee. This should be given to the side of the pool that is being minted into.
      */
-    function getUpdatedAggregateBalance(UpdateData calldata data)
-        external
+    function processBurnInstantMintCommit(
+        uint256 amount,
+        bytes16 burnPrice,
+        bytes16 burningFee,
+        bytes16 mintingFee
+    )
+        public
         pure
         returns (
-            uint256 _newLongTokens,
-            uint256 _newShortTokens,
-            uint256 _longBurnFee,
-            uint256 _shortBurnFee,
-            uint256 _newSettlementTokens
+            uint256,
+            uint256,
+            uint256
         )
     {
+        // Settlement tokens earned from burning pool tokens (for instant mint)
+        uint256 mintSettlement = getBurn(burnPrice, amount);
+        // The burn fee. This should be given to the side of the pool of the burnt tokens.
+        uint256 burnFee = mintingOrBurningFee(burningFee, mintSettlement);
+        mintSettlement -= burnFee;
+
+        // The mint fee. This should be given to the side of the pool that is being minted into.
+        uint256 mintFee = mintingOrBurningFee(mintingFee, mintSettlement);
+        mintSettlement -= mintFee;
+        return (mintSettlement, burnFee, mintFee);
+    }
+
+    /**
+     * @notice Calculate the change in a user's balance based on recent commit(s)
+     * @param data Information needed for updating the balance including prices and recent commit amounts
+     * @return The UpdateResult struct with the data pertaining to the update of user's aggregate balance
+     */
+    function getUpdatedAggregateBalance(UpdateData calldata data) external view returns (UpdateResult memory) {
+        UpdateResult memory result = UpdateResult(0, 0, 0, 0, 0);
         if (data.updateIntervalId >= data.currentUpdateIntervalId) {
             // Update interval has not passed: No change
-            return (0, 0, 0, 0, 0);
-        }
-        uint256 longBurnResult; // The amount of settlement tokens to withdraw based on long token burn
-        uint256 shortBurnResult; // The amount of settlement tokens to withdraw based on short token burn
-        if (data.longMintSettlement > 0 || data.shortBurnLongMintPoolTokens > 0) {
-            _newLongTokens = getMintWithBurns(
-                data.longPrice,
-                data.shortPrice,
-                data.longMintSettlement,
-                data.shortBurnLongMintPoolTokens
-            );
+            return result;
         }
 
+        /**
+         * Start by looking at the "flip" commitments (either LongBurnShortMint, or ShortBurnLongMint), and determine the amount of settlement tokens were generated from them.
+         * Then, take the burning fee off them and add that to the relevant side's fee amount. e.g. a ShortBurnLongMint will generate burn fees for the short side.
+         * Now, we can calculate how much minting fee should be paid by the user. This should then be added to the side which they are minting on.
+         */
+        uint256 shortBurnLongMintResult; // Settlement to be included in the long mint
+        uint256 longBurnShortMintResult; // Settlement to be included in the short mint
+        if (data.shortBurnLongMintPoolTokens > 0) {
+            uint256 burnFeeSettlement;
+            uint256 mintFeeSettlement;
+            (shortBurnLongMintResult, burnFeeSettlement, mintFeeSettlement) = processBurnInstantMintCommit(
+                data.shortBurnLongMintPoolTokens,
+                data.shortPrice,
+                data.burnFee,
+                data.mintingFeeRate
+            );
+            result._shortSettlementFee += burnFeeSettlement;
+            result._longSettlementFee += mintFeeSettlement;
+        }
+        if (data.longBurnShortMintPoolTokens > 0) {
+            // Settlement tokens earned from burning long tokens (for instant mint)
+            longBurnShortMintResult = getBurn(data.longPrice, data.longBurnShortMintPoolTokens);
+            // The burn fee taken from this burn. This should be given to the long side.
+            uint256 burnFeeSettlement = mintingOrBurningFee(data.burnFee, longBurnShortMintResult);
+            longBurnShortMintResult -= burnFeeSettlement;
+
+            // The mint fee taken from the subsequent mint
+            uint256 mintFeeSettlement = mintingOrBurningFee(data.mintingFeeRate, longBurnShortMintResult);
+            longBurnShortMintResult -= mintFeeSettlement;
+
+            result._longSettlementFee += burnFeeSettlement;
+            result._shortSettlementFee += mintFeeSettlement;
+        }
+
+        /**
+         * Calculate the new long tokens minted.
+         * Use amount committed LongMint/ShortMint, as well as settlement tokens generated from ShortBurnLongMint/LongBurnShortMint commits.
+         */
+        if (data.longMintSettlement > 0 || shortBurnLongMintResult > 0) {
+            result._newLongTokens += getMint(data.longPrice, data.longMintSettlement + shortBurnLongMintResult);
+        }
+        if (data.shortMintSettlement > 0 || longBurnShortMintResult > 0) {
+            result._newShortTokens += getMint(data.shortPrice, data.shortMintSettlement + longBurnShortMintResult);
+        }
+
+        /**
+         * Calculate the settlement tokens earned through LongBurn/ShortBurn commits.
+         * Once this is calculated, take off the burn fee, and add to the respective side's fee amount.
+         */
         if (data.longBurnPoolTokens > 0) {
             // Calculate the amount of settlement tokens earned from burning long tokens
-            longBurnResult = getBurn(data.longPrice, data.longBurnPoolTokens);
+            uint256 longBurnResult = getBurn(data.longPrice, data.longBurnPoolTokens);
             // Calculate the fee
-            _longBurnFee = convertDecimalToUInt(multiplyDecimalByUInt(data.burnFee, longBurnResult)) / WAD_PRECISION;
+            uint256 longBurnFee = mintingOrBurningFee(data.burnFee, longBurnResult);
+            result._longSettlementFee += longBurnFee;
             // Subtract the fee from settlement token amount
-            longBurnResult -= _longBurnFee;
+            longBurnResult -= longBurnFee;
+            result._newSettlementTokens += longBurnResult;
         }
-
-        if (data.shortMintSettlement > 0 || data.longBurnShortMintPoolTokens > 0) {
-            _newShortTokens = getMintWithBurns(
-                data.shortPrice,
-                data.longPrice,
-                data.shortMintSettlement,
-                data.longBurnShortMintPoolTokens
-            );
-        }
-
         if (data.shortBurnPoolTokens > 0) {
             // Calculate the amount of settlement tokens earned from burning short tokens
-            shortBurnResult = getBurn(data.shortPrice, data.shortBurnPoolTokens);
+            uint256 shortBurnResult = getBurn(data.shortPrice, data.shortBurnPoolTokens);
             // Calculate the fee
-            _shortBurnFee = convertDecimalToUInt(multiplyDecimalByUInt(data.burnFee, shortBurnResult)) / WAD_PRECISION;
+            uint256 shortBurnFee = mintingOrBurningFee(data.burnFee, shortBurnResult);
+            result._shortSettlementFee += shortBurnFee;
             // Subtract the fee from settlement token amount
-            shortBurnResult -= _shortBurnFee;
+            shortBurnResult -= shortBurnFee;
+            result._newSettlementTokens += shortBurnResult;
         }
 
-        _newSettlementTokens = shortBurnResult + longBurnResult;
+        return result;
     }
 }

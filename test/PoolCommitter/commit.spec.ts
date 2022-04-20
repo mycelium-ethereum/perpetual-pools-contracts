@@ -1086,6 +1086,7 @@ describe("PoolCommitter - commit", () => {
                 shortToken = result.shortToken
                 longToken = result.longToken
                 poolCommitter = result.poolCommitter
+                l2Encoder = result.l2Encoder
 
                 await token.approve(pool.address, amountCommitted.mul(999))
                 await pool.setKeeper(signers[0].address)
@@ -1299,11 +1300,24 @@ describe("PoolCommitter - commit", () => {
                         signers[0].address
                     )
 
+                    const settlementTokenBefore = await token.balanceOf(
+                        signers[0].address
+                    )
+
                     await poolCommitter.claim(signers[0].address)
 
                     const shortBalanceAfter = await shortToken.balanceOf(
                         signers[0].address
                     )
+
+                    const settlementTokenAfter = await token.balanceOf(
+                        signers[0].address
+                    )
+
+                    // Settlement token should not increase, because you're using all settlement to re-commit to other side
+                    expect(
+                        settlementTokenAfter.sub(settlementTokenBefore)
+                    ).to.equal(0)
 
                     expect(shortBalanceAfter.sub(shortBalanceBefore)).to.equal(
                         amountCommitted
@@ -1353,7 +1367,20 @@ describe("PoolCommitter - commit", () => {
                         signers[0].address
                     )
 
+                    const settlementTokenBefore = await token.balanceOf(
+                        signers[0].address
+                    )
+
                     await poolCommitter.claim(signers[0].address)
+
+                    const settlementTokenAfter = await token.balanceOf(
+                        signers[0].address
+                    )
+
+                    // Settlement token should not increase, because you're using all settlement to re-commit to other side
+                    expect(
+                        settlementTokenAfter.sub(settlementTokenBefore)
+                    ).to.equal(0)
 
                     const shortBalanceAfter = await shortToken.balanceOf(
                         signers[0].address
@@ -1880,7 +1907,20 @@ describe("PoolCommitter - commit", () => {
                     signers[0].address
                 )
 
+                const settlementTokenBefore = await token.balanceOf(
+                    signers[0].address
+                )
+
                 await poolCommitter.claim(signers[0].address)
+
+                const settlementTokenAfter = await token.balanceOf(
+                    signers[0].address
+                )
+
+                // Settlement token should not increase, because you're using all settlement to re-commit to other side
+                expect(
+                    settlementTokenAfter.sub(settlementTokenBefore)
+                ).to.equal(0)
 
                 const longBalanceAfter = await longToken.balanceOf(
                     signers[0].address
@@ -1926,7 +1966,20 @@ describe("PoolCommitter - commit", () => {
                     signers[0].address
                 )
 
+                const settlementTokenBefore = await token.balanceOf(
+                    signers[0].address
+                )
+
                 await poolCommitter.claim(signers[0].address)
+
+                const settlementTokenAfter = await token.balanceOf(
+                    signers[0].address
+                )
+
+                // Settlement token should not increase, because you're using all settlement to re-commit to other side
+                expect(
+                    settlementTokenAfter.sub(settlementTokenBefore)
+                ).to.equal(0)
 
                 const longBalanceAfter = await longToken.balanceOf(
                     signers[0].address

@@ -44,7 +44,7 @@ const frontRunningInterval = 100 // seconds
 const fee = DEFAULT_FEE
 const leverage = 1
 
-describe("LeveragedPool - executeCommitment:  Multiple commitments", () => {
+describe("PoolCommitter - executeCommitment:  Multiple commitments", () => {
     let token: TestToken
     let shortToken: ERC20
     let pool: LeveragedPool
