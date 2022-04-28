@@ -328,9 +328,6 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         if (userCommit.updateIntervalId == 0) {
             userCommit.updateIntervalId = appropriateUpdateIntervalId;
         }
-        if (totalCommit.updateIntervalId == 0) {
-            totalCommit.updateIntervalId = appropriateUpdateIntervalId;
-        }
 
         uint256 length = unAggregatedCommitments[msg.sender].length;
         if (length == 0 || unAggregatedCommitments[msg.sender][length - 1] < appropriateUpdateIntervalId) {
@@ -426,8 +423,6 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
     /**
      * @notice Executes every commitment specified in the list
      * @param _commits Array of `TotalCommitment`s
-     * @param longTotalSupply The current running total supply of long pool tokens
-     * @param shortTotalSupply The current running total supply of short pool tokens
      * @param longBalance The amount of settlement tokens in the long side of the pool
      * @param shortBalance The amount of settlement tokens in the short side of the pool
      * @return newLongTotalSupply The total supply of long pool tokens as a result of minting
@@ -437,8 +432,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
      */
     function executeGivenCommitments(
         TotalCommitment memory _commits,
-        uint256 longTotalSupply,
-        uint256 shortTotalSupply,
+        CommitmentExecutionTracking memory executionTracking,
         uint256 longBalance,
         uint256 shortBalance
     )
@@ -452,8 +446,8 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
     {
         pendingMintSettlementAmount =
             pendingMintSettlementAmount -
-            totalPoolCommitments[_commits.updateIntervalId].longMintSettlement -
-            totalPoolCommitments[_commits.updateIntervalId].shortMintSettlement;
+            totalPoolCommitments[executionTracking._updateIntervalId].longMintSettlement -
+            totalPoolCommitments[executionTracking._updateIntervalId].shortMintSettlement;
 
         BalancesAndSupplies memory balancesAndSupplies = BalancesAndSupplies({
             newShortBalance: _commits.shortMintSettlement + shortBalance,
@@ -466,10 +460,16 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             totalShortBurnPoolTokens: _commits.shortBurnPoolTokens + _commits.shortBurnLongMintPoolTokens
         });
 
-        bytes16 longPrice = PoolSwapLibrary.getPrice(longBalance, longTotalSupply + pendingLongBurnPoolTokens);
-        bytes16 shortPrice = PoolSwapLibrary.getPrice(shortBalance, shortTotalSupply + pendingShortBurnPoolTokens);
+        bytes16 longPrice = PoolSwapLibrary.getPrice(
+            longBalance,
+            executionTracking.longTotalSupply + pendingLongBurnPoolTokens
+        );
+        bytes16 shortPrice = PoolSwapLibrary.getPrice(
+            shortBalance,
+            executionTracking.shortTotalSupply + pendingShortBurnPoolTokens
+        );
         // Update price before values change
-        priceHistory[_commits.updateIntervalId] = Prices({longPrice: longPrice, shortPrice: shortPrice});
+        priceHistory[executionTracking._updateIntervalId] = Prices({longPrice: longPrice, shortPrice: shortPrice});
 
         // Amount of collateral tokens that are generated from the long burn into instant mints
         {
@@ -497,7 +497,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
 
         // Long Mints
         balancesAndSupplies.longMintPoolTokens = PoolSwapLibrary.getMintAmount(
-            longTotalSupply, // long token total supply,
+            executionTracking.longTotalSupply, // long token total supply,
             _commits.longMintSettlement + balancesAndSupplies.shortBurnInstantMintSettlement, // Add the settlement tokens that will be generated from burning shorts for instant long mint
             longBalance, // total quote tokens in the long pool
             pendingLongBurnPoolTokens // total pool tokens commited to be burned
@@ -505,7 +505,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
 
         // Long Burns
         balancesAndSupplies.newLongBalance -= PoolSwapLibrary.getWithdrawAmountOnBurn(
-            longTotalSupply,
+            executionTracking.longTotalSupply,
             balancesAndSupplies.totalLongBurnPoolTokens,
             longBalance,
             pendingLongBurnPoolTokens
@@ -513,7 +513,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
 
         // Short Mints
         balancesAndSupplies.shortMintPoolTokens = PoolSwapLibrary.getMintAmount(
-            shortTotalSupply, // short token total supply
+            executionTracking.shortTotalSupply, // short token total supply
             _commits.shortMintSettlement + balancesAndSupplies.longBurnInstantMintSettlement, // Add the settlement tokens that will be generated from burning longs for instant short mint
             shortBalance,
             pendingShortBurnPoolTokens
@@ -521,7 +521,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
 
         // Short Burns
         balancesAndSupplies.newShortBalance -= PoolSwapLibrary.getWithdrawAmountOnBurn(
-            shortTotalSupply,
+            executionTracking.shortTotalSupply,
             balancesAndSupplies.totalShortBurnPoolTokens,
             shortBalance,
             pendingShortBurnPoolTokens
@@ -531,8 +531,8 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         pendingShortBurnPoolTokens -= balancesAndSupplies.totalShortBurnPoolTokens;
 
         return (
-            longTotalSupply + balancesAndSupplies.longMintPoolTokens,
-            shortTotalSupply + balancesAndSupplies.shortMintPoolTokens,
+            executionTracking.longTotalSupply + balancesAndSupplies.longMintPoolTokens,
+            executionTracking.shortTotalSupply + balancesAndSupplies.shortMintPoolTokens,
             balancesAndSupplies.newLongBalance,
             balancesAndSupplies.newShortBalance
         );
@@ -612,11 +612,6 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             if (block.timestamp >= lastPriceTimestamp + updateInterval * counter) {
                 // Another update interval has passed, so we have to do the nextIntervalCommit as well
                 executionTracking._updateIntervalId = updateIntervalId;
-                TotalCommitment memory totalCommit = totalPoolCommitments[executionTracking._updateIntervalId];
-                if (totalCommit.updateIntervalId == 0) {
-                    // if not set by commit
-                    totalCommit.updateIntervalId = executionTracking._updateIntervalId;
-                }
                 burnFeeHistory[executionTracking._updateIntervalId] = burningFee;
                 (
                     executionTracking.longTotalSupply,
@@ -624,9 +619,8 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
                     longBalance,
                     shortBalance
                 ) = executeGivenCommitments(
-                    totalCommit,
-                    executionTracking.longTotalSupply,
-                    executionTracking.shortTotalSupply,
+                    totalPoolCommitments[executionTracking._updateIntervalId],
+                    executionTracking,
                     longBalance,
                     shortBalance
                 );

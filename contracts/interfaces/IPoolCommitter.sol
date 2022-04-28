@@ -62,7 +62,6 @@ interface IPoolCommitter {
         uint256 shortBurnPoolTokens;
         uint256 shortBurnLongMintPoolTokens;
         uint256 longBurnShortMintPoolTokens;
-        uint256 updateIntervalId;
     }
 
     // User updated aggregate balance
