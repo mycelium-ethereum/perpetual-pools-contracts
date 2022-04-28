@@ -612,8 +612,9 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             if (block.timestamp >= lastPriceTimestamp + updateInterval * counter) {
                 // Another update interval has passed, so we have to do the nextIntervalCommit as well
                 executionTracking._updateIntervalId = updateIntervalId;
-                TotalCommitment storage totalCommit = totalPoolCommitments[executionTracking._updateIntervalId];
+                TotalCommitment memory totalCommit = totalPoolCommitments[executionTracking._updateIntervalId];
                 if (totalCommit.updateIntervalId == 0) {
+                    // if not set by commit
                     totalCommit.updateIntervalId = executionTracking._updateIntervalId;
                 }
                 burnFeeHistory[executionTracking._updateIntervalId] = burningFee;
