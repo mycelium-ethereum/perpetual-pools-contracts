@@ -423,6 +423,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
     /**
      * @notice Executes every commitment specified in the list
      * @param _commits Array of `TotalCommitment`s
+     * @param executionTracking A struct containing the update interval ID being executed, and the long and short total supplies
      * @param longBalance The amount of settlement tokens in the long side of the pool
      * @param shortBalance The amount of settlement tokens in the short side of the pool
      * @return newLongTotalSupply The total supply of long pool tokens as a result of minting
