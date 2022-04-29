@@ -84,7 +84,7 @@ describe("LeveragedPool - executeAllCommitments", () => {
             await pool.setKeeper(signers[0].address)
             await expect(
                 pool.connect(signers[1]).poolUpkeep(9, 10)
-            ).to.be.revertedWith("msg.sender not keeper")
+            ).to.be.reverted
             // Doesn't delete commit
             const updateIntervalId = await poolCommitter.updateIntervalId()
             expect(

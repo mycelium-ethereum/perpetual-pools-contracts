@@ -173,7 +173,7 @@ describe("poolCommitter - executeCommitment: Basic test cases", () => {
             await timeout(updateInterval * 1000)
             await expect(
                 pool.connect(signers[1]).poolUpkeep(9, 10)
-            ).to.be.revertedWith("msg.sender not keeper")
+            ).to.be.reverted
         })
     })
 })

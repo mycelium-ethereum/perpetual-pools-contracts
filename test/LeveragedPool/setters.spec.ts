@@ -37,7 +37,7 @@ describe("LeveragedPool - setters", async () => {
             await pool.updateFeeAddress(signers[1].address)
             await expect(
                 pool.connect(signers[2]).updateFeeAddress(signers[2].address)
-            ).to.be.revertedWith("msg.sender not governance")
+            ).to.be.reverted
         })
     })
 
@@ -51,7 +51,7 @@ describe("LeveragedPool - setters", async () => {
             await pool.setKeeper(signers[1].address)
             await expect(
                 pool.connect(signers[2]).setKeeper(signers[2].address)
-            ).to.be.revertedWith("msg.sender not governance")
+            ).to.be.reverted
         })
     })
 
@@ -64,7 +64,7 @@ describe("LeveragedPool - setters", async () => {
             await pool.transferGovernance(signers[1].address)
             await expect(
                 pool.connect(signers[2]).transferGovernance(signers[2].address)
-            ).to.be.rejectedWith("msg.sender not governance")
+            ).to.be.rejected
         })
     })
 

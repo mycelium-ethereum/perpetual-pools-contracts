@@ -13,9 +13,10 @@ import "./PoolKeeper.sol";
 import "./PoolCommitter.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 
 /// @title The pool factory contract
-contract PoolFactory is IPoolFactory, ITwoStepGovernance {
+contract PoolFactory is IPoolFactory, ITwoStepGovernance, AccessControl {
     // #### Globals
     address public immutable pairTokenBaseAddress;
     address public immutable poolBaseAddress;
@@ -43,33 +44,22 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
     // Contract address to receive protocol fees
     address public feeReceiver;
 
+    bytes32 public constant GOVERNANCE_ROLE = keccak256("GOVERNANCE_ROLE");
+    bytes32 public constant POOL_ROLE = keccak256("POOL_ROLE");
+    bytes32 public constant POOL_COMMITTER_ROLE = keccak256("POOL_COMMITTER_ROLE");
+
     /**
      * @notice Format: Pool counter => pool address
      */
     mapping(uint256 => address) public override pools;
     uint256 public override numPools;
 
-    /**
-     * @notice Format: Pool address => validity
-     */
-    mapping(address => bool) public override isValidPool;
-
-    /**
-     * @notice Format: PoolCommitter address => validity
-     */
-    mapping(address => bool) public override isValidPoolCommitter;
-
-    // #### Modifiers
-    modifier onlyGov() {
-        require(msg.sender == governance, "msg.sender not governance");
-        _;
-    }
-
     // #### Functions
     constructor(address _feeReceiver, address _governance) {
         require(_feeReceiver != address(0), "Fee receiver cannot be null");
         require(_governance != address(0), "Governance cannot be null");
         governance = _governance;
+        _grantRole(GOVERNANCE_ROLE, governance);
 
         // Deploy base contracts
         PoolToken pairTokenBase = new PoolToken(DEFAULT_NUM_DECIMALS);
@@ -207,8 +197,8 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
         unchecked {
             numPools++;
         }
-        isValidPool[_pool] = true;
-        isValidPoolCommitter[address(poolCommitter)] = true;
+        _grantRole(POOL_ROLE, _pool);
+        _grantRole(POOL_COMMITTER_ROLE, address(poolCommitter));
         return _pool;
     }
 
@@ -249,7 +239,7 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
      * @dev Only callable by the owner
      * @dev Emits a `PoolKeeperChanged` event on success
      */
-    function setPoolKeeper(address _poolKeeper) external override onlyGov {
+    function setPoolKeeper(address _poolKeeper) external override onlyRole(GOVERNANCE_ROLE) {
         require(_poolKeeper != address(0), "cannot be null");
         poolKeeper = IPoolKeeper(_poolKeeper);
         emit PoolKeeperChanged(_poolKeeper);
@@ -269,7 +259,7 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
      * @dev Throws if provided address is null
      * @dev Only callable by the owner
      */
-    function setAutoClaim(address _autoClaim) external override onlyGov {
+    function setAutoClaim(address _autoClaim) external override onlyRole(GOVERNANCE_ROLE) {
         require(_autoClaim != address(0), "cannot be null");
         autoClaim = _autoClaim;
         emit AutoClaimChanged(_autoClaim);
@@ -281,7 +271,7 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
      * @dev Throws if provided address is null
      * @dev Only callable by the owner
      */
-    function setInvariantCheck(address _invariantCheck) external override onlyGov {
+    function setInvariantCheck(address _invariantCheck) external override onlyRole(GOVERNANCE_ROLE) {
         require(_invariantCheck != address(0), "cannot be null");
         invariantCheck = _invariantCheck;
         emit InvariantCheckChanged(_invariantCheck);
@@ -294,7 +284,7 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
      * @dev This fuction does not change anything for already deployed pools, only pools deployed after the change
      * @dev Emits a `FeeReceiverChanged` event on success
      */
-    function setFeeReceiver(address _feeReceiver) external override onlyGov {
+    function setFeeReceiver(address _feeReceiver) external override onlyRole(GOVERNANCE_ROLE) {
         require(_feeReceiver != address(0), "Fee receiver cannot be null");
         feeReceiver = _feeReceiver;
         emit FeeReceiverChanged(_feeReceiver);
@@ -307,7 +297,7 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
      * @dev Throws if `newFeePercent` exceeds 100
      * @dev Emits a `SecondaryFeeSplitChanged` event on success
      */
-    function setSecondaryFeeSplitPercent(uint256 newFeePercent) external override onlyGov {
+    function setSecondaryFeeSplitPercent(uint256 newFeePercent) external override onlyRole(GOVERNANCE_ROLE) {
         require(newFeePercent <= 100, "Secondary fee split cannot exceed 100%");
         secondaryFeeSplitPercent = newFeePercent;
         emit SecondaryFeeSplitChanged(newFeePercent);
@@ -320,10 +310,18 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
      * @dev Throws if fee is greater than 10%
      * @dev Emits a `FeeChanged` event on success
      */
-    function setFee(uint256 _fee) external override onlyGov {
+    function setFee(uint256 _fee) external override onlyRole(GOVERNANCE_ROLE) {
         require(_fee <= 0.1e18, "Fee cannot be > 10%");
         fee = _fee;
         emit FeeChanged(_fee);
+    }
+
+    function hasPoolRole(address pool) external view override returns (bool) {
+        return hasRole(POOL_ROLE, pool);
+    }
+
+    function hasPoolCommitterRole(address poolCommitter) external view override returns (bool) {
+        return hasRole(POOL_COMMITTER_ROLE, poolCommitter);
     }
 
     /**
@@ -336,7 +334,7 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
      * @dev Sets the governance transfer flag to true
      * @dev See `claimGovernance`
      */
-    function transferGovernance(address _governance) external override onlyGov {
+    function transferGovernance(address _governance) external override onlyRole(GOVERNANCE_ROLE) {
         require(_governance != governance, "New governance address cannot be same as old governance address");
         require(_governance != address(0), "Governance cannot be null");
         provisionalGovernance = _governance;

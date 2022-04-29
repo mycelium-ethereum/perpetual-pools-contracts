@@ -37,7 +37,7 @@ describe("PoolFactory - setters", async () => {
             await factory.setFeeReceiver(signers[1].address)
             await expect(
                 factory.connect(signers[2]).setFeeReceiver(signers[2].address)
-            ).to.be.revertedWith("msg.sender not governance")
+            ).to.be.reverted
         })
     })
 
@@ -51,7 +51,7 @@ describe("PoolFactory - setters", async () => {
             await factory.setPoolKeeper(signers[1].address)
             await expect(
                 factory.connect(signers[2]).setPoolKeeper(signers[2].address)
-            ).to.be.revertedWith("msg.sender not governance")
+            ).to.be.reverted
         })
     })
 
@@ -68,7 +68,7 @@ describe("PoolFactory - setters", async () => {
                 factory
                     .connect(signers[2])
                     .transferGovernance(signers[2].address)
-            ).to.be.rejectedWith("msg.sender not governance")
+            ).to.be.rejected
         })
     })
 

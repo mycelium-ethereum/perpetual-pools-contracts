@@ -62,10 +62,6 @@ interface IPoolKeeper {
      */
     event GasPriceChanged(uint256 indexed price);
 
-    // #### Variables
-
-    function keeperRewards() external returns (address);
-
     // #### Functions
     function newPool(address _poolAddress) external;
 
@@ -82,4 +78,6 @@ interface IPoolKeeper {
     function setGasPrice(uint256 _price) external;
 
     function performUpkeepMultiplePoolsPacked(bytes calldata pools) external;
+
+    function hasKeeperRewardsRole(address _keeperRewards) external view returns (bool);
 }
