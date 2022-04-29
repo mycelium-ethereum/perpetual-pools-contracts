@@ -316,10 +316,20 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance, AccessControl {
         emit FeeChanged(_fee);
     }
 
+    /**
+     * @notice Gets if the address has the "POOL_ROLE" role
+     * @param pool Address to check the role against
+     * @return Boolean indicating if the address has the "POOL_ROLE" role
+     */
     function hasPoolRole(address pool) external view override returns (bool) {
         return hasRole(POOL_ROLE, pool);
     }
 
+    /**
+     * @notice Gets if the address has the "POOL_COMMITTER_ROLE" role
+     * @param poolCommitter Address to check the role against
+     * @return Boolean indicating if the address has the "POOL_COMMITTER_ROLE" role
+     */
     function hasPoolCommitterRole(address poolCommitter) external view override returns (bool) {
         return hasRole(POOL_COMMITTER_ROLE, poolCommitter);
     }
