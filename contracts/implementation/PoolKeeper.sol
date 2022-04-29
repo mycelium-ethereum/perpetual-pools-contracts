@@ -210,7 +210,7 @@ contract PoolKeeper is IPoolKeeper, AccessControl {
     
     /**
      * @notice Gets if the address has the "KEEPER_REWARDS_ROLE" role
-     * @param pool Address to check the role against
+     * @param _keeperRewards Address to check the role against
      * @return Boolean indicating if the address has the "KEEPER_REWARDS_ROLE" role
      */
     function hasKeeperRewardsRole(address _keeperRewards) external view override returns (bool) {
