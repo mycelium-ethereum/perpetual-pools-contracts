@@ -7,9 +7,10 @@ import "../interfaces/IOracleWrapper.sol";
 import "../interfaces/IERC20DecimalsWrapper.sol";
 
 import "../libraries/PoolSwapLibrary.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 
 /// @title The contract for calculating and executing keeper reward payments
-contract KeeperRewards is IKeeperRewards {
+contract KeeperRewards is IKeeperRewards, AccessControl {
     address public immutable keeper;
     /* Constants */
     uint256 public constant BASE_TIP = 5; // 5% base tip
@@ -22,14 +23,12 @@ contract KeeperRewards is IKeeperRewards {
     /// by `gasleft()` due to our approach to error handling in that code
     uint256 public constant FIXED_GAS_OVERHEAD = 80195;
 
+    bytes32 public constant KEEPER_ROLE = keccak256("KEEPER_ROLE");
+
     constructor(address _keeper) {
         require(_keeper != address(0), "PoolKeeper cannot be 0 address");
         keeper = _keeper;
-    }
-
-    modifier onlyKeeper() {
-        require(msg.sender == keeper, "msg.sender not keeper");
-        _;
+        _grantRole(KEEPER_ROLE, _keeper);
     }
 
     /**
@@ -48,7 +47,7 @@ contract KeeperRewards is IKeeperRewards {
         uint256 _gasSpent,
         uint256 _savedPreviousUpdatedTimestamp,
         uint256 _updateInterval
-    ) external override onlyKeeper returns (uint256) {
+    ) external override onlyRole(KEEPER_ROLE) returns (uint256) {
         try IOracleWrapper(ILeveragedPool(_pool).settlementEthOracle()).poll() {} catch Error(string memory reason) {
             emit PoolUpkeepError(_pool, reason);
         }

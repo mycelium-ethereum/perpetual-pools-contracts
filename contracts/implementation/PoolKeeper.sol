@@ -10,7 +10,7 @@ import "../interfaces/IKeeperRewards.sol";
 
 import "../libraries/CalldataLogic.sol";
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 import "abdk-libraries-solidity/ABDKMathQuad.sol";
 
 /// @title The manager contract for multiple markets and the pools in them
@@ -19,7 +19,7 @@ import "abdk-libraries-solidity/ABDKMathQuad.sol";
 /// @dev This code was also written with Arbitrum deployment in mind, meaning there exists no `block.basefee`, and no arbitrum gas price oracle.
 /// @dev It has another large drawback in that it is not possible to calculate the cost of the current transaction Arbitrum, given that the cost is largely determined by L1 calldata cost.
 /// @dev Because of this, the reward calculation is an rough "good enough" estimation.
-contract PoolKeeper is IPoolKeeper, Ownable {
+contract PoolKeeper is IPoolKeeper, AccessControl {
     // #### Global variables
     /**
      * @notice Format: Pool address => last executionPrice
@@ -28,22 +28,20 @@ contract PoolKeeper is IPoolKeeper, Ownable {
 
     IPoolFactory public immutable factory;
     // The KeeperRewards contract permissioned to pay out pool upkeep rewards
-    address public override keeperRewards;
+    address public keeperRewards;
+    
+    bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE");
+    bytes32 public constant FACTORY_ROLE = keccak256("FACTORY_ROLE");
+    bytes32 public constant KEEPER_REWARDS_ROLE = keccak256("KEEPER_REWARDS_ROLE");
 
     uint256 public gasPrice = 10 gwei;
-
-    /**
-     * @notice Ensures that the caller is the associated `PoolFactory` contract
-     */
-    modifier onlyFactory() {
-        require(msg.sender == address(factory), "Caller not factory");
-        _;
-    }
 
     // #### Functions
     constructor(address _factory) {
         require(_factory != address(0), "Factory cannot be null");
         factory = IPoolFactory(_factory);
+        _grantRole(FACTORY_ROLE, _factory);
+        _grantRole(OWNER_ROLE, msg.sender);
     }
 
     /**
@@ -51,7 +49,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @param _poolAddress The address of the newly-created pools
      * @dev Only callable by the associated `PoolFactory` contract
      */
-    function newPool(address _poolAddress) external override onlyFactory {
+    function newPool(address _poolAddress) external override onlyRole(FACTORY_ROLE) {
         IOracleWrapper(ILeveragedPool(_poolAddress).oracleWrapper()).poll();
         int256 firstPrice = ILeveragedPool(_poolAddress).getOraclePrice();
         require(firstPrice > 0, "First price is non-positive");
@@ -65,7 +63,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @return Whether or not upkeep is needed for this single pool
      */
     function isUpkeepRequiredSinglePool(address _pool) public view override returns (bool) {
-        if (!factory.isValidPool(_pool)) {
+        if (!factory.hasPoolRole(_pool)) {
             return false;
         }
 
@@ -175,10 +173,12 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @dev Only callable by the contract owner
      * @dev emits KeeperRewardsSet when the addresss is successfuly changed
      */
-    function setKeeperRewards(address _keeperRewards) external override onlyOwner {
+    function setKeeperRewards(address _keeperRewards) external override onlyRole(OWNER_ROLE) {
         require(_keeperRewards != address(0), "KeeperRewards cannot be 0 address");
         address oldKeeperRewards = keeperRewards;
+        _revokeRole(KEEPER_REWARDS_ROLE, oldKeeperRewards);
         keeperRewards = _keeperRewards;
+        _grantRole(KEEPER_REWARDS_ROLE, keeperRewards);
         emit KeeperRewardsSet(oldKeeperRewards, _keeperRewards);
     }
 
@@ -207,6 +207,15 @@ contract PoolKeeper is IPoolKeeper, Ownable {
             }
         }
     }
+    
+    /**
+     * @notice Gets if the address has the "KEEPER_REWARDS_ROLE" role
+     * @param _keeperRewards Address to check the role against
+     * @return Boolean indicating if the address has the "KEEPER_REWARDS_ROLE" role
+     */
+    function hasKeeperRewardsRole(address _keeperRewards) external view override returns (bool) {
+        return hasRole(KEEPER_REWARDS_ROLE, _keeperRewards);
+    }
 
     /**
      * @notice Sets the gas price to be used in compensating keepers for successful upkeep
@@ -215,7 +224,7 @@ contract PoolKeeper is IPoolKeeper, Ownable {
      * @dev This function is only necessary due to the L2 deployment of Pools -- in reality, it should be `BASEFEE`
      * @dev Emits a `GasPriceChanged` event on success
      */
-    function setGasPrice(uint256 _price) external override onlyOwner {
+    function setGasPrice(uint256 _price) external override onlyRole(OWNER_ROLE) {
         gasPrice = _price;
         emit GasPriceChanged(_price);
     }

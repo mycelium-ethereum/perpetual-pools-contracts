@@ -96,10 +96,6 @@ interface IPoolFactory {
 
     function numPools() external view returns (uint256);
 
-    function isValidPool(address _pool) external view returns (bool);
-
-    function isValidPoolCommitter(address _poolCommitter) external view returns (bool);
-
     function getPoolKeeper() external view returns (address);
 
     // #### Functions
@@ -116,4 +112,8 @@ interface IPoolFactory {
     function setFee(uint256 _fee) external;
 
     function setSecondaryFeeSplitPercent(uint256 newFeePercent) external;
+
+    function hasPoolRole(address pool) external view returns (bool);
+
+    function hasPoolCommitterRole(address poolCommitter) external view returns (bool);
 }

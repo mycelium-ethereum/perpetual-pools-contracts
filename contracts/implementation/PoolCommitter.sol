@@ -9,12 +9,13 @@ import "../interfaces/IPausable.sol";
 import "../interfaces/IInvariantCheck.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 
 import "../libraries/PoolSwapLibrary.sol";
 import "../libraries/CalldataLogic.sol";
 
 /// @title This contract is responsible for handling commitment logic
-contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
+contract PoolCommitter is IPoolCommitter, IPausable, Initializable, AccessControl {
     // #### Globals
     uint128 public constant LONG_INDEX = 0;
     uint128 public constant SHORT_INDEX = 1;
@@ -68,44 +69,20 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
     address public invariantCheck;
     bool public override paused;
 
-    modifier onlyFeeController() {
-        require(msg.sender == feeController, "msg.sender not fee controller");
-        _;
-    }
+    bytes32 public constant GOVERNANCE_ROLE = keccak256("GOVERNANCE_ROLE");
+    bytes32 public constant FEE_CONTROLLER_ROLE = keccak256("FEE_CONTROLLER_ROLE");
+    bytes32 public constant FACTORY_ROLE = keccak256("FACTORY_ROLE");
+    bytes32 public constant POOL_ROLE = keccak256("POOL_ROLE");
+    bytes32 public constant INVARIANT_CHECK_ROLE = keccak256("INVARIANT_CHECK_ROLE");
+    bytes32 public constant AUTOCLAIM_ROLE = keccak256("AUTOCLAIM_ROLE");
 
     modifier onlyUnpaused() {
         require(!paused, "Pool is paused");
         _;
     }
 
-    modifier onlyGov() {
-        require(msg.sender == governance, "msg.sender not governance");
-        _;
-    }
-
-    /**
-     * @notice Asserts that the caller is the associated `PoolFactory` contract
-     */
-    modifier onlyFactory() {
-        require(msg.sender == factory, "Committer: not factory");
-        _;
-    }
-
-    /**
-     * @notice Asserts that the caller is the associated `LeveragedPool` contract
-     */
-    modifier onlyPool() {
-        require(msg.sender == leveragedPool, "msg.sender not leveragedPool");
-        _;
-    }
-
-    modifier onlyInvariantCheckContract() {
-        require(msg.sender == invariantCheck, "msg.sender not invariantCheck");
-        _;
-    }
-
     modifier onlyAutoClaimOrCommitter(address user) {
-        require(msg.sender == user || msg.sender == address(autoClaim), "msg.sender not committer or AutoClaim");
+        require(msg.sender == user || hasRole(AUTOCLAIM_ROLE, msg.sender), "msg.sender not committer or AutoClaim");
         _;
     }
 
@@ -190,6 +167,12 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         feeController = _feeController;
         autoClaim = IAutoClaim(_autoClaim);
         governance = _factoryOwner;
+
+        _grantRole(GOVERNANCE_ROLE, governance);
+        _grantRole(FEE_CONTROLLER_ROLE, feeController);
+        _grantRole(FACTORY_ROLE, factory);
+        _grantRole(INVARIANT_CHECK_ROLE, invariantCheck);
+        _grantRole(AUTOCLAIM_ROLE, _autoClaim);
     }
 
     /**
@@ -557,10 +540,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         uint256 updateInterval,
         uint256 longBalance,
         uint256 shortBalance
-    )
-        external
-        override
-        onlyPool
+    ) external override onlyRole(POOL_ROLE)
         returns (
             uint256,
             uint256,
@@ -867,10 +847,11 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
      * @dev Throws if either address are null
      * @dev Emits a `SettlementAndPoolChanged` event on success
      */
-    function setPool(address _leveragedPool) external override onlyFactory {
+    function setPool(address _leveragedPool) external override onlyRole(FACTORY_ROLE) {
         require(_leveragedPool != address(0), "Leveraged pool cannot be null");
-
+        _revokeRole(POOL_ROLE, leveragedPool);
         leveragedPool = _leveragedPool;
+        _grantRole(POOL_ROLE, leveragedPool);
         tokens = ILeveragedPool(leveragedPool).poolTokens();
     }
 
@@ -880,7 +861,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
      * @dev Converts `_burningFee` to a `bytes16` to be compatible with arithmetic library
      * @dev Emits a `BurningFeeSet` event on success
      */
-    function setBurningFee(uint256 _burningFee) external override onlyFeeController {
+    function setBurningFee(uint256 _burningFee) external override onlyRole(FEE_CONTROLLER_ROLE) {
         burningFee = PoolSwapLibrary.convertUIntToDecimal(_burningFee);
         require(burningFee < MAX_BURNING_FEE, "Burning fee >= 10%");
         emit BurningFeeSet(_burningFee);
@@ -892,7 +873,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
      * @dev Converts `_mintingFee` to a `bytes16` to be compatible with arithmetic library
      * @dev Emits a `MintingFeeSet` event on success
      */
-    function setMintingFee(uint256 _mintingFee) external override onlyFeeController {
+    function setMintingFee(uint256 _mintingFee) external override onlyRole(FEE_CONTROLLER_ROLE) {
         mintingFee = PoolSwapLibrary.convertUIntToDecimal(_mintingFee);
         require(mintingFee < MAX_MINTING_FEE, "Minting fee >= 100%");
         emit MintingFeeSet(_mintingFee);
@@ -904,15 +885,17 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
      * @dev Converts `_changeInterval` to a `bytes16` to be compatible with arithmetic library TODO UPDATE
      * @dev Emits a `ChangeIntervalSet` event on success
      */
-    function setChangeInterval(uint256 _changeInterval) external override onlyFeeController {
+    function setChangeInterval(uint256 _changeInterval) external override onlyRole(FEE_CONTROLLER_ROLE) {
         changeInterval = PoolSwapLibrary.convertUIntToDecimal(_changeInterval);
         require(changeInterval <= MAX_CHANGE_INTERVAL, "Change Interval exceeds limit");
         emit ChangeIntervalSet(_changeInterval);
     }
 
     function setFeeController(address _feeController) external override {
-        require(msg.sender == governance || msg.sender == feeController, "Cannot set feeController");
+        require(hasRole(GOVERNANCE_ROLE, msg.sender) || hasRole(FEE_CONTROLLER_ROLE, msg.sender), "Cannot set feeController");
+        _revokeRole(FEE_CONTROLLER_ROLE, feeController);
         feeController = _feeController;
+        _grantRole(FEE_CONTROLLER_ROLE, feeController);
         emit FeeControllerSet(_feeController);
     }
 
@@ -920,7 +903,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
      * @notice Pauses the pool
      * @dev Prevents all state updates until unpaused
      */
-    function pause() external override onlyInvariantCheckContract {
+    function pause() external override onlyRole(INVARIANT_CHECK_ROLE) {
         paused = true;
         emit Paused();
     }
@@ -929,7 +912,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
      * @notice Unpauses the pool
      * @dev Prevents all state updates until unpaused
      */
-    function unpause() external override onlyGov {
+    function unpause() external override onlyRole(GOVERNANCE_ROLE) {
         paused = false;
         emit Unpaused();
     }

@@ -11,12 +11,13 @@ import "../interfaces/ITwoStepGovernance.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 
 import "../libraries/PoolSwapLibrary.sol";
 import "../interfaces/IOracleWrapper.sol";
 
 /// @title The pool contract itself
-contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGovernance {
+contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGovernance, AccessControl {
     using SafeERC20 for IERC20;
     // #### Globals
 
@@ -53,30 +54,15 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
 
     string public override poolName;
 
+    bytes32 public constant GOVERNANCE_ROLE = keccak256("GOVERNANCE_ROLE");
+    bytes32 public constant KEEPER_ROLE = keccak256("KEEPER_ROLE");
+    bytes32 public constant POOL_COMMITTER_ROLE = keccak256("POOL_COMMITTER_ROLE");
+    bytes32 public constant INVARIANT_CHECK_ROLE = keccak256("INVARIANT_CHECK_ROLE");
+
     // #### Modifiers
 
-    modifier onlyKeeper() {
-        require(msg.sender == keeper, "msg.sender not keeper");
-        _;
-    }
-
     modifier onlyKeeperRewards() {
-        require(msg.sender == IPoolKeeper(keeper).keeperRewards(), "msg.sender not keeperRewards");
-        _;
-    }
-
-    modifier onlyPoolCommitter() {
-        require(msg.sender == poolCommitter, "msg.sender not poolCommitter");
-        _;
-    }
-
-    modifier onlyGov() {
-        require(msg.sender == governance, "msg.sender not governance");
-        _;
-    }
-
-    modifier onlyInvariantCheckContract() {
-        require(msg.sender == invariantCheck, "msg.sender not invariantCheck");
+        require(IPoolKeeper(keeper).hasKeeperRewardsRole(msg.sender), "msg.sender not keeperRewards");
         _;
     }
 
@@ -123,6 +109,12 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
         tokens[LONG_INDEX] = initialization._longToken;
         tokens[SHORT_INDEX] = initialization._shortToken;
         poolCommitter = initialization._poolCommitter;
+
+        _grantRole(GOVERNANCE_ROLE, governance);
+        _grantRole(KEEPER_ROLE, keeper);
+        _grantRole(POOL_COMMITTER_ROLE, poolCommitter);
+        _grantRole(INVARIANT_CHECK_ROLE, invariantCheck);
+
         emit PoolInitialized(
             initialization._longToken,
             initialization._shortToken,
@@ -140,7 +132,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
      * @dev Only callable by the associated `PoolKeeper` contract
      * @dev Only callable if the market is *not* paused
      */
-    function poolUpkeep(int256 _oldPrice, int256 _newPrice) external override onlyKeeper onlyUnpaused {
+    function poolUpkeep(int256 _oldPrice, int256 _newPrice) external override onlyRole(KEEPER_ROLE) onlyUnpaused {
         require(intervalPassed(), "Update interval hasn't passed");
         // perform price change and update pool balances
         executePriceChange(_oldPrice, _newPrice);
@@ -213,7 +205,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
      * @dev Only callable by the associated `PoolCommitter` contract
      * @dev Only callable when the market is *not* paused
      */
-    function settlementTokenTransfer(address to, uint256 amount) external override onlyPoolCommitter onlyUnpaused {
+    function settlementTokenTransfer(address to, uint256 amount) external override onlyRole(POOL_COMMITTER_ROLE) onlyUnpaused {
         IERC20(settlementToken).safeTransfer(to, amount);
     }
 
@@ -229,7 +221,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
         bool isLongToken,
         address to,
         uint256 amount
-    ) external override onlyPoolCommitter onlyUnpaused {
+    ) external override onlyRole(POOL_COMMITTER_ROLE) onlyUnpaused {
         if (isLongToken) {
             IERC20(tokens[LONG_INDEX]).safeTransfer(to, amount);
         } else {
@@ -249,7 +241,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
         address from,
         address to,
         uint256 amount
-    ) external override onlyPoolCommitter onlyUnpaused {
+    ) external override onlyRole(POOL_COMMITTER_ROLE) onlyUnpaused {
         IERC20(settlementToken).safeTransferFrom(from, to, amount);
     }
 
@@ -362,7 +354,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
     function setNewPoolBalances(uint256 _longBalance, uint256 _shortBalance)
         external
         override
-        onlyPoolCommitter
+        onlyRole(POOL_COMMITTER_ROLE)
         onlyUnpaused
     {
         longBalance = _longBalance;
@@ -383,7 +375,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
         uint256 tokenType,
         uint256 amount,
         address burner
-    ) external override onlyPoolCommitter onlyUnpaused {
+    ) external override onlyRole(POOL_COMMITTER_ROLE) onlyUnpaused {
         IPoolToken(tokens[tokenType]).burn(burner, amount);
     }
 
@@ -405,7 +397,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
      * @dev Only callable when the market is *not* paused
      * @dev Emits `FeeAddressUpdated` event on success
      */
-    function updateFeeAddress(address account) external override onlyGov onlyUnpaused {
+    function updateFeeAddress(address account) external override onlyRole(GOVERNANCE_ROLE) onlyUnpaused {
         require(account != address(0), "Account cannot be null");
         address oldFeeAddress = feeAddress;
         feeAddress = account;
@@ -427,10 +419,12 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
      * @notice Updates the keeper contract of the pool
      * @param _keeper New address of the keeper contract
      */
-    function setKeeper(address _keeper) external override onlyGov {
+    function setKeeper(address _keeper) external override onlyRole(GOVERNANCE_ROLE) {
         require(_keeper != address(0), "Keeper cannot be null");
         address oldKeeper = keeper;
+        _revokeRole(KEEPER_ROLE, oldKeeper);
         keeper = _keeper;
+        _grantRole(KEEPER_ROLE, keeper);
         emit KeeperAddressChanged(oldKeeper, _keeper);
     }
 
@@ -444,7 +438,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
      * @dev Sets the governance transfer flag to true
      * @dev See `claimGovernance`
      */
-    function transferGovernance(address _governance) external override onlyGov {
+    function transferGovernance(address _governance) external override onlyRole(GOVERNANCE_ROLE) {
         require(_governance != governance, "New governance address cannot be same as old governance address");
         require(_governance != address(0), "Governance cannot be null");
         provisionalGovernance = _governance;
@@ -466,7 +460,9 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
         address _provisionalGovernance = provisionalGovernance;
         require(msg.sender == _provisionalGovernance, "Not provisional governor");
         address oldGovernance = governance; /* for later event emission */
+        _revokeRole(GOVERNANCE_ROLE, oldGovernance);
         governance = _provisionalGovernance;
+        _grantRole(GOVERNANCE_ROLE, governance);
         governanceTransferInProgress = false;
         emit GovernanceAddressChanged(oldGovernance, _provisionalGovernance);
     }
@@ -522,7 +518,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
      * @dev ERC20 transfer
      * @dev Only callable by governance
      */
-    function withdrawSettlement() external onlyGov {
+    function withdrawSettlement() external onlyRole(GOVERNANCE_ROLE) {
         require(paused, "Pool is live");
         IERC20 settlementERC = IERC20(settlementToken);
         uint256 balance = settlementERC.balanceOf(address(this));
@@ -534,7 +530,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
      * @notice Pauses the pool
      * @dev Prevents all state updates until unpaused
      */
-    function pause() external override onlyInvariantCheckContract {
+    function pause() external override onlyRole(INVARIANT_CHECK_ROLE) {
         paused = true;
         emit Paused();
     }
@@ -543,7 +539,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
      * @notice Unpauses the pool
      * @dev Prevents all state updates until unpaused
      */
-    function unpause() external override onlyGov {
+    function unpause() external override onlyRole(GOVERNANCE_ROLE) {
         paused = false;
         emit Unpaused();
     }

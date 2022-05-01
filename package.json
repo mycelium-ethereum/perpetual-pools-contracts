@@ -65,7 +65,7 @@
     },
     "dependencies": {
         "@chainlink/contracts": "^0.2.1",
-        "@openzeppelin/contracts": "^4.2.0",
+        "@openzeppelin/contracts": "^4.6.0",
         "abdk-libraries-solidity": "^3.0.0",
         "hardhat": "^2.6.0",
         "hardhat-log-remover": "^2.0.2",

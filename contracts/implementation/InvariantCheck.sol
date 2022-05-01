@@ -32,7 +32,7 @@ contract InvariantCheck is IInvariantCheck {
      */
     function checkInvariants(address poolToCheck) external override {
         ILeveragedPool pool = ILeveragedPool(poolToCheck);
-        require(poolFactory.isValidPool(poolToCheck), "Pool is invalid");
+        require(poolFactory.hasPoolRole(poolToCheck), "Pool is invalid");
         IPoolCommitter poolCommitter = IPoolCommitter(pool.poolCommitter());
         uint256 poolBalance = IERC20(pool.settlementToken()).balanceOf(poolToCheck);
         uint256 pendingMints = poolCommitter.pendingMintSettlementAmount();
