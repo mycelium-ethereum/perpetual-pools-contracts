@@ -186,8 +186,9 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
         uint256 _shortBalance = shortBalance;
         uint256 _longBalance = longBalance;
 
-        // If the rewards are greater than the balances of the pool, the keeper does not get paid
-        if (amount > _shortBalance + _longBalance) {
+        // If the rewards are greater than the or equal to balances of the pool, the keeper does not get paid.
+        // shortBalance and longBalance can not sum to 0, because getBalanceAfterFees will revert.
+        if (amount >= _shortBalance + _longBalance) {
             return false;
         }
 
