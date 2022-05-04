@@ -52,7 +52,7 @@ contract AutoClaim is IAutoClaim {
                 if (reward > 0) {
                     Address.sendValue(payable(user), reward);
                 }
-                emit PaidRequestExecution(user, msg.sender, request.reward);
+                emit PaidRequestExecution(user, msg.sender, reward);
             } else {
                 // If the claim request is pending but not yet valid (it was made in the current commit), we want to add to the value.
                 // Note that in context, the user *usually* won't need or want to increment `ClaimRequest.reward` more than once because the first call to `payForClaim` should suffice.
