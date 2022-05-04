@@ -382,7 +382,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
      * @dev Updates aggregate user balances
      * @dev Emits a `Claim` event on success
      */
-    function claim(address user) external override onlyAutoClaimOrCommitter(user) {
+    function claim(address user) external override onlyAutoClaimOrCommitter(user) onlyUnpaused {
         updateAggregateBalance(user);
         Balance memory balance = userAggregateBalance[user];
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
