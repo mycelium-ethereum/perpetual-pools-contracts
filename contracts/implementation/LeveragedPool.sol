@@ -142,6 +142,10 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
      */
     function poolUpkeep(int256 _oldPrice, int256 _newPrice) external override onlyKeeper onlyUnpaused {
         require(intervalPassed(), "Update interval hasn't passed");
+        // We increment `lastPriceTimestamp` to prevent a reentrancy.
+        // We know that, as a result of `PoolCommitter::executeCommitments`, `lastPriceTimestamp` will increase by *at least* `updateInterval`.
+        uint256 oldPriceTimestamp = lastPriceTimestamp;
+        lastPriceTimestamp += updateInterval;
         // perform price change and update pool balances
         executePriceChange(_oldPrice, _newPrice);
         (
@@ -151,7 +155,7 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
             uint256 newShortBalance,
             uint256 newLastPriceTimestamp
         ) = IPoolCommitter(poolCommitter).executeCommitments(
-                lastPriceTimestamp,
+                oldPriceTimestamp,
                 updateInterval,
                 longBalance,
                 shortBalance
