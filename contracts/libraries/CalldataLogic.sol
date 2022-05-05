@@ -21,10 +21,6 @@ library CalldataLogic {
      * and so on...
      * Note that the offset indicates where the length is indicated, and the actual array itself starts 32 bytes after that
      */
-    uint16 internal constant SLOT_LENGTH = 32;
-    uint16 internal constant FUNCTION_SIGNATURE_LENGTH = 4;
-    uint16 internal constant SINGLE_ARRAY_START_OFFSET = FUNCTION_SIGNATURE_LENGTH + SLOT_LENGTH * 2;
-    uint16 internal constant DOUBLE_ARRAY_START_OFFSET = FUNCTION_SIGNATURE_LENGTH + SLOT_LENGTH * 3;
     // Length of address = 20
     uint16 internal constant ADDRESS_LENGTH = 20;
 
