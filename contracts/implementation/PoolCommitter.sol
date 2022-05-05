@@ -670,7 +670,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         if (PoolSwapLibrary.compareDecimals(PoolSwapLibrary.ONE, multiple) == -1) {
             // longTokenPrice * shortTokenPrice > 1
             if (PoolSwapLibrary.compareDecimals(mintingFee, changeInterval) == -1) {
-                // mintingFee < changeInterval. Prevent underflow by setting mintingFee to lowest possible value (0)
+                // mintingFee < changeInterval. Prevent underflow by setting mintingFee to lowest acceptable value (0)
                 mintingFee = 0;
             } else {
                 mintingFee = PoolSwapLibrary.subtractBytes(mintingFee, changeInterval);
@@ -865,13 +865,14 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
      * @param _leveragedPool Address of the pool to use
      * @dev Only callable by the associated `PoolFactory` contract
      * @dev Throws if either address are null
-     * @dev Emits a `SettlementAndPoolChanged` event on success
+     * @dev Emits a `PoolChanged` event on success
      */
     function setPool(address _leveragedPool) external override onlyFactory {
         require(_leveragedPool != address(0), "Leveraged pool cannot be null");
 
         leveragedPool = _leveragedPool;
         tokens = ILeveragedPool(leveragedPool).poolTokens();
+        emit PoolChanged(_leveragedPool);
     }
 
     /**
@@ -894,7 +895,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
      */
     function setMintingFee(uint256 _mintingFee) external override onlyFeeController {
         mintingFee = PoolSwapLibrary.convertUIntToDecimal(_mintingFee);
-        require(mintingFee < MAX_MINTING_FEE, "Minting fee >= 100%");
+        require(mintingFee <= MAX_MINTING_FEE, "Minting fee > 100%");
         emit MintingFeeSet(_mintingFee);
     }
 

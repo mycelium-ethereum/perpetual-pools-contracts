@@ -332,20 +332,19 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
      */
     function feeTransfer(uint256 totalFeeAmount) internal {
         if (secondaryFeeAddress == address(0)) {
-            // IERC20(settlementToken).safeTransfer(feeAddress, totalFeeAmount);
             unchecked {
                 // Overflow would require more than settlement's entire total supply
                 primaryFees += totalFeeAmount;
             }
         } else {
-            uint256 secondaryFee = PoolSwapLibrary.mulFraction(totalFeeAmount, secondaryFeeSplitPercent, 100);
+            uint256 secondaryFeeAmount = PoolSwapLibrary.mulFraction(totalFeeAmount, secondaryFeeSplitPercent, 100);
             uint256 remainder;
             unchecked {
                 // secondaryFee is calculated as totalFeeAmount * secondaryFeeSplitPercent / 100
                 // secondaryFeeSplitPercent <= 100 and therefore secondaryFee <= totalFeeAmount - The following line can not underflow
-                remainder = totalFeeAmount - secondaryFee;
+                remainder = totalFeeAmount - secondaryFeeAmount;
                 // Overflow would require more than settlement's entire total supply
-                secondaryFees += secondaryFee;
+                secondaryFees += secondaryFeeAmount;
                 primaryFees += remainder;
             }
         }

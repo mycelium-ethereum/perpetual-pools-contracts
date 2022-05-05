@@ -179,7 +179,7 @@ contract AutoClaim is IAutoClaim {
      * |      0th user address      |     1st user address      |      3rd user address      |      4th user address     | ... |
      *  ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
      * @param poolCommitterAddress The PoolCommitter address within which you would like to claim for the respective user
-     * @dev poolCommitterAddress should be the PoolCommitter where the all supplied user addresses requested an auto claim
+     * @dev poolCommitterAddress should be the PoolCommitter where all the supplied user addresses requested an auto claim
      */
     function multiPaidClaimSinglePoolCommitter(bytes calldata args, address poolCommitterAddress) external override {
         require(args.length % CalldataLogic.ADDRESS_LENGTH == 0, "args must only include addresses");

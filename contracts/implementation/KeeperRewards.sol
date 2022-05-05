@@ -52,6 +52,7 @@ contract KeeperRewards is IKeeperRewards {
         try IOracleWrapper(ILeveragedPool(_pool).settlementEthOracle()).poll() {} catch Error(string memory reason) {
             emit PoolUpkeepError(_pool, reason);
         }
+        // `IOracleWrapper` is typically implemented such that `getPrice` returns a number with 18 decimal places.
         int256 settlementTokenPrice = IOracleWrapper(ILeveragedPool(_pool).settlementEthOracle()).getPrice();
 
         uint256 reward = keeperReward(
@@ -107,7 +108,7 @@ contract KeeperRewards is IKeeperRewards {
          *
          */
 
-        // keeper gas cost in wei. WAD formatted
+        // keeper gas cost in settlement. WAD formatted
         uint256 _keeperGas = keeperGas(_gasPrice, _gasSpent, _settlementTokenPrice);
 
         // tip percent

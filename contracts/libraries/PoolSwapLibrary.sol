@@ -8,6 +8,9 @@ library PoolSwapLibrary {
     /// ABDKMathQuad-formatted representation of the number one
     bytes16 public constant ONE = 0x3fff0000000000000000000000000000;
 
+    /// ABDKMathQuad-formatted representation of negative zero
+    bytes16 private constant NEGATIVE_ZERO = 0x80000000000000000000000000000000;
+
     /// Maximum number of decimal places supported by this contract
     /// (ABDKMathQuad defines this but it's private)
     uint256 public constant MAX_DECIMALS = 18;
@@ -489,25 +492,27 @@ library PoolSwapLibrary {
      * @param price Price of a pool token
      * @param amount Amount of settlement tokens being used to mint
      * @return Quantity of pool tokens to mint
-     * @dev Throws if price is zero
+     * @dev Throws if price is zero, or IEEE754 negative zero
      * @dev `getMint()`
      */
     function getMint(bytes16 price, uint256 amount) public pure returns (uint256) {
         require(price != 0, "price == 0");
+        require(price != NEGATIVE_ZERO, "price == negative zero");
         return ABDKMathQuad.toUInt(ABDKMathQuad.div(ABDKMathQuad.fromUInt(amount), price));
     }
 
     /**
-     * @notice Calculate the number of settlement tokens to burn, based on a price and an amount of pool tokens
+     * @notice Calculate the number of settlement tokens to return, based on a price and an amount of pool tokens being burnt
      * @param price Price of a pool token
      * @param amount Amount of pool tokens being used to burn
      * @return Quantity of settlement tokens to return to the user after `amount` pool tokens are burnt.
      * @dev amount * price, where amount is in PoolToken and price is in USD/PoolToken
-     * @dev Throws if price is zero
+     * @dev Throws if price is zero, or IEEE754 negative zero
      * @dev `getBurn()`
      */
     function getBurn(bytes16 price, uint256 amount) public pure returns (uint256) {
         require(price != 0, "price == 0");
+        require(price != NEGATIVE_ZERO, "price == negative zero");
         return ABDKMathQuad.toUInt(ABDKMathQuad.mul(ABDKMathQuad.fromUInt(amount), price));
     }
 

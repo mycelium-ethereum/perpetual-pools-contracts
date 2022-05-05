@@ -122,6 +122,12 @@ interface IPoolCommitter {
     event AggregateBalanceUpdated(address indexed user);
 
     /**
+     * @notice Creates a notification when the PoolCommitter's leveragedPool address has been updated.
+     * @param newPool the address of the new leveraged pool
+     */
+    event PoolChanged(address indexed newPool);
+
+    /**
      * @notice Creates a notification when commits for a given update interval are executed
      * @param updateIntervalId Unique identifier for the relevant update interval
      * @param burningFee Burning fee at the time of commit execution
