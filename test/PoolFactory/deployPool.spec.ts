@@ -437,6 +437,7 @@ describe("PoolFactory.deployPool", () => {
                 oracleWrapper.address,
                 5,
                 1,
+                await signers[0].getAddress(),
                 await signers[0].getAddress()
             )
             await smaOracle.deployed()
@@ -445,6 +446,9 @@ describe("PoolFactory.deployPool", () => {
                 await smaOracle.poll()
                 await timeout(1000)
             }
+
+            /* correct the PoolKeeper address now that we've performed setup */
+            smaOracle.setPoolKeeper(poolKeeper.address)
 
             const deploymentParameters = {
                 poolName: POOL_CODE,
