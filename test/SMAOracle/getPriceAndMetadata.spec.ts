@@ -69,6 +69,7 @@ describe("SMAOracle - getPriceAndMetadata", () => {
             numPeriods,
             updateInterval,
             owner.address,
+            owner.address,
             owner.address
         )
         await smaOracle.deployed()

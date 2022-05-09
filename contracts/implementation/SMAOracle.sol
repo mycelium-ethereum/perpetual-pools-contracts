@@ -64,6 +64,10 @@ contract SMAOracle is IOracleWrapper {
     // Deployer of the contract
     address public immutable override deployer;
 
+    // Governance this contract is subject to (in any sane implementation, a
+    // DAO)
+    address public governance;
+
     /// Number of desired sampling periods to use -- this will differ from
     /// the actual number of periods used until the SMAOracle ramps up.
     uint256 public immutable numPeriods;
@@ -86,10 +90,11 @@ contract SMAOracle is IOracleWrapper {
         uint256 _numPeriods,
         uint256 _updateInterval,
         address _deployer,
-        address _poolKeeper
+        address _poolKeeper,
+        address _gov
     ) {
         require(
-            _inputOracle != address(0) && _deployer != address(0) && _poolKeeper != address(0),
+            _inputOracle != address(0) && _deployer != address(0) && _poolKeeper != address(0) && _gov != address(0),
             "SMA: Null address forbidden"
         );
         require(_numPeriods > 0 && _numPeriods <= MAX_PERIODS, "SMA: Out of bounds");
@@ -105,6 +110,7 @@ contract SMAOracle is IOracleWrapper {
         oracle = _inputOracle;
         deployer = _deployer;
         poolKeeper = _poolKeeper;
+        governance = _gov;
     }
 
     /**
@@ -201,11 +207,21 @@ contract SMAOracle is IOracleWrapper {
     /**
      * @notice Changes the address of the associated `PoolKeeper` contract
      * @param _poolKeeper Address of the new contract
-     * @dev Only callable by the deployer of this SMA oracle
+     * @dev Only callable by governance
      */
-    function setPoolKeeper(address _poolKeeper) public onlyDeployer {
+    function setPoolKeeper(address _poolKeeper) public onlyGov {
         require(_poolKeeper != address(0), "SMA: Null address forbidden");
         poolKeeper = _poolKeeper;
+    }
+
+    /**
+     * @notice Changes the address of the associated governance
+     * @param _governance Address of the new governance
+     * @dev Only callable by (existing) governance
+     */
+    function setGovernance(address _governance) public onlyGov {
+        require(_governance != address(0), "SMA: Null address forbidden");
+        governance = _governance;
     }
 
     /**
@@ -225,6 +241,11 @@ contract SMAOracle is IOracleWrapper {
 
     modifier onlyDeployer() {
         require(msg.sender == deployer, "SMA: Only callable by deployer");
+        _;
+    }
+
+    modifier onlyGov() {
+        require(msg.sender == governance, "SMA: Only callable by governance");
         _;
     }
 

@@ -70,6 +70,7 @@ describe("SMAOracle - getPrice", () => {
             numPeriods,
             updateInterval,
             owner.address,
+            owner.address,
             owner.address
         )
         await smaOracle.deployed()

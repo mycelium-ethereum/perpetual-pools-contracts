@@ -438,6 +438,7 @@ describe("PoolFactory.deployPool", () => {
                 5,
                 1,
                 await signers[0].getAddress(),
+                await signers[0].getAddress(),
                 await signers[0].getAddress()
             )
             await smaOracle.deployed()
