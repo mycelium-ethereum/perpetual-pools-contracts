@@ -54,6 +54,8 @@ contract KeeperRewards is IKeeperRewards {
         }
         int256 settlementTokenPrice = IOracleWrapper(ILeveragedPool(_pool).settlementEthOracle()).getPrice();
 
+        require(settlementTokenPrice >= 0, "settlement price must be >= 0");
+
         uint256 reward = keeperReward(
             _pool,
             _gasPrice,
