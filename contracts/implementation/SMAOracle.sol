@@ -239,11 +239,6 @@ contract SMAOracle is IOracleWrapper {
         }
     }
 
-    modifier onlyDeployer() {
-        require(msg.sender == deployer, "SMA: Only callable by deployer");
-        _;
-    }
-
     modifier onlyGov() {
         require(msg.sender == governance, "SMA: Only callable by governance");
         _;
