@@ -8,7 +8,14 @@ import {
     TestChainlinkOracle__factory,
     SMAOracle__factory,
     ChainlinkOracleWrapper__factory,
+    PoolKeeper__factory,
+    PoolKeeper,
 } from "../../types"
+import { POOL_CODE } from "../constants"
+import {
+    deployPoolAndTokenContracts,
+    generateRandomAddress,
+} from "../utilities"
 
 describe("SMAOracle - getPrice", () => {
     let owner: SignerWithAddress
@@ -16,8 +23,14 @@ describe("SMAOracle - getPrice", () => {
     let user2: SignerWithAddress
     let smaOracle: SMAOracle
     let chainlinkOracle: TestChainlinkOracle
+    let poolKeeper: PoolKeeper
+    let signers: SignerWithAddress[]
     const numPeriods: BigNumberish = 10
     const updateInterval: BigNumberish = 60
+    const frontRunningInterval: BigNumberish = 10
+    const leverage: BigNumberish = 1
+    const fee: BigNumberish = 1
+    const feeAddress = generateRandomAddress()
 
     beforeEach(async () => {
         ;[owner, user1, user2] = await ethers.getSigners()
@@ -38,6 +51,17 @@ describe("SMAOracle - getPrice", () => {
             )
         await chainlinkOracleWrapper.deployed()
 
+        /* deploy main contracts */
+        const contracts = await deployPoolAndTokenContracts(
+            POOL_CODE,
+            frontRunningInterval,
+            updateInterval,
+            leverage,
+            feeAddress,
+            fee
+        )
+        poolKeeper = contracts.poolKeeper
+
         const SMAOracleFactory = (await ethers.getContractFactory(
             "SMAOracle"
         )) as SMAOracle__factory
@@ -45,6 +69,8 @@ describe("SMAOracle - getPrice", () => {
             chainlinkOracleWrapper.address,
             numPeriods,
             updateInterval,
+            owner.address,
+            owner.address,
             owner.address
         )
         await smaOracle.deployed()

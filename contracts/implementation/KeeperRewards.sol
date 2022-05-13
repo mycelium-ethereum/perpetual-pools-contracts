@@ -54,6 +54,8 @@ contract KeeperRewards is IKeeperRewards {
         }
         int256 settlementTokenPrice = IOracleWrapper(ILeveragedPool(_pool).settlementEthOracle()).getPrice();
 
+        require(settlementTokenPrice >= 0, "settlement price must be >= 0");
+
         uint256 reward = keeperReward(
             _pool,
             _gasPrice,
@@ -141,7 +143,7 @@ contract KeeperRewards is IKeeperRewards {
             /* safe due to explicit bounds check for settlementTokenPrice above */
             /* (wei * Settlement / ETH) / fixed point (10^18) = amount in settlement */
             bytes16 weiSpent = ABDKMathQuad.fromUInt(_gasPrice * gasUsed);
-            bytes16 settlementTokenPrice = ABDKMathQuad.fromUInt(uint256(_settlementTokenPrice));
+            bytes16 settlementTokenPrice = ABDKMathQuad.fromUInt(_settlementTokenPrice);
             return ABDKMathQuad.toUInt(ABDKMathQuad.div(ABDKMathQuad.mul(weiSpent, settlementTokenPrice), FIXED_POINT));
         }
     }

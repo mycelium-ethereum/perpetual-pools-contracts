@@ -328,9 +328,6 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         if (userCommit.updateIntervalId == 0) {
             userCommit.updateIntervalId = appropriateUpdateIntervalId;
         }
-        if (totalCommit.updateIntervalId == 0) {
-            totalCommit.updateIntervalId = appropriateUpdateIntervalId;
-        }
 
         uint256 length = unAggregatedCommitments[msg.sender].length;
         if (length == 0 || unAggregatedCommitments[msg.sender][length - 1] < appropriateUpdateIntervalId) {
@@ -382,7 +379,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
      * @dev Updates aggregate user balances
      * @dev Emits a `Claim` event on success
      */
-    function claim(address user) external override onlyAutoClaimOrCommitter(user) {
+    function claim(address user) external override onlyAutoClaimOrCommitter(user) onlyUnpaused {
         updateAggregateBalance(user);
         Balance memory balance = userAggregateBalance[user];
         ILeveragedPool pool = ILeveragedPool(leveragedPool);
@@ -411,7 +408,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
      * @notice Retrieves minting fee from each mint being left in the pool
      * @return Minting fee
      */
-    function getMintingFee() public view returns (uint256) {
+    function getMintingFee() external view returns (uint256) {
         return PoolSwapLibrary.convertDecimalToUInt(mintingFee);
     }
 
@@ -419,15 +416,14 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
      * @notice Retrieves burning fee from each burn being left in the pool
      * @return Burning fee
      */
-    function getBurningFee() public view returns (uint256) {
+    function getBurningFee() external view returns (uint256) {
         return PoolSwapLibrary.convertDecimalToUInt(burningFee);
     }
 
     /**
      * @notice Executes every commitment specified in the list
      * @param _commits Array of `TotalCommitment`s
-     * @param longTotalSupply The current running total supply of long pool tokens
-     * @param shortTotalSupply The current running total supply of short pool tokens
+     * @param executionTracking A struct containing the update interval ID being executed, and the long and short total supplies
      * @param longBalance The amount of settlement tokens in the long side of the pool
      * @param shortBalance The amount of settlement tokens in the short side of the pool
      * @return newLongTotalSupply The total supply of long pool tokens as a result of minting
@@ -437,8 +433,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
      */
     function executeGivenCommitments(
         TotalCommitment memory _commits,
-        uint256 longTotalSupply,
-        uint256 shortTotalSupply,
+        CommitmentExecutionTracking memory executionTracking,
         uint256 longBalance,
         uint256 shortBalance
     )
@@ -452,8 +447,8 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
     {
         pendingMintSettlementAmount =
             pendingMintSettlementAmount -
-            totalPoolCommitments[_commits.updateIntervalId].longMintSettlement -
-            totalPoolCommitments[_commits.updateIntervalId].shortMintSettlement;
+            totalPoolCommitments[executionTracking._updateIntervalId].longMintSettlement -
+            totalPoolCommitments[executionTracking._updateIntervalId].shortMintSettlement;
 
         BalancesAndSupplies memory balancesAndSupplies = BalancesAndSupplies({
             newShortBalance: _commits.shortMintSettlement + shortBalance,
@@ -466,10 +461,16 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             totalShortBurnPoolTokens: _commits.shortBurnPoolTokens + _commits.shortBurnLongMintPoolTokens
         });
 
-        bytes16 longPrice = PoolSwapLibrary.getPrice(longBalance, longTotalSupply + pendingLongBurnPoolTokens);
-        bytes16 shortPrice = PoolSwapLibrary.getPrice(shortBalance, shortTotalSupply + pendingShortBurnPoolTokens);
+        bytes16 longPrice = PoolSwapLibrary.getPrice(
+            longBalance,
+            executionTracking.longTotalSupply + pendingLongBurnPoolTokens
+        );
+        bytes16 shortPrice = PoolSwapLibrary.getPrice(
+            shortBalance,
+            executionTracking.shortTotalSupply + pendingShortBurnPoolTokens
+        );
         // Update price before values change
-        priceHistory[_commits.updateIntervalId] = Prices({longPrice: longPrice, shortPrice: shortPrice});
+        priceHistory[executionTracking._updateIntervalId] = Prices({longPrice: longPrice, shortPrice: shortPrice});
 
         // Amount of collateral tokens that are generated from the long burn into instant mints
         {
@@ -497,7 +498,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
 
         // Long Mints
         balancesAndSupplies.longMintPoolTokens = PoolSwapLibrary.getMintAmount(
-            longTotalSupply, // long token total supply,
+            executionTracking.longTotalSupply, // long token total supply,
             _commits.longMintSettlement + balancesAndSupplies.shortBurnInstantMintSettlement, // Add the settlement tokens that will be generated from burning shorts for instant long mint
             longBalance, // total quote tokens in the long pool
             pendingLongBurnPoolTokens // total pool tokens commited to be burned
@@ -505,7 +506,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
 
         // Long Burns
         balancesAndSupplies.newLongBalance -= PoolSwapLibrary.getWithdrawAmountOnBurn(
-            longTotalSupply,
+            executionTracking.longTotalSupply,
             balancesAndSupplies.totalLongBurnPoolTokens,
             longBalance,
             pendingLongBurnPoolTokens
@@ -513,7 +514,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
 
         // Short Mints
         balancesAndSupplies.shortMintPoolTokens = PoolSwapLibrary.getMintAmount(
-            shortTotalSupply, // short token total supply
+            executionTracking.shortTotalSupply, // short token total supply
             _commits.shortMintSettlement + balancesAndSupplies.longBurnInstantMintSettlement, // Add the settlement tokens that will be generated from burning longs for instant short mint
             shortBalance,
             pendingShortBurnPoolTokens
@@ -521,7 +522,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
 
         // Short Burns
         balancesAndSupplies.newShortBalance -= PoolSwapLibrary.getWithdrawAmountOnBurn(
-            shortTotalSupply,
+            executionTracking.shortTotalSupply,
             balancesAndSupplies.totalShortBurnPoolTokens,
             shortBalance,
             pendingShortBurnPoolTokens
@@ -531,8 +532,8 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         pendingShortBurnPoolTokens -= balancesAndSupplies.totalShortBurnPoolTokens;
 
         return (
-            longTotalSupply + balancesAndSupplies.longMintPoolTokens,
-            shortTotalSupply + balancesAndSupplies.shortMintPoolTokens,
+            executionTracking.longTotalSupply + balancesAndSupplies.longMintPoolTokens,
+            executionTracking.shortTotalSupply + balancesAndSupplies.shortMintPoolTokens,
             balancesAndSupplies.newLongBalance,
             balancesAndSupplies.newShortBalance
         );
@@ -620,8 +621,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
                     shortBalance
                 ) = executeGivenCommitments(
                     totalPoolCommitments[executionTracking._updateIntervalId],
-                    executionTracking.longTotalSupply,
-                    executionTracking.shortTotalSupply,
+                    executionTracking,
                     longBalance,
                     shortBalance
                 );
@@ -775,7 +775,6 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
 
         if (unAggregatedLength <= MAX_ITERATIONS) {
             // We got through all update intervals, so we can replace all unaggregated update interval IDs
-            delete unAggregatedCommitments[user];
             unAggregatedCommitments[user] = storageArrayPlaceHolder;
             delete storageArrayPlaceHolder;
         }

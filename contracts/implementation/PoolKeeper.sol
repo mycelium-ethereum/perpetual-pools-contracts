@@ -138,18 +138,16 @@ contract PoolKeeper is IPoolKeeper, Ownable {
         }
 
         uint256 gasSpent = startGas - gasleft();
-        uint256 reward;
+        uint256 reward = IKeeperRewards(keeperRewards).payKeeper(
+            msg.sender,
+            _pool,
+            gasPrice,
+            gasSpent,
+            savedPreviousUpdatedTimestamp,
+            updateInterval
+        );
         // Emit events depending on whether or not the reward was actually paid
-        if (
-            IKeeperRewards(keeperRewards).payKeeper(
-                msg.sender,
-                _pool,
-                gasPrice,
-                gasSpent,
-                savedPreviousUpdatedTimestamp,
-                updateInterval
-            ) > 0
-        ) {
+        if (reward > 0) {
             emit KeeperPaid(_pool, msg.sender, reward);
         } else {
             emit KeeperPaymentError(_pool, msg.sender, reward);

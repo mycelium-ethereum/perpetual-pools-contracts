@@ -190,19 +190,13 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
         uint256 _shortBalance = shortBalance;
         uint256 _longBalance = longBalance;
 
-        // If the rewards are greater than the balances of the pool, the keeper does not get paid
-        if (amount > _shortBalance + _longBalance) {
+        // If the rewards are greater than the or equal to balances of the pool, the keeper does not get paid.
+        // shortBalance and longBalance can not sum to 0, because getBalanceAfterFees will revert.
+        if (amount >= _shortBalance + _longBalance) {
             return false;
         }
 
-        (uint256 shortBalanceAfterRewards, uint256 longBalanceAfterRewards) = PoolSwapLibrary.getBalancesAfterFees(
-            amount,
-            _shortBalance,
-            _longBalance
-        );
-
-        shortBalance = shortBalanceAfterRewards;
-        longBalance = longBalanceAfterRewards;
+        (shortBalance, longBalance) = PoolSwapLibrary.getBalancesAfterFees(amount, _shortBalance, _longBalance);
 
         // Pay keeper
         IERC20(settlementToken).safeTransfer(to, amount);
@@ -411,9 +405,8 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
      */
     function updateFeeAddress(address account) external override onlyGov onlyUnpaused {
         require(account != address(0), "Account cannot be null");
-        address oldFeeAddress = feeAddress;
+        emit FeeAddressUpdated(feeAddress, account);
         feeAddress = account;
-        emit FeeAddressUpdated(oldFeeAddress, account);
     }
 
     /**
@@ -421,10 +414,9 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
      * @param account New address of the fee address/receiver
      */
     function updateSecondaryFeeAddress(address account) external override {
-        address _oldSecondaryFeeAddress = secondaryFeeAddress;
-        require(msg.sender == _oldSecondaryFeeAddress);
+        require(msg.sender == secondaryFeeAddress);
+        emit SecondaryFeeAddressUpdated(secondaryFeeAddress, account);
         secondaryFeeAddress = account;
-        emit SecondaryFeeAddressUpdated(_oldSecondaryFeeAddress, account);
     }
 
     /**
@@ -433,9 +425,8 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
      */
     function setKeeper(address _keeper) external override onlyGov {
         require(_keeper != address(0), "Keeper cannot be null");
-        address oldKeeper = keeper;
+        emit KeeperAddressChanged(keeper, _keeper);
         keeper = _keeper;
-        emit KeeperAddressChanged(oldKeeper, _keeper);
     }
 
     /**
@@ -469,10 +460,10 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
         require(governanceTransferInProgress, "No governance change active");
         address _provisionalGovernance = provisionalGovernance;
         require(msg.sender == _provisionalGovernance, "Not provisional governor");
-        address oldGovernance = governance; /* for later event emission */
+        emit GovernanceAddressChanged(governance, _provisionalGovernance);
         governance = _provisionalGovernance;
+        delete provisionalGovernance;
         governanceTransferInProgress = false;
-        emit GovernanceAddressChanged(oldGovernance, _provisionalGovernance);
     }
 
     /**
