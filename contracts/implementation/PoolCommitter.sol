@@ -408,7 +408,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
      * @notice Retrieves minting fee from each mint being left in the pool
      * @return Minting fee
      */
-    function getMintingFee() public view returns (uint256) {
+    function getMintingFee() external view returns (uint256) {
         return PoolSwapLibrary.convertDecimalToUInt(mintingFee);
     }
 
@@ -416,7 +416,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
      * @notice Retrieves burning fee from each burn being left in the pool
      * @return Burning fee
      */
-    function getBurningFee() public view returns (uint256) {
+    function getBurningFee() external view returns (uint256) {
         return PoolSwapLibrary.convertDecimalToUInt(burningFee);
     }
 
@@ -775,7 +775,6 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
 
         if (unAggregatedLength <= MAX_ITERATIONS) {
             // We got through all update intervals, so we can replace all unaggregated update interval IDs
-            delete unAggregatedCommitments[user];
             unAggregatedCommitments[user] = storageArrayPlaceHolder;
             delete storageArrayPlaceHolder;
         }

@@ -357,9 +357,9 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
         require(governanceTransferInProgress, "No governance change active");
         address _provisionalGovernance = provisionalGovernance;
         require(msg.sender == _provisionalGovernance, "Not provisional governor");
-        address oldGovernance = governance; /* for later event emission */
+        emit GovernanceAddressChanged(governance, _provisionalGovernance);
         governance = _provisionalGovernance;
+        delete provisionalGovernance;
         governanceTransferInProgress = false;
-        emit GovernanceAddressChanged(oldGovernance, _provisionalGovernance);
     }
 }
