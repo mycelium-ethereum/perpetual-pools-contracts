@@ -573,7 +573,7 @@ library PoolSwapLibrary {
      * @param data Information needed for updating the balance including prices and recent commit amounts
      * @return The UpdateResult struct with the data pertaining to the update of user's aggregate balance
      */
-    function getUpdatedAggregateBalance(UpdateData calldata data) external view returns (UpdateResult memory) {
+    function getUpdatedAggregateBalance(UpdateData calldata data) external pure returns (UpdateResult memory) {
         UpdateResult memory result = UpdateResult(0, 0, 0, 0, 0);
         if (data.updateIntervalId >= data.currentUpdateIntervalId) {
             // Update interval has not passed: No change
