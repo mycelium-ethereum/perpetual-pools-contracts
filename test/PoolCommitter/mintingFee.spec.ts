@@ -64,7 +64,7 @@ describe("PoolCommitter - Mint commit with mint fee", () => {
                 const mintingFee = ethers.utils.parseEther("1.01")
                 await expect(
                     result.poolCommitter.setMintingFee(mintingFee)
-                ).to.be.revertedWith("Minting fee >= 100%")
+                ).to.be.revertedWith("Minting fee > 100%")
             })
         })
         it("Updates mint fee", async () => {

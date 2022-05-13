@@ -69,7 +69,7 @@ contract SMAOracle is IOracleWrapper {
     /// the actual number of periods used until the SMAOracle ramps up.
     int256 public immutable numPeriods;
 
-    /// Duration between price updates
+    /// Duration between price updates in seconds
     uint256 public immutable updateInterval;
 
     /// Time of last successful price update

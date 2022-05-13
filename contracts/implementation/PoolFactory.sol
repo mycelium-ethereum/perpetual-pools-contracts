@@ -39,7 +39,7 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
     uint8 constant DEFAULT_NUM_DECIMALS = 18;
     uint8 constant MAX_DECIMALS = DEFAULT_NUM_DECIMALS;
     // Considering leap year thus using 365.2425 days per year
-    uint32 constant DAYS_PER_LEAP_YEAR = 365.2425 days;
+    uint32 constant SECONDS_PER_LEAP_YEAR = 365.2425 days;
     // Contract address to receive protocol fees
     address public feeReceiver;
 
@@ -180,7 +180,7 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
             _poolName: string(abi.encodePacked(leverage, "-", deploymentParameters.poolName)),
             _frontRunningInterval: deploymentParameters.frontRunningInterval,
             _updateInterval: deploymentParameters.updateInterval,
-            _fee: (fee * deploymentParameters.updateInterval) / (DAYS_PER_LEAP_YEAR),
+            _fee: (fee * deploymentParameters.updateInterval) / (SECONDS_PER_LEAP_YEAR),
             _leverageAmount: deploymentParameters.leverageAmount,
             _feeAddress: feeReceiver,
             _secondaryFeeAddress: msg.sender,

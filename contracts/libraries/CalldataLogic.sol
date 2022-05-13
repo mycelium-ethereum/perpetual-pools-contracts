@@ -7,7 +7,7 @@ import "../interfaces/IPoolCommitter.sol";
 /// @notice Library to decode calldata, used to optimize calldata size in PerpetualPools for L2 transaction cost reduction
 library CalldataLogic {
     /*
-     * Calldata when parameter is a tightly packed bite array looks like this:
+     * Calldata when parameter is a tightly packed byte array looks like this:
      * -----------------------------------------------------------------------------------------------------
      * | function signature | offset of byte array | length of byte array |           bytes array           |
      * |      4 bytes       |       32 bytes       |       32 bytes       |  20 * number_of_addresses bytes |
@@ -55,6 +55,7 @@ library CalldataLogic {
         bool fromAggregateBalance;
         bool payForClaim;
 
+        // `amount` is implicitly capped at 128 bits.
         assembly {
             amount := and(args, 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
             commitType := and(shr(128, args), 0xFF)
