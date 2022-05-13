@@ -61,6 +61,10 @@ contract SMAOracle is IOracleWrapper {
     // Deployer of the contract
     address public immutable override deployer;
 
+    // Governance this contract is subject to (in any sane implementation, a
+    // DAO)
+    address public governance;
+
     /// Number of desired sampling periods to use -- this will differ from
     /// the actual number of periods used until the SMAOracle ramps up.
     int256 public immutable numPeriods;
@@ -76,13 +80,20 @@ contract SMAOracle is IOracleWrapper {
     uint8 public constant override decimals = 18;
     int256 public immutable scaler;
 
+    address public poolKeeper;
+
     constructor(
         address _inputOracle,
         int256 _numPeriods,
         uint256 _updateInterval,
-        address _deployer
+        address _deployer,
+        address _poolKeeper,
+        address _gov
     ) {
-        require(_inputOracle != address(0) && _deployer != address(0), "SMA: Null address forbidden");
+        require(
+            _inputOracle != address(0) && _deployer != address(0) && _poolKeeper != address(0) && _gov != address(0),
+            "SMA: Null address forbidden"
+        );
         require(_numPeriods > 0 && _numPeriods <= MAX_PERIODS, "SMA: Out of bounds");
         require(_updateInterval != 0, "SMA: Update interval cannot be 0");
 
@@ -94,6 +105,8 @@ contract SMAOracle is IOracleWrapper {
         updateInterval = _updateInterval;
         oracle = _inputOracle;
         deployer = _deployer;
+        poolKeeper = _poolKeeper;
+        governance = _gov;
     }
 
     /**
@@ -122,7 +135,7 @@ contract SMAOracle is IOracleWrapper {
      * @dev Throws if called within an update interval since last being called
      * @dev Essentially wraps `update()`
      */
-    function poll() external override returns (int256) {
+    function poll() external override onlyPoolKeeper returns (int256) {
         if (block.timestamp >= lastUpdate + updateInterval) {
             _update();
         }
@@ -189,6 +202,26 @@ contract SMAOracle is IOracleWrapper {
     }
 
     /**
+     * @notice Changes the address of the associated `PoolKeeper` contract
+     * @param _poolKeeper Address of the new contract
+     * @dev Only callable by governance
+     */
+    function setPoolKeeper(address _poolKeeper) public onlyGov {
+        require(_poolKeeper != address(0), "SMA: Null address forbidden");
+        poolKeeper = _poolKeeper;
+    }
+
+    /**
+     * @notice Changes the address of the associated governance
+     * @param _governance Address of the new governance
+     * @dev Only callable by (existing) governance
+     */
+    function setGovernance(address _governance) public onlyGov {
+        require(_governance != address(0), "SMA: Null address forbidden");
+        governance = _governance;
+    }
+
+    /**
      * @notice Converts `x` to a wad value
      * @param x Number to convert to wad value
      * @return `x` but wad
@@ -201,5 +234,15 @@ contract SMAOracle is IOracleWrapper {
         unchecked {
             return ++i;
         }
+    }
+
+    modifier onlyGov() {
+        require(msg.sender == governance, "SMA: Only callable by governance");
+        _;
+    }
+
+    modifier onlyPoolKeeper() {
+        require(msg.sender == poolKeeper, "SMA: Only callable by PoolKeeper");
+        _;
     }
 }
