@@ -52,7 +52,7 @@ const config: HardhatUserConfig = {
             // gasPrice: 200000000000,
         },
         arb: {
-            url: ALCHEMY_API_TESTNET_URL,
+            url: ALCHEMY_API_MAINNET_URL,
             accounts: [TESTNET_PRIVATE_KEY],
             // gasPrice: 200000000000,
         },

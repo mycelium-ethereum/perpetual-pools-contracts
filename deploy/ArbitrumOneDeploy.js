@@ -4,53 +4,32 @@ module.exports = async (hre) => {
     const { deployer } = await getNamedAccounts()
     const accounts = await ethers.getSigners()
 
-    const BTC_POOL_CODE = "BTC/USD+PPUSD"
-    const ETH_POOL_CODE = "ETH/USD+PPUSD"
+    const BTC_POOL_CODE = "BTC/USD+USDC"
+    const ETH_POOL_CODE = "ETH/USD+USDC"
 
     const DEPLOY_POOL_GAS_LIMIT = 10000000
 
-    const POOL_DEFAULT_MINTING_FEE = ethers.utils.parseEther("0.015")
+    const POOL_DEFAULT_MINTING_FEE = ethers.utils.parseEther("0.01")
     const POOL_DEFAULT_BURNING_FEE = ethers.utils.parseEther("0")
-    const POOL_DEFAULT_FRONT_RUNNING_INTERVAL =  60 * 60 * 8
+    const POOL_DEFAULT_FRONT_RUNNING_INTERVAL = 60 * 60 * 8 // 8 hours
     const POOL_DEFAULT_UPDATE_INTERVAL = 60 * 60 // 1 hour
     const POOL_DEFAULT_CHANGE_INTERVAL = "0"
 
-    const ONE_LEVERAGE = 1
     const THREE_LEVERAGE = 3
-    const FOUR_LEVERAGE = 4
 
     const SMA_DEFAULT_PERIODS = 8
-    const SMA_DEFAULT_UPDATE_INTERVAL = 3600
+    const SMA_DEFAULT_UPDATE_INTERVAL = 60 * 60 // 1 hour
 
-    const PPUSD_ADDRESS = "0x9e062eee2c0Ab96e1E1c8cE38bF14bA3fa0a35F6"
+    const USDC_ADDRESS = "0xff970a61a04b1ca14834a43f5de4533ebddb5cc8"
+    const DEV_MULTISIG_ADDRESS = "0x0f79e82aE88E1318B8cfC8b4A205fE2F982B928A"
+    const DAO_ADDRESS = "0xa84918f3280d488eb3369cb713ec53ce386b6cba"
 
     const arbitrumRinkEthUsdOracle = {
-        address: "0x5f0423B1a6935dc5596e7A24d98532b67A0AeFd8",
+        address: "0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612",
     }
     const arbitrumRinkBtcUsdOracle = {
-        address: "0x0c9973e7a27d00e656B9f153348dA46CaD70d03d",
+        address: "0x6ce185860a4963106506C203335A2910413708e9",
     }
-
-    /* deploy testToken */
-    // re-using PPUSD since it is already distributed amongst the team/community
-    // const token = await deploy("TestToken", {
-    //     args: ["Perpetual USD", "PPUSD"],
-    //     from: deployer,
-    //     log: true,
-    //     contract: "TestToken",
-    // })
-
-    // // mint some dollar bills
-    // await execute(
-    //     "TestToken",
-    //     {
-    //         from: deployer,
-    //         log: true,
-    //     },
-    //     "mint",
-    //     accounts[0].address,
-    //     ethers.utils.parseEther("100000000") // 100 mil supply
-    // )
 
     // base btc usd oracle wrapper
     const btcOracleWrapper = await deploy("BtcUsdOracleWrapper", {
@@ -92,8 +71,8 @@ module.exports = async (hre) => {
         log: true,
         libraries: { PoolSwapLibrary: library.address },
         gasLimit: 100000000,
-        // (fee receiver)
-        args: [deployer, deployer],
+        // (fee receiver, governance)
+        args: [DEV_MULTISIG_ADDRESS, deployer],
     })
 
     // deploy InvariantCheck
@@ -136,7 +115,6 @@ module.exports = async (hre) => {
             log: true,
         },
         "setKeeperRewards",
-
         keeperRewards.address
     )
 
@@ -269,28 +247,13 @@ module.exports = async (hre) => {
 
     // deploy pools
 
-    // ETH-USD 1x
-    // const ethUsd1 = {
-    //     poolName: ETH_POOL_CODE,
-    //     frontRunningInterval: POOL_DEFAULT_FRONT_RUNNING_INTERVAL,
-    //     updateInterval: POOL_DEFAULT_UPDATE_INTERVAL,
-    //     leverageAmount: ONE_LEVERAGE,
-    //     settlementToken: PPUSD_ADDRESS,
-    //     oracleWrapper: ethSmaOracleWrapper.address,
-    //     settlementEthOracle: ethOracleWrapper.address,
-    //     feeController: deployer,
-    //     mintingFee: POOL_DEFAULT_MINTING_FEE,
-    //     burningFee: POOL_DEFAULT_BURNING_FEE,
-    //     changeInterval: POOL_DEFAULT_CHANGE_INTERVAL,
-    // }
-
     // ETH-USD 3x
     const ethUsd3 = {
         poolName: ETH_POOL_CODE,
         frontRunningInterval: POOL_DEFAULT_FRONT_RUNNING_INTERVAL,
         updateInterval: POOL_DEFAULT_UPDATE_INTERVAL,
         leverageAmount: THREE_LEVERAGE,
-        settlementToken: PPUSD_ADDRESS,
+        settlementToken: USDC_ADDRESS,
         oracleWrapper: ethSmaOracleWrapper.address,
         settlementEthOracle: ethOracleWrapper.address,
         feeController: deployer,
@@ -298,21 +261,6 @@ module.exports = async (hre) => {
         burningFee: POOL_DEFAULT_BURNING_FEE,
         changeInterval: POOL_DEFAULT_CHANGE_INTERVAL,
     }
-
-    // BTC-USD 1x
-    // const btcUsd1 = {
-    //     poolName: BTC_POOL_CODE,
-    //     frontRunningInterval: POOL_DEFAULT_FRONT_RUNNING_INTERVAL,
-    //     updateInterval: POOL_DEFAULT_UPDATE_INTERVAL,
-    //     leverageAmount: ONE_LEVERAGE,
-    //     settlementToken: PPUSD_ADDRESS,
-    //     oracleWrapper: btcSmaOracleWrapper.address,
-    //     settlementEthOracle: ethOracleWrapper.address,
-    //     feeController: deployer,
-    //     mintingFee: POOL_DEFAULT_MINTING_FEE,
-    //     burningFee: POOL_DEFAULT_BURNING_FEE,
-    //     changeInterval: POOL_DEFAULT_CHANGE_INTERVAL,
-    // }
 
     // BTC-USD 3x
     const btcUsd3 = {
@@ -320,35 +268,7 @@ module.exports = async (hre) => {
         frontRunningInterval: POOL_DEFAULT_FRONT_RUNNING_INTERVAL,
         updateInterval: POOL_DEFAULT_UPDATE_INTERVAL,
         leverageAmount: THREE_LEVERAGE,
-        settlementToken: PPUSD_ADDRESS,
-        oracleWrapper: btcSmaOracleWrapper.address,
-        settlementEthOracle: ethOracleWrapper.address,
-        feeController: deployer,
-        mintingFee: POOL_DEFAULT_MINTING_FEE,
-        burningFee: POOL_DEFAULT_BURNING_FEE,
-        changeInterval: POOL_DEFAULT_CHANGE_INTERVAL,
-    }
-
-    const ethUsd4 = {
-        poolName: ETH_POOL_CODE,
-        frontRunningInterval: 300 * 8,
-        updateInterval: 300,
-        leverageAmount: FOUR_LEVERAGE,
-        settlementToken: PPUSD_ADDRESS,
-        oracleWrapper: ethSmaOracleWrapper.address,
-        settlementEthOracle: ethOracleWrapper.address,
-        feeController: deployer,
-        mintingFee: POOL_DEFAULT_MINTING_FEE,
-        burningFee: POOL_DEFAULT_BURNING_FEE,
-        changeInterval: POOL_DEFAULT_CHANGE_INTERVAL,
-    }
-
-    const btcUsd4 = {
-        poolName: BTC_POOL_CODE,
-        frontRunningInterval: 300 * 8,
-        updateInterval: 300,
-        leverageAmount: FOUR_LEVERAGE,
-        settlementToken: PPUSD_ADDRESS,
+        settlementToken: USDC_ADDRESS,
         oracleWrapper: btcSmaOracleWrapper.address,
         settlementEthOracle: ethOracleWrapper.address,
         feeController: deployer,
@@ -358,16 +278,11 @@ module.exports = async (hre) => {
     }
 
     const deploymentData = [
-        // ethUsd1,
         ethUsd3,
-        // btcUsd3,
-        // btcUsd1,
-        btcUsd3,
-        ethUsd4,
-        btcUsd4
+        btcUsd3
     ]
 
-    console.log(`Deployed TestToken: ${PPUSD_ADDRESS}`)
+    console.log(`Deployed TestToken: ${USDC_ADDRESS}`)
     console.log(`Deployed PoolFactory: ${factory.address}`)
     console.log(`Deployed PoolSwapLibrary: ${library.address}`)
     console.log(`Deployed CalldataLogic: ${calldataLogic.address}`)
@@ -406,4 +321,4 @@ module.exports = async (hre) => {
     // })
 }
 
-module.exports.tags = ["ArbRinkebyDeploy"]
+module.exports.tags = ["ArbitrumOneDeploy"]
