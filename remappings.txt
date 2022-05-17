@@ -1,0 +1,15 @@
+prb-math/=node_modules/prb-math/
+eth-gas-reporter/=node_modules/eth-gas-reporter/
+@openzeppelin/=node_modules/@openzeppelin/
+forge-std/=node_modules/forge-std/src/
+abdk-libraries-solidity/=node_modules/abdk-libraries-solidity/
+hardhat/=node_modules/hardhat/
+@chainlink/=node_modules/@chainlink/
+hardhat-deploy/=node_modules/hardhat-deploy/
+ds-test/=node_modules/forge-std/lib/ds-test/src/
+@ensdomains/=node_modules/@ensdomains/
+
+implementation/=contracts/implementation/
+testutils/=contracts/test-utilities/
+libraries/=contracts/libraries/
+interfaces/=contracts/interfaces/
