@@ -15,7 +15,7 @@
         "lint": "prettier --check .",
         "lint:fix": "prettier . --write",
         "uml": "sol2uml contracts",
-        "preinstall": "git submodule update --init --recursive",
+        "postinstall": "git submodule update -f --init --recursive",
         "forge:test": "docker run -v %cd%:/app foundry \"cd app && forge test -v\""
     },
     "repository": {
