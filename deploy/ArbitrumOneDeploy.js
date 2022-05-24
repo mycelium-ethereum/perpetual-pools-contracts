@@ -22,7 +22,6 @@ module.exports = async (hre) => {
 
     const USDC_ADDRESS = "0xff970a61a04b1ca14834a43f5de4533ebddb5cc8"
     const DEV_MULTISIG_ADDRESS = "0x0f79e82aE88E1318B8cfC8b4A205fE2F982B928A"
-    const DAO_ADDRESS = "0xa84918f3280d488eb3369cb713ec53ce386b6cba"
 
     const arbitrumRinkEthUsdOracle = {
         address: "0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612",
