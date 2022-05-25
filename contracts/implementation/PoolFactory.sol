@@ -13,6 +13,7 @@ import "./PoolKeeper.sol";
 import "./PoolCommitter.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /// @title The pool factory contract
 contract PoolFactory is IPoolFactory, ITwoStepGovernance {
@@ -33,6 +34,11 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
     uint256 public fee;
     // Percent of fees that go to secondary fee address if applicable.
     uint256 public secondaryFeeSplitPercent = 10;
+
+    // Deployment fee variables
+    address public deploymentFeeToken;
+    uint256 public deploymentFee;
+    address public deploymentFeeReceiver;
 
     // This is required because we must pass along *some* value for decimal
     // precision to the base pool tokens as we use the Cloneable pattern
@@ -66,10 +72,21 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
     }
 
     // #### Functions
-    constructor(address _feeReceiver, address _governance) {
+    constructor(
+        address _feeReceiver,
+        address _governance,
+        address _deploymentFeeToken,
+        uint256 _deploymentFee,
+        address _deploymentFeeReceiver
+    ) {
         require(_feeReceiver != address(0), "Fee receiver cannot be null");
         require(_governance != address(0), "Governance cannot be null");
+        require(_deploymentFeeToken != address(0), "Deployment fee token cannot be null");
+        require(_deploymentFeeReceiver != address(0), "Deployment fee receiver cannot be zero");
         governance = _governance;
+        deploymentFeeToken = _deploymentFeeToken;
+        deploymentFee = _deploymentFee;
+        deploymentFeeReceiver = _deploymentFeeReceiver;
 
         // Deploy base contracts
         PoolToken pairTokenBase = new PoolToken(DEFAULT_NUM_DECIMALS);
@@ -134,6 +151,11 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
         require(
             IERC20DecimalsWrapper(deploymentParameters.settlementToken).decimals() <= MAX_DECIMALS,
             "Decimal precision too high"
+        );
+
+        require(
+            IERC20(deploymentFeeToken).transferFrom(msg.sender, deploymentFeeReceiver, deploymentFee),
+            "Failed to transfer deployment fee"
         );
 
         bytes32 uniquePoolHash = keccak256(
@@ -324,6 +346,18 @@ contract PoolFactory is IPoolFactory, ITwoStepGovernance {
         require(_fee <= 0.1e18, "Fee cannot be > 10%");
         fee = _fee;
         emit FeeChanged(_fee);
+    }
+
+    /**
+     * @notice Set the deployment fee
+     * @dev Only callable by the owner of this contract
+     * @dev Emits a `DeploymentFeeChanged` event on success
+     */
+    function setDeploymentFee(address _token, uint256 _fee) external override onlyGov {
+        require(_token != address(0), "Token cannot be null");
+        deploymentFeeToken = _token;
+        deploymentFee = _fee;
+        emit DeploymentFeeChanged(_token, _fee);
     }
 
     /**
