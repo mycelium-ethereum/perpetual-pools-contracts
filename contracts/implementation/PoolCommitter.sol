@@ -628,14 +628,18 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
                 emit ExecutedCommitsForInterval(executionTracking._updateIntervalId, burningFee);
                 delete totalPoolCommitments[executionTracking._updateIntervalId];
 
-                // counter overflowing would require an unrealistic number of update intervals to be updated
-                // This wouldn't fit in a block, anyway.
+                // update interval realistically won't overflow for the foreseeable future
                 unchecked {
                     updateIntervalId += 1;
-                    counter += 1;
                 }
             } else {
                 break;
+            }
+
+            // counter overflowing would require an unrealistic number of update intervals to be updated
+            // This wouldn't fit in a block, anyway.
+            unchecked {
+                counter += 1;
             }
         }
 
@@ -644,12 +648,12 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             PoolSwapLibrary.getPrice(shortBalance, executionTracking.shortTotalSupply)
         );
 
-        // if we maxed out the number of intervals upkept and projected lastPriceTimestamp is more than `updateInterval` seconds ago
-        // it means there are more intervals to upkeep
+        // if we maxed out the number of intervals upkept and projected lastPriceTimestamp is >= than `updateInterval` seconds ago
+        // it means there are more intervals to upkeep (equal means that another upkeep is due right now but we already ran out of iterations)
         // counter will be MAX_ITERATIONS + 1 if we hit max iterations because of the loop condition `while (counter <= MAX_ITERATIONS)`
         if (
             counter > MAX_ITERATIONS &&
-            (block.timestamp - (lastPriceTimestamp + updateInterval * (counter - 1))) > updateInterval
+            (block.timestamp - (lastPriceTimestamp + updateInterval * (counter - 1))) >= updateInterval
         ) {
             // shift lastPriceTimestamp so next time the executeCommitments() will continue where it left off
             lastPriceTimestamp = lastPriceTimestamp + updateInterval * (counter - 1);
