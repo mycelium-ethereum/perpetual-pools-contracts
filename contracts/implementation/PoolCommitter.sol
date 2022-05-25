@@ -644,7 +644,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
             PoolSwapLibrary.getPrice(shortBalance, executionTracking.shortTotalSupply)
         );
 
-        // if we maxed out the number of intervals upkept and lastPriceTimestamp is more than `updateInterval` seconds ago
+        // if we maxed out the number of intervals upkept and projected lastPriceTimestamp is more than `updateInterval` seconds ago
         // it means there are more intervals to upkeep
         // counter will be MAX_ITERATIONS + 1 if we hit max iterations because of the loop condition `while (counter <= MAX_ITERATIONS)`
         if (
