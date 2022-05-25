@@ -647,7 +647,10 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         // if we maxed out the number of intervals upkept and lastPriceTimestamp is more than `updateInterval` seconds ago
         // it means there are more intervals to upkeep
         // counter will be MAX_ITERATIONS + 1 if we hit max iterations because of the loop condition `while (counter <= MAX_ITERATIONS)`
-        if (counter > MAX_ITERATIONS && (block.timestamp - (lastPriceTimestamp + updateInterval * (counter - 1))) > updateInterval) {
+        if (
+            counter > MAX_ITERATIONS &&
+            (block.timestamp - (lastPriceTimestamp + updateInterval * (counter - 1))) > updateInterval
+        ) {
             // shift lastPriceTimestamp so next time the executeCommitments() will continue where it left off
             lastPriceTimestamp = lastPriceTimestamp + updateInterval * (counter - 1);
         } else {
