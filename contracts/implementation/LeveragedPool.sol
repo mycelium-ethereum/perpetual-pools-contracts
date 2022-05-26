@@ -496,6 +496,13 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
     }
 
     /**
+     * @return The pools annual management fee 
+     */
+    function getFee() external view returns (uint256) {
+        return PoolSwapLibrary.convertDecimalToUInt(fee);
+    }
+
+    /**
      * @return Addresses of the pool tokens for this pool (long and short,
      *          respectively)
      */
