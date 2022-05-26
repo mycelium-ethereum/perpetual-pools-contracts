@@ -72,21 +72,11 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
     }
 
     // #### Functions
-    constructor(
-        address _feeReceiver,
-        address _governance,
-        address _deploymentFeeToken,
-        uint256 _deploymentFee,
-        address _deploymentFeeReceiver
-    ) {
+    constructor(address _feeReceiver, address _governance) {
         require(_feeReceiver != address(0), "Fee receiver cannot be null");
         require(_governance != address(0), "Governance cannot be null");
-        require(_deploymentFeeToken != address(0), "Deployment fee token cannot be null");
-        require(_deploymentFeeReceiver != address(0), "Deployment fee receiver cannot be zero");
+
         governance = _governance;
-        deploymentFeeToken = _deploymentFeeToken;
-        deploymentFee = _deploymentFee;
-        deploymentFeeReceiver = _deploymentFeeReceiver;
 
         // Deploy base contracts
         PoolToken pairTokenBase = new PoolToken(DEFAULT_NUM_DECIMALS);
@@ -153,10 +143,12 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
             "Decimal precision too high"
         );
 
-        require(
-            IERC20(deploymentFeeToken).transferFrom(msg.sender, deploymentFeeReceiver, deploymentFee),
-            "Failed to transfer deployment fee"
-        );
+        if (deploymentFeeToken != address(0) && deploymentFee != 0) {
+            require(
+                IERC20(deploymentFeeToken).transferFrom(msg.sender, deploymentFeeReceiver, deploymentFee),
+                "Failed to transfer deployment fee"
+            );
+        }
 
         bytes32 uniquePoolHash = keccak256(
             abi.encode(
@@ -351,11 +343,16 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
      * @dev Only callable by the owner of this contract
      * @dev Emits a `DeploymentFeeChanged` event on success
      */
-    function setDeploymentFee(address _token, uint256 _fee) external override onlyGov {
+    function setDeploymentFee(
+        address _token,
+        uint256 _fee,
+        address _receiver
+    ) external override onlyGov {
         require(_token != address(0), "Token cannot be null");
         deploymentFeeToken = _token;
         deploymentFee = _fee;
-        emit DeploymentFeeChanged(_token, _fee);
+        deploymentFeeReceiver = _receiver;
+        emit DeploymentFeeChanged(_token, _fee, _receiver);
     }
 
     /**

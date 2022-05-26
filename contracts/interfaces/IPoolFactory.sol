@@ -95,7 +95,7 @@ interface IPoolFactory {
      * @notice Indicates that the deployment fee has changed
      * @param fee New deployment fee
      */
-    event DeploymentFeeChanged(address _token, uint256 fee);
+    event DeploymentFeeChanged(address _token, uint256 fee, address _receiver);
 
     // #### Getters for Globals
     function pools(uint256 id) external view returns (address);
@@ -121,7 +121,11 @@ interface IPoolFactory {
 
     function setFee(uint256 _fee) external;
 
-    function setDeploymentFee(address _token, uint256 _fee) external;
+    function setDeploymentFee(
+        address _token,
+        uint256 _fee,
+        address _receiver
+    ) external;
 
     function setSecondaryFeeSplitPercent(uint256 newFeePercent) external;
 }
