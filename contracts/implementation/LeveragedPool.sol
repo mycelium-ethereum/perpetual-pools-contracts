@@ -503,6 +503,13 @@ contract LeveragedPool is ILeveragedPool, Initializable, IPausable, ITwoStepGove
     }
 
     /**
+     * @return The pools leverage as a readable uint
+     */
+    function getLeverage() external view returns (uint256) {
+        return PoolSwapLibrary.convertDecimalToUInt(leverageAmount);
+    }
+
+    /**
      * @return Addresses of the pool tokens for this pool (long and short,
      *          respectively)
      */
