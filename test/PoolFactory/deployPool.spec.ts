@@ -470,4 +470,77 @@ describe("PoolFactory.deployPool", () => {
                 .reverted
         })
     })
+
+    context("When a non-zero deployment fee is required", async () => {
+        let tcrToken: TestToken
+        let deploymentFee = ethers.utils.parseUnits("5", 18)
+        let deploymentReceiver = generateRandomAddress()
+        before(async () => {
+            const TCRTokenFactory = (await ethers.getContractFactory(
+                "TestToken",
+                signers[0]
+            )) as TestToken__factory
+            tcrToken = await TCRTokenFactory.deploy("TracerDAO", "TCR")
+            await tcrToken.deployed()
+
+            await tcrToken.mint(
+                signers[0].address,
+                ethers.utils.parseEther("1000000")
+            )
+
+            await factory.setDeploymentFee(
+                tcrToken.address,
+                deploymentFee,
+                deploymentReceiver
+            )
+        })
+
+        it("Should revert if the deployment fee is not approved", async () => {
+            const deploymentData = {
+                poolName: POOL_CODE,
+                frontRunningInterval: 3,
+                updateInterval: 5,
+                leverageAmount: 2,
+                settlementToken: token.address,
+                oracleWrapper: oracleWrapper.address,
+                settlementEthOracle: settlementEthOracle.address,
+                feeController: signers[0].address,
+                mintingFee: 0,
+                burningFee: 0,
+                changeInterval: 0,
+            }
+
+            await expect(factory.deployPool(deploymentData)).to.revertedWith(
+                "ERC20: transfer amount exceeds allowance"
+            )
+        })
+
+        it("Should transfer the funds to the receiver address", async () => {
+            expect(await tcrToken.balanceOf(deploymentReceiver)).to.eq(0)
+
+            await tcrToken
+                .connect(signers[0])
+                .approve(factory.address, deploymentFee)
+
+            const deploymentData = {
+                poolName: POOL_CODE_2,
+                frontRunningInterval: 30,
+                updateInterval: 66,
+                leverageAmount: 6,
+                settlementToken: token.address,
+                oracleWrapper: oracleWrapper.address,
+                settlementEthOracle: settlementEthOracle.address,
+                feeController: signers[0].address,
+                mintingFee: 0,
+                burningFee: 0,
+                changeInterval: 0,
+            }
+
+            await factory.deployPool(deploymentData)
+
+            expect(await tcrToken.balanceOf(deploymentReceiver)).to.eq(
+                deploymentFee
+            )
+        })
+    })
 })
