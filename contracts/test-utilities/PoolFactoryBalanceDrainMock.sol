@@ -143,11 +143,8 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
             "Decimal precision too high"
         );
 
-        if (deploymentFeeToken != address(0) && deploymentFee != 0) {
-            require(
-                IERC20(deploymentFeeToken).transferFrom(msg.sender, deploymentFeeReceiver, deploymentFee),
-                "Failed to transfer deployment fee"
-            );
+        if (deploymentFee != 0) {
+            IERC20(deploymentFeeToken).transferFrom(msg.sender, deploymentFeeReceiver, deploymentFee);
         }
 
         bytes32 uniquePoolHash = keccak256(
