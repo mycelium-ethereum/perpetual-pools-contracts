@@ -4,7 +4,10 @@ import chaiAsPromised from "chai-as-promised"
 import { ethers } from "hardhat"
 import { PoolFactory, PoolKeeper } from "../../types"
 import { DEFAULT_FEE, POOL_CODE } from "../constants"
-import { deployPoolAndTokenContracts } from "../utilities"
+import {
+    deployPoolAndTokenContracts,
+    generateRandomAddress,
+} from "../utilities"
 
 chai.use(chaiAsPromised)
 const { expect } = chai
@@ -140,5 +143,28 @@ describe("PoolFactory - setters", async () => {
                 })
             }
         )
+    })
+
+    context("setDeploymentFee", async () => {
+        it("should set the deployment deployment fee params", async () => {
+            const tokenAddress = generateRandomAddress()
+            const feeAmount = ethers.utils.parseEther("2")
+            const feeReceiver = generateRandomAddress()
+            await factory.setDeploymentFee(tokenAddress, feeAmount, feeReceiver)
+            expect(await factory.deploymentFee()).to.eq(feeAmount)
+            expect(await factory.deploymentFeeToken()).to.eq(tokenAddress)
+            expect(await factory.deploymentFeeReceiver()).to.eq(feeReceiver)
+        })
+
+        it("should prevent unauthorized access", async () => {
+            const tokenAddress = generateRandomAddress()
+            const feeAmount = ethers.utils.parseEther("2")
+            const feeReceiver = generateRandomAddress()
+            await expect(
+                factory
+                    .connect(signers[2])
+                    .setDeploymentFee(tokenAddress, feeAmount, feeReceiver)
+            ).to.be.revertedWith("msg.sender not governance")
+        })
     })
 })
