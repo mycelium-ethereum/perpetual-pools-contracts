@@ -1,475 +1,475 @@
 {
-  "address": "0xe72D2194046AEB0Bd60307e99fe5BC224Be5683B",
-  "abi": [
-    {
-      "inputs": [
+    "address": "0xe72D2194046AEB0Bd60307e99fe5BC224Be5683B",
+    "abi": [
         {
-          "internalType": "address",
-          "name": "_inputOracle",
-          "type": "address"
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "_inputOracle",
+                    "type": "address"
+                },
+                {
+                    "internalType": "int256",
+                    "name": "_numPeriods",
+                    "type": "int256"
+                },
+                {
+                    "internalType": "uint256",
+                    "name": "_updateInterval",
+                    "type": "uint256"
+                },
+                {
+                    "internalType": "address",
+                    "name": "_deployer",
+                    "type": "address"
+                },
+                {
+                    "internalType": "address",
+                    "name": "_poolKeeper",
+                    "type": "address"
+                },
+                {
+                    "internalType": "address",
+                    "name": "_gov",
+                    "type": "address"
+                }
+            ],
+            "stateMutability": "nonpayable",
+            "type": "constructor"
         },
         {
-          "internalType": "int256",
-          "name": "_numPeriods",
-          "type": "int256"
+            "inputs": [],
+            "name": "MAX_PERIODS",
+            "outputs": [
+                {
+                    "internalType": "int8",
+                    "name": "",
+                    "type": "int8"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
         },
         {
-          "internalType": "uint256",
-          "name": "_updateInterval",
-          "type": "uint256"
+            "inputs": [],
+            "name": "decimals",
+            "outputs": [
+                {
+                    "internalType": "uint8",
+                    "name": "",
+                    "type": "uint8"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
         },
         {
-          "internalType": "address",
-          "name": "_deployer",
-          "type": "address"
+            "inputs": [],
+            "name": "deployer",
+            "outputs": [
+                {
+                    "internalType": "address",
+                    "name": "",
+                    "type": "address"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
         },
         {
-          "internalType": "address",
-          "name": "_poolKeeper",
-          "type": "address"
+            "inputs": [
+                {
+                    "internalType": "int256",
+                    "name": "wad",
+                    "type": "int256"
+                }
+            ],
+            "name": "fromWad",
+            "outputs": [
+                {
+                    "internalType": "int256",
+                    "name": "",
+                    "type": "int256"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
         },
         {
-          "internalType": "address",
-          "name": "_gov",
-          "type": "address"
-        }
-      ],
-      "stateMutability": "nonpayable",
-      "type": "constructor"
-    },
-    {
-      "inputs": [],
-      "name": "MAX_PERIODS",
-      "outputs": [
-        {
-          "internalType": "int8",
-          "name": "",
-          "type": "int8"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "decimals",
-      "outputs": [
-        {
-          "internalType": "uint8",
-          "name": "",
-          "type": "uint8"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "deployer",
-      "outputs": [
-        {
-          "internalType": "address",
-          "name": "",
-          "type": "address"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "int256",
-          "name": "wad",
-          "type": "int256"
-        }
-      ],
-      "name": "fromWad",
-      "outputs": [
-        {
-          "internalType": "int256",
-          "name": "",
-          "type": "int256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "getPrice",
-      "outputs": [
-        {
-          "internalType": "int256",
-          "name": "",
-          "type": "int256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "getPriceAndMetadata",
-      "outputs": [
-        {
-          "internalType": "int256",
-          "name": "_price",
-          "type": "int256"
+            "inputs": [],
+            "name": "getPrice",
+            "outputs": [
+                {
+                    "internalType": "int256",
+                    "name": "",
+                    "type": "int256"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
         },
         {
-          "internalType": "bytes",
-          "name": "_data",
-          "type": "bytes"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "governance",
-      "outputs": [
-        {
-          "internalType": "address",
-          "name": "",
-          "type": "address"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "lastUpdate",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "numPeriods",
-      "outputs": [
-        {
-          "internalType": "int256",
-          "name": "",
-          "type": "int256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "oracle",
-      "outputs": [
-        {
-          "internalType": "address",
-          "name": "",
-          "type": "address"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "periodCount",
-      "outputs": [
-        {
-          "internalType": "int256",
-          "name": "",
-          "type": "int256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "poll",
-      "outputs": [
-        {
-          "internalType": "int256",
-          "name": "",
-          "type": "int256"
-        }
-      ],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "poolKeeper",
-      "outputs": [
-        {
-          "internalType": "address",
-          "name": "",
-          "type": "address"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "int256",
-          "name": "",
-          "type": "int256"
-        }
-      ],
-      "name": "prices",
-      "outputs": [
-        {
-          "internalType": "int256",
-          "name": "",
-          "type": "int256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "scaler",
-      "outputs": [
-        {
-          "internalType": "int256",
-          "name": "",
-          "type": "int256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "_governance",
-          "type": "address"
-        }
-      ],
-      "name": "setGovernance",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "_poolKeeper",
-          "type": "address"
-        }
-      ],
-      "name": "setPoolKeeper",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "updateInterval",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    }
-  ],
-  "transactionHash": "0xa6fa4019bf1d3eb67cfd7435d7e409bbab55f63b669034decd964b498a1b3358",
-  "receipt": {
-    "to": null,
-    "from": "0xCC97EB5651e05D5a0Ae8bcD2813B9DFDaD6F92a5",
-    "contractAddress": "0xe72D2194046AEB0Bd60307e99fe5BC224Be5683B",
-    "transactionIndex": 0,
-    "gasUsed": "11148103",
-    "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-    "blockHash": "0x4c19018a376f292d9fa37a96696a078898ccafe4eb04cd8e040a96de69cc39db",
-    "transactionHash": "0xa6fa4019bf1d3eb67cfd7435d7e409bbab55f63b669034decd964b498a1b3358",
-    "logs": [],
-    "blockNumber": 13387851,
-    "cumulativeGasUsed": "4281683",
-    "status": 1,
-    "byzantium": true
-  },
-  "args": [
-    "0x1392a5eEc4eF364319e44cb1B155DD743894CCfD",
-    8,
-    3600,
-    "0xCC97EB5651e05D5a0Ae8bcD2813B9DFDaD6F92a5",
-    "0xCC97EB5651e05D5a0Ae8bcD2813B9DFDaD6F92a5",
-    "0xCC97EB5651e05D5a0Ae8bcD2813B9DFDaD6F92a5"
-  ],
-  "solcInputHash": "4b024dc169a046e6527f075e446ec886",
-  "metadata": "{\"compiler\":{\"version\":\"0.8.7+commit.e28d00a7\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_inputOracle\",\"type\":\"address\"},{\"internalType\":\"int256\",\"name\":\"_numPeriods\",\"type\":\"int256\"},{\"internalType\":\"uint256\",\"name\":\"_updateInterval\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"_deployer\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_poolKeeper\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_gov\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[],\"name\":\"MAX_PERIODS\",\"outputs\":[{\"internalType\":\"int8\",\"name\":\"\",\"type\":\"int8\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"decimals\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"deployer\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"int256\",\"name\":\"wad\",\"type\":\"int256\"}],\"name\":\"fromWad\",\"outputs\":[{\"internalType\":\"int256\",\"name\":\"\",\"type\":\"int256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getPrice\",\"outputs\":[{\"internalType\":\"int256\",\"name\":\"\",\"type\":\"int256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getPriceAndMetadata\",\"outputs\":[{\"internalType\":\"int256\",\"name\":\"_price\",\"type\":\"int256\"},{\"internalType\":\"bytes\",\"name\":\"_data\",\"type\":\"bytes\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"governance\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"lastUpdate\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"numPeriods\",\"outputs\":[{\"internalType\":\"int256\",\"name\":\"\",\"type\":\"int256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"oracle\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"periodCount\",\"outputs\":[{\"internalType\":\"int256\",\"name\":\"\",\"type\":\"int256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"poll\",\"outputs\":[{\"internalType\":\"int256\",\"name\":\"\",\"type\":\"int256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"poolKeeper\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"int256\",\"name\":\"\",\"type\":\"int256\"}],\"name\":\"prices\",\"outputs\":[{\"internalType\":\"int256\",\"name\":\"\",\"type\":\"int256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"scaler\",\"outputs\":[{\"internalType\":\"int256\",\"name\":\"\",\"type\":\"int256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_governance\",\"type\":\"address\"}],\"name\":\"setGovernance\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_poolKeeper\",\"type\":\"address\"}],\"name\":\"setPoolKeeper\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"updateInterval\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{\"fromWad(int256)\":{\"details\":\"This is a no-op for `SMAOracle`\",\"params\":{\"wad\":\"wad maths value\"},\"returns\":{\"_0\":\"Raw (signed) integer\"}},\"getPrice()\":{\"details\":\"Recomputes SMA across sample size\"},\"getPriceAndMetadata()\":{\"details\":\"Required by the `IOracleWrapper` interface. The interface leaves          the metadata as implementation-defined. For the SMA wrapper, there          is no clear use case for additional data, so it's left blank\"},\"poll()\":{\"details\":\"Throws if called within an update interval since last being calledEssentially wraps `update()`\",\"returns\":{\"_0\":\"Latest SMA price\"}},\"setGovernance(address)\":{\"details\":\"Only callable by (existing) governance\",\"params\":{\"_governance\":\"Address of the new governance\"}},\"setPoolKeeper(address)\":{\"details\":\"Only callable by governance\",\"params\":{\"_poolKeeper\":\"Address of the new contract\"}}},\"stateVariables\":{\"prices\":{\"details\":\"Only the most recent `numPeriods` prices are stored. The rest are deleted, which will result in a zero value for prices with index less than `periodCount - numPrices`.\"}},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{\"fromWad(int256)\":{\"notice\":\"Converts `wad` to a raw integer\"},\"getPrice()\":{\"notice\":\"Retrieves the current SMA price\"},\"getPriceAndMetadata()\":{\"notice\":\"Returns the current SMA price and an empty bytes array\"},\"lastUpdate()\":{\"notice\":\"Time of last successful price update\"},\"numPeriods()\":{\"notice\":\"Number of desired sampling periods to use -- this will differ from the actual number of periods used until the SMAOracle ramps up.\"},\"oracle()\":{\"notice\":\"Price feed to use for SMA\"},\"periodCount()\":{\"notice\":\"the total number of periods that have occurred\"},\"poll()\":{\"notice\":\"Updates the SMA wrapper by retrieving a new price from the          associated price observer contract (provided it's not too early)\"},\"prices(int256)\":{\"notice\":\"the stored spot prices by their period number\"},\"setGovernance(address)\":{\"notice\":\"Changes the address of the associated governance\"},\"setPoolKeeper(address)\":{\"notice\":\"Changes the address of the associated `PoolKeeper` contract\"},\"updateInterval()\":{\"notice\":\"Duration between price updates in seconds\"}},\"notice\":\"Applies a simple moving average (SMA) smoothing function to the spot          price of an underlying oracle.\",\"version\":1}},\"settings\":{\"compilationTarget\":{\"contracts/implementation/SMAOracle.sol\":\"SMAOracle\"},\"evmVersion\":\"london\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[]},\"sources\":{\"contracts/implementation/SMAOracle.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity 0.8.7;\\n\\nimport \\\"../interfaces/IOracleWrapper.sol\\\";\\n\\n/**\\n * @notice Applies a simple moving average (SMA) smoothing function to the spot\\n *          price of an underlying oracle.\\n */\\ncontract SMAOracle is IOracleWrapper {\\n    /*\\n     * A note on \\\"ramping up\\\":\\n     *\\n     * `SMAOracle` works by storing spot prices and calculating the average of\\n     * the most recent k prices. Obviously, we need to handle the case of insufficient\\n     * data: specifically, the case where the number of actual stored observations, n,\\n     * is strictly less than the number of sampling periods to use for averaging, k.\\n     *\\n     * To achieve this, `SMAOracle` needs to \\\"ramp up\\\". This means that the\\n     * number of sampling periods *actually used*, K, looks like this (w.r.t.\\n     * time, t):\\n     *\\n     *     K ^\\n     *       |\\n     *       |\\n     *       |\\n     *       |\\n     *       |\\n     * k --> |+++++++++++++++++++++++++++++++++-----------------------------\\n     *       |                                |\\n     *       |                                |\\n     *       |                     +----------+\\n     *       |                     |\\n     *       |                     |\\n     *       |          +----------+\\n     *       |          |\\n     *       |          |\\n     *       |----------+\\n     *       |\\n     *       |\\n     *       +---------------------------------------------------------------> t\\n     *\\n     *\\n     * Here, K is the `periods` instance variable and time, t, is an integer\\n     * representing successive calls to `SMAOracle::poll`.\\n     *\\n     */\\n\\n    /**\\n     * @notice the stored spot prices by their period number\\n     * @dev Only the most recent `numPeriods` prices are stored. The rest are deleted,\\n     * which will result in a zero value for prices with index less than `periodCount - numPrices`.\\n     */\\n    mapping(int256 => int256) public prices;\\n    /// @notice the total number of periods that have occurred\\n    int256 public periodCount;\\n\\n    /// Price feed to use for SMA\\n    address public immutable override oracle;\\n\\n    // Deployer of the contract\\n    address public immutable override deployer;\\n\\n    // Governance this contract is subject to (in any sane implementation, a\\n    // DAO)\\n    address public governance;\\n\\n    /// Number of desired sampling periods to use -- this will differ from\\n    /// the actual number of periods used until the SMAOracle ramps up.\\n    int256 public immutable numPeriods;\\n\\n    /// Duration between price updates in seconds\\n    uint256 public immutable updateInterval;\\n\\n    /// Time of last successful price update\\n    uint256 public lastUpdate;\\n\\n    int8 public constant MAX_PERIODS = 24;\\n\\n    uint8 public constant override decimals = 18;\\n    int256 public immutable scaler;\\n\\n    address public poolKeeper;\\n\\n    constructor(\\n        address _inputOracle,\\n        int256 _numPeriods,\\n        uint256 _updateInterval,\\n        address _deployer,\\n        address _poolKeeper,\\n        address _gov\\n    ) {\\n        require(\\n            _inputOracle != address(0) && _deployer != address(0) && _poolKeeper != address(0) && _gov != address(0),\\n            \\\"SMA: Null address forbidden\\\"\\n        );\\n        require(_numPeriods > 0 && _numPeriods <= MAX_PERIODS, \\\"SMA: Out of bounds\\\");\\n        require(_updateInterval != 0, \\\"SMA: Update interval cannot be 0\\\");\\n\\n        uint8 inputOracleDecimals = IOracleWrapper(_inputOracle).decimals();\\n        /* `scaler` is always <= 10^18 and >= 1 so this cast is safe */\\n        scaler = int256(10**(decimals - inputOracleDecimals));\\n\\n        numPeriods = _numPeriods;\\n        updateInterval = _updateInterval;\\n        oracle = _inputOracle;\\n        deployer = _deployer;\\n        poolKeeper = _poolKeeper;\\n        governance = _gov;\\n    }\\n\\n    /**\\n     * @notice Retrieves the current SMA price\\n     * @dev Recomputes SMA across sample size\\n     */\\n    function getPrice() external view override returns (int256) {\\n        return _calculateSMA();\\n    }\\n\\n    /**\\n     * @notice Returns the current SMA price and an empty bytes array\\n     * @dev Required by the `IOracleWrapper` interface. The interface leaves\\n     *          the metadata as implementation-defined. For the SMA wrapper, there\\n     *          is no clear use case for additional data, so it's left blank\\n     */\\n    function getPriceAndMetadata() external view override returns (int256 _price, bytes memory _data) {\\n        _price = _calculateSMA();\\n        return (_price, _data);\\n    }\\n\\n    /**\\n     * @notice Updates the SMA wrapper by retrieving a new price from the\\n     *          associated price observer contract (provided it's not too early)\\n     * @return Latest SMA price\\n     * @dev Throws if called within an update interval since last being called\\n     * @dev Essentially wraps `update()`\\n     */\\n    function poll() external override onlyPoolKeeper returns (int256) {\\n        if (block.timestamp >= lastUpdate + updateInterval) {\\n            _update();\\n        }\\n        return _calculateSMA();\\n    }\\n\\n    /**\\n     * @notice Converts `wad` to a raw integer\\n     * @dev This is a no-op for `SMAOracle`\\n     * @param wad wad maths value\\n     * @return Raw (signed) integer\\n     */\\n    function fromWad(int256 wad) external view override returns (int256) {\\n        return wad / scaler;\\n    }\\n\\n    /**\\n     * @notice Add a new spot price observation to the SMA Oracle\\n     * @dev O(1) complexity due to constant arithmetic\\n     */\\n    function _update() internal {\\n        /* query the underlying price feed */\\n        int256 latestPrice = IOracleWrapper(oracle).getPrice();\\n\\n        /* store the latest price */\\n        prices[periodCount] = toWad(latestPrice);\\n\\n        /* if we've filled the numPeriods amount, delete the oldest price */\\n        if (periodCount >= numPeriods) {\\n            delete prices[periodCount - numPeriods];\\n        }\\n\\n        periodCount++;\\n        lastUpdate = block.timestamp;\\n    }\\n\\n    /**\\n     * @notice Calculates the simple moving average of the provided dataset for the specified number of periods\\n     * @return Simple moving average based on the last `k` prices\\n     * @dev `k` is the lower value of `numPeriods` and `periodCount`\\n     * @dev O(k) complexity due to linear traversal of the final `k` elements of `prices`\\n     * @dev Note that the signedness of the return type is due to the signedness of the elements of `prices`\\n     */\\n    function _calculateSMA() internal view returns (int256) {\\n        int256 k = periodCount;\\n\\n        if (k == 0) {\\n            return 0;\\n        }\\n\\n        if (k > numPeriods) {\\n            k = numPeriods;\\n        }\\n\\n        /* linear scan over the [n - k, n] subsequence */\\n        int256 sum;\\n        int256 _periodCount = periodCount;\\n        for (int256 i = _periodCount - k; i < _periodCount; i = unchecked_inc(i)) {\\n            sum += prices[i];\\n        }\\n\\n        // This is safe because we know that `k` will be between 1 and MAX_PERIODS\\n        return sum / k;\\n    }\\n\\n    /**\\n     * @notice Changes the address of the associated `PoolKeeper` contract\\n     * @param _poolKeeper Address of the new contract\\n     * @dev Only callable by governance\\n     */\\n    function setPoolKeeper(address _poolKeeper) public onlyGov {\\n        require(_poolKeeper != address(0), \\\"SMA: Null address forbidden\\\");\\n        poolKeeper = _poolKeeper;\\n    }\\n\\n    /**\\n     * @notice Changes the address of the associated governance\\n     * @param _governance Address of the new governance\\n     * @dev Only callable by (existing) governance\\n     */\\n    function setGovernance(address _governance) public onlyGov {\\n        require(_governance != address(0), \\\"SMA: Null address forbidden\\\");\\n        governance = _governance;\\n    }\\n\\n    /**\\n     * @notice Converts `x` to a wad value\\n     * @param x Number to convert to wad value\\n     * @return `x` but wad\\n     */\\n    function toWad(int256 x) private view returns (int256) {\\n        return x * scaler;\\n    }\\n\\n    function unchecked_inc(int256 i) private pure returns (int256) {\\n        unchecked {\\n            return ++i;\\n        }\\n    }\\n\\n    modifier onlyGov() {\\n        require(msg.sender == governance, \\\"SMA: Only callable by governance\\\");\\n        _;\\n    }\\n\\n    modifier onlyPoolKeeper() {\\n        require(msg.sender == poolKeeper, \\\"SMA: Only callable by PoolKeeper\\\");\\n        _;\\n    }\\n}\\n\",\"keccak256\":\"0xc1cad32974f1d28bce5ec3d1275b3535ebc55c1acf4a782b26b5d485a46a0be6\",\"license\":\"MIT\"},\"contracts/interfaces/IOracleWrapper.sol\":{\"content\":\"//SPDX-License-Identifier: CC-BY-NC-ND-4.0\\npragma solidity 0.8.7;\\n\\n/// @title The oracle wrapper contract interface\\ninterface IOracleWrapper {\\n    function oracle() external view returns (address);\\n\\n    function decimals() external view returns (uint8);\\n\\n    function deployer() external view returns (address);\\n\\n    // #### Functions\\n\\n    /**\\n     * @notice Returns the current price for the asset in question\\n     * @return The latest price\\n     */\\n    function getPrice() external view returns (int256);\\n\\n    /**\\n     * @return _price The latest round data price\\n     * @return _data The metadata. Implementations can choose what data to return here\\n     */\\n    function getPriceAndMetadata() external view returns (int256 _price, bytes memory _data);\\n\\n    /**\\n     * @notice Converts from a WAD to normal value\\n     * @return Converted non-WAD value\\n     */\\n    function fromWad(int256 wad) external view returns (int256);\\n\\n    /**\\n     * @notice Updates the underlying oracle state and returns the new price\\n     * @dev Spot oracles must implement but it will be a no-op\\n     */\\n    function poll() external returns (int256);\\n}\\n\",\"keccak256\":\"0x754e2e7cf390f4acae43b4340289465677a3214cfc28d8ea1bb5f07bd74abd4e\",\"license\":\"CC-BY-NC-ND-4.0\"}},\"version\":1}",
-  "bytecode": "0x6101206040523480156200001257600080fd5b5060405162000f1738038062000f17833981016040819052620000359162000284565b6001600160a01b038616158015906200005657506001600160a01b03831615155b80156200006b57506001600160a01b03821615155b80156200008057506001600160a01b03811615155b620000d25760405162461bcd60e51b815260206004820152601b60248201527f534d413a204e756c6c206164647265737320666f7262696464656e000000000060448201526064015b60405180910390fd5b600085138015620000e4575060188513155b620001275760405162461bcd60e51b8152602060048201526012602482015271534d413a204f7574206f6620626f756e647360701b6044820152606401620000c9565b83620001765760405162461bcd60e51b815260206004820181905260248201527f534d413a2055706461746520696e74657276616c2063616e6e6f7420626520306044820152606401620000c9565b6000866001600160a01b031663313ce5676040518163ffffffff1660e01b815260040160206040518083038186803b158015620001b257600080fd5b505afa158015620001c7573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190620001ed9190620002f3565b9050620001fc81601262000429565b6200020990600a62000368565b610100525060c09490945260e0929092526001600160601b0319606094851b8116608052931b90921660a052600480546001600160a01b039384166001600160a01b0319918216179091556002805492909316911617905562000465565b80516001600160a01b03811681146200027f57600080fd5b919050565b60008060008060008060c087890312156200029e57600080fd5b620002a98762000267565b95506020870151945060408701519350620002c76060880162000267565b9250620002d76080880162000267565b9150620002e760a0880162000267565b90509295509295509295565b6000602082840312156200030657600080fd5b815160ff811681146200031857600080fd5b9392505050565b600181815b80851115620003605781600019048211156200034457620003446200044f565b808516156200035257918102915b93841c939080029062000324565b509250929050565b60006200031860ff841683600082620003845750600162000423565b81620003935750600062000423565b8160018114620003ac5760028114620003b757620003d7565b600191505062000423565b60ff841115620003cb57620003cb6200044f565b50506001821b62000423565b5060208310610133831016604e8410600b8410161715620003fc575081810a62000423565b6200040883836200031f565b80600019048211156200041f576200041f6200044f565b0290505b92915050565b600060ff821660ff8416808210156200044657620004466200044f565b90039392505050565b634e487b7160e01b600052601160045260246000fd5b60805160601c60a05160601c60c05160e05161010051610a2f620004e860003960008181610185015281816102fe01526107860152600081816102d5015261046e0152600081816102ae015281816105a9015281816105d2015281816106fb01526107240152600061027101526000818161021501526106480152610a2f6000f3fe608060405234801561001057600080fd5b50600436106101165760003560e01c80637f197519116100a2578063c046371111610071578063c046371114610263578063d5f394881461026c578063db6d8fcf14610293578063dcd65479146102a9578063fd2c80ae146102d057600080fd5b80637f1975191461023757806398d5fdca14610240578063a117527914610248578063ab033ea91461025057600080fd5b8063412ad1cc116100e9578063412ad1cc146101b5578063430ed6eb146101c85780635aa6e675146101dd57806361aaf0b3146101f05780637dc0d1d01461021057600080fd5b80630a2546401461011b578063178f9e351461013b578063313ce567146101665780633c1e6ff514610180575b600080fd5b610123601881565b60405160009190910b81526020015b60405180910390f35b60045461014e906001600160a01b031681565b6040516001600160a01b039091168152602001610132565b61016e601281565b60405160ff9091168152602001610132565b6101a77f000000000000000000000000000000000000000000000000000000000000000081565b604051908152602001610132565b6101a76101c33660046107db565b6102f7565b6101db6101d63660046107ab565b610329565b005b60025461014e906001600160a01b031681565b6101a76101fe3660046107db565b60006020819052908152604090205481565b61014e7f000000000000000000000000000000000000000000000000000000000000000081565b6101a760015481565b6101a7610400565b6101a761040f565b6101db61025e3660046107ab565b6104b0565b6101a760035481565b61014e7f000000000000000000000000000000000000000000000000000000000000000081565b61029b610582565b60405161013292919061080d565b6101a77f000000000000000000000000000000000000000000000000000000000000000081565b6101a77f000000000000000000000000000000000000000000000000000000000000000081565b60006103237f0000000000000000000000000000000000000000000000000000000000000000836108c3565b92915050565b6002546001600160a01b031633146103885760405162461bcd60e51b815260206004820181905260248201527f534d413a204f6e6c792063616c6c61626c6520627920676f7665726e616e636560448201526064015b60405180910390fd5b6001600160a01b0381166103de5760405162461bcd60e51b815260206004820152601b60248201527f534d413a204e756c6c206164647265737320666f7262696464656e0000000000604482015260640161037f565b600480546001600160a01b0319166001600160a01b0392909216919091179055565b600061040a610594565b905090565b6004546000906001600160a01b0316331461046c5760405162461bcd60e51b815260206004820181905260248201527f534d413a204f6e6c792063616c6c61626c6520627920506f6f6c4b6565706572604482015260640161037f565b7f000000000000000000000000000000000000000000000000000000000000000060035461049a91906108ab565b42106104a8576104a8610644565b61040a610594565b6002546001600160a01b0316331461050a5760405162461bcd60e51b815260206004820181905260248201527f534d413a204f6e6c792063616c6c61626c6520627920676f7665726e616e6365604482015260640161037f565b6001600160a01b0381166105605760405162461bcd60e51b815260206004820152601b60248201527f534d413a204e756c6c206164647265737320666f7262696464656e0000000000604482015260640161037f565b600280546001600160a01b0319166001600160a01b0392909216919091179055565b6000606061058e610594565b91509091565b600154600090806105a757600091505090565b7f00000000000000000000000000000000000000000000000000000000000000008113156105f257507f00000000000000000000000000000000000000000000000000000000000000005b600154600090816106038483610984565b90505b8181121561063157600081815260208190526040902054610627908461086a565b9250600101610606565b5061063c83836108c3565b935050505090565b60007f00000000000000000000000000000000000000000000000000000000000000006001600160a01b03166398d5fdca6040518163ffffffff1660e01b815260040160206040518083038186803b15801561069f57600080fd5b505afa1580156106b3573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906106d791906107f4565b90506106e28161077f565b60018054600090815260208190526040902091909155547f000000000000000000000000000000000000000000000000000000000000000013610763576000807f00000000000000000000000000000000000000000000000000000000000000006001546107509190610984565b8152602001908152602001600020600090555b60018054906000610773836109c3565b90915550504260035550565b60006103237f0000000000000000000000000000000000000000000000000000000000000000836108ff565b6000602082840312156107bd57600080fd5b81356001600160a01b03811681146107d457600080fd5b9392505050565b6000602082840312156107ed57600080fd5b5035919050565b60006020828403121561080657600080fd5b5051919050565b82815260006020604081840152835180604085015260005b8181101561084157858101830151858201606001528201610825565b81811115610853576000606083870101525b50601f01601f191692909201606001949350505050565b600080821280156001600160ff1b038490038513161561088c5761088c6109e3565b600160ff1b83900384128116156108a5576108a56109e3565b50500190565b600082198211156108be576108be6109e3565b500190565b6000826108e057634e487b7160e01b600052601260045260246000fd5b600160ff1b8214600019841416156108fa576108fa6109e3565b500590565b60006001600160ff1b0381841382841380821686840486111615610925576109256109e3565b600160ff1b6000871282811687830589121615610944576109446109e3565b60008712925087820587128484161615610960576109606109e3565b87850587128184161615610976576109766109e3565b505050929093029392505050565b60008083128015600160ff1b8501841216156109a2576109a26109e3565b6001600160ff1b03840183138116156109bd576109bd6109e3565b50500390565b60006001600160ff1b038214156109dc576109dc6109e3565b5060010190565b634e487b7160e01b600052601160045260246000fdfea26469706673582212204402e1e1c262b5ac32677932d0d88f12463af4a714cdf67f9af4f5e19d9883d464736f6c63430008070033",
-  "deployedBytecode": "0x608060405234801561001057600080fd5b50600436106101165760003560e01c80637f197519116100a2578063c046371111610071578063c046371114610263578063d5f394881461026c578063db6d8fcf14610293578063dcd65479146102a9578063fd2c80ae146102d057600080fd5b80637f1975191461023757806398d5fdca14610240578063a117527914610248578063ab033ea91461025057600080fd5b8063412ad1cc116100e9578063412ad1cc146101b5578063430ed6eb146101c85780635aa6e675146101dd57806361aaf0b3146101f05780637dc0d1d01461021057600080fd5b80630a2546401461011b578063178f9e351461013b578063313ce567146101665780633c1e6ff514610180575b600080fd5b610123601881565b60405160009190910b81526020015b60405180910390f35b60045461014e906001600160a01b031681565b6040516001600160a01b039091168152602001610132565b61016e601281565b60405160ff9091168152602001610132565b6101a77f000000000000000000000000000000000000000000000000000000000000000081565b604051908152602001610132565b6101a76101c33660046107db565b6102f7565b6101db6101d63660046107ab565b610329565b005b60025461014e906001600160a01b031681565b6101a76101fe3660046107db565b60006020819052908152604090205481565b61014e7f000000000000000000000000000000000000000000000000000000000000000081565b6101a760015481565b6101a7610400565b6101a761040f565b6101db61025e3660046107ab565b6104b0565b6101a760035481565b61014e7f000000000000000000000000000000000000000000000000000000000000000081565b61029b610582565b60405161013292919061080d565b6101a77f000000000000000000000000000000000000000000000000000000000000000081565b6101a77f000000000000000000000000000000000000000000000000000000000000000081565b60006103237f0000000000000000000000000000000000000000000000000000000000000000836108c3565b92915050565b6002546001600160a01b031633146103885760405162461bcd60e51b815260206004820181905260248201527f534d413a204f6e6c792063616c6c61626c6520627920676f7665726e616e636560448201526064015b60405180910390fd5b6001600160a01b0381166103de5760405162461bcd60e51b815260206004820152601b60248201527f534d413a204e756c6c206164647265737320666f7262696464656e0000000000604482015260640161037f565b600480546001600160a01b0319166001600160a01b0392909216919091179055565b600061040a610594565b905090565b6004546000906001600160a01b0316331461046c5760405162461bcd60e51b815260206004820181905260248201527f534d413a204f6e6c792063616c6c61626c6520627920506f6f6c4b6565706572604482015260640161037f565b7f000000000000000000000000000000000000000000000000000000000000000060035461049a91906108ab565b42106104a8576104a8610644565b61040a610594565b6002546001600160a01b0316331461050a5760405162461bcd60e51b815260206004820181905260248201527f534d413a204f6e6c792063616c6c61626c6520627920676f7665726e616e6365604482015260640161037f565b6001600160a01b0381166105605760405162461bcd60e51b815260206004820152601b60248201527f534d413a204e756c6c206164647265737320666f7262696464656e0000000000604482015260640161037f565b600280546001600160a01b0319166001600160a01b0392909216919091179055565b6000606061058e610594565b91509091565b600154600090806105a757600091505090565b7f00000000000000000000000000000000000000000000000000000000000000008113156105f257507f00000000000000000000000000000000000000000000000000000000000000005b600154600090816106038483610984565b90505b8181121561063157600081815260208190526040902054610627908461086a565b9250600101610606565b5061063c83836108c3565b935050505090565b60007f00000000000000000000000000000000000000000000000000000000000000006001600160a01b03166398d5fdca6040518163ffffffff1660e01b815260040160206040518083038186803b15801561069f57600080fd5b505afa1580156106b3573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906106d791906107f4565b90506106e28161077f565b60018054600090815260208190526040902091909155547f000000000000000000000000000000000000000000000000000000000000000013610763576000807f00000000000000000000000000000000000000000000000000000000000000006001546107509190610984565b8152602001908152602001600020600090555b60018054906000610773836109c3565b90915550504260035550565b60006103237f0000000000000000000000000000000000000000000000000000000000000000836108ff565b6000602082840312156107bd57600080fd5b81356001600160a01b03811681146107d457600080fd5b9392505050565b6000602082840312156107ed57600080fd5b5035919050565b60006020828403121561080657600080fd5b5051919050565b82815260006020604081840152835180604085015260005b8181101561084157858101830151858201606001528201610825565b81811115610853576000606083870101525b50601f01601f191692909201606001949350505050565b600080821280156001600160ff1b038490038513161561088c5761088c6109e3565b600160ff1b83900384128116156108a5576108a56109e3565b50500190565b600082198211156108be576108be6109e3565b500190565b6000826108e057634e487b7160e01b600052601260045260246000fd5b600160ff1b8214600019841416156108fa576108fa6109e3565b500590565b60006001600160ff1b0381841382841380821686840486111615610925576109256109e3565b600160ff1b6000871282811687830589121615610944576109446109e3565b60008712925087820587128484161615610960576109606109e3565b87850587128184161615610976576109766109e3565b505050929093029392505050565b60008083128015600160ff1b8501841216156109a2576109a26109e3565b6001600160ff1b03840183138116156109bd576109bd6109e3565b50500390565b60006001600160ff1b038214156109dc576109dc6109e3565b5060010190565b634e487b7160e01b600052601160045260246000fdfea26469706673582212204402e1e1c262b5ac32677932d0d88f12463af4a714cdf67f9af4f5e19d9883d464736f6c63430008070033",
-  "devdoc": {
-    "kind": "dev",
-    "methods": {
-      "fromWad(int256)": {
-        "details": "This is a no-op for `SMAOracle`",
-        "params": {
-          "wad": "wad maths value"
+            "inputs": [],
+            "name": "getPriceAndMetadata",
+            "outputs": [
+                {
+                    "internalType": "int256",
+                    "name": "_price",
+                    "type": "int256"
+                },
+                {
+                    "internalType": "bytes",
+                    "name": "_data",
+                    "type": "bytes"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
         },
-        "returns": {
-          "_0": "Raw (signed) integer"
+        {
+            "inputs": [],
+            "name": "governance",
+            "outputs": [
+                {
+                    "internalType": "address",
+                    "name": "",
+                    "type": "address"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "lastUpdate",
+            "outputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "",
+                    "type": "uint256"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "numPeriods",
+            "outputs": [
+                {
+                    "internalType": "int256",
+                    "name": "",
+                    "type": "int256"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "oracle",
+            "outputs": [
+                {
+                    "internalType": "address",
+                    "name": "",
+                    "type": "address"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "periodCount",
+            "outputs": [
+                {
+                    "internalType": "int256",
+                    "name": "",
+                    "type": "int256"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "poll",
+            "outputs": [
+                {
+                    "internalType": "int256",
+                    "name": "",
+                    "type": "int256"
+                }
+            ],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "poolKeeper",
+            "outputs": [
+                {
+                    "internalType": "address",
+                    "name": "",
+                    "type": "address"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "int256",
+                    "name": "",
+                    "type": "int256"
+                }
+            ],
+            "name": "prices",
+            "outputs": [
+                {
+                    "internalType": "int256",
+                    "name": "",
+                    "type": "int256"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "scaler",
+            "outputs": [
+                {
+                    "internalType": "int256",
+                    "name": "",
+                    "type": "int256"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "_governance",
+                    "type": "address"
+                }
+            ],
+            "name": "setGovernance",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "_poolKeeper",
+                    "type": "address"
+                }
+            ],
+            "name": "setPoolKeeper",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "updateInterval",
+            "outputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "",
+                    "type": "uint256"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
         }
-      },
-      "getPrice()": {
-        "details": "Recomputes SMA across sample size"
-      },
-      "getPriceAndMetadata()": {
-        "details": "Required by the `IOracleWrapper` interface. The interface leaves          the metadata as implementation-defined. For the SMA wrapper, there          is no clear use case for additional data, so it's left blank"
-      },
-      "poll()": {
-        "details": "Throws if called within an update interval since last being calledEssentially wraps `update()`",
-        "returns": {
-          "_0": "Latest SMA price"
-        }
-      },
-      "setGovernance(address)": {
-        "details": "Only callable by (existing) governance",
-        "params": {
-          "_governance": "Address of the new governance"
-        }
-      },
-      "setPoolKeeper(address)": {
-        "details": "Only callable by governance",
-        "params": {
-          "_poolKeeper": "Address of the new contract"
-        }
-      }
-    },
-    "stateVariables": {
-      "prices": {
-        "details": "Only the most recent `numPeriods` prices are stored. The rest are deleted, which will result in a zero value for prices with index less than `periodCount - numPrices`."
-      }
-    },
-    "version": 1
-  },
-  "userdoc": {
-    "kind": "user",
-    "methods": {
-      "fromWad(int256)": {
-        "notice": "Converts `wad` to a raw integer"
-      },
-      "getPrice()": {
-        "notice": "Retrieves the current SMA price"
-      },
-      "getPriceAndMetadata()": {
-        "notice": "Returns the current SMA price and an empty bytes array"
-      },
-      "lastUpdate()": {
-        "notice": "Time of last successful price update"
-      },
-      "numPeriods()": {
-        "notice": "Number of desired sampling periods to use -- this will differ from the actual number of periods used until the SMAOracle ramps up."
-      },
-      "oracle()": {
-        "notice": "Price feed to use for SMA"
-      },
-      "periodCount()": {
-        "notice": "the total number of periods that have occurred"
-      },
-      "poll()": {
-        "notice": "Updates the SMA wrapper by retrieving a new price from the          associated price observer contract (provided it's not too early)"
-      },
-      "prices(int256)": {
-        "notice": "the stored spot prices by their period number"
-      },
-      "setGovernance(address)": {
-        "notice": "Changes the address of the associated governance"
-      },
-      "setPoolKeeper(address)": {
-        "notice": "Changes the address of the associated `PoolKeeper` contract"
-      },
-      "updateInterval()": {
-        "notice": "Duration between price updates in seconds"
-      }
-    },
-    "notice": "Applies a simple moving average (SMA) smoothing function to the spot          price of an underlying oracle.",
-    "version": 1
-  },
-  "storageLayout": {
-    "storage": [
-      {
-        "astId": 14063,
-        "contract": "contracts/implementation/SMAOracle.sol:SMAOracle",
-        "label": "prices",
-        "offset": 0,
-        "slot": "0",
-        "type": "t_mapping(t_int256,t_int256)"
-      },
-      {
-        "astId": 14066,
-        "contract": "contracts/implementation/SMAOracle.sol:SMAOracle",
-        "label": "periodCount",
-        "offset": 0,
-        "slot": "1",
-        "type": "t_int256"
-      },
-      {
-        "astId": 14075,
-        "contract": "contracts/implementation/SMAOracle.sol:SMAOracle",
-        "label": "governance",
-        "offset": 0,
-        "slot": "2",
-        "type": "t_address"
-      },
-      {
-        "astId": 14084,
-        "contract": "contracts/implementation/SMAOracle.sol:SMAOracle",
-        "label": "lastUpdate",
-        "offset": 0,
-        "slot": "3",
-        "type": "t_uint256"
-      },
-      {
-        "astId": 14095,
-        "contract": "contracts/implementation/SMAOracle.sol:SMAOracle",
-        "label": "poolKeeper",
-        "offset": 0,
-        "slot": "4",
-        "type": "t_address"
-      }
     ],
-    "types": {
-      "t_address": {
-        "encoding": "inplace",
-        "label": "address",
-        "numberOfBytes": "20"
-      },
-      "t_int256": {
-        "encoding": "inplace",
-        "label": "int256",
-        "numberOfBytes": "32"
-      },
-      "t_mapping(t_int256,t_int256)": {
-        "encoding": "mapping",
-        "key": "t_int256",
-        "label": "mapping(int256 => int256)",
-        "numberOfBytes": "32",
-        "value": "t_int256"
-      },
-      "t_uint256": {
-        "encoding": "inplace",
-        "label": "uint256",
-        "numberOfBytes": "32"
-      }
+    "transactionHash": "0xa6fa4019bf1d3eb67cfd7435d7e409bbab55f63b669034decd964b498a1b3358",
+    "receipt": {
+        "to": null,
+        "from": "0xCC97EB5651e05D5a0Ae8bcD2813B9DFDaD6F92a5",
+        "contractAddress": "0xe72D2194046AEB0Bd60307e99fe5BC224Be5683B",
+        "transactionIndex": 0,
+        "gasUsed": "11148103",
+        "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "blockHash": "0x4c19018a376f292d9fa37a96696a078898ccafe4eb04cd8e040a96de69cc39db",
+        "transactionHash": "0xa6fa4019bf1d3eb67cfd7435d7e409bbab55f63b669034decd964b498a1b3358",
+        "logs": [],
+        "blockNumber": 13387851,
+        "cumulativeGasUsed": "4281683",
+        "status": 1,
+        "byzantium": true
+    },
+    "args": [
+        "0x1392a5eEc4eF364319e44cb1B155DD743894CCfD",
+        8,
+        3600,
+        "0xCC97EB5651e05D5a0Ae8bcD2813B9DFDaD6F92a5",
+        "0xCC97EB5651e05D5a0Ae8bcD2813B9DFDaD6F92a5",
+        "0xCC97EB5651e05D5a0Ae8bcD2813B9DFDaD6F92a5"
+    ],
+    "solcInputHash": "4b024dc169a046e6527f075e446ec886",
+    "metadata": "{\"compiler\":{\"version\":\"0.8.7+commit.e28d00a7\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_inputOracle\",\"type\":\"address\"},{\"internalType\":\"int256\",\"name\":\"_numPeriods\",\"type\":\"int256\"},{\"internalType\":\"uint256\",\"name\":\"_updateInterval\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"_deployer\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_poolKeeper\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_gov\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[],\"name\":\"MAX_PERIODS\",\"outputs\":[{\"internalType\":\"int8\",\"name\":\"\",\"type\":\"int8\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"decimals\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"deployer\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"int256\",\"name\":\"wad\",\"type\":\"int256\"}],\"name\":\"fromWad\",\"outputs\":[{\"internalType\":\"int256\",\"name\":\"\",\"type\":\"int256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getPrice\",\"outputs\":[{\"internalType\":\"int256\",\"name\":\"\",\"type\":\"int256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getPriceAndMetadata\",\"outputs\":[{\"internalType\":\"int256\",\"name\":\"_price\",\"type\":\"int256\"},{\"internalType\":\"bytes\",\"name\":\"_data\",\"type\":\"bytes\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"governance\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"lastUpdate\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"numPeriods\",\"outputs\":[{\"internalType\":\"int256\",\"name\":\"\",\"type\":\"int256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"oracle\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"periodCount\",\"outputs\":[{\"internalType\":\"int256\",\"name\":\"\",\"type\":\"int256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"poll\",\"outputs\":[{\"internalType\":\"int256\",\"name\":\"\",\"type\":\"int256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"poolKeeper\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"int256\",\"name\":\"\",\"type\":\"int256\"}],\"name\":\"prices\",\"outputs\":[{\"internalType\":\"int256\",\"name\":\"\",\"type\":\"int256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"scaler\",\"outputs\":[{\"internalType\":\"int256\",\"name\":\"\",\"type\":\"int256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_governance\",\"type\":\"address\"}],\"name\":\"setGovernance\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_poolKeeper\",\"type\":\"address\"}],\"name\":\"setPoolKeeper\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"updateInterval\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{\"fromWad(int256)\":{\"details\":\"This is a no-op for `SMAOracle`\",\"params\":{\"wad\":\"wad maths value\"},\"returns\":{\"_0\":\"Raw (signed) integer\"}},\"getPrice()\":{\"details\":\"Recomputes SMA across sample size\"},\"getPriceAndMetadata()\":{\"details\":\"Required by the `IOracleWrapper` interface. The interface leaves          the metadata as implementation-defined. For the SMA wrapper, there          is no clear use case for additional data, so it's left blank\"},\"poll()\":{\"details\":\"Throws if called within an update interval since last being calledEssentially wraps `update()`\",\"returns\":{\"_0\":\"Latest SMA price\"}},\"setGovernance(address)\":{\"details\":\"Only callable by (existing) governance\",\"params\":{\"_governance\":\"Address of the new governance\"}},\"setPoolKeeper(address)\":{\"details\":\"Only callable by governance\",\"params\":{\"_poolKeeper\":\"Address of the new contract\"}}},\"stateVariables\":{\"prices\":{\"details\":\"Only the most recent `numPeriods` prices are stored. The rest are deleted, which will result in a zero value for prices with index less than `periodCount - numPrices`.\"}},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{\"fromWad(int256)\":{\"notice\":\"Converts `wad` to a raw integer\"},\"getPrice()\":{\"notice\":\"Retrieves the current SMA price\"},\"getPriceAndMetadata()\":{\"notice\":\"Returns the current SMA price and an empty bytes array\"},\"lastUpdate()\":{\"notice\":\"Time of last successful price update\"},\"numPeriods()\":{\"notice\":\"Number of desired sampling periods to use -- this will differ from the actual number of periods used until the SMAOracle ramps up.\"},\"oracle()\":{\"notice\":\"Price feed to use for SMA\"},\"periodCount()\":{\"notice\":\"the total number of periods that have occurred\"},\"poll()\":{\"notice\":\"Updates the SMA wrapper by retrieving a new price from the          associated price observer contract (provided it's not too early)\"},\"prices(int256)\":{\"notice\":\"the stored spot prices by their period number\"},\"setGovernance(address)\":{\"notice\":\"Changes the address of the associated governance\"},\"setPoolKeeper(address)\":{\"notice\":\"Changes the address of the associated `PoolKeeper` contract\"},\"updateInterval()\":{\"notice\":\"Duration between price updates in seconds\"}},\"notice\":\"Applies a simple moving average (SMA) smoothing function to the spot          price of an underlying oracle.\",\"version\":1}},\"settings\":{\"compilationTarget\":{\"contracts/implementation/SMAOracle.sol\":\"SMAOracle\"},\"evmVersion\":\"london\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[]},\"sources\":{\"contracts/implementation/SMAOracle.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\npragma solidity 0.8.7;\\n\\nimport \\\"../interfaces/IOracleWrapper.sol\\\";\\n\\n/**\\n * @notice Applies a simple moving average (SMA) smoothing function to the spot\\n *          price of an underlying oracle.\\n */\\ncontract SMAOracle is IOracleWrapper {\\n    /*\\n     * A note on \\\"ramping up\\\":\\n     *\\n     * `SMAOracle` works by storing spot prices and calculating the average of\\n     * the most recent k prices. Obviously, we need to handle the case of insufficient\\n     * data: specifically, the case where the number of actual stored observations, n,\\n     * is strictly less than the number of sampling periods to use for averaging, k.\\n     *\\n     * To achieve this, `SMAOracle` needs to \\\"ramp up\\\". This means that the\\n     * number of sampling periods *actually used*, K, looks like this (w.r.t.\\n     * time, t):\\n     *\\n     *     K ^\\n     *       |\\n     *       |\\n     *       |\\n     *       |\\n     *       |\\n     * k --> |+++++++++++++++++++++++++++++++++-----------------------------\\n     *       |                                |\\n     *       |                                |\\n     *       |                     +----------+\\n     *       |                     |\\n     *       |                     |\\n     *       |          +----------+\\n     *       |          |\\n     *       |          |\\n     *       |----------+\\n     *       |\\n     *       |\\n     *       +---------------------------------------------------------------> t\\n     *\\n     *\\n     * Here, K is the `periods` instance variable and time, t, is an integer\\n     * representing successive calls to `SMAOracle::poll`.\\n     *\\n     */\\n\\n    /**\\n     * @notice the stored spot prices by their period number\\n     * @dev Only the most recent `numPeriods` prices are stored. The rest are deleted,\\n     * which will result in a zero value for prices with index less than `periodCount - numPrices`.\\n     */\\n    mapping(int256 => int256) public prices;\\n    /// @notice the total number of periods that have occurred\\n    int256 public periodCount;\\n\\n    /// Price feed to use for SMA\\n    address public immutable override oracle;\\n\\n    // Deployer of the contract\\n    address public immutable override deployer;\\n\\n    // Governance this contract is subject to (in any sane implementation, a\\n    // DAO)\\n    address public governance;\\n\\n    /// Number of desired sampling periods to use -- this will differ from\\n    /// the actual number of periods used until the SMAOracle ramps up.\\n    int256 public immutable numPeriods;\\n\\n    /// Duration between price updates in seconds\\n    uint256 public immutable updateInterval;\\n\\n    /// Time of last successful price update\\n    uint256 public lastUpdate;\\n\\n    int8 public constant MAX_PERIODS = 24;\\n\\n    uint8 public constant override decimals = 18;\\n    int256 public immutable scaler;\\n\\n    address public poolKeeper;\\n\\n    constructor(\\n        address _inputOracle,\\n        int256 _numPeriods,\\n        uint256 _updateInterval,\\n        address _deployer,\\n        address _poolKeeper,\\n        address _gov\\n    ) {\\n        require(\\n            _inputOracle != address(0) && _deployer != address(0) && _poolKeeper != address(0) && _gov != address(0),\\n            \\\"SMA: Null address forbidden\\\"\\n        );\\n        require(_numPeriods > 0 && _numPeriods <= MAX_PERIODS, \\\"SMA: Out of bounds\\\");\\n        require(_updateInterval != 0, \\\"SMA: Update interval cannot be 0\\\");\\n\\n        uint8 inputOracleDecimals = IOracleWrapper(_inputOracle).decimals();\\n        /* `scaler` is always <= 10^18 and >= 1 so this cast is safe */\\n        scaler = int256(10**(decimals - inputOracleDecimals));\\n\\n        numPeriods = _numPeriods;\\n        updateInterval = _updateInterval;\\n        oracle = _inputOracle;\\n        deployer = _deployer;\\n        poolKeeper = _poolKeeper;\\n        governance = _gov;\\n    }\\n\\n    /**\\n     * @notice Retrieves the current SMA price\\n     * @dev Recomputes SMA across sample size\\n     */\\n    function getPrice() external view override returns (int256) {\\n        return _calculateSMA();\\n    }\\n\\n    /**\\n     * @notice Returns the current SMA price and an empty bytes array\\n     * @dev Required by the `IOracleWrapper` interface. The interface leaves\\n     *          the metadata as implementation-defined. For the SMA wrapper, there\\n     *          is no clear use case for additional data, so it's left blank\\n     */\\n    function getPriceAndMetadata() external view override returns (int256 _price, bytes memory _data) {\\n        _price = _calculateSMA();\\n        return (_price, _data);\\n    }\\n\\n    /**\\n     * @notice Updates the SMA wrapper by retrieving a new price from the\\n     *          associated price observer contract (provided it's not too early)\\n     * @return Latest SMA price\\n     * @dev Throws if called within an update interval since last being called\\n     * @dev Essentially wraps `update()`\\n     */\\n    function poll() external override onlyPoolKeeper returns (int256) {\\n        if (block.timestamp >= lastUpdate + updateInterval) {\\n            _update();\\n        }\\n        return _calculateSMA();\\n    }\\n\\n    /**\\n     * @notice Converts `wad` to a raw integer\\n     * @dev This is a no-op for `SMAOracle`\\n     * @param wad wad maths value\\n     * @return Raw (signed) integer\\n     */\\n    function fromWad(int256 wad) external view override returns (int256) {\\n        return wad / scaler;\\n    }\\n\\n    /**\\n     * @notice Add a new spot price observation to the SMA Oracle\\n     * @dev O(1) complexity due to constant arithmetic\\n     */\\n    function _update() internal {\\n        /* query the underlying price feed */\\n        int256 latestPrice = IOracleWrapper(oracle).getPrice();\\n\\n        /* store the latest price */\\n        prices[periodCount] = toWad(latestPrice);\\n\\n        /* if we've filled the numPeriods amount, delete the oldest price */\\n        if (periodCount >= numPeriods) {\\n            delete prices[periodCount - numPeriods];\\n        }\\n\\n        periodCount++;\\n        lastUpdate = block.timestamp;\\n    }\\n\\n    /**\\n     * @notice Calculates the simple moving average of the provided dataset for the specified number of periods\\n     * @return Simple moving average based on the last `k` prices\\n     * @dev `k` is the lower value of `numPeriods` and `periodCount`\\n     * @dev O(k) complexity due to linear traversal of the final `k` elements of `prices`\\n     * @dev Note that the signedness of the return type is due to the signedness of the elements of `prices`\\n     */\\n    function _calculateSMA() internal view returns (int256) {\\n        int256 k = periodCount;\\n\\n        if (k == 0) {\\n            return 0;\\n        }\\n\\n        if (k > numPeriods) {\\n            k = numPeriods;\\n        }\\n\\n        /* linear scan over the [n - k, n] subsequence */\\n        int256 sum;\\n        int256 _periodCount = periodCount;\\n        for (int256 i = _periodCount - k; i < _periodCount; i = unchecked_inc(i)) {\\n            sum += prices[i];\\n        }\\n\\n        // This is safe because we know that `k` will be between 1 and MAX_PERIODS\\n        return sum / k;\\n    }\\n\\n    /**\\n     * @notice Changes the address of the associated `PoolKeeper` contract\\n     * @param _poolKeeper Address of the new contract\\n     * @dev Only callable by governance\\n     */\\n    function setPoolKeeper(address _poolKeeper) public onlyGov {\\n        require(_poolKeeper != address(0), \\\"SMA: Null address forbidden\\\");\\n        poolKeeper = _poolKeeper;\\n    }\\n\\n    /**\\n     * @notice Changes the address of the associated governance\\n     * @param _governance Address of the new governance\\n     * @dev Only callable by (existing) governance\\n     */\\n    function setGovernance(address _governance) public onlyGov {\\n        require(_governance != address(0), \\\"SMA: Null address forbidden\\\");\\n        governance = _governance;\\n    }\\n\\n    /**\\n     * @notice Converts `x` to a wad value\\n     * @param x Number to convert to wad value\\n     * @return `x` but wad\\n     */\\n    function toWad(int256 x) private view returns (int256) {\\n        return x * scaler;\\n    }\\n\\n    function unchecked_inc(int256 i) private pure returns (int256) {\\n        unchecked {\\n            return ++i;\\n        }\\n    }\\n\\n    modifier onlyGov() {\\n        require(msg.sender == governance, \\\"SMA: Only callable by governance\\\");\\n        _;\\n    }\\n\\n    modifier onlyPoolKeeper() {\\n        require(msg.sender == poolKeeper, \\\"SMA: Only callable by PoolKeeper\\\");\\n        _;\\n    }\\n}\\n\",\"keccak256\":\"0xc1cad32974f1d28bce5ec3d1275b3535ebc55c1acf4a782b26b5d485a46a0be6\",\"license\":\"MIT\"},\"contracts/interfaces/IOracleWrapper.sol\":{\"content\":\"//SPDX-License-Identifier: CC-BY-NC-ND-4.0\\npragma solidity 0.8.7;\\n\\n/// @title The oracle wrapper contract interface\\ninterface IOracleWrapper {\\n    function oracle() external view returns (address);\\n\\n    function decimals() external view returns (uint8);\\n\\n    function deployer() external view returns (address);\\n\\n    // #### Functions\\n\\n    /**\\n     * @notice Returns the current price for the asset in question\\n     * @return The latest price\\n     */\\n    function getPrice() external view returns (int256);\\n\\n    /**\\n     * @return _price The latest round data price\\n     * @return _data The metadata. Implementations can choose what data to return here\\n     */\\n    function getPriceAndMetadata() external view returns (int256 _price, bytes memory _data);\\n\\n    /**\\n     * @notice Converts from a WAD to normal value\\n     * @return Converted non-WAD value\\n     */\\n    function fromWad(int256 wad) external view returns (int256);\\n\\n    /**\\n     * @notice Updates the underlying oracle state and returns the new price\\n     * @dev Spot oracles must implement but it will be a no-op\\n     */\\n    function poll() external returns (int256);\\n}\\n\",\"keccak256\":\"0x754e2e7cf390f4acae43b4340289465677a3214cfc28d8ea1bb5f07bd74abd4e\",\"license\":\"CC-BY-NC-ND-4.0\"}},\"version\":1}",
+    "bytecode": "0x6101206040523480156200001257600080fd5b5060405162000f1738038062000f17833981016040819052620000359162000284565b6001600160a01b038616158015906200005657506001600160a01b03831615155b80156200006b57506001600160a01b03821615155b80156200008057506001600160a01b03811615155b620000d25760405162461bcd60e51b815260206004820152601b60248201527f534d413a204e756c6c206164647265737320666f7262696464656e000000000060448201526064015b60405180910390fd5b600085138015620000e4575060188513155b620001275760405162461bcd60e51b8152602060048201526012602482015271534d413a204f7574206f6620626f756e647360701b6044820152606401620000c9565b83620001765760405162461bcd60e51b815260206004820181905260248201527f534d413a2055706461746520696e74657276616c2063616e6e6f7420626520306044820152606401620000c9565b6000866001600160a01b031663313ce5676040518163ffffffff1660e01b815260040160206040518083038186803b158015620001b257600080fd5b505afa158015620001c7573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190620001ed9190620002f3565b9050620001fc81601262000429565b6200020990600a62000368565b610100525060c09490945260e0929092526001600160601b0319606094851b8116608052931b90921660a052600480546001600160a01b039384166001600160a01b0319918216179091556002805492909316911617905562000465565b80516001600160a01b03811681146200027f57600080fd5b919050565b60008060008060008060c087890312156200029e57600080fd5b620002a98762000267565b95506020870151945060408701519350620002c76060880162000267565b9250620002d76080880162000267565b9150620002e760a0880162000267565b90509295509295509295565b6000602082840312156200030657600080fd5b815160ff811681146200031857600080fd5b9392505050565b600181815b80851115620003605781600019048211156200034457620003446200044f565b808516156200035257918102915b93841c939080029062000324565b509250929050565b60006200031860ff841683600082620003845750600162000423565b81620003935750600062000423565b8160018114620003ac5760028114620003b757620003d7565b600191505062000423565b60ff841115620003cb57620003cb6200044f565b50506001821b62000423565b5060208310610133831016604e8410600b8410161715620003fc575081810a62000423565b6200040883836200031f565b80600019048211156200041f576200041f6200044f565b0290505b92915050565b600060ff821660ff8416808210156200044657620004466200044f565b90039392505050565b634e487b7160e01b600052601160045260246000fd5b60805160601c60a05160601c60c05160e05161010051610a2f620004e860003960008181610185015281816102fe01526107860152600081816102d5015261046e0152600081816102ae015281816105a9015281816105d2015281816106fb01526107240152600061027101526000818161021501526106480152610a2f6000f3fe608060405234801561001057600080fd5b50600436106101165760003560e01c80637f197519116100a2578063c046371111610071578063c046371114610263578063d5f394881461026c578063db6d8fcf14610293578063dcd65479146102a9578063fd2c80ae146102d057600080fd5b80637f1975191461023757806398d5fdca14610240578063a117527914610248578063ab033ea91461025057600080fd5b8063412ad1cc116100e9578063412ad1cc146101b5578063430ed6eb146101c85780635aa6e675146101dd57806361aaf0b3146101f05780637dc0d1d01461021057600080fd5b80630a2546401461011b578063178f9e351461013b578063313ce567146101665780633c1e6ff514610180575b600080fd5b610123601881565b60405160009190910b81526020015b60405180910390f35b60045461014e906001600160a01b031681565b6040516001600160a01b039091168152602001610132565b61016e601281565b60405160ff9091168152602001610132565b6101a77f000000000000000000000000000000000000000000000000000000000000000081565b604051908152602001610132565b6101a76101c33660046107db565b6102f7565b6101db6101d63660046107ab565b610329565b005b60025461014e906001600160a01b031681565b6101a76101fe3660046107db565b60006020819052908152604090205481565b61014e7f000000000000000000000000000000000000000000000000000000000000000081565b6101a760015481565b6101a7610400565b6101a761040f565b6101db61025e3660046107ab565b6104b0565b6101a760035481565b61014e7f000000000000000000000000000000000000000000000000000000000000000081565b61029b610582565b60405161013292919061080d565b6101a77f000000000000000000000000000000000000000000000000000000000000000081565b6101a77f000000000000000000000000000000000000000000000000000000000000000081565b60006103237f0000000000000000000000000000000000000000000000000000000000000000836108c3565b92915050565b6002546001600160a01b031633146103885760405162461bcd60e51b815260206004820181905260248201527f534d413a204f6e6c792063616c6c61626c6520627920676f7665726e616e636560448201526064015b60405180910390fd5b6001600160a01b0381166103de5760405162461bcd60e51b815260206004820152601b60248201527f534d413a204e756c6c206164647265737320666f7262696464656e0000000000604482015260640161037f565b600480546001600160a01b0319166001600160a01b0392909216919091179055565b600061040a610594565b905090565b6004546000906001600160a01b0316331461046c5760405162461bcd60e51b815260206004820181905260248201527f534d413a204f6e6c792063616c6c61626c6520627920506f6f6c4b6565706572604482015260640161037f565b7f000000000000000000000000000000000000000000000000000000000000000060035461049a91906108ab565b42106104a8576104a8610644565b61040a610594565b6002546001600160a01b0316331461050a5760405162461bcd60e51b815260206004820181905260248201527f534d413a204f6e6c792063616c6c61626c6520627920676f7665726e616e6365604482015260640161037f565b6001600160a01b0381166105605760405162461bcd60e51b815260206004820152601b60248201527f534d413a204e756c6c206164647265737320666f7262696464656e0000000000604482015260640161037f565b600280546001600160a01b0319166001600160a01b0392909216919091179055565b6000606061058e610594565b91509091565b600154600090806105a757600091505090565b7f00000000000000000000000000000000000000000000000000000000000000008113156105f257507f00000000000000000000000000000000000000000000000000000000000000005b600154600090816106038483610984565b90505b8181121561063157600081815260208190526040902054610627908461086a565b9250600101610606565b5061063c83836108c3565b935050505090565b60007f00000000000000000000000000000000000000000000000000000000000000006001600160a01b03166398d5fdca6040518163ffffffff1660e01b815260040160206040518083038186803b15801561069f57600080fd5b505afa1580156106b3573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906106d791906107f4565b90506106e28161077f565b60018054600090815260208190526040902091909155547f000000000000000000000000000000000000000000000000000000000000000013610763576000807f00000000000000000000000000000000000000000000000000000000000000006001546107509190610984565b8152602001908152602001600020600090555b60018054906000610773836109c3565b90915550504260035550565b60006103237f0000000000000000000000000000000000000000000000000000000000000000836108ff565b6000602082840312156107bd57600080fd5b81356001600160a01b03811681146107d457600080fd5b9392505050565b6000602082840312156107ed57600080fd5b5035919050565b60006020828403121561080657600080fd5b5051919050565b82815260006020604081840152835180604085015260005b8181101561084157858101830151858201606001528201610825565b81811115610853576000606083870101525b50601f01601f191692909201606001949350505050565b600080821280156001600160ff1b038490038513161561088c5761088c6109e3565b600160ff1b83900384128116156108a5576108a56109e3565b50500190565b600082198211156108be576108be6109e3565b500190565b6000826108e057634e487b7160e01b600052601260045260246000fd5b600160ff1b8214600019841416156108fa576108fa6109e3565b500590565b60006001600160ff1b0381841382841380821686840486111615610925576109256109e3565b600160ff1b6000871282811687830589121615610944576109446109e3565b60008712925087820587128484161615610960576109606109e3565b87850587128184161615610976576109766109e3565b505050929093029392505050565b60008083128015600160ff1b8501841216156109a2576109a26109e3565b6001600160ff1b03840183138116156109bd576109bd6109e3565b50500390565b60006001600160ff1b038214156109dc576109dc6109e3565b5060010190565b634e487b7160e01b600052601160045260246000fdfea26469706673582212204402e1e1c262b5ac32677932d0d88f12463af4a714cdf67f9af4f5e19d9883d464736f6c63430008070033",
+    "deployedBytecode": "0x608060405234801561001057600080fd5b50600436106101165760003560e01c80637f197519116100a2578063c046371111610071578063c046371114610263578063d5f394881461026c578063db6d8fcf14610293578063dcd65479146102a9578063fd2c80ae146102d057600080fd5b80637f1975191461023757806398d5fdca14610240578063a117527914610248578063ab033ea91461025057600080fd5b8063412ad1cc116100e9578063412ad1cc146101b5578063430ed6eb146101c85780635aa6e675146101dd57806361aaf0b3146101f05780637dc0d1d01461021057600080fd5b80630a2546401461011b578063178f9e351461013b578063313ce567146101665780633c1e6ff514610180575b600080fd5b610123601881565b60405160009190910b81526020015b60405180910390f35b60045461014e906001600160a01b031681565b6040516001600160a01b039091168152602001610132565b61016e601281565b60405160ff9091168152602001610132565b6101a77f000000000000000000000000000000000000000000000000000000000000000081565b604051908152602001610132565b6101a76101c33660046107db565b6102f7565b6101db6101d63660046107ab565b610329565b005b60025461014e906001600160a01b031681565b6101a76101fe3660046107db565b60006020819052908152604090205481565b61014e7f000000000000000000000000000000000000000000000000000000000000000081565b6101a760015481565b6101a7610400565b6101a761040f565b6101db61025e3660046107ab565b6104b0565b6101a760035481565b61014e7f000000000000000000000000000000000000000000000000000000000000000081565b61029b610582565b60405161013292919061080d565b6101a77f000000000000000000000000000000000000000000000000000000000000000081565b6101a77f000000000000000000000000000000000000000000000000000000000000000081565b60006103237f0000000000000000000000000000000000000000000000000000000000000000836108c3565b92915050565b6002546001600160a01b031633146103885760405162461bcd60e51b815260206004820181905260248201527f534d413a204f6e6c792063616c6c61626c6520627920676f7665726e616e636560448201526064015b60405180910390fd5b6001600160a01b0381166103de5760405162461bcd60e51b815260206004820152601b60248201527f534d413a204e756c6c206164647265737320666f7262696464656e0000000000604482015260640161037f565b600480546001600160a01b0319166001600160a01b0392909216919091179055565b600061040a610594565b905090565b6004546000906001600160a01b0316331461046c5760405162461bcd60e51b815260206004820181905260248201527f534d413a204f6e6c792063616c6c61626c6520627920506f6f6c4b6565706572604482015260640161037f565b7f000000000000000000000000000000000000000000000000000000000000000060035461049a91906108ab565b42106104a8576104a8610644565b61040a610594565b6002546001600160a01b0316331461050a5760405162461bcd60e51b815260206004820181905260248201527f534d413a204f6e6c792063616c6c61626c6520627920676f7665726e616e6365604482015260640161037f565b6001600160a01b0381166105605760405162461bcd60e51b815260206004820152601b60248201527f534d413a204e756c6c206164647265737320666f7262696464656e0000000000604482015260640161037f565b600280546001600160a01b0319166001600160a01b0392909216919091179055565b6000606061058e610594565b91509091565b600154600090806105a757600091505090565b7f00000000000000000000000000000000000000000000000000000000000000008113156105f257507f00000000000000000000000000000000000000000000000000000000000000005b600154600090816106038483610984565b90505b8181121561063157600081815260208190526040902054610627908461086a565b9250600101610606565b5061063c83836108c3565b935050505090565b60007f00000000000000000000000000000000000000000000000000000000000000006001600160a01b03166398d5fdca6040518163ffffffff1660e01b815260040160206040518083038186803b15801561069f57600080fd5b505afa1580156106b3573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906106d791906107f4565b90506106e28161077f565b60018054600090815260208190526040902091909155547f000000000000000000000000000000000000000000000000000000000000000013610763576000807f00000000000000000000000000000000000000000000000000000000000000006001546107509190610984565b8152602001908152602001600020600090555b60018054906000610773836109c3565b90915550504260035550565b60006103237f0000000000000000000000000000000000000000000000000000000000000000836108ff565b6000602082840312156107bd57600080fd5b81356001600160a01b03811681146107d457600080fd5b9392505050565b6000602082840312156107ed57600080fd5b5035919050565b60006020828403121561080657600080fd5b5051919050565b82815260006020604081840152835180604085015260005b8181101561084157858101830151858201606001528201610825565b81811115610853576000606083870101525b50601f01601f191692909201606001949350505050565b600080821280156001600160ff1b038490038513161561088c5761088c6109e3565b600160ff1b83900384128116156108a5576108a56109e3565b50500190565b600082198211156108be576108be6109e3565b500190565b6000826108e057634e487b7160e01b600052601260045260246000fd5b600160ff1b8214600019841416156108fa576108fa6109e3565b500590565b60006001600160ff1b0381841382841380821686840486111615610925576109256109e3565b600160ff1b6000871282811687830589121615610944576109446109e3565b60008712925087820587128484161615610960576109606109e3565b87850587128184161615610976576109766109e3565b505050929093029392505050565b60008083128015600160ff1b8501841216156109a2576109a26109e3565b6001600160ff1b03840183138116156109bd576109bd6109e3565b50500390565b60006001600160ff1b038214156109dc576109dc6109e3565b5060010190565b634e487b7160e01b600052601160045260246000fdfea26469706673582212204402e1e1c262b5ac32677932d0d88f12463af4a714cdf67f9af4f5e19d9883d464736f6c63430008070033",
+    "devdoc": {
+        "kind": "dev",
+        "methods": {
+            "fromWad(int256)": {
+                "details": "This is a no-op for `SMAOracle`",
+                "params": {
+                    "wad": "wad maths value"
+                },
+                "returns": {
+                    "_0": "Raw (signed) integer"
+                }
+            },
+            "getPrice()": {
+                "details": "Recomputes SMA across sample size"
+            },
+            "getPriceAndMetadata()": {
+                "details": "Required by the `IOracleWrapper` interface. The interface leaves          the metadata as implementation-defined. For the SMA wrapper, there          is no clear use case for additional data, so it's left blank"
+            },
+            "poll()": {
+                "details": "Throws if called within an update interval since last being calledEssentially wraps `update()`",
+                "returns": {
+                    "_0": "Latest SMA price"
+                }
+            },
+            "setGovernance(address)": {
+                "details": "Only callable by (existing) governance",
+                "params": {
+                    "_governance": "Address of the new governance"
+                }
+            },
+            "setPoolKeeper(address)": {
+                "details": "Only callable by governance",
+                "params": {
+                    "_poolKeeper": "Address of the new contract"
+                }
+            }
+        },
+        "stateVariables": {
+            "prices": {
+                "details": "Only the most recent `numPeriods` prices are stored. The rest are deleted, which will result in a zero value for prices with index less than `periodCount - numPrices`."
+            }
+        },
+        "version": 1
+    },
+    "userdoc": {
+        "kind": "user",
+        "methods": {
+            "fromWad(int256)": {
+                "notice": "Converts `wad` to a raw integer"
+            },
+            "getPrice()": {
+                "notice": "Retrieves the current SMA price"
+            },
+            "getPriceAndMetadata()": {
+                "notice": "Returns the current SMA price and an empty bytes array"
+            },
+            "lastUpdate()": {
+                "notice": "Time of last successful price update"
+            },
+            "numPeriods()": {
+                "notice": "Number of desired sampling periods to use -- this will differ from the actual number of periods used until the SMAOracle ramps up."
+            },
+            "oracle()": {
+                "notice": "Price feed to use for SMA"
+            },
+            "periodCount()": {
+                "notice": "the total number of periods that have occurred"
+            },
+            "poll()": {
+                "notice": "Updates the SMA wrapper by retrieving a new price from the          associated price observer contract (provided it's not too early)"
+            },
+            "prices(int256)": {
+                "notice": "the stored spot prices by their period number"
+            },
+            "setGovernance(address)": {
+                "notice": "Changes the address of the associated governance"
+            },
+            "setPoolKeeper(address)": {
+                "notice": "Changes the address of the associated `PoolKeeper` contract"
+            },
+            "updateInterval()": {
+                "notice": "Duration between price updates in seconds"
+            }
+        },
+        "notice": "Applies a simple moving average (SMA) smoothing function to the spot          price of an underlying oracle.",
+        "version": 1
+    },
+    "storageLayout": {
+        "storage": [
+            {
+                "astId": 14063,
+                "contract": "contracts/implementation/SMAOracle.sol:SMAOracle",
+                "label": "prices",
+                "offset": 0,
+                "slot": "0",
+                "type": "t_mapping(t_int256,t_int256)"
+            },
+            {
+                "astId": 14066,
+                "contract": "contracts/implementation/SMAOracle.sol:SMAOracle",
+                "label": "periodCount",
+                "offset": 0,
+                "slot": "1",
+                "type": "t_int256"
+            },
+            {
+                "astId": 14075,
+                "contract": "contracts/implementation/SMAOracle.sol:SMAOracle",
+                "label": "governance",
+                "offset": 0,
+                "slot": "2",
+                "type": "t_address"
+            },
+            {
+                "astId": 14084,
+                "contract": "contracts/implementation/SMAOracle.sol:SMAOracle",
+                "label": "lastUpdate",
+                "offset": 0,
+                "slot": "3",
+                "type": "t_uint256"
+            },
+            {
+                "astId": 14095,
+                "contract": "contracts/implementation/SMAOracle.sol:SMAOracle",
+                "label": "poolKeeper",
+                "offset": 0,
+                "slot": "4",
+                "type": "t_address"
+            }
+        ],
+        "types": {
+            "t_address": {
+                "encoding": "inplace",
+                "label": "address",
+                "numberOfBytes": "20"
+            },
+            "t_int256": {
+                "encoding": "inplace",
+                "label": "int256",
+                "numberOfBytes": "32"
+            },
+            "t_mapping(t_int256,t_int256)": {
+                "encoding": "mapping",
+                "key": "t_int256",
+                "label": "mapping(int256 => int256)",
+                "numberOfBytes": "32",
+                "value": "t_int256"
+            },
+            "t_uint256": {
+                "encoding": "inplace",
+                "label": "uint256",
+                "numberOfBytes": "32"
+            }
+        }
     }
-  }
 }

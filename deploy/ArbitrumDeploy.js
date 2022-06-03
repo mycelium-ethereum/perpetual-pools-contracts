@@ -221,7 +221,7 @@ module.exports = async (hre) => {
             SMA_DEFAULT_UPDATE_INTERVAL, // Update interval
             deployer, // deployer address
             deployer,
-            deployer
+            deployer,
         ],
     })
 
@@ -248,7 +248,6 @@ module.exports = async (hre) => {
         poolKeeper.address
     )
 
-
     const btcSmaOracleWrapper = await deploy("BtcUsdSMAOracle", {
         from: deployer,
         log: true,
@@ -260,7 +259,7 @@ module.exports = async (hre) => {
             SMA_DEFAULT_UPDATE_INTERVAL, // Update interval
             deployer, // deployer address
             deployer,
-            deployer
+            deployer,
         ],
     })
 
@@ -298,7 +297,7 @@ module.exports = async (hre) => {
             SMA_DEFAULT_UPDATE_INTERVAL, // Update interval
             deployer, // deployer address
             deployer,
-            deployer
+            deployer,
         ],
     })
 
@@ -372,11 +371,7 @@ module.exports = async (hre) => {
         changeInterval: POOL_DEFAULT_CHANGE_INTERVAL,
     }
 
-    const deploymentData = [
-        ethUsd3,
-        btcUsd3,
-        wtiUsd3
-    ]
+    const deploymentData = [ethUsd3, btcUsd3, wtiUsd3]
 
     console.log(`Deployed TestToken: ${USDC_ADDRESS}`)
     console.log(`Deployed PoolFactory: ${factory.address}`)

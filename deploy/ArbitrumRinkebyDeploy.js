@@ -200,7 +200,7 @@ module.exports = async (hre) => {
             300, // Update interval
             deployer, // deployer address
             deployer,
-            deployer
+            deployer,
         ],
     })
 
@@ -226,7 +226,6 @@ module.exports = async (hre) => {
         "setPoolKeeper",
         poolKeeper.address
     )
-
 
     const btcSmaOracleWrapper = await deploy("BtcUsdSMAOracle", {
         from: deployer,
@@ -239,7 +238,7 @@ module.exports = async (hre) => {
             300, // Update interval
             deployer, // deployer address
             deployer,
-            deployer
+            deployer,
         ],
     })
 
@@ -265,7 +264,6 @@ module.exports = async (hre) => {
         "setPoolKeeper",
         poolKeeper.address
     )
-
 
     // deploy pools
 
@@ -364,7 +362,7 @@ module.exports = async (hre) => {
         // btcUsd1,
         // btcUsd3,
         ethUsd4,
-        btcUsd4
+        btcUsd4,
     ]
 
     console.log(`Deployed TestToken: ${PPUSD_ADDRESS}`)
