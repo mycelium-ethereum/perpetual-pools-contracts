@@ -295,7 +295,13 @@ export const deployPoolAndTokenContracts = async (
     if (feeAddress) {
         await setupContracts.factory.setFeeReceiver(feeAddress)
     }
-    await setupContracts.factory.deployPool(deployParams)
+    const tx = await (await setupContracts.factory.deployPool(deployParams)).wait()
+
+    const deploymentEvent = tx.events?.filter(event => event.event === "DeployPool")
+    if (deploymentEvent && deploymentEvent[0] && deploymentEvent[0].args) {
+        console.log(deploymentEvent[0].args.pool)
+    }
+
     const poolAddress = await setupContracts.factory.pools(0)
     const pool = await ethers.getContractAt("LeveragedPool", poolAddress)
 

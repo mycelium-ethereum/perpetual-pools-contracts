@@ -107,6 +107,11 @@ Create/modify network config in `hardhat.config.ts` and add API key and private 
 ##### Deploy on Arbitrum Rinkeby
 `npx hardhat deploy --network arbRinkeby --tags ArbRinkebyDeploy --reset`
 
+##### Deploy a new market using existing factory/poolKeeper/etc.
+Modify the variables in `scripts/deploy.ts`, referring to inline comments for help, then run:
+`npx hardhat --network <NETWORK_NAME> run scripts/deploy.ts`
+where `<NETWORK_NAME>` is either "arb", or "arbRinkeby"
+
 **Note:** As of this commit, deploys are out of sync with the current contract set-up and therefore will not work.
 
 ### Verify on Etherscan

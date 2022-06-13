@@ -75,7 +75,7 @@ describe("AutoClaim - withdrawClaimRequest", () => {
     })
 
     context("When there are no pending requests", async () => {
-        it("does nothing", async () => {
+        it.only("does nothing", async () => {
             const receipt = await (
                 await autoClaim.withdrawClaimRequest(poolCommitter.address)
             ).wait()
