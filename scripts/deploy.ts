@@ -7,7 +7,7 @@ async function contractAt(name: string, address: string, provider: SignerWithAdd
     if (poolSwapLibrary) {
         contractFactory = await ethers.getContractFactory(name, {
             libraries: {
-                PoolSwapLibrary: "0x58639957c0E526fF4E4Bb1cBfBDFeFdeb16Af237"
+                PoolSwapLibrary: poolSwapLibrary
             }
         })
     } else {
