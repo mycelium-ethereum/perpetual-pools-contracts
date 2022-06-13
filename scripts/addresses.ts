@@ -1,14 +1,14 @@
 export interface NetworkAddresses {
-    poolFactory: string;
-    poolSwapLibrary: string;
-    poolKeeper: string;
-    tcr: string;
-    usdc: string;
-    ethUsdcOracleWrapper: string;
-    btcUsdcOracleWrapper: string;
-    devMultisig: string;
-    btcUsdChainlinkFeed: string;
-    ethUsdChainlinkFeed: string;
+    poolFactory: string
+    poolSwapLibrary: string
+    poolKeeper: string
+    tcr: string
+    usdc: string
+    ethUsdcOracleWrapper: string
+    btcUsdcOracleWrapper: string
+    devMultisig: string
+    btcUsdChainlinkFeed: string
+    ethUsdChainlinkFeed: string
 }
 
 export const arbitrumMainnet: NetworkAddresses = {

@@ -2,20 +2,24 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { ethers } from "hardhat"
 import { arbitrumMainnet, arbitrumRinkeby, NetworkAddresses } from "./addresses"
 
-async function contractAt(name: string, address: string, provider: SignerWithAddress, poolSwapLibrary?: string) {
+async function contractAt(
+    name: string,
+    address: string,
+    provider: SignerWithAddress,
+    poolSwapLibrary?: string
+) {
     let contractFactory
     if (poolSwapLibrary) {
         contractFactory = await ethers.getContractFactory(name, {
             libraries: {
-                PoolSwapLibrary: poolSwapLibrary
-            }
+                PoolSwapLibrary: poolSwapLibrary,
+            },
         })
     } else {
         contractFactory = await ethers.getContractFactory(name)
     }
     if (provider) {
         contractFactory = contractFactory.connect(provider)
-
     }
     return await contractFactory.attach(address)
 }
@@ -28,10 +32,10 @@ async function main() {
 
     const signers: SignerWithAddress[] = await ethers.getSigners()
     const network = await ethers.provider.getNetwork()
-    let networkConstants: NetworkAddresses;
+    let networkConstants: NetworkAddresses
     if (network.chainId == 42161) {
         networkConstants = arbitrumMainnet
-    } else if (network.chainId = 421611) {
+    } else if ((network.chainId = 421611)) {
         networkConstants = arbitrumRinkeby
     } else {
         console.error("Chain ID %d not supported", network.chainId)
@@ -122,8 +126,13 @@ async function main() {
     /**
      * Deploy the oracle wrapper that can either be used as the market oracle, or as the price feed for the market's SMA oracle.
      */
-    const oracleWrapperFactory = await ethers.getContractFactory("ChainlinkOracleWrapper")
-    let oracleWrapper = await oracleWrapperFactory.deploy(underlyingPriceFeed, signers[0].address)
+    const oracleWrapperFactory = await ethers.getContractFactory(
+        "ChainlinkOracleWrapper"
+    )
+    let oracleWrapper = await oracleWrapperFactory.deploy(
+        underlyingPriceFeed,
+        signers[0].address
+    )
     console.log("Deployed oracleWrapper: %s", oracleWrapper.address)
 
     if (usingSMA) {
@@ -144,7 +153,12 @@ async function main() {
         )
     }
 
-    const poolFactory = await contractAt("PoolFactory", poolFactoryAddress, signers[0], networkConstants.poolSwapLibrary)
+    const poolFactory = await contractAt(
+        "PoolFactory",
+        poolFactoryAddress,
+        signers[0],
+        networkConstants.poolSwapLibrary
+    )
 
     /**
      * To deploy a market, you must pay a deployment fee of $TCR5000.
@@ -183,10 +197,15 @@ async function main() {
         changeInterval: changeInterval,
     }
     const receipt = await (await poolFactory.deployPool(deployParams)).wait()
-    const deploymentEvent = receipt.events?.filter((eventLog: { event: string }) => eventLog.event === "DeployPool")
+    const deploymentEvent = receipt.events?.filter(
+        (eventLog: { event: string }) => eventLog.event === "DeployPool"
+    )
     if (deploymentEvent && deploymentEvent[0] && deploymentEvent[0].args) {
         console.log("Pool address: %s", deploymentEvent[0].args.pool)
-        console.log("PoolCommitter address: %s", deploymentEvent[0].args.poolCommitter)
+        console.log(
+            "PoolCommitter address: %s",
+            deploymentEvent[0].args.poolCommitter
+        )
     }
 }
 
