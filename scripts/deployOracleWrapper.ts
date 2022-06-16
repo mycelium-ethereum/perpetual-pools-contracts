@@ -2,6 +2,28 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { ethers } from "hardhat"
 import { arbitrumMainnet, arbitrumRinkeby, NetworkAddresses } from "./addresses"
 
+async function contractAt(
+    name: string,
+    address: string,
+    provider: SignerWithAddress,
+    poolSwapLibrary?: string
+) {
+    let contractFactory
+    if (poolSwapLibrary) {
+        contractFactory = await ethers.getContractFactory(name, {
+            libraries: {
+                PoolSwapLibrary: poolSwapLibrary,
+            },
+        })
+    } else {
+        contractFactory = await ethers.getContractFactory(name)
+    }
+    if (provider) {
+        contractFactory = contractFactory.connect(provider)
+    }
+    return await contractFactory.attach(address)
+}
+
 async function main() {
     /**
      * Use the addresses from https://pools.docs.tracer.finance/contract-addresses
@@ -42,6 +64,13 @@ async function main() {
         signers[0].address
     )
     console.log("Deployed oracleWrapper: %s", oracleWrapper.address)
+    const oracleWrapperInstance = await contractAt(
+        "TwoAggregateChainlinkOracleWrapper",
+        oracleWrapper.address,
+        signers[0]
+    )
+
+    console.log((await oracleWrapper.getPrice()).toString())
 }
 
 main()
