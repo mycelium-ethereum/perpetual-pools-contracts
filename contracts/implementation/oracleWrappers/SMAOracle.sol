@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.7;
 
-import "../interfaces/IOracleWrapper.sol";
+import "../../interfaces/IOracleWrapper.sol";
 
 /**
  * @notice Applies a simple moving average (SMA) smoothing function to the spot

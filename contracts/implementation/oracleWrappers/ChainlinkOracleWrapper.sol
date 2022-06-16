@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: CC-BY-NC-ND-4.0
 pragma solidity 0.8.7;
 
-import "../interfaces/IOracleWrapper.sol";
+import "../../interfaces/IOracleWrapper.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV2V3Interface.sol";
 
 /// @title The oracle management contract for chainlink V3 oracles
