@@ -4,7 +4,9 @@ Tracer Perpetual Pools V2 is the second major release of Tracer's Perpetual Pool
 
 Tracer Perpetual Pools is a system that provides leveraged, tokenised exposure to arbitrary assets via a simple and elegant model where settlement is locked within the system in exchange for *pool tokens* (via *minting*) and pool tokens are returned to the protocol in exchange for (some of) the underlying settlement tokens (via *burning*).
 
-For additional information on the higher-level economics of how Pools works, please consult the [whitepaper]().
+For additional information on the higher-level economics of how Pools works, please consult the [litepaper](https://tracer.finance/static/Tracer%20Perpetual%20Pools-efc7c29f638cb788832aafe0f41c07bd.pdf).
+
+For additional information on the contracts and mechanisms, consult our [Perpetual Pools documentation](https://pools.docs.tracer.finance/perpetual-pools/readme)
 
 ## Prior Audit Work ##
 
