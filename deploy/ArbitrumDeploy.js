@@ -139,9 +139,7 @@ module.exports = async (hre) => {
         "KeeperRewards",
         { libraries: { PoolSwapLibrary: library.address } }
     )
-    let keeperRewards = await KeeperRewardsFactory.deploy(
-        poolKeeper.address
-    )
+    let keeperRewards = await KeeperRewardsFactory.deploy(poolKeeper.address)
 
     await execute(
         "PoolKeeper",
@@ -311,8 +309,8 @@ module.exports = async (hre) => {
         address: factory.address,
         constructorArguments: [multisigAddress],
         libraries: {
-            PoolSwapLibrary: library.address
-        }
+            PoolSwapLibrary: library.address,
+        },
     })
 
     // Commented out because if fails if already verified. Need to only do it once or modify to not failed if already verified
