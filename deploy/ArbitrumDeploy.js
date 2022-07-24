@@ -109,8 +109,8 @@ module.exports = async (hre) => {
         from: deployer,
         log: true,
         libraries: { PoolSwapLibrary: library.address },
-        // (fee receiver)
-        args: [multisigAddress],
+        // (fee receiver, governance)
+        args: [multisigAddress, multisigAddress],
     })
 
     // deploy InvariantCheck
@@ -134,6 +134,24 @@ module.exports = async (hre) => {
         libraries: { PoolSwapLibrary: library.address },
         args: [factory.address],
     })
+
+    const KeeperRewardsFactory = await ethers.getContractFactory(
+        "KeeperRewards",
+        { libraries: { PoolSwapLibrary: library.address } }
+    )
+    let keeperRewards = await KeeperRewardsFactory.deploy(
+        poolKeeper.address
+    )
+
+    await execute(
+        "PoolKeeper",
+        {
+            from: deployer,
+            log: true,
+        },
+        "setKeeperRewards",
+        keeperRewards.address
+    )
 
     /*
     await execute(
@@ -170,7 +188,7 @@ module.exports = async (hre) => {
     )
 
     console.log("Setting factory fee")
-    const fee = ethers.utils.parseEther("0.01")
+    const fee = ethers.utils.parseEther("0.03")
     await execute(
         "PoolFactory",
         {
@@ -289,6 +307,13 @@ module.exports = async (hre) => {
         multisigAddress
     )
     */
+    await hre.run("verify:verify", {
+        address: factory.address,
+        constructorArguments: [multisigAddress],
+        libraries: {
+            PoolSwapLibrary: library.address
+        }
+    })
 
     // Commented out because if fails if already verified. Need to only do it once or modify to not failed if already verified
     // await hre.run("verify:verify", {
