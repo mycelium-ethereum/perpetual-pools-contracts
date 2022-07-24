@@ -124,90 +124,90 @@ module.exports = async (hre) => {
     // await TCR.approve(factory.address, ethers.BigNumber.from('340282366920938463463374607431768211455'))
 
     // set keeper rewards
-    // await execute(
-    //     "PoolKeeper",
-    //     {
-    //         from: deployer,
-    //         gasLimit: 100000000,
-    //         log: true,
-    //     },
-    //     "setKeeperRewards",
-    //     keeperRewards.address
-    // )
+    await execute(
+        "PoolKeeper",
+        {
+            from: deployer,
+            gasLimit: 100000000,
+            log: true,
+        },
+        "setKeeperRewards",
+        keeperRewards.address
+    )
 
     // set keeper gas price
-    // await execute(
-    //     "PoolKeeper",
-    //     {
-    //         from: deployer,
-    //         gasLimit: 100000000,
-    //         log: true,
-    //     },
-    //     "setGasPrice",
-    //     ethers.utils.parseUnits('2', 'gwei')
-    // )
+    await execute(
+        "PoolKeeper",
+        {
+            from: deployer,
+            gasLimit: 100000000,
+            log: true,
+        },
+        "setGasPrice",
+        ethers.utils.parseUnits('2', 'gwei')
+    )
 
     // Set PoolKeeper
-    // await execute(
-    //     "PoolFactory",
-    //     {
-    //         from: deployer,
-    //         gasLimit: 100000000,
-    //         log: true,
-    //     },
-    //     "setPoolKeeper",
-    //     poolKeeper.address
-    // )
+    await execute(
+        "PoolFactory",
+        {
+            from: deployer,
+            gasLimit: 100000000,
+            log: true,
+        },
+        "setPoolKeeper",
+        poolKeeper.address
+    )
 
     // Set Autoclaim
-    // await execute(
-    //     "PoolFactory",
-    //     {
-    //         from: deployer,
-    //         gasLimit: 100000000,
-    //         log: true,
-    //     },
-    //     "setAutoClaim",
-    //     autoClaim.address
-    // )
+    await execute(
+        "PoolFactory",
+        {
+            from: deployer,
+            gasLimit: 100000000,
+            log: true,
+        },
+        "setAutoClaim",
+        autoClaim.address
+    )
 
     // Set pool deployment fee
-    // await execute(
-    //     "PoolFactory",
-    //     {
-    //         from: deployer,
-    //         gasLimit: 100000000,
-    //         log: true,
-    //     },
-    //     "setDeploymentFee",
-    //     TCR_ADDRESS,
-    //     ethers.utils.parseEther('5000'),
-    //     DEV_MULTISIG_ADDRESS
-    // )
+    await execute(
+        "PoolFactory",
+        {
+            from: deployer,
+            gasLimit: 100000000,
+            log: true,
+        },
+        "setDeploymentFee",
+        TCR_ADDRESS,
+        ethers.utils.parseEther('5000'),
+        DEV_MULTISIG_ADDRESS
+    )
 
     console.log("Setting factory fee")
     const fee = ethers.utils.parseEther("0.02")
-    // await execute(
-    //     "PoolFactory",
-    //     {
-    //         from: deployer,
-    //         // gasLimit: 100000000,
-    //         log: true,
-    //     },
-    //     "setFee",
-    //     fee
-    // )
+    await execute(
+        "PoolFactory",
+        {
+            from: deployer,
+            // gasLimit: 100000000,
+            log: true,
+        },
+        "setFee",
+        fee
+    )
 
-    // await execute(
-    //     "PoolFactory",
-    //     {
-    //         from: deployer,
-    //         // gasLimit: 100000000,
-    //         log: true,
-    //     },
-    //     "setInvariantCheck",
-    //     invariantCheck.address
-    // )
+    await execute(
+        "PoolFactory",
+        {
+            from: deployer,
+            // gasLimit: 100000000,
+            log: true,
+        },
+        "setInvariantCheck",
+        invariantCheck.address
+    )
 
     // deploy ETH SMA Oracle
     const ethSmaOracleWrapper = await deploy("EthUsdSMAOracle", {
