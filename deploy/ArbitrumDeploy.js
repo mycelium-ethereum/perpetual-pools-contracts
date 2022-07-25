@@ -144,7 +144,7 @@ module.exports = async (hre) => {
             log: true,
         },
         "setGasPrice",
-        ethers.utils.parseUnits('2', 'gwei')
+        ethers.utils.parseUnits("2", "gwei")
     )
 
     // Set PoolKeeper
@@ -181,7 +181,7 @@ module.exports = async (hre) => {
         },
         "setDeploymentFee",
         TCR_ADDRESS,
-        ethers.utils.parseEther('5000'),
+        ethers.utils.parseEther("5000"),
         DEV_MULTISIG_ADDRESS
     )
 
