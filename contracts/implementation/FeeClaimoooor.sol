@@ -63,8 +63,7 @@ contract FeeClaimooooor {
         ILeveragedPool pool;
         for (uint256 i = 0; i < numPools; i = inc(i)) {
             pool = ILeveragedPool(factory.pools(i));
-            pool.claimSecondaryFees();
-            pool.claimPrimaryFees();
+            _claimBoth(pool);
         }
     }
 
@@ -79,8 +78,16 @@ contract FeeClaimooooor {
         // `i < pools.length` is cheaper than caching in memory because `pools` is `calldata`.
         for (uint256 i = 0; i < pools.length; i = inc(i)) {
             pool = ILeveragedPool(pools[i]);
-            pool.claimSecondaryFees();
-            pool.claimPrimaryFees();
+            _claimBoth(pool);
         }
+    }
+
+    /**
+     * @notice Claims both primary and secondary fees from a given market.
+     * @param pool the `LeveragedPool` to claim fees from.
+     */
+    function _claimBoth(ILeveragedPool pool) private {
+        pool.claimSecondaryFees();
+        pool.claimPrimaryFees();
     }
 }
