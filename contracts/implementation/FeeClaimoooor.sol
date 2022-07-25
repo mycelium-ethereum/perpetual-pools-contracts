@@ -29,6 +29,15 @@ contract FeeClaimooooor {
     }
 
     /**
+     * @notice Claims both primary and secondary fees from a given market.
+     * @param pool the `LeveragedPool` to claim fees from.
+     */
+    function _claimBoth(ILeveragedPool pool) private {
+        pool.claimSecondaryFees();
+        pool.claimPrimaryFees();
+    }
+
+    /**
      * @notice Iterates through all pools deployed by `factory`, and claims all primary fees.
      * @dev May run out of gas if too many pools are deployed.
      */
@@ -80,14 +89,5 @@ contract FeeClaimooooor {
             pool = ILeveragedPool(pools[i]);
             _claimBoth(pool);
         }
-    }
-
-    /**
-     * @notice Claims both primary and secondary fees from a given market.
-     * @param pool the `LeveragedPool` to claim fees from.
-     */
-    function _claimBoth(ILeveragedPool pool) private {
-        pool.claimSecondaryFees();
-        pool.claimPrimaryFees();
     }
 }
