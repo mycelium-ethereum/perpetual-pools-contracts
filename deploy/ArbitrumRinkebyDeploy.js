@@ -4,22 +4,25 @@ module.exports = async (hre) => {
     const { deployer } = await getNamedAccounts()
     const accounts = await ethers.getSigners()
 
-    const BTC_POOL_CODE = "BTC/USD"
-    const ETH_POOL_CODE = "ETH/USD"
+    const BTC_POOL_CODE = "BTC/USD+PPUSD"
+    const ETH_POOL_CODE = "ETH/USD+PPUSD"
 
     const DEPLOY_POOL_GAS_LIMIT = 10000000
 
     const POOL_DEFAULT_MINTING_FEE = ethers.utils.parseEther("0.015")
-    const POOL_DEFAULT_BURNING_FEE = ethers.utils.parseEther("0.015")
-    const POOL_DEFAULT_FRONT_RUNNING_INTERVAL = 2400
-    const POOL_DEFAULT_UPDATE_INTERVAL = 300
+    const POOL_DEFAULT_BURNING_FEE = ethers.utils.parseEther("0")
+    const POOL_DEFAULT_FRONT_RUNNING_INTERVAL = 60 * 60 * 8
+    const POOL_DEFAULT_UPDATE_INTERVAL = 60 * 60 // 1 hour
     const POOL_DEFAULT_CHANGE_INTERVAL = "0"
 
     const ONE_LEVERAGE = 1
     const THREE_LEVERAGE = 3
+    const FOUR_LEVERAGE = 4
 
-    const SMA_DEFAULT_PERIODS = 24
-    const SMA_DEFAULT_UPDATE_INTERVAL = 300
+    const SMA_DEFAULT_PERIODS = 8
+    const SMA_DEFAULT_UPDATE_INTERVAL = 3600
+
+    const PPUSD_ADDRESS = "0x9e062eee2c0Ab96e1E1c8cE38bF14bA3fa0a35F6"
 
     const arbitrumRinkEthUsdOracle = {
         address: "0x5f0423B1a6935dc5596e7A24d98532b67A0AeFd8",
@@ -29,24 +32,25 @@ module.exports = async (hre) => {
     }
 
     /* deploy testToken */
-    const token = await deploy("TestToken", {
-        args: ["Perpetual USD", "PPUSD"],
-        from: deployer,
-        log: true,
-        contract: "TestToken",
-    })
+    // re-using PPUSD since it is already distributed amongst the team/community
+    // const token = await deploy("TestToken", {
+    //     args: ["Perpetual USD", "PPUSD"],
+    //     from: deployer,
+    //     log: true,
+    //     contract: "TestToken",
+    // })
 
-    // mint some dollar bills
-    await execute(
-        "TestToken",
-        {
-            from: deployer,
-            log: true,
-        },
-        "mint",
-        accounts[0].address,
-        ethers.utils.parseEther("100000000") // 100 mil supply
-    )
+    // // mint some dollar bills
+    // await execute(
+    //     "TestToken",
+    //     {
+    //         from: deployer,
+    //         log: true,
+    //     },
+    //     "mint",
+    //     accounts[0].address,
+    //     ethers.utils.parseEther("100000000") // 100 mil supply
+    // )
 
     // base btc usd oracle wrapper
     const btcOracleWrapper = await deploy("BtcUsdOracleWrapper", {
@@ -87,6 +91,7 @@ module.exports = async (hre) => {
         from: deployer,
         log: true,
         libraries: { PoolSwapLibrary: library.address },
+        // gasLimit: 100000,
         // (fee receiver)
         args: [deployer, deployer],
     })
@@ -117,7 +122,8 @@ module.exports = async (hre) => {
     const keeperRewards = await deploy("KeeperRewards", {
         from: deployer,
         log: true,
-        libraries: { CalldataLogic: calldataLogic.address },
+        // gasLimit: 100000000,
+        libraries: { PoolSwapLibrary: library.address },
         args: [poolKeeper.address],
     })
 
@@ -126,9 +132,11 @@ module.exports = async (hre) => {
         "PoolKeeper",
         {
             from: deployer,
+            // gasLimit: 100000000,
             log: true,
         },
         "setKeeperRewards",
+
         keeperRewards.address
     )
 
@@ -137,6 +145,7 @@ module.exports = async (hre) => {
         "PoolFactory",
         {
             from: deployer,
+            // gasLimit: 100000000,
             log: true,
         },
         "setPoolKeeper",
@@ -148,6 +157,7 @@ module.exports = async (hre) => {
         "PoolFactory",
         {
             from: deployer,
+            // gasLimit: 100000000,
             log: true,
         },
         "setAutoClaim",
@@ -160,6 +170,7 @@ module.exports = async (hre) => {
         "PoolFactory",
         {
             from: deployer,
+            // gasLimit: 100000000,
             log: true,
         },
         "setFee",
@@ -170,6 +181,7 @@ module.exports = async (hre) => {
         "PoolFactory",
         {
             from: deployer,
+            // gasLimit: 100000000,
             log: true,
         },
         "setInvariantCheck",
@@ -180,12 +192,15 @@ module.exports = async (hre) => {
     const ethSmaOracleWrapper = await deploy("EthUsdSMAOracle", {
         from: deployer,
         log: true,
+        // gasLimit: 1000000000,
         contract: "SMAOracle",
         args: [
             ethOracleWrapper.address, //Oracle Address
             SMA_DEFAULT_PERIODS, // number of periods
-            SMA_DEFAULT_UPDATE_INTERVAL, // Update interval
+            300, // Update interval
             deployer, // deployer address
+            deployer,
+            deployer,
         ],
     })
 
@@ -194,20 +209,36 @@ module.exports = async (hre) => {
         "EthUsdSMAOracle",
         {
             from: deployer,
+            // gasLimit: 100000000,
             log: true,
         },
         "poll"
     )
 
+    // set the SMA poolkeeper to the actual pool keeper after the initial poll
+    await execute(
+        "EthUsdSMAOracle",
+        {
+            from: deployer,
+            // gasLimit: 100000000,
+            log: true,
+        },
+        "setPoolKeeper",
+        poolKeeper.address
+    )
+
     const btcSmaOracleWrapper = await deploy("BtcUsdSMAOracle", {
         from: deployer,
         log: true,
+        gasLimit: 1000000000,
         contract: "SMAOracle",
         args: [
             btcOracleWrapper.address, //Oracle Address
             SMA_DEFAULT_PERIODS, // number of periods
-            SMA_DEFAULT_UPDATE_INTERVAL, // Update interval
+            300, // Update interval
             deployer, // deployer address
+            deployer,
+            deployer,
         ],
     })
 
@@ -216,35 +247,92 @@ module.exports = async (hre) => {
         "BtcUsdSMAOracle",
         {
             from: deployer,
+            // gasLimit: 100000000,
             log: true,
         },
         "poll"
     )
 
+    // set the SMA poolkeeper to the actual pool keeper after the initial poll
+    await execute(
+        "BtcUsdSMAOracle",
+        {
+            from: deployer,
+            // gasLimit: 100000000,
+            log: true,
+        },
+        "setPoolKeeper",
+        poolKeeper.address
+    )
+
     // deploy pools
 
     // ETH-USD 1x
-    const deploymentData1 = {
-        poolName: ETH_POOL_CODE,
-        frontRunningInterval: POOL_DEFAULT_FRONT_RUNNING_INTERVAL,
-        updateInterval: POOL_DEFAULT_UPDATE_INTERVAL,
-        leverageAmount: ONE_LEVERAGE,
-        settlementToken: token.address,
-        oracleWrapper: ethSmaOracleWrapper.address,
-        settlementEthOracle: ethOracleWrapper.address,
-        feeController: deployer,
-        mintingFee: POOL_DEFAULT_MINTING_FEE,
-        burningFee: POOL_DEFAULT_BURNING_FEE,
-        changeInterval: POOL_DEFAULT_CHANGE_INTERVAL,
-    }
+    // const ethUsd1 = {
+    //     poolName: ETH_POOL_CODE,
+    //     frontRunningInterval: POOL_DEFAULT_FRONT_RUNNING_INTERVAL,
+    //     updateInterval: POOL_DEFAULT_UPDATE_INTERVAL,
+    //     leverageAmount: ONE_LEVERAGE,
+    //     settlementToken: PPUSD_ADDRESS,
+    //     oracleWrapper: ethSmaOracleWrapper.address,
+    //     settlementEthOracle: ethOracleWrapper.address,
+    //     feeController: deployer,
+    //     mintingFee: POOL_DEFAULT_MINTING_FEE,
+    //     burningFee: POOL_DEFAULT_BURNING_FEE,
+    //     changeInterval: POOL_DEFAULT_CHANGE_INTERVAL,
+    // }
 
     // ETH-USD 3x
-    const deploymentData2 = {
+    // const ethUsd3 = {
+    //     poolName: ETH_POOL_CODE,
+    //     frontRunningInterval: POOL_DEFAULT_FRONT_RUNNING_INTERVAL,
+    //     updateInterval: POOL_DEFAULT_UPDATE_INTERVAL,
+    //     leverageAmount: THREE_LEVERAGE,
+    //     settlementToken: PPUSD_ADDRESS,
+    //     oracleWrapper: ethSmaOracleWrapper.address,
+    //     settlementEthOracle: ethOracleWrapper.address,
+    //     feeController: deployer,
+    //     mintingFee: POOL_DEFAULT_MINTING_FEE,
+    //     burningFee: POOL_DEFAULT_BURNING_FEE,
+    //     changeInterval: POOL_DEFAULT_CHANGE_INTERVAL,
+    // }
+
+    // BTC-USD 1x
+    // const btcUsd1 = {
+    //     poolName: BTC_POOL_CODE,
+    //     frontRunningInterval: POOL_DEFAULT_FRONT_RUNNING_INTERVAL,
+    //     updateInterval: POOL_DEFAULT_UPDATE_INTERVAL,
+    //     leverageAmount: ONE_LEVERAGE,
+    //     settlementToken: PPUSD_ADDRESS,
+    //     oracleWrapper: btcSmaOracleWrapper.address,
+    //     settlementEthOracle: ethOracleWrapper.address,
+    //     feeController: deployer,
+    //     mintingFee: POOL_DEFAULT_MINTING_FEE,
+    //     burningFee: POOL_DEFAULT_BURNING_FEE,
+    //     changeInterval: POOL_DEFAULT_CHANGE_INTERVAL,
+    // }
+
+    // BTC-USD 3x
+    // const btcUsd3 = {
+    //     poolName: BTC_POOL_CODE,
+    //     frontRunningInterval: POOL_DEFAULT_FRONT_RUNNING_INTERVAL,
+    //     updateInterval: POOL_DEFAULT_UPDATE_INTERVAL,
+    //     leverageAmount: THREE_LEVERAGE,
+    //     settlementToken: PPUSD_ADDRESS,
+    //     oracleWrapper: btcSmaOracleWrapper.address,
+    //     settlementEthOracle: ethOracleWrapper.address,
+    //     feeController: deployer,
+    //     mintingFee: POOL_DEFAULT_MINTING_FEE,
+    //     burningFee: POOL_DEFAULT_BURNING_FEE,
+    //     changeInterval: POOL_DEFAULT_CHANGE_INTERVAL,
+    // }
+
+    const ethUsd4 = {
         poolName: ETH_POOL_CODE,
-        frontRunningInterval: POOL_DEFAULT_FRONT_RUNNING_INTERVAL,
-        updateInterval: POOL_DEFAULT_UPDATE_INTERVAL,
-        leverageAmount: THREE_LEVERAGE,
-        settlementToken: token.address,
+        frontRunningInterval: 300 * 8,
+        updateInterval: 300,
+        leverageAmount: FOUR_LEVERAGE,
+        settlementToken: PPUSD_ADDRESS,
         oracleWrapper: ethSmaOracleWrapper.address,
         settlementEthOracle: ethOracleWrapper.address,
         feeController: deployer,
@@ -253,28 +341,12 @@ module.exports = async (hre) => {
         changeInterval: POOL_DEFAULT_CHANGE_INTERVAL,
     }
 
-    // BTC-USD 1x
-    const deploymentData3 = {
+    const btcUsd4 = {
         poolName: BTC_POOL_CODE,
-        frontRunningInterval: POOL_DEFAULT_FRONT_RUNNING_INTERVAL,
-        updateInterval: POOL_DEFAULT_UPDATE_INTERVAL,
-        leverageAmount: ONE_LEVERAGE,
-        settlementToken: token.address,
-        oracleWrapper: btcSmaOracleWrapper.address,
-        settlementEthOracle: ethOracleWrapper.address,
-        feeController: deployer,
-        mintingFee: POOL_DEFAULT_MINTING_FEE,
-        burningFee: POOL_DEFAULT_BURNING_FEE,
-        changeInterval: POOL_DEFAULT_CHANGE_INTERVAL,
-    }
-
-    // BTC-USD 3x
-    const deploymentData4 = {
-        poolName: BTC_POOL_CODE,
-        frontRunningInterval: POOL_DEFAULT_FRONT_RUNNING_INTERVAL,
-        updateInterval: POOL_DEFAULT_UPDATE_INTERVAL,
-        leverageAmount: THREE_LEVERAGE,
-        settlementToken: token.address,
+        frontRunningInterval: 300 * 8,
+        updateInterval: 300,
+        leverageAmount: FOUR_LEVERAGE,
+        settlementToken: PPUSD_ADDRESS,
         oracleWrapper: btcSmaOracleWrapper.address,
         settlementEthOracle: ethOracleWrapper.address,
         feeController: deployer,
@@ -284,13 +356,16 @@ module.exports = async (hre) => {
     }
 
     const deploymentData = [
-        deploymentData1,
-        deploymentData2,
-        deploymentData3,
-        deploymentData4,
+        // ethUsd1,
+        // ethUsd3,
+        // btcUsd3,
+        // btcUsd1,
+        // btcUsd3,
+        ethUsd4,
+        btcUsd4,
     ]
 
-    console.log(`Deployed TestToken: ${token.address}`)
+    console.log(`Deployed TestToken: ${PPUSD_ADDRESS}`)
     console.log(`Deployed PoolFactory: ${factory.address}`)
     console.log(`Deployed PoolSwapLibrary: ${library.address}`)
     console.log(`Deployed CalldataLogic: ${calldataLogic.address}`)
