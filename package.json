@@ -14,7 +14,9 @@
         "removeLogs": "npx hardhat remove-logs",
         "lint": "prettier --check .",
         "lint:fix": "prettier . --write",
-        "uml": "sol2uml contracts"
+        "uml": "sol2uml contracts",
+        "postinstall": "git submodule add -f https://github.com/foundry-rs/forge-std node_modules/forge-std && git submodule update --init --recursive",
+        "forge:test": "docker run -v %cd%:/app foundry \"cd app && forge test -v\""
     },
     "repository": {
         "type": "git",

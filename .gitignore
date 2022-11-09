@@ -6,3 +6,6 @@ typechain/
 coverage/
 coverage.json
 types/
+
+# forge
+forge/out
