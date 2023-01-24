@@ -15,6 +15,7 @@ contract WrappedToken is ERC20 {
 
     // Deposit tokens
     function deposit(address tokenAddress, uint256 amount) public {
+        require(allowed[tokenAddress]);
         require(IERC20(tokenAddress).transferFrom(msg.sender, address(this), amount), "Transfer failed");
         balances[msg.sender][tokenAddress] += amount;
         _mint(msg.sender, amount);
