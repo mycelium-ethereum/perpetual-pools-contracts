@@ -15,17 +15,7 @@ contract TestChainlinkOracle {
      *         Other fields are returned as mock data to simulate a
      *         successful round.
      */
-    function latestRoundData()
-        external
-        view
-        returns (
-            uint80,
-            int256,
-            uint256,
-            uint256,
-            uint80
-        )
-    {
+    function latestRoundData() external view returns (uint80, int256, uint256, uint256, uint80) {
         uint80 roundId = ROUND_ID;
         int256 answer = price;
         uint256 startedAt = 0;

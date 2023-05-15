@@ -188,15 +188,7 @@ interface IPoolCommitter {
         uint256 updateInterval,
         uint256 longBalance,
         uint256 shortBalance
-    )
-        external
-        returns (
-            uint256,
-            uint256,
-            uint256,
-            uint256,
-            uint256
-        );
+    ) external returns (uint256, uint256, uint256, uint256, uint256);
 
     function updateAggregateBalance(address user) external;
 

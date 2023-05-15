@@ -176,13 +176,10 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
      * @dev Only callable by the associated `PoolKeeper` contract
      * @dev Only callable when the market is *not* paused
      */
-    function payKeeperFromBalances(address to, uint256 amount)
-        external
-        override
-        onlyKeeperRewards
-        onlyUnpaused
-        returns (bool)
-    {
+    function payKeeperFromBalances(
+        address to,
+        uint256 amount
+    ) external override onlyKeeperRewards onlyUnpaused returns (bool) {
         uint256 _shortBalance = shortBalance;
         uint256 _longBalance = longBalance;
 
@@ -368,12 +365,10 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
      * @dev Only callable when the market is *not* paused
      * @dev Emits a `PoolBalancesChanged` event on success
      */
-    function setNewPoolBalances(uint256 _longBalance, uint256 _shortBalance)
-        external
-        override
-        onlyPoolCommitter
-        onlyUnpaused
-    {
+    function setNewPoolBalances(
+        uint256 _longBalance,
+        uint256 _shortBalance
+    ) external override onlyPoolCommitter onlyUnpaused {
         longBalance = _longBalance;
         shortBalance = _shortBalance;
         emit PoolBalancesChanged(_longBalance, _shortBalance);
@@ -487,17 +482,7 @@ contract LeveragedPoolBalanceDrainMock is ILeveragedPool, Initializable, IPausab
      * @return _updateInterval The update frequency for this pool
      * @dev To save gas so PoolKeeper does not have to make three external calls
      */
-    function getUpkeepInformation()
-        external
-        view
-        override
-        returns (
-            int256,
-            bytes memory,
-            uint256,
-            uint256
-        )
-    {
+    function getUpkeepInformation() external view override returns (int256, bytes memory, uint256, uint256) {
         (int256 _latestPrice, bytes memory _data) = IOracleWrapper(oracleWrapper).getPriceAndMetadata();
         return (_latestPrice, _data, lastPriceTimestamp, updateInterval);
     }

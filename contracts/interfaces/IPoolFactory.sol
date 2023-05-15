@@ -121,11 +121,7 @@ interface IPoolFactory {
 
     function setFee(uint256 _fee) external;
 
-    function setDeploymentFee(
-        address _token,
-        uint256 _fee,
-        address _receiver
-    ) external;
+    function setDeploymentFee(address _token, uint256 _fee, address _receiver) external;
 
     function setSecondaryFeeSplitPercent(uint256 newFeePercent) external;
 }

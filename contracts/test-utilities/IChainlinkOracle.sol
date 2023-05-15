@@ -18,14 +18,5 @@ interface IChainlinkOracle {
     // latestRoundData should raise "No data present"
     // if they do not have data to report, instead of returning unset values
     // which could be misinterpreted as actual reported values.
-    function latestRoundData()
-        external
-        view
-        returns (
-            uint80,
-            int256,
-            uint256,
-            uint256,
-            uint80
-        );
+    function latestRoundData() external view returns (uint80, int256, uint256, uint256, uint80);
 }

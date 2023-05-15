@@ -1,11 +1,10 @@
-const { arbitrumGoerli } = require('../scripts/addresses');
+const { arbitrumGoerli } = require("../scripts/addresses")
 
 module.exports = async (hre) => {
     const { getNamedAccounts, ethers } = hre
     const { deploy, execute } = deployments
     const { deployer } = await getNamedAccounts()
     const accounts = await ethers.getSigners()
-
 
     const BTC_POOL_CODE = "BTC/USD+PPUSD"
     const ETH_POOL_CODE = "ETH/USD+PPUSD"
@@ -53,7 +52,7 @@ module.exports = async (hre) => {
         ethers.utils.parseEther("100000000") // 100 mil supply
     )
 
-    const PPUSD_ADDRESS = token.address;
+    const PPUSD_ADDRESS = token.address
 
     console.log("Deploying oracle wrappers", btcUsdFeed, ethUsdFeed)
     // base btc usd oracle wrapper
@@ -72,14 +71,14 @@ module.exports = async (hre) => {
         args: [ethUsdFeed.address, deployer],
     })
 
-    console.log("Deploying swaps library");
+    console.log("Deploying swaps library")
     // deploy PoolSwapLibrary
     const library = await deploy("PoolSwapLibrary", {
         from: deployer,
         log: true,
     })
 
-    console.log("Deploying call data logic");
+    console.log("Deploying call data logic")
     // deploy CalldataLogic
     const calldataLogic = await deploy("CalldataLogic", {
         from: deployer,
@@ -133,7 +132,7 @@ module.exports = async (hre) => {
         args: [poolKeeper.address],
     })
 
-    console.log("Setting config");
+    console.log("Setting config")
     // set keeper rewards
     await execute(
         "PoolKeeper",

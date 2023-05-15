@@ -340,11 +340,7 @@ contract PoolFactoryBalanceDrainMock is IPoolFactory, ITwoStepGovernance {
      * @dev Only callable by the owner of this contract
      * @dev Emits a `DeploymentFeeChanged` event on success
      */
-    function setDeploymentFee(
-        address _token,
-        uint256 _fee,
-        address _receiver
-    ) external override onlyGov {
+    function setDeploymentFee(address _token, uint256 _fee, address _receiver) external override onlyGov {
         require(_token != address(0), "Token cannot be null");
         deploymentFeeToken = _token;
         deploymentFee = _fee;

@@ -8,7 +8,7 @@ async function main() {
     const { deployments, ethers } = hre
     const [deployer] = await ethers.getSigners()
 
-    await deployments.fixture(["ArbGoerliDeploy"]);
+    await deployments.fixture(["ArbGoerliDeploy"])
 }
 
 main()

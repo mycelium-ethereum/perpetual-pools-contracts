@@ -99,7 +99,7 @@ contract SMAOracle is IOracleWrapper {
 
         uint8 inputOracleDecimals = IOracleWrapper(_inputOracle).decimals();
         /* `scaler` is always <= 10^18 and >= 1 so this cast is safe */
-        scaler = int256(10**(decimals - inputOracleDecimals));
+        scaler = int256(10 ** (decimals - inputOracleDecimals));
 
         numPeriods = _numPeriods;
         updateInterval = _updateInterval;

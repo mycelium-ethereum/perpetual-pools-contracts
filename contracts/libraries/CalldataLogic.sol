@@ -40,16 +40,7 @@ library CalldataLogic {
      * @return Whether to make the commitment from user's aggregate balance
      * @return Whether to pay for an autoclaim or not
      */
-    function decodeCommitParams(bytes32 args)
-        internal
-        pure
-        returns (
-            uint256,
-            IPoolCommitter.CommitType,
-            bool,
-            bool
-        )
-    {
+    function decodeCommitParams(bytes32 args) internal pure returns (uint256, IPoolCommitter.CommitType, bool, bool) {
         uint256 amount;
         IPoolCommitter.CommitType commitType;
         bool fromAggregateBalance;

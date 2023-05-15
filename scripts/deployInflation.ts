@@ -1,6 +1,11 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { ethers } from "hardhat"
-import { arbitrumMainnet, arbitrumRinkeby, arbitrumGoerli, NetworkAddresses } from "./addresses"
+import {
+    arbitrumMainnet,
+    arbitrumRinkeby,
+    arbitrumGoerli,
+    NetworkAddresses,
+} from "./addresses"
 
 async function contractAt(
     name: string,
@@ -53,7 +58,7 @@ async function main() {
      */
     const leverage = 1
     /*
-     * The update interval is the frequency of market updates in seconds. 
+     * The update interval is the frequency of market updates in seconds.
      *
      * 24 hours in seconds
      */

@@ -17,7 +17,9 @@ import "hardhat-deploy"
 import "hardhat-deploy-ethers"
 import "hardhat-contract-sizer"
 
-const ALCHEMY_API_TESTNET_URL = process.env.ALCHEMY_API_TESTNET_URL || "https://goerli-rollup.arbitrum.io/rpc"
+const ALCHEMY_API_TESTNET_URL =
+    process.env.ALCHEMY_API_TESTNET_URL ||
+    "https://goerli-rollup.arbitrum.io/rpc"
 const ALCHEMY_API_MAINNET_URL = process.env.ALCHEMY_API_MAINNET_URL || ""
 const ALCHEMY_API_ARBITRUM_URL = process.env.ALCHEMY_API_ARBITRUM_URL || ""
 const ARBITRUM_PRIVATE_KEY =
@@ -76,9 +78,9 @@ const config: HardhatUserConfig = {
     },
     etherscan: {
         apiKey: {
-            mainnet: ETHERSCAN_API_KEY ?? '',
-            goerli: ETHERSCAN_API_KEY ?? '',
-        }
+            mainnet: ETHERSCAN_API_KEY ?? "",
+            goerli: ETHERSCAN_API_KEY ?? "",
+        },
     },
     mocha: {
         timeout: 60000,
