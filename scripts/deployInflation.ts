@@ -1,6 +1,6 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { ethers } from "hardhat"
-import { arbitrumMainnet, arbitrumRinkeby, NetworkAddresses } from "./addresses"
+import { arbitrumMainnet, arbitrumRinkeby, arbitrumGoerli, NetworkAddresses } from "./addresses"
 
 async function contractAt(
     name: string,
@@ -29,14 +29,16 @@ async function main() {
      * Use the addresses from https://pools.docs.tracer.finance/contract-addresses
      * when determining what to set certain parameters
      */
-
     const signers: SignerWithAddress[] = await ethers.getSigners()
     const network = await ethers.provider.getNetwork()
     let networkConstants: NetworkAddresses
-    if (network.chainId == 42161) {
+
+    if (network.chainId === 42161) {
         networkConstants = arbitrumMainnet
-    } else if ((network.chainId = 421611)) {
+    } else if (network.chainId === 421611) {
         networkConstants = arbitrumRinkeby
+    } else if (network.chainId === 421613) {
+        networkConstants = arbitrumGoerli
     } else {
         console.error("Chain ID %d not supported", network.chainId)
         return
@@ -61,9 +63,9 @@ async function main() {
      * is executed. This exists because otherwise, individuals could mint into the favourable side of a
      * price change, capturing at least a very large percentage of the value transfer.
      *
-     * 1 hour
+     * 10 minutes
      */
-    const frontRunningInterval = 3600
+    const frontRunningInterval = 600
     /*
      * The minting fee is the percentage of each mint that is taken and then put back into that side's collateral.
      * This exists as a potential way to mitigate against volatility decay, because each mint adds back a little bit
@@ -109,7 +111,7 @@ async function main() {
      * For example, an ETH/BTC market settled in USDC would be called ETH/BTC+USDC.
      * The factory will then prepend the leverage as necessary.
      */
-    const poolName = "TFI/USD+USDC"
+    const poolName = "TRUFLATION/USD+USDC"
 
     /**
      * Set this to the address of the underlying price feed.

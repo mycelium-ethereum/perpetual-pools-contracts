@@ -4,18 +4,20 @@ dotEnvConfig()
 import { HardhatUserConfig } from "hardhat/types"
 
 import "@nomiclabs/hardhat-etherscan"
-import "@nomiclabs/hardhat-waffle"
-import "@typechain/hardhat"
-import "@nomiclabs/hardhat-etherscan"
+// import "@nomicfoundation/hardhat-verify";
+import("@nomicfoundation/hardhat-toolbox")
+// import "@typechain/hardhat"
+// import "@nomiclabs/hardhat-waffle"
+// import "@nomiclabs/hardhat-etherscan"
+// import "hardhat-gas-reporter"
+import "solidity-coverage"
 import "@openzeppelin/hardhat-upgrades"
 import "hardhat-log-remover"
-import "hardhat-gas-reporter"
 import "hardhat-deploy"
 import "hardhat-deploy-ethers"
 import "hardhat-contract-sizer"
-import "solidity-coverage"
 
-const ALCHEMY_API_TESTNET_URL = process.env.ALCHEMY_API_TESTNET_URL || ""
+const ALCHEMY_API_TESTNET_URL = process.env.ALCHEMY_API_TESTNET_URL || "https://goerli-rollup.arbitrum.io/rpc"
 const ALCHEMY_API_MAINNET_URL = process.env.ALCHEMY_API_MAINNET_URL || ""
 const ALCHEMY_API_ARBITRUM_URL = process.env.ALCHEMY_API_ARBITRUM_URL || ""
 const ARBITRUM_PRIVATE_KEY =
@@ -73,7 +75,10 @@ const config: HardhatUserConfig = {
         target: "ethers-v5",
     },
     etherscan: {
-        apiKey: ETHERSCAN_API_KEY,
+        apiKey: {
+            mainnet: ETHERSCAN_API_KEY ?? '',
+            goerli: ETHERSCAN_API_KEY ?? '',
+        }
     },
     mocha: {
         timeout: 60000,
