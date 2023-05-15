@@ -436,15 +436,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         CommitmentExecutionTracking memory executionTracking,
         uint256 longBalance,
         uint256 shortBalance
-    )
-        internal
-        returns (
-            uint256,
-            uint256,
-            uint256,
-            uint256
-        )
-    {
+    ) internal returns (uint256, uint256, uint256, uint256) {
         pendingMintSettlementAmount =
             pendingMintSettlementAmount -
             totalPoolCommitments[executionTracking._updateIntervalId].longMintSettlement -
@@ -558,18 +550,7 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
         uint256 updateInterval,
         uint256 longBalance,
         uint256 shortBalance
-    )
-        external
-        override
-        onlyPool
-        returns (
-            uint256,
-            uint256,
-            uint256,
-            uint256,
-            uint256
-        )
-    {
+    ) external override onlyPool returns (uint256, uint256, uint256, uint256, uint256) {
         uint8 counter = 1;
 
         /*
@@ -699,11 +680,9 @@ contract PoolCommitter is IPoolCommitter, IPausable, Initializable {
      * @return The PoolSwapLibrary.UpdateResult struct with the data pertaining to the update of user's aggregate balance
      * @dev Wraps two (pure) library functions from `PoolSwapLibrary`
      */
-    function getBalanceSingleCommitment(UserCommitment memory _commit)
-        internal
-        view
-        returns (PoolSwapLibrary.UpdateResult memory)
-    {
+    function getBalanceSingleCommitment(
+        UserCommitment memory _commit
+    ) internal view returns (PoolSwapLibrary.UpdateResult memory) {
         PoolSwapLibrary.UpdateData memory updateData = PoolSwapLibrary.UpdateData({
             longPrice: priceHistory[_commit.updateIntervalId].longPrice,
             shortPrice: priceHistory[_commit.updateIntervalId].shortPrice,

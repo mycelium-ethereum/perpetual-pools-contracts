@@ -26,7 +26,7 @@ contract ChainlinkOracleWrapper is IOracleWrapper {
         require(_decimals <= MAX_DECIMALS, "COA: too many decimals");
         // scaler is always <= 10^18 and >= 1 so this cast is safe
         unchecked {
-            scaler = int256(10**(MAX_DECIMALS - _decimals));
+            scaler = int256(10 ** (MAX_DECIMALS - _decimals));
         }
     }
 

@@ -45,11 +45,7 @@ contract ERC20_Cloneable is ERC20, Initializable {
     /**
      * @dev Sets the values for {name}, {symbol} and {decimals}.
      */
-    constructor(
-        string memory name_,
-        string memory symbol_,
-        uint8 decimals_
-    ) ERC20(name_, symbol_) {
+    constructor(string memory name_, string memory symbol_, uint8 decimals_) ERC20(name_, symbol_) {
         _decimals = decimals_;
     }
 

@@ -257,12 +257,10 @@ contract AutoClaim is IAutoClaim {
      * @param request The ClaimRequest object to be checked.
      * @param currentUpdateIntervalId The current update interval. Used to compare to the update interval of the ClaimRequest.
      */
-    function checkClaim(ClaimRequest memory request, uint256 currentUpdateIntervalId)
-        public
-        pure
-        override
-        returns (bool)
-    {
+    function checkClaim(
+        ClaimRequest memory request,
+        uint256 currentUpdateIntervalId
+    ) public pure override returns (bool) {
         return request.updateIntervalId > 0 && request.updateIntervalId < currentUpdateIntervalId;
     }
 

@@ -16,7 +16,7 @@ library PoolSwapLibrary {
     uint256 public constant MAX_DECIMALS = 18;
 
     /// Maximum precision supportable via wad arithmetic (for this contract)
-    uint256 public constant WAD_PRECISION = 10**18;
+    uint256 public constant WAD_PRECISION = 10 ** 18;
 
     /// Information required to update a given user's aggregated balance
     struct UpdateData {
@@ -187,11 +187,7 @@ library PoolSwapLibrary {
      * @param denominator The denominator of the fraction being multipled with `number`
      * @return The result of multiplying number with numerator/denominator, as an integer
      */
-    function mulFraction(
-        uint256 number,
-        uint256 numerator,
-        uint256 denominator
-    ) public pure returns (uint256) {
+    function mulFraction(uint256 number, uint256 numerator, uint256 denominator) public pure returns (uint256) {
         if (denominator == 0) {
             return 0;
         }
@@ -207,11 +203,7 @@ library PoolSwapLibrary {
      * @param leverage The amount of leverage to apply
      * @return The multiplier
      */
-    function getLossMultiplier(
-        bytes16 ratio,
-        int8 direction,
-        bytes16 leverage
-    ) public pure returns (bytes16) {
+    function getLossMultiplier(bytes16 ratio, int8 direction, bytes16 leverage) public pure returns (bytes16) {
         // If decreased:  2 ^ (leverage * log2[(1 * new/old) + [(0 * 1) / new/old]])
         //              = 2 ^ (leverage * log2[(new/old)])
         // If increased:  2 ^ (leverage * log2[(0 * new/old) + [(1 * 1) / new/old]])
@@ -267,16 +259,7 @@ library PoolSwapLibrary {
         int256 oldPrice,
         int256 newPrice,
         bytes16 fee
-    )
-        external
-        pure
-        returns (
-            uint256,
-            uint256,
-            uint256,
-            uint256
-        )
-    {
+    ) external pure returns (uint256, uint256, uint256, uint256) {
         // Copy into a struct (otherwise stack gets too deep)
         PriceChangeData memory priceChangeData = PoolSwapLibrary.PriceChangeData(
             oldPrice,
@@ -532,7 +515,7 @@ library PoolSwapLibrary {
      * @return Converted (non-WAD) value
      */
     function fromWad(uint256 _wadValue, uint256 _decimals) external pure returns (uint256) {
-        uint256 scaler = 10**(MAX_DECIMALS - _decimals);
+        uint256 scaler = 10 ** (MAX_DECIMALS - _decimals);
         return _wadValue / scaler;
     }
 
@@ -552,15 +535,7 @@ library PoolSwapLibrary {
         bytes16 burnPrice,
         bytes16 burningFee,
         bytes16 mintingFee
-    )
-        public
-        pure
-        returns (
-            uint256,
-            uint256,
-            uint256
-        )
-    {
+    ) public pure returns (uint256, uint256, uint256) {
         // Settlement tokens earned from burning pool tokens (for instant mint)
         uint256 mintSettlement = getBurn(burnPrice, amount);
         // The burn fee. This should be given to the side of the pool of the burnt tokens.

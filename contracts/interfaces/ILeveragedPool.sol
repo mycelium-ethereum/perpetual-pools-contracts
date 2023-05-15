@@ -148,11 +148,7 @@ interface ILeveragedPool {
 
     function poolUpkeep(int256 _oldPrice, int256 _newPrice) external;
 
-    function settlementTokenTransferFrom(
-        address from,
-        address to,
-        uint256 amount
-    ) external;
+    function settlementTokenTransferFrom(address from, address to, uint256 amount) external;
 
     function payKeeperFromBalances(address to, uint256 amount) external returns (bool);
 
@@ -170,11 +166,7 @@ interface ILeveragedPool {
      * @dev Only callable by the associated `PoolCommitter` contract
      * @dev Only callable when the market is *not* paused
      */
-    function poolTokenTransfer(
-        bool isLongToken,
-        address to,
-        uint256 amount
-    ) external;
+    function poolTokenTransfer(bool isLongToken, address to, uint256 amount) external;
 
     function setNewPoolBalances(uint256 _longBalance, uint256 _shortBalance) external;
 
@@ -188,12 +180,7 @@ interface ILeveragedPool {
     function getUpkeepInformation()
         external
         view
-        returns (
-            int256 _latestPrice,
-            bytes memory _data,
-            uint256 _lastPriceTimestamp,
-            uint256 _updateInterval
-        );
+        returns (int256 _latestPrice, bytes memory _data, uint256 _lastPriceTimestamp, uint256 _updateInterval);
 
     function getOraclePrice() external view returns (int256);
 
@@ -207,9 +194,5 @@ interface ILeveragedPool {
 
     function updateSecondaryFeeAddress(address account) external;
 
-    function burnTokens(
-        uint256 tokenType,
-        uint256 amount,
-        address burner
-    ) external;
+    function burnTokens(uint256 tokenType, uint256 amount, address burner) external;
 }
